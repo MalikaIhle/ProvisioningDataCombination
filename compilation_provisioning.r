@@ -5,7 +5,7 @@
 #	 last modif : 12/01/2015  
 #    EXTRACTION DATA FROM OLD AND NEW TEMPLATE
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
+
 {### remarks
 
 {## changes made in excel files: 
@@ -171,7 +171,7 @@
 }
 
 
-{### overview decsisions taken
+{### overview decisions taken
 
 ## excel files considered are only the one which have:
 # an entry in tblDVD_XlsFiles (rk: some files have an entry in DB but are not included here: see '########## FILES THAT SHOULD BE INCLUDED')
@@ -181,7 +181,7 @@
 ## old templates visits include:
 # entry times commented 'S' (before getting into the NB)
 # exit time commented 'gone' or at least not commented 'S' (i.e. when the bird leave the NB area, sometimes after he left the NB per se)
-# visits commented 'O' (feeding from the outside - probably longer duration than time during which the head comes through the NB entrance which is considered with the new template)
+# visits commented 'O' (mostly hanging out of the NB and some rare feeding from the outside - probably longer duration than time during which the head comes through the NB entrance which is considered with the new template)
 # > consequently: we expect much higher visit duration in old files than new ones
 
 
