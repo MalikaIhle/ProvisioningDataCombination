@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 12/01/2015  
-#    EXTRACTION DATA FROM OLD AND NEW TEMPLATE
+#	 last modif : 20/01/2015  
+#    try to get colours from old templates
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -193,7 +193,7 @@ rm(list = ls(all = TRUE))
 {### packages, working directories and connection to Access DB
 library(RODBC)
 library(openxlsx)	
-# library(xlsx)
+# library(xlsx)	# packega xlsx will be needed later in the code (after detaching the conflicting openxlsx nevertheless needed at first to be faster/not crashing)
 
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
 
@@ -204,7 +204,7 @@ tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$F
 
 # select vedo made when provisioning chick (situation = 4 )
 tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
-SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes
+SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.ShareTime, tblParentalCare.MVisit1, tblParentalCare.FVisit1, tblParentalCare.MVisit2, tblParentalCare.FVisit2, tblParentalCare.MBout, tblParentalCare.FBout
 FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD_XlsFiles.DVDRef = tblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = tblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
 WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 ")	# contains duplicates (same DVD analyzed several times)
@@ -624,10 +624,21 @@ tail(combinedprovisioningALL, 100)
 
 
 
+detach("package:xlsx", unload=TRUE)
+require(openxlsx)
+search()
+
+detach("package:openxlsx", unload=TRUE)
+require(xlsx)
+search()
 
 
 
-### recreate tblParentalCare
+
+
+{################## SHIT
+
+{### recreate tblParentalCare
 
 head(tblDVD_XlsFilesALLDBINFO)
 summary(tblDVD_XlsFilesALLDBINFO)
@@ -687,14 +698,75 @@ y = tblDVD_XlsFilesALLDBINFO[,c('DVDRef', 'Filename','BroodRef','OffspringNo','D
 
 head(ParentalCare)
 nrow(ParentalCare) # 216
-
+}
 
 sample(tblDVD_XlsFilesALLDBINFO$Filename[tblDVD_XlsFilesALLDBINFO$Method == 1], 1)
-sample(tblDVD_XlsFilesALLDBINFO$Filename[tblDVD_XlsFilesALLDBINFO$Method == 0 & tblDVD_XlsFilesALLDBINFO$DVDdate < as.POSIXct("2005-01-01")], 1)
+sample(tblDVD_XlsFilesALLDBINFO$Filename[tblDVD_XlsFilesALLDBINFO$Method == 0 & tblDVD_XlsFilesALLDBINFO$DVDdate < as.POSIXct("2006-01-01")], 1)
+
+visualize <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$Filename %in% combinedprovisioningALL$Filename,c("DVDRef","Filename","OffspringNo", "Age","Method","Observer","FVisit2", "MVisit2")]
+#write.table(visualize, file = "R_VisualizeOldMethods.xls", col.names=TRUE, sep='\t')
 
 
 
 
+# extract informaiton in coloured cell
+
+library(xlsx)
+			
+			# internet example
+			wb     <- loadWorkbook("test.xlsx")
+			sheet1 <- getSheets(wb)[[1]]
+			# get all rows
+			rows  <- getRows(sheet1)
+			cells <- getCells(rows)
+			# quick look at the values
+			sapply(cells, getCellValue)
+			styles <- sapply(cells, getCellStyle)
+
+			cellColor <- function(x) {
+				fg  <- x$getFillForegroundXSSFColor()
+				rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
+				rgb <- paste(rgb, collapse = "")
+				return(rgb)
+			}
+
+			sapply(styles, cellColor)
+
+			pheno <- list(normal = "00ff00", tumour = "ff0000")
+			m     <- match(sapply(styles, cellColor), pheno)
+			labs  <-names(pheno)[m]
+			labs
 
 
+wb     <- loadWorkbook("C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files\\DVDs 2010\\VJ0068.xlsx")
+sheet2name <- names(wb)[[2]]
 
+wb     <- read.xlsx2("C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files\\DVDs 2010\\VJ0068.xlsx", sheetIndex =2)
+
+# get all cells
+rows  <- getRows(sheet2)
+cells <- getCells(getRows(sheet2))
+	# quick look at the values
+	#sapply(cells1, getCellValue)
+styles1 <- sapply(cells1, getCellStyle)
+
+			cellColor <- function(x) {
+				fg  <- x$getFillForegroundXSSFColor()
+				rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
+				rgb <- paste(rgb, collapse = "")
+				return(rgb)
+			}
+
+sapply(styles1, cellColor)
+
+
+detach("package:xlsx", unload=TRUE)
+require(openxlsx)
+search()
+
+detach("package:openxlsx", unload=TRUE)
+require(xlsx)
+search()
+
+
+}
