@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 20/01/2015  
+#	 last modif : 21/01/2015  
 #    try to get colours from old templates
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -20,6 +20,7 @@
 # VK0034: added 0 in Fin C2
 # VK0041: added 0 in Fin C2, with comment IN
 # VK0418: displace comment from J7 to M7
+# 40005: move B60 et C60 to D60 et E60
 
 # 40032, 40055, 40069, 40071, 40079, 40089, 40119, 40123, 40133: create an empty sheet 1 like in other file
 # 40063, 40066, 40070, 40073, 40077, 40078, 40080, 40558: create an empty sheet 1 like in other file
@@ -425,6 +426,33 @@ which(duplicated(unique(merge(x=combinedprovisioningNewTemplate, y=tblDVD_XlsFil
 tail(combinedprovisioningNewTemplate,30)
 
 
+
+
+
+{## check chronology in raw data with NewTemplate
+
+combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
+
+
+splitNewTemplates_byFilenames_bySex <- split(combinedprovisioningNewTemplate, paste(combinedprovisioningNewTemplate$Filename, combinedprovisioningNewTemplate$Sex))
+
+splitNewTemplates_byFilenames_bySex_fun = function(x)  {
+x$prevOut <- c(NA,x$Tout[-nrow(x)])
+x$Diff_Tin_prevOut <- x$Tin-x$prevOut
+return(x)
+ }
+
+splitNewTemplates_byFilenames_bySexout <- lapply(splitNewTemplates_byFilenames_bySex, FUN=splitNewTemplates_byFilenames_bySex_fun)
+splitNewTemplates_byFilenames_bySext_df <- do.call(rbind, splitNewTemplates_byFilenames_bySexout)
+rownames(splitNewTemplates_byFilenames_bySext_df) <- NULL
+head(splitNewTemplates_byFilenames_bySext_df)
+splitNewTemplates_byFilenames_bySext_df[splitNewTemplates_byFilenames_bySext_df$Diff_Tim_prevOut <0,]
+}
+
+
+
+
+
 {### extraction data in Excel files analyzed with oldest template
 
 {## create list of filenames
@@ -586,7 +614,7 @@ colnames(bb) <- c('Tin','Tout','Sex','Filename')}
 # otherwise unlist and combine both sex visits
 else {bb <- data.frame(rbind(unlist(bbF), unlist(bbM)))} # need to unlist in case one list is empty when no visit at all by one sex
 
-# order by Tin tehn Tout
+# order by Tin then Tout
 bb <- bb[order(bb$Tin),]
 
 # add filename
@@ -624,6 +652,8 @@ tail(combinedprovisioningALL, 100)
 
 
 
+
+
 detach("package:xlsx", unload=TRUE)
 require(openxlsx)
 search()
@@ -636,7 +666,27 @@ search()
 
 
 
-{################## SHIT
+######### IN PROGRESS
+j=2
+filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
+b <- read.xlsx(filenamej, sheetIndex =2) # read.xlsx function from library 'xlsx' (not library 'openxlsx'): make sure openxlsx is not in the list given by 'search()'
+b <- b[,c("DVD","F.in","com","F.out","com.1","M.in","com.2","M.out","com.3")]
+b$Fcom <- NA
+b$Mcom <- NA
+b
+
+#######
+
+
+
+
+
+
+
+
+
+
+{################## MESSSSSSS about different methods used for Old template, and about colour extraction
 
 {### recreate tblParentalCare
 
