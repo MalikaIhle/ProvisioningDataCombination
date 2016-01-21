@@ -68,8 +68,11 @@ x$Com[i] <- "S"
 
 
 # insert row when TouCom==S if not followed directly by a Toutcom==G
-if (!is.na(x$ToutCom[i]) & x$ToutCom[i] == "S" & (x$Tin[i] != x$Tin[i+1]) & (is.na(x$ToutCom[i]) | x$ToutCom[i] != "G"))
+if (!is.na(x$ToutCom[i]) & x$ToutCom[i] == "S" & x$Tout[i] != x$Tin[i+1])
 {x <- rbind(x,c(x$Tout[i],NA,x$Tin[i+1],NA, "S"))}
+
+
+
 }
 
 x <- x[!is.na(x$Com),]
@@ -80,6 +83,12 @@ x <- x[order(x$Tin, x$Tout),]
 x
 
 
+
+# check if S before G was missing
+# what if S missing
+# what if G missing
+# what if other comments
+# what if Tin written in ToutCom (for grey o or for still IN)
 
 
 
