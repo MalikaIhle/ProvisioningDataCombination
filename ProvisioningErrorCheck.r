@@ -10,7 +10,7 @@
 
 #RQ
 # as we are changing the files directly on dropbox,  we need to keep the original copies somewhere on a permanent google drive
-
+# we need to figure out what is this 'wrong Method YN' about, I create an excel files that have the list of provisioning excel files in it, with columns having 'featurex YN' to tick.
 
 
 rm(list = ls(all = TRUE))
@@ -23,7 +23,7 @@ pathlocalfolder <- "C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BAC
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 
-##### DB Checks
+###### DB Checks
 {
 
 ### Wich duplicate of video analysed was entered in tbl Parental care ?
@@ -157,8 +157,10 @@ excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCar
 
 
 
-##### Excel files Checks
+###### Excel files Checks
 {
+
+{##### compiled list by hand
 
 ### Files to check Time Chronology (need to reopen video) > correct excel + DB summary if affected
 {
@@ -236,6 +238,22 @@ VK0299 # reformat to old template
 50268 # commented: too difficult to distinguish male and female (and therefore file is empty) > put in junk folder ?
 }
 
+}
+
+
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

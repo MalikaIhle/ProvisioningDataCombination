@@ -20,7 +20,8 @@
 # VK0034: added 0 in Fin C2
 # VK0041: added 0 in Fin C2, with comment IN
 # VK0418: displace comment from J7 to M7
-# 40005: move B60 et C60 to D60 et E60
+# 40005: move B60 and C60 to D60 and E60
+# 80014: move comments
 
 # 40032, 40055, 40069, 40071, 40079, 40089, 40119, 40123, 40133: create an empty sheet 1 like in other file
 # 40063, 40066, 40070, 40073, 40077, 40078, 40080, 40558: create an empty sheet 1 like in other file
@@ -32,7 +33,7 @@
 # 50363, 50366, 50375, 50376, 50377, 50378, 50379, 50393, 50401, 50414, 50415, 50427, 50434: create an empty sheet1 like in other file
 # 50626-50669: create an empty sheet1 like in other file
 
-# 40077: added 'S' in cells I7 and I24
+# 40077: added 'S' in cells I7 and I24, and G5
 # 40173: added 'S' in I67
 # 40224: added 'S' in E44
 # 40315: added 'S' in E38 and E49
@@ -162,6 +163,9 @@
 # 70173: move H4 to F4, H7 to F7, H10 to F10
 # 70179: move H5 to F5, H12 to F12, D10 to B10
 # 80051: move H2 to F2
+
+# 70083: move D2 and E2 to B2 and C2; added Tout at the end when still IN
+# 70088: move D2 and E2 to B2 and C2
 }
 
 ## library xlsx run with rjava, does not have enough memory to go through all excel files, hence the change to openxlsx, at least to read xlsx files...
@@ -245,7 +249,7 @@ filename1011_oldtemplate <- c(
 "2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
 "2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
 "2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
-"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls", "2011\\VK0007.xls",
+"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls",
 "2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
 "2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
 "2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
@@ -631,6 +635,359 @@ combinedprovisioningOldTemplate = do.call(rbind, out3)
 }
 
 }
+
+
+
+
+############# try to integrate Desperate excel code into the creation of a table bb for each excel file XLS (+ 3 XLSX) with an old template, table bb containing: Tin, Tout, Sex and Filename
+
+
+
+{## piece to run before running error check
+
+{# packages + DB
+library(RODBC)
+library(xlsx)	
+require(zoo)
+
+pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
+
+
+conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
+tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
+
+# select vedo made when provisioning chick (situation = 4 )
+tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
+SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.ShareTime, tblParentalCare.MVisit1, tblParentalCare.FVisit1, tblParentalCare.MVisit2, tblParentalCare.FVisit2, tblParentalCare.MBout, tblParentalCare.FBout
+FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD_XlsFiles.DVDRef = tblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = tblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
+WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
+")	# contains duplicates (same DVD analyzed several times)
+
+
+close(conDB)
+}
+
+{## create list of filenames
+
+filename1011_oldtemplate <- c(
+"2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
+"2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
+"2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
+"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls",
+"2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
+"2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
+"2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
+"2011\\VK0041.xls", "2011\\VK0042.xls", "2011\\VK0044.xls", "2011\\VK0045.xls", "2011\\VK0046.xls", "2011\\VK0047.xls", "2011\\VK0048.xls",
+"2011\\VK0050.xls", "2011\\VK0051.xls", "2011\\VK0056.xls", "2011\\VK0061.xls", "2011\\VK0062.xls", "2011\\VK0063.xls", "2011\\VK0067.xls",
+"2011\\VK0069.xls", "2011\\VK0070.xls", "2011\\VK0072.xls",
+"2011\\VK0101.xls", "2011\\VK0102.xls", "2011\\VK0103.xls",
+"2011\\VK0105.xls", "2011\\VK0106.xls",
+"2011\\VK0410.xls", "2011\\VK0412.xls", "2011\\VK0413.xls", "2011\\VK0416.xls",
+"2011\\VK0418.xls", "2011\\VK0419.xls", "2011\\VK0421.xls", "2011\\VK0422.xls", "2011\\VK0423.xls",
+
+	# those have yet another template
+"2011\\VK0293.xls",				
+"2011\\VK0296.xls", "2011\\VK0299.xls"
+)
+
+{FilenamesOldTemplate <- tblDVD_XlsFiles$Filename[
+
+# where situation = 4
+tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename &
+
+# years before 2010, or after 2010 but belonging to list created above
+(tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
+
+# exclude duplicates
+tblDVD_XlsFiles$Filename != "2004\\40001LM19.xls" & 
+tblDVD_XlsFiles$Filename != "2004\\40032.xls" & # select D file as the 'normally named' file was not presented in the standardized way
+tblDVD_XlsFiles$Filename != "2004\\40036.xls" & # select D file as the 'normally named' file was not presented in the standardized way
+tblDVD_XlsFiles$Filename != "2004\\40039.xls" & # select D file as the 'normally named' file was not presented in the standardized way
+tblDVD_XlsFiles$Filename != "2004\\40055S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40069S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40071S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40074S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40075S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40079S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40089S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
+
+######### FILE THAT SHOULD BE INCLUDED
+# excluded for the moment: files that contain comments that are not standardized 
+tblDVD_XlsFiles$Filename != "2004\\40055.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40061.xls" &
+
+# file with yet another template:
+tblDVD_XlsFiles$Filename != "2011\\VK0293.xls" &
+tblDVD_XlsFiles$Filename != "2011\\VK0296.xls" &
+tblDVD_XlsFiles$Filename != "2011\\VK0299.xls" &
+
+tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty or in another format ?? (data in DB)
+
+tblDVD_XlsFiles$Filename != "2004\\40119.xls" & # should check time in and out at the end for female > does not make sense
+tblDVD_XlsFiles$Filename != "2004\\40239.xls" & # should check time in and out at the end for female > does not make sense
+tblDVD_XlsFiles$Filename != "2005\\50176.xls" &	# should check what's supposed to be in F19
+tblDVD_XlsFiles$Filename != "2005\\50548.xls" & # should check time in and out at the end for female > does not make sense
+tblDVD_XlsFiles$Filename != "2005\\50598.xls" & # should check time in and out in the middle for male > does not make sense
+tblDVD_XlsFiles$Filename != "2011\\VK0027.xls" & # should check time in and out at the end for male > does not make sense
+
+tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty)
+########
+
+tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & 
+tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" & 
+tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb"
+] 
+}
+
+length(FilenamesOldTemplate)	# 882 files, situation 4, old template
+which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
+
+
+FilenamesOldTemplateXLSX <- FilenamesOldTemplate[grepl("xlsx", FilenamesOldTemplate) == TRUE]	# only 3
+
+FilenamesOldTemplateXLS <- FilenamesOldTemplate[grepl("xlsx", FilenamesOldTemplate) == FALSE]
+length(FilenamesOldTemplateXLS) # 848
+}
+
+}
+
+
+{## create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
+
+options(warn=2)	# convert warning into error and therefore stop the loop when it happen
+
+out3 <- list()
+warningz <- list()
+warningzz <- list()
+	
+for (j in 342:length(FilenamesOldTemplateXLS)){
+
+filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
+b <- read.xlsx(filenamej, sheetIndex =2) # read.xlsx function from library 'xlsx' (not library 'openxlsx'): make sure openxlsx is not in the list given by 'search()'
+warningz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
+warningzz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
+
+{### warningz in comments
+
+for (i in 1:nrow(b))
+{
+# check if bird IN at beginning or end
+if ((!is.na(b$com[i]) & b$com[i] == "IN") | (!is.na(b$com.2[i]) & b$com.2[i] == "IN"))
+{warningz[[j]] <- c(warningz[[j]], "bird IN at beginning or end of video: please check Tin and Tout make sense, move 'IN' into TouCom")}
+
+# check if coms are NA, S, G, O
+if ((!is.na(b$com[i]) & b$com[i]!= "S" )| 
+	(!is.na(b$com.2[i]) & b$com.2[i]!= "S"))
+{warningz[[j]] <- c(warningz[[j]],"Tin has weird comments !")}
+
+if ((!is.na(b$com.1[i]) & b$com.1[i]!= "S" & b$com.1[i]!= "O" & b$com.1[i]!= "G" )|
+	(!is.na(b$com.3[i]) & b$com.3[i]!= "S" & b$com.3[i]!= "O" & b$com.3[i]!= "G") ) 
+{warningz[[j]] <- c(warningz[[j]],"Tout has weird comments !")}		
+
+# check if no missing com in Tout
+if ((!is.na(b$F.out[i]) & is.na(b$com.1[i])) | (!is.na(b$M.out[i]) & is.na(b$com.3[i])))
+{warningz[[j]] <- c(warningz[[j]],"missing info in Tout com  !")}		
+
+}
+}
+
+{### if no warningz: get the data for female and male separately
+if (length(warningz[[j]])==1)
+{
+{### Females
+
+bbF <- data.frame(b$F.in,b$com, b$F.out,b$com.1)
+colnames(bbF) <- c("Tin", "TinCom", "Tout", "ToutCom")
+bbF <- bbF[!is.na(bbF$Tin) | !is.na(bbF$Tout),]
+bbF$Tin <- na.locf(bbF$Tin,na.rm=FALSE)
+bbF$Tout <- na.locf(bbF$Tout,na.rm=TRUE, fromLast = TRUE)
+
+if (nrow(bbF)>0)
+{
+bbF$Sex <- 0
+bbF$Com <- NA
+
+for (i in 1:nrow(bbF))
+{
+# accept comment O	############ AT THE MOMENT I DO NOT HAVE ITS COLOR !!!!!! ####################
+if (!is.na(bbF$ToutCom[i]) & bbF$ToutCom[i] == "O")
+{bbF$Com[i] <- "O"}
+
+# change ToutCom from IN, S or G, into IN
+if (!is.na(bbF$ToutCom[i]) &( bbF$ToutCom[i] == "S" | bbF$ToutCom[i] == "G" | bbF$ToutCom[i] == "IN"))
+{bbF$Com[i] <- "IN"}
+}
+
+
+for (i in 1:(nrow(bbF)-1))
+{
+#  add Tin when ToutCom==G directly following a TouCom==S
+if (bbF$Tin[i] == bbF$Tin[i+1] & bbF$Tout[i] != bbF$Tout[i+1])
+{bbF$Tin[i+1] <- bbF$Tout[i]
+bbF$Com[i+1] <- "S"}
+
+# add Tout when TinCom==S
+if (bbF$Tin[i] != bbF$Tin[i+1] & bbF$Tout[i] == bbF$Tout[i+1])
+{bbF$Tout[i] <- bbF$Tin[i+1]
+bbF$Com[i] <- "S"}
+
+# insert row when TouCom==S is followed by another Tin  rather than followed directly by a Toutcom==G)
+if (!is.na(bbF$ToutCom[i]) & bbF$ToutCom[i] == "S" & bbF$Tout[i] != bbF$Tin[i+1])
+{bbF <- rbind(bbF,c(bbF$Tout[i],NA,bbF$Tin[i+1],NA, 0,"S"))}
+}
+
+
+bbF <- bbF[!is.na(bbF$Com),]
+bbF <- unique(bbF[,c("Tin","Tout", "Sex", "Com", "prevOut","Diff_Tin_prevOut")])
+bbF$Tin <- as.numeric(bbF$Tin)
+bbF$Tout <- as.numeric(bbF$Tout)
+bbF <- bbF[order(bbF$Tin, bbF$Tout),]
+
+bbF$prevOut <- c(NA,bbF$Tout[-nrow(bbF)])
+bbF$Diff_Tin_prevOut <- bbF$Tin-bbF$prevOut
+}
+
+
+}
+
+{### Males
+
+bbM <- data.frame(b$M.in,b$com.2, b$M.out,b$com.3)
+colnames(bbM) <- c("Tin", "TinCom", "Tout", "ToutCom")
+bbM <- bbM[!is.na(bbM$Tin) | !is.na(bbM$Tout),]
+bbM$Tin <- na.locf(bbM$Tin,na.rm=FALSE)
+bbM$Tout <- na.locf(bbM$Tout,na.rm=TRUE, fromLast = TRUE)
+
+
+if (nrow(bbM)>0)
+{
+bbM$Sex <- 1
+bbM$Com <- NA
+
+for (i in 1:nrow(bbM))
+{
+# accept comment O	############ AT THE MOMENT I DO NOT HAVE ITS COLOR !!!!!! ####################
+if (!is.na(bbM$ToutCom[i]) & bbM$ToutCom[i] == "O")
+{bbM$Com[i] <- "O"}
+
+# change ToutCom from IN, S or G, into IN
+if (!is.na(bbM$ToutCom[i]) &( bbM$ToutCom[i] == "S" | bbM$ToutCom[i] == "G" | bbM$ToutCom[i] == "IN"))
+{bbM$Com[i] <- "IN"}
+}
+
+
+for (i in 1:(nrow(bbM)-1))
+{
+#  add Tin when ToutCom==G directly following a TouCom==S
+if (bbM$Tin[i] == bbM$Tin[i+1] & bbM$Tout[i] != bbM$Tout[i+1])
+{bbM$Tin[i+1] <- bbM$Tout[i]
+bbM$Com[i+1] <- "S"}
+
+# add Tout when TinCom==S
+if (bbM$Tin[i] != bbM$Tin[i+1] & bbM$Tout[i] == bbM$Tout[i+1])
+{bbM$Tout[i] <- bbM$Tin[i+1]
+bbM$Com[i] <- "S"}
+
+# insert row when TouCom==S is followed by another Tin  rather than followed directly by a Toutcom==G)
+if (!is.na(bbM$ToutCom[i]) & bbM$ToutCom[i] == "S" & bbM$Tout[i] != bbM$Tin[i+1])
+{bbM <- rbind(bbM,c(bbM$Tout[i],NA,bbM$Tin[i+1],NA,1, "S"))}
+}
+
+bbM <- bbM[!is.na(bbM$Com),]
+bbM <- unique(bbM[,c("Tin","Tout", "Sex", "Com","prevOut","Diff_Tin_prevOut")])
+bbM$Tin <- as.numeric(bbM$Tin)
+bbM$Tout <- as.numeric(bbM$Tout)
+bbM <- bbM[order(bbM$Tin, bbM$Tout),]
+
+bbM$prevOut <- c(NA,bbM$Tout[-nrow(bbM)])
+bbM$Diff_Tin_prevOut <- bbM$Tin-bbM$prevOut
+}
+}
+
+{### warningzz in chronology
+
+if (nrow(bbF) > 0 &
+	((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prevOut) & bbF$Diff_Tin_prevOut <0,]) > 0) | 
+	(nrow(bbM[bbM$Tout - bbM$Tin <0,])) > 0 | (nrow(bbM[!is.na(bbM$Diff_Tin_prevOut) &bbM$Diff_Tin_prevOut <0,]) > 0)))
+{warningzz[[j]] <-c(warningzz[[j]], "wrong chronology in female or male!")
+bbF <- NULL
+bbM <- NULL}
+
+}
+
+}
+
+}
+
+{### if no warningzz in chronology: combine both female and male visits
+
+if (length(warningz[[j]])==1 & length(warningzz[[j]])==1)
+{
+# when no bird ever visited, keep a line with NA
+if (nrow(bbF)== 0  & nrow(bbM)== 0)	
+{bb <- data.frame(rbind(c(NA,NA,NA,NA,NA)))
+colnames(bb) <- c('Tin','Tout','Sex','Com','Filename')
+}
+
+# otherwise combine both sex visits and order by Tin then Tout
+bbF <- bbF[,c('Tin','Tout','Sex','Com')]
+bbM <- bbM[,c('Tin','Tout','Sex','Com')]
+
+if(nrow(bbF)!= 0 | nrow(bbM)!= 0)
+{
+bb <- rbind(bbF, bbM)
+bb <- bb[with(bb,order(bb$Tin, bb$Tout)),] 
+ }
+
+# add filename
+bb$Filename <- as.character(FilenamesOldTemplateXLS[j])
+
+}
+
+out3[[j]] <- bb
+bb <- NULL
+}
+
+}
+
+
+condwarningz <- sapply(warningz, function(x) length(x) > 1)
+warningz <- warningz[condwarningz]
+condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
+warningzz <- warningzz[condwarningzz]
+condout3 <- sapply(out3, function(x) length(x) > 1)
+out3 <- out3[condout3]
+
+warningz
+warningzz
+length(out3)
+
+
+combinedprovisioningOldTemplate = do.call(rbind, out3)
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 head(combinedprovisioningOldTemplate, 100)
 
