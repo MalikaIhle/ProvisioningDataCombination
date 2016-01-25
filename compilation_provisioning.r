@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 21/01/2015  
+#	 last modif : 25/01/2015  
 #    try to get colours from old templates
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,6 +22,7 @@
 # VK0418: displace comment from J7 to M7
 # 40005: move B60 and C60 to D60 and E60
 # 80014: move comments
+# 40001LM18: deleted 'TOTAL'
 
 # 40032, 40055, 40069, 40071, 40079, 40089, 40119, 40123, 40133: create an empty sheet 1 like in other file
 # 40063, 40066, 40070, 40073, 40077, 40078, 40080, 40558: create an empty sheet 1 like in other file
@@ -44,7 +45,7 @@
 # 50168: added 'S' in I28, I50 and I56
 # 50169: added 'S' in E3 and E14
 # 50170: added 'S' in E10
-# 50180: added 'S' in I8
+# 50180: added 'S' in I8 and G6
 # 50182: added 'S' in I34, I40, and I64 ; and replace G by S in I21
 # 50183: added 'S' in I27
 # 50187: added 'S' in I4, I17, I29, and I38
@@ -86,6 +87,7 @@
 # 50653: added 'S' in I12, I24, I37, and I47 ; replace S by G in I38 ; replace ON by G in I48
 # 50667: added 'S' in I12 and I15
 # VK0050: added 'S' in J32, displace 'O, grooming' to M32
+# 50021: added 'S' in G16, G25, G32
 
 # 40121: change B5 from 22 to 21 as the bird entered 'later' than he exited
 # 40172: change H22 from 51.2 to 52
@@ -166,6 +168,111 @@
 
 # 70083: move D2 and E2 to B2 and C2; added Tout at the end when still IN
 # 70088: move D2 and E2 to B2 and C2
+# 40009: move F56 and G56 to H56 and I56
+# 40010: move B55 and C55 to D55 and E55, deleted 'TOTAL'
+# 40011: move G32 to I32, added Tout at the end when still IN, deleted 'TOTAL'
+# 40011: move B37 and C37 to D37 and E37, deleted 'TOTAL'
+# 40020: move B38 and C38 to D38 and E38, deleted 'TOTAL'
+# 40024: move B45 and C45 to D45 and E45, deleted 'TOTAL'
+# 40025: move B61 and C61 to D61 and E61, deleted 'TOTAL'
+# 40026: deleted 'TOTAL'
+# 40027: move B49 and C49 to D49 and E49, deleted 'TOTAL'
+# 40030: move B64 and C64 to D64 and E64, deleted 'TOTAL'
+# 40030: move F23 and G23 to H23 and I23, deleted 'TOTAL'
+# 40032D: deleted 'TOTAL'
+# 40033: move B48 and C48 to D48 and E48, deleted 'TOTAL'
+# 40034: move B14 to D14, added 'IN', move comment
+# 40036D: deleted 'TOTAL'
+# 40037: move F52 and G52 to H52 and I52, deleted 'TOTAL'
+# 40038: deleted 'TOTAL'
+# 40039D: move B44 and C44 to D44 and E44, deleted 'TOTAL'
+# 40044: move B53 and C53 to D53 and E53, deleted 'TOTAL'
+# 40045: move F67 and G67 to H67 and I67, deleted 'TOTAL'; move comment from I2 and I39
+# 40048: deleted 'TOTAL'
+# 40050: deleted 'TOTAL'
+# 40054: move B51 and C51 to D51 and E51, deleted 'TOTAL'
+# 40058: move B77 and C77 to D77 and E77, deleted 'TOTAL'
+# 40058: move B40 and C40 to D40 and E40, deleted 'TOTAL'
+# 40063: move B16 to D16 replace STIL by IN in E16
+# 40066: replace comments by letters as appropriate (describe meaning of O blue and O grey !), move comment S from I20 to I21
+# 40069: replace comments by letters as appropriate
+# 40072: move B64 and C64 to D64 and E64, deleted 'TOTAL'
+# 40083: move B56 and C56 to D56 and E56, deleted 'TOTAL'
+# 40084: deleted 'TOTAL'
+# 40087: move B54 and C54 to D54 and E54 deleted 'TOTAL'
+# 40087: move B38 and C38 to D38 and E38 deleted 'TOTAL'
+# 40088: move F42 and G42 to H42 and I42, deleted 'TOTAL'
+# 40094: move B25 and C25 to D25 and E25 deleted 'TOTAL'
+# 40097: move F49 and G49 to H49 and I49, deleted 'TOTAL'
+# 40098: move F16 and G16 to H16 and I16, deleted 'TOTAL'
+# 40103: move B81 and C81 to D81 and E81 deleted 'TOTAL'
+# 40105: move F41 and G41 to H41 and I41, deleted 'TOTAL'
+# 40110: move B65 and C65 to D65 and E65,F65 and G65 to H65 and I65  deleted 'TOTAL'
+# 40111: move B46 and C46 to D46 and E46 deleted 'TOTAL'
+# 40112: move B24 and C24 to D24 and E24 deleted 'TOTAL'
+# 40113: move B77 and C77 to D77 and E77 deleted 'TOTAL'
+# 50461: deleted 'TOTAL'
+# VK0020: move B94 and C94 to D94 and E91 deleted random numbers at the bottom of the file
+# 60084: deleted 'TOTAL'
+# 60187: deleted 'TOTAL'
+
+# 70009: added Tout for bird IN at the end
+# 70025: added Tout for bird IN at the end
+# 70026: added Tout for bird IN at the end
+# 70036: added Tout for bird IN at the end
+# 70038: added Tout for bird IN at the end
+# 70040: added Tout for bird IN at the end
+# 70041: added Tout for bird IN at the end
+# 70043: added Tout for bird IN at the end
+# 70047: added Tout for bird IN at the end
+# 70051: added Tout for bird IN at the end
+# 70064: added Tout for bird IN at the end
+# 70066: added Tout for bird IN at the end
+# 70072: added Tout for bird IN at the end
+# 70074: added Tout for bird IN at the end
+# 70077: added Tout for bird IN at the end
+# 70085: added Tout for bird IN at the end
+# 70090: added Tout for bird IN at the end
+# 70093: added Tout for bird IN at the end
+# 70099: added Tout for bird IN at the end
+# 70102: added Tout for bird IN at the end
+# 70104: added Tout for bird IN at the end
+# 70106: added Tout for bird IN at the end
+# 70110: added Tout for bird IN at the end
+# 70112: added Tout for bird IN at the end
+# 70114: added Tout for bird IN at the end
+# 70119: added Tout for bird IN at the end
+# 70120: added Tout for bird IN at the end
+# 70121: added Tout for bird IN at the end
+# 70122: added Tout for bird IN at the end
+# 70125: added Tout for bird IN at the end
+# 70128: added Tout for bird IN at the end
+# 70138: added Tout for bird IN at the end
+# 70140: added Tout for bird IN at the end
+# 70149: added Tout for bird IN at the end
+# 70170: added Tout for bird IN at the end
+# 70175: added Tout for bird IN at the end
+# 80003: added Tout for bird IN at the end
+# 80005: added Tout for bird IN at the end
+# 80006: added Tout for bird IN at the end
+# 80006: added Tout for bird IN at the end
+# 80031: added Tout for bird IN at the end
+# 80040: added Tout for bird IN at the end
+# 80051: added Tout for bird IN at the end
+# 80054: added Tout for bird IN at the end
+# 80059: added Tout for bird IN at the end
+# 80061: added Tout for bird IN at the end
+# 80066: added Tout for bird IN at the end
+# 80067: added Tout for bird IN at the end
+# 80068: added Tout for bird IN at the end
+# 80069: added Tout for bird IN at the end
+
+
+# VK0061: added Tout for bird IN at the end
+# VK0028: added Tout for bird IN at the end. deleted random numbers at the bottom of the file
+# VK0034: added Tout for bird IN at the end. deleted random numbers at the bottom of the file
+# VK0040: added Tout for bird IN at the end. deleted random numbers at the bottom of the file
+# VK0046: added Tout for bird IN at the end. deleted random numbers at the bottom of the file
 }
 
 ## library xlsx run with rjava, does not have enough memory to go through all excel files, hence the change to openxlsx, at least to read xlsx files...
@@ -764,7 +871,7 @@ out3 <- list()
 warningz <- list()
 warningzz <- list()
 	
-for (j in 342:length(FilenamesOldTemplateXLS)){
+for (j in 1:length(FilenamesOldTemplateXLS)){
 
 filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheetIndex =2) # read.xlsx function from library 'xlsx' (not library 'openxlsx'): make sure openxlsx is not in the list given by 'search()'
@@ -775,17 +882,17 @@ warningzz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
 
 for (i in 1:nrow(b))
 {
-# check if bird IN at beginning or end
-if ((!is.na(b$com[i]) & b$com[i] == "IN") | (!is.na(b$com.2[i]) & b$com.2[i] == "IN"))
-{warningz[[j]] <- c(warningz[[j]], "bird IN at beginning or end of video: please check Tin and Tout make sense, move 'IN' into TouCom")}
+# check if bird IN at beginning or end in TinCom
+if ((!is.na(b$com[i]) & b$com[i] == "IN" & !is.na(b$F.in[i]) & b$F.in[i] != 0) | (!is.na(b$com.2[i]) & b$com.2[i] == "IN"& !is.na(b$M.in[i]) & b$M.in[i] != 0))
+{warningz[[j]] <- c(warningz[[j]], "bird IN at end of video: please write Tout, move 'IN' into TouCom")}
 
-# check if coms are NA, S, G, O
-if ((!is.na(b$com[i]) & b$com[i]!= "S" )| 
-	(!is.na(b$com.2[i]) & b$com.2[i]!= "S"))
+# check if all coms are NA, S, G, O, IN
+if ((!is.na(b$com[i]) & b$com[i]!= "S" & b$com[i]!= "IN")| 
+	(!is.na(b$com.2[i]) & b$com.2[i]!= "S" & b$com.2[i]!= "IN"))
 {warningz[[j]] <- c(warningz[[j]],"Tin has weird comments !")}
 
-if ((!is.na(b$com.1[i]) & b$com.1[i]!= "S" & b$com.1[i]!= "O" & b$com.1[i]!= "G" )|
-	(!is.na(b$com.3[i]) & b$com.3[i]!= "S" & b$com.3[i]!= "O" & b$com.3[i]!= "G") ) 
+if ((!is.na(b$com.1[i]) & b$com.1[i]!= "S" & b$com.1[i]!= "O" & b$com.1[i]!= "G" & b$com.1[i]!= "IN")|
+	(!is.na(b$com.3[i]) & b$com.3[i]!= "S" & b$com.3[i]!= "O" & b$com.3[i]!= "G" & b$com.3[i]!= "IN") ) 
 {warningz[[j]] <- c(warningz[[j]],"Tout has weird comments !")}		
 
 # check if no missing com in Tout
@@ -800,17 +907,14 @@ if (length(warningz[[j]])==1)
 {
 {### Females
 
-bbF <- data.frame(b$F.in,b$com, b$F.out,b$com.1)
-colnames(bbF) <- c("Tin", "TinCom", "Tout", "ToutCom")
+bbF <- data.frame(b$F.in,b$com, b$F.out,b$com.1, NA, NA, 0, NA)
+colnames(bbF) <- c("Tin", "TinCom", "Tout", "ToutCom", "prevOut", "Diff_Tin_prevOut", "Sex", "Com")
 bbF <- bbF[!is.na(bbF$Tin) | !is.na(bbF$Tout),]
 bbF$Tin <- na.locf(bbF$Tin,na.rm=FALSE)
 bbF$Tout <- na.locf(bbF$Tout,na.rm=TRUE, fromLast = TRUE)
 
 if (nrow(bbF)>0)
 {
-bbF$Sex <- 0
-bbF$Com <- NA
-
 for (i in 1:nrow(bbF))
 {
 # accept comment O	############ AT THE MOMENT I DO NOT HAVE ITS COLOR !!!!!! ####################
@@ -822,7 +926,10 @@ if (!is.na(bbF$ToutCom[i]) &( bbF$ToutCom[i] == "S" | bbF$ToutCom[i] == "G" | bb
 {bbF$Com[i] <- "IN"}
 }
 
+}
 
+if (nrow(bbF)>1)
+{
 for (i in 1:(nrow(bbF)-1))
 {
 #  add Tin when ToutCom==G directly following a TouCom==S
@@ -837,27 +944,31 @@ bbF$Com[i] <- "S"}
 
 # insert row when TouCom==S is followed by another Tin  rather than followed directly by a Toutcom==G)
 if (!is.na(bbF$ToutCom[i]) & bbF$ToutCom[i] == "S" & bbF$Tout[i] != bbF$Tin[i+1])
-{bbF <- rbind(bbF,c(bbF$Tout[i],NA,bbF$Tin[i+1],NA, 0,"S"))}
+{bbF <- rbind(bbF,c(bbF$Tout[i],NA,bbF$Tin[i+1],NA, NA,NA,0,"S"))}
+}
+
 }
 
 
-bbF <- bbF[!is.na(bbF$Com),]
-bbF <- unique(bbF[,c("Tin","Tout", "Sex", "Com", "prevOut","Diff_Tin_prevOut")])
+if (nrow(bbF)>0)
+{
 bbF$Tin <- as.numeric(bbF$Tin)
 bbF$Tout <- as.numeric(bbF$Tout)
 bbF <- bbF[order(bbF$Tin, bbF$Tout),]
+bbF <- bbF[!is.na(bbF$Com),]
+bbF <- unique(bbF[,c("Tin","Tout", "Sex", "Com", "prevOut","Diff_Tin_prevOut")])
 
 bbF$prevOut <- c(NA,bbF$Tout[-nrow(bbF)])
 bbF$Diff_Tin_prevOut <- bbF$Tin-bbF$prevOut
-}
 
+}
 
 }
 
 {### Males
 
-bbM <- data.frame(b$M.in,b$com.2, b$M.out,b$com.3)
-colnames(bbM) <- c("Tin", "TinCom", "Tout", "ToutCom")
+bbM <- data.frame(b$M.in,b$com.2, b$M.out,b$com.3, NA, NA, 1, NA)
+colnames(bbM) <- c("Tin", "TinCom", "Tout", "ToutCom","prevOut", "Diff_Tin_prevOut", "Sex", "Com")
 bbM <- bbM[!is.na(bbM$Tin) | !is.na(bbM$Tout),]
 bbM$Tin <- na.locf(bbM$Tin,na.rm=FALSE)
 bbM$Tout <- na.locf(bbM$Tout,na.rm=TRUE, fromLast = TRUE)
@@ -865,9 +976,6 @@ bbM$Tout <- na.locf(bbM$Tout,na.rm=TRUE, fromLast = TRUE)
 
 if (nrow(bbM)>0)
 {
-bbM$Sex <- 1
-bbM$Com <- NA
-
 for (i in 1:nrow(bbM))
 {
 # accept comment O	############ AT THE MOMENT I DO NOT HAVE ITS COLOR !!!!!! ####################
@@ -878,8 +986,10 @@ if (!is.na(bbM$ToutCom[i]) & bbM$ToutCom[i] == "O")
 if (!is.na(bbM$ToutCom[i]) &( bbM$ToutCom[i] == "S" | bbM$ToutCom[i] == "G" | bbM$ToutCom[i] == "IN"))
 {bbM$Com[i] <- "IN"}
 }
+}
 
-
+if (nrow(bbM)>1)
+{
 for (i in 1:(nrow(bbM)-1))
 {
 #  add Tin when ToutCom==G directly following a TouCom==S
@@ -894,28 +1004,34 @@ bbM$Com[i] <- "S"}
 
 # insert row when TouCom==S is followed by another Tin  rather than followed directly by a Toutcom==G)
 if (!is.na(bbM$ToutCom[i]) & bbM$ToutCom[i] == "S" & bbM$Tout[i] != bbM$Tin[i+1])
-{bbM <- rbind(bbM,c(bbM$Tout[i],NA,bbM$Tin[i+1],NA,1, "S"))}
+{bbM <- rbind(bbM,c(bbM$Tout[i],NA,bbM$Tin[i+1],NA,NA,NA,1,"S"))}
+}
 }
 
-bbM <- bbM[!is.na(bbM$Com),]
-bbM <- unique(bbM[,c("Tin","Tout", "Sex", "Com","prevOut","Diff_Tin_prevOut")])
+if (nrow(bbM)>0)
+{
 bbM$Tin <- as.numeric(bbM$Tin)
 bbM$Tout <- as.numeric(bbM$Tout)
 bbM <- bbM[order(bbM$Tin, bbM$Tout),]
+bbM <- bbM[!is.na(bbM$Com),]
+bbM <- unique(bbM[,c("Tin","Tout", "Sex", "Com","prevOut","Diff_Tin_prevOut")])
 
 bbM$prevOut <- c(NA,bbM$Tout[-nrow(bbM)])
 bbM$Diff_Tin_prevOut <- bbM$Tin-bbM$prevOut
 }
+
 }
 
 {### warningzz in chronology
 
-if (nrow(bbF) > 0 &
-	((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prevOut) & bbF$Diff_Tin_prevOut <0,]) > 0) | 
-	(nrow(bbM[bbM$Tout - bbM$Tin <0,])) > 0 | (nrow(bbM[!is.na(bbM$Diff_Tin_prevOut) &bbM$Diff_Tin_prevOut <0,]) > 0)))
-{warningzz[[j]] <-c(warningzz[[j]], "wrong chronology in female or male!")
-bbF <- NULL
-bbM <- NULL}
+if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prevOut) & bbF$Diff_Tin_prevOut <0,]) > 0) | 
+	(nrow(bbM[bbM$Tout - bbM$Tin <0,])) > 0 | (nrow(bbM[!is.na(bbM$Diff_Tin_prevOut) & bbM$Diff_Tin_prevOut <0,]) > 0))
+
+	{warningzz[[j]] <-c(warningzz[[j]], "wrong chronology in female or male!")
+	bbF <- NULL
+	bbM <- NULL}
+
+
 
 }
 
@@ -952,6 +1068,8 @@ out3[[j]] <- bb
 bb <- NULL
 }
 
+
+
 }
 
 
@@ -966,12 +1084,107 @@ warningz
 warningzz
 length(out3)
 
+capture.output(warningz, file="warningz20160125.txt") 
+
+condwarningzBirdIN <- sapply(warningz, function(x) x[2] == "bird IN at end of video: please write Tout, move 'IN' into TouCom")
+warningzBirdIN <- warningz[condwarningzBirdIN]
+
+condwarningzMissInfo <- sapply(warningz, function(x) x[2] == "missing info in Tout com  !")
+warningzMissInfo <- warningz[condwarningzMissInfo]
+
+condwarningzOthers <- sapply(warningz, function(x) x[2] != "missing info in Tout com  !" &  x[2] != "bird IN at end of video: please write Tout, move 'IN' into TouCom")
+warningzOthers <- warningz[condwarningzOthers]
+
 
 combinedprovisioningOldTemplate = do.call(rbind, out3)
 
 }
 
 
+
+
+
+
+
+
+{### extract information in coloured cell
+
+library(xlsx)
+			
+			# internet example
+			wb     <- loadWorkbook("test.xlsx")
+			sheet1 <- getSheets(wb)[[1]]
+			# get all rows
+			rows  <- getRows(sheet1)
+			cells <- getCells(rows)
+			# quick look at the values
+			sapply(cells, getCellValue)
+			styles <- sapply(cells, getCellStyle)
+
+			cellColor <- function(x) {
+				fg  <- x$getFillForegroundXSSFColor()
+				rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
+				rgb <- paste(rgb, collapse = "")
+				return(rgb)
+			}
+
+			sapply(styles, cellColor)
+
+			pheno <- list(normal = "00ff00", tumour = "ff0000")
+			m     <- match(sapply(styles, cellColor), pheno)
+			labs  <-names(pheno)[m]
+			labs
+
+			
+			
+			
+			
+b <- read.xlsx("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx", sheetIndex =2)
+
+which(b$M.out[!is.na(b$com.3) & b$com.3 == "O"])
+which( !is.na(b$com.1) & b$com.1 == "O")+1	# rows F where O
+which( colnames(b)=="com.1" )-1 # column F Tout where O
+which(!is.na(b$com.3) & b$com.3 == "O" )+1	# rows M where O
+which( colnames(b)=="com.3" )-1 # column M Tout where O
+FcellsToutCommentedO <- paste(which( !is.na(b$com.1) & b$com.1 == "O")+1, which( colnames(b)=="com.1" )-1, sep=".")
+McellsToutCommentedO <- paste(which( !is.na(b$com.3) & b$com.3 == "O")+1, which( colnames(b)=="com.3" )-1, sep=".")
+
+
+
+wb     <- loadWorkbook("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx")
+sheet2 <- getSheets(wb)[[2]]
+
+# get all cells
+rows  <- getRows(sheet2)
+cells <- getCells(getRows(sheet2))
+cells[[2.3]]
+cells[[FcellsToutCommentedO]]
+
+	# quick look at the values
+	values <- sapply(cells, getCellValue)
+cellsWithO <- 	values[values=="O"]
+	styles <- sapply(cells, getCellStyle)
+	stylethiscell <-  getCellStyle(cells[[FcellsToutCommentedO]])
+
+			cellColor <- function(x) {
+				fg  <- x$getFillForegroundXSSFColor()
+				rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
+				rgb <- paste(rgb, collapse = "")
+				return(rgb)
+			}
+
+	allcellcolours <- sapply(styles, cellColor)
+	thiscellcellcolours <- cellColor(stylethiscell)
+	
+pheno <- list(blue = "00ffff", grey = "c0c0c0")
+m     <- match(sapply(styles, cellColor), pheno)
+mthiscell <- match(cellColor(stylethiscell), pheno)
+labs  <-names(pheno)[m]
+labthiscell  <-names(pheno)[mthiscell]
+
+# grey = c0c0c0
+# blue = 00ffff
+}
 
 
 
@@ -1023,16 +1236,6 @@ search()
 
 
 
-######### IN PROGRESS
-j=2
-filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
-b <- read.xlsx(filenamej, sheetIndex =2) # read.xlsx function from library 'xlsx' (not library 'openxlsx'): make sure openxlsx is not in the list given by 'search()'
-b <- b[,c("DVD","F.in","com","F.out","com.1","M.in","com.2","M.out","com.3")]
-b$Fcom <- NA
-b$Mcom <- NA
-b
-
-#######
 
 
 
@@ -1043,7 +1246,24 @@ b
 
 
 
-{################## MESSSSSSS about different methods used for Old template, and about colour extraction
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{################## MESSSSSSS about different methods used for Old template
 
 {### recreate tblParentalCare
 
@@ -1113,67 +1333,24 @@ sample(tblDVD_XlsFilesALLDBINFO$Filename[tblDVD_XlsFilesALLDBINFO$Method == 0 & 
 visualize <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$Filename %in% combinedprovisioningALL$Filename,c("DVDRef","Filename","OffspringNo", "Age","Method","Observer","FVisit2", "MVisit2")]
 #write.table(visualize, file = "R_VisualizeOldMethods.xls", col.names=TRUE, sep='\t')
 
-
-
-
-# extract informaiton in coloured cell
-
-library(xlsx)
-			
-			# internet example
-			wb     <- loadWorkbook("test.xlsx")
-			sheet1 <- getSheets(wb)[[1]]
-			# get all rows
-			rows  <- getRows(sheet1)
-			cells <- getCells(rows)
-			# quick look at the values
-			sapply(cells, getCellValue)
-			styles <- sapply(cells, getCellStyle)
-
-			cellColor <- function(x) {
-				fg  <- x$getFillForegroundXSSFColor()
-				rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
-				rgb <- paste(rgb, collapse = "")
-				return(rgb)
-			}
-
-			sapply(styles, cellColor)
-
-			pheno <- list(normal = "00ff00", tumour = "ff0000")
-			m     <- match(sapply(styles, cellColor), pheno)
-			labs  <-names(pheno)[m]
-			labs
-
-
-wb     <- loadWorkbook("C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files\\DVDs 2010\\VJ0068.xlsx")
-sheet2name <- names(wb)[[2]]
-
-wb     <- read.xlsx2("C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files\\DVDs 2010\\VJ0068.xlsx", sheetIndex =2)
-
-# get all cells
-rows  <- getRows(sheet2)
-cells <- getCells(getRows(sheet2))
-	# quick look at the values
-	#sapply(cells1, getCellValue)
-styles1 <- sapply(cells1, getCellStyle)
-
-			cellColor <- function(x) {
-				fg  <- x$getFillForegroundXSSFColor()
-				rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
-				rgb <- paste(rgb, collapse = "")
-				return(rgb)
-			}
-
-sapply(styles1, cellColor)
-
-
-detach("package:xlsx", unload=TRUE)
-require(openxlsx)
-search()
-
-detach("package:openxlsx", unload=TRUE)
-require(xlsx)
-search()
-
-
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -172,6 +172,7 @@ excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCar
 50548 # should check time in and out at the end for female > does not make sense
 50598 # should check time in and out in the middle for male > does not make sense
 VK0027 # should check time in and out at the end for male > does not make sense
+40063 # check whether female and male stay when alternate
 }
 
 
