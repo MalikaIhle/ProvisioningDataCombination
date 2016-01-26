@@ -572,216 +572,7 @@ tail(combinedprovisioningNewTemplate,30)
 
 
 
-
-{## check chronology in raw data with NewTemplate
-
-combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
-
-
-splitNewTemplates_byFilenames_bySex <- split(combinedprovisioningNewTemplate, paste(combinedprovisioningNewTemplate$Filename, combinedprovisioningNewTemplate$Sex))
-
-splitNewTemplates_byFilenames_bySex_fun = function(x)  {
-x$prevOut <- c(NA,x$Tout[-nrow(x)])
-x$Diff_Tin_prevOut <- x$Tin-x$prevOut
-return(x)
- }
-
-splitNewTemplates_byFilenames_bySexout <- lapply(splitNewTemplates_byFilenames_bySex, FUN=splitNewTemplates_byFilenames_bySex_fun)
-splitNewTemplates_byFilenames_bySext_df <- do.call(rbind, splitNewTemplates_byFilenames_bySexout)
-rownames(splitNewTemplates_byFilenames_bySext_df) <- NULL
-head(splitNewTemplates_byFilenames_bySext_df)
-splitNewTemplates_byFilenames_bySext_df[splitNewTemplates_byFilenames_bySext_df$Diff_Tim_prevOut <0,]
-}
-
-
-
-
-
-{### extraction data in Excel files analyzed with oldest template
-
-{## create list of filenames
-
-{FilenamesOldTemplate <- tblDVD_XlsFiles$Filename[
-
-# where situation = 4
-tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename &
-
-# years before 2010, or after 2010 but belonging to list created above
-(tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
-
-# exclude duplicates
-tblDVD_XlsFiles$Filename != "2004\\40001LM19.xls" & 
-tblDVD_XlsFiles$Filename != "2004\\40032.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-tblDVD_XlsFiles$Filename != "2004\\40036.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-tblDVD_XlsFiles$Filename != "2004\\40039.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-tblDVD_XlsFiles$Filename != "2004\\40055S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40069S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40071S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40074S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40075S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40079S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40089S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
-
-######### FILE THAT SHOULD BE INCLUDED
-# excluded for the moment: files that contain comments that are not standardized 
-tblDVD_XlsFiles$Filename != "2004\\40055.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40061.xls" &
-
-# file with yet another template:
-tblDVD_XlsFiles$Filename != "2011\\VK0293.xls" &
-tblDVD_XlsFiles$Filename != "2011\\VK0296.xls" &
-tblDVD_XlsFiles$Filename != "2011\\VK0299.xls" &
-
-tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty or in another format ?? (data in DB)
-
-tblDVD_XlsFiles$Filename != "2004\\40119.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2004\\40239.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2005\\50176.xls" &	# should check what's supposed to be in F19
-tblDVD_XlsFiles$Filename != "2005\\50548.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2005\\50598.xls" & # should check time in and out in the middle for male > does not make sense
-tblDVD_XlsFiles$Filename != "2011\\VK0027.xls" & # should check time in and out at the end for male > does not make sense
-
-tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty)
-########
-
-tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & 
-tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" & 
-tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb"
-] 
-}
-
-length(FilenamesOldTemplate)	# 882 files, situation 4, old template
-which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
-
-
-FilenamesOldTemplateXLSX <- FilenamesOldTemplate[grepl("xlsx", FilenamesOldTemplate) == TRUE]	# only 3
-
-FilenamesOldTemplateXLS <- FilenamesOldTemplate[grepl("xlsx", FilenamesOldTemplate) == FALSE]
-length(FilenamesOldTemplateXLS) # 848
-}
-
-head(FilenamesOldTemplate)
-
-
-{## create for each excel file XLS (+ 3 XLSX) with an old template, a table bb containing: Tin, Tout, Sex and Filename
-
-options(warn=2)	# convert warning into error and therefore stop the loop when it happen, ask 'j' and 'ind' or 'inde' to see when the error occured
-
-out3 = list()
-	
-for (j in 1:length(FilenamesOldTemplateXLS)){
-filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
-b <- read.xlsx(filenamej, sheetIndex =2) # read.xlsx function from library 'xlsx' (not library 'openxlsx'): make sure openxlsx is not in the list given by 'search()'
-
-{# add a Tout when bird still in at the end of the video
-b$F.out[!is.na(b$com) & b$com == "IN" & b$F.in != 0] <- as.numeric(as.character(b$DVD[which(!is.na(b$DVD) & (b$DVD=="tap length" | b$DVD=="Tape length"))+1])) # if the female is in the next box at the end of the video, select the value below the cell where written 'tap length' to put in 'Tout'
-b$M.out[!is.na(b$com.2) & b$com.2 == "IN"& b$M.in != 0] <- as.numeric(as.character(b$DVD[which(!is.na(b$DVD) & (b$DVD=="tap length" | b$DVD=="Tape length"))+1])) # uses 'which' only to get the index of the row + 1 to access the cell below the cell written 'tap length' in excel
-}
-
-{## female visits
-bbF <- list()
-
-{# if female have more than one visit
-if (length(b$F.out[!is.na(b$F.out) & (is.na(b$com.1) | b$com.1 != "S") & (is.na(b$com.1)| b$com.1!= "OTHER") & (is.na(b$com.1)| b$com.1!= "COP")]) > 1) # exclude lines where Fout is na, or Fout is commented by 'S' (stay > meaning we keep time where bird only at the nest bost without feeding, time counted until 'gone') and where Fout is commented by 'other' (i.e. not a visit but another behaviour), or Fout commented 'cop' which is also not a visit.
-{
-for (ind in 2:length(b$F.out[!is.na(b$F.out) & (is.na(b$com.1) | b$com.1 != "S") & (is.na(b$com.1)| b$com.1!= "OTHER") & (is.na(b$com.1)| b$com.1!= "COP")]))
-{
-# fill first all the Tout
-bbF$Tout <- b$F.out[!is.na(b$F.out) & (is.na(b$com.1) | b$com.1 != "S") & (is.na(b$com.1)| b$com.1!= "OTHER") & (is.na(b$com.1)| b$com.1!= "COP")]
-# fill the first Tin
-bbF$Tin[1] <- b$F.in[!is.na(b$F.in) & (is.na(b$com.1) | b$com.1!= "OTHER") & (is.na(b$com.1) | b$com.1!= "COP")][1] 	# Fin and Fout times for 'COP' and 'OTHER' ar on the same line > exclude those
-# start the loop at ind = 2 to keep filling the Tin one by one
-bbF$Tin[ind] <- min(b$F.in[b$F.in <= bbF$Tout[ind] & b$F.in >= bbF$Tout[ind-1] & b$F.in > bbF$Tin[ind-1]], na.rm=T) # the minimum value of Fin between the last exit and the new exit will often be the Fin commented 'S' (i.e. the birs is at the nest but not yet feeding), while later Fin will be when the bird enter the nest. This 'min' function allows to keep a length of Tin equal to the length of Tout. I added the condition Fin > previous Fin to indicate errors in files where chronology broken
-}
-
-bbF <- cbind(bbF$Tin,bbF$Tout, rep(0, length(bbF$Tin))) # fill a third column with 0 in all rows
-colnames(bbF) <- c("Tin", "Tout", "Sex")
-}
-}
-
-{# if female have just one visit
-if (length(b$F.out[!is.na(b$F.out) & (is.na(b$com.1) | b$com.1 != "S") & (is.na(b$com.1)| b$com.1!= "OTHER") & (is.na(b$com.1)| b$com.1!= "COP")]) == 1)	
-{
-# fill first the only Tout
-bbF$Tout <- b$F.out[!is.na(b$F.out) & (is.na(b$com.1) | b$com.1 != "S") & (is.na(b$com.1)| b$com.1!= "OTHER") & (is.na(b$com.1)| b$com.1!= "COP")]
-# fill the first and only Tin
-bbF$Tin[1] <- b$F.in[!is.na(b$F.in) & (is.na(b$com.1) | b$com.1!= "OTHER") & (is.na(b$com.1) | b$com.1!= "COP")][1] # still select the first in case there is one Tin commented 'S' and then a Tin for when the bird enter the NB
-
-bbF <- cbind(bbF$Tin,bbF$Tout, 0)
-colnames(bbF) <- c("Tin", "Tout", "Sex")
-}
-
-}
-
-}
-
-{## male visits
-bbM <- list()
-
-{# if male have more than one visit
-if (length(b$M.out[!is.na(b$M.out) & (is.na(b$com.3) | b$com.3 != "S") & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")]) > 1) 
-{
-for (inde in 2:length(b$M.out[!is.na(b$M.out) & (is.na(b$com.3) | b$com.3 != "S") & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")]))
-{bbM$Tout <- b$M.out[!is.na(b$M.out) & (is.na(b$com.3) | b$com.3 != "S") & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")]
-bbM$Tin[1] <- b$M.in[!is.na(b$M.in) & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")][1]
-bbM$Tin[inde] <- min(b$M.in[b$M.in <= bbM$Tout[inde] & b$M.in >= bbM$Tout[inde-1] & b$M.in > bbM$Tin[inde-1]], na.rm=T)
-}
-
-bbM <- cbind(bbM$Tin,bbM$Tout, rep(1, length(bbM$Tin)))
-colnames(bbM) <- c("Tin", "Tout", "Sex")
-}
-}
-
-{# if male have just one visit
-if (length(b$M.out[!is.na(b$M.out) & (is.na(b$com.3) | b$com.3 != "S") & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")]) == 1)
-{
-bbM$Tout <- b$M.out[!is.na(b$M.out) & (is.na(b$com.3) | b$com.3 != "S") & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")]
-bbM$Tin[1] <- b$M.in[!is.na(b$M.in) & (is.na(b$com.3) | b$com.3!= "OTHER") & (is.na(b$com.3) | b$com.3!= "COP")][1]
-
-bbM <- cbind(bbM$Tin,bbM$Tout, 1)
-colnames(bbM) <- c("Tin", "Tout", "Sex")
-}
-
-}
-}
-
-{## combine both female and male visits
-
-# when no bird ever visited, keep a line with NA
-if(length(bbF)== 0  & length(bbM)== 0)	
-{bb <- data.frame(rbind(c(NA,NA,NA,NA)))
-colnames(bb) <- c('Tin','Tout','Sex','Filename')}
-
-# otherwise unlist and combine both sex visits
-else {bb <- data.frame(rbind(unlist(bbF), unlist(bbM)))} # need to unlist in case one list is empty when no visit at all by one sex
-
-# order by Tin then Tout
-bb <- bb[order(bb$Tin),]
-
-# add filename
-bb$Filename <- FilenamesOldTemplateXLS[j]
-
-}
-
-out3[[j]] <- bb
-
-}
-
-combinedprovisioningOldTemplate = do.call(rbind, out3)
-
-}
-
-}
-
-
-
-
-############# try to integrate Desperate excel code into the creation of a table bb for each excel file XLS (+ 3 XLSX) with an old template, table bb containing: Tin, Tout, Sex and Filename
-
-
+########### try to integrate Desperate excel code into the creation of a table bb for each excel file XLS (+ 3 XLSX) with an old template, table bb containing: Tin, Tout, Sex and Filename
 
 {## piece to run before running error check
 
@@ -896,6 +687,7 @@ length(FilenamesOldTemplateXLS) # 848
 }
 
 
+# before colors
 {## create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
 
 options(warn=2)	# convert warning into error and therefore stop the loop when it happen
@@ -1116,11 +908,9 @@ out3[[j]] <- bb
 bb <- NULL
 }
 
-
-
 }
 
-
+{# get outputs: list of warningz and raw data
 condwarningz <- sapply(warningz, function(x) length(x) > 1)
 warningz <- warningz[condwarningz]
 condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
@@ -1148,105 +938,34 @@ warningzOthers <- warningz[condwarningzOthers]
 
 
 combinedprovisioningOldTemplate = do.call(rbind, out3)
+}
 
 }
 
 
+# to catch colors: need xls to be converted to xlsx !!!
+{## COPY OF create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
 
+	b <- read.xlsx("example_60187modified.xlsx", sheetIndex =2) # example
+	wb <- loadWorkbook("example_60187modified.xlsx")
 
-
-
-
-
-{### extract color information of "O" visits
-
-# Rk :
-# code inspired from: https://nsaunders.wordpress.com/2014/08/06/when-life-gives-you-coloured-cells-make-categories/
-# if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
-# in wb:
-# ALLcells[[39.3]] # this is not the correct cell - I don't get what it does
-# ALLcells[["39.3"]] # this is the correct cell
-# ALLcells[c("39.3", "14.7")] # takes both cells
-
-library(xlsx)
-
-	
-### get index of cells where T.out has been commented O	
-b <- read.xlsx("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx", sheetIndex =2)
-
-which( !is.na(b$com.1) & b$com.1 == "O")+1	# rows F where O 
-which( colnames(b)=="com.1" )-1 # column F Tout commented O
-which(!is.na(b$com.3) & b$com.3 == "O" )+1	# rows M where O
-which( colnames(b)=="com.3" )-1 # column M Tout commented O
-FcellsToutCommentedO <- paste(which( !is.na(b$com.1) & b$com.1 == "O")+1, which( colnames(b)=="com.1" )-1, sep=".")	# will have errors if no cell ToutCom == "O"
-McellsToutCommentedO <- paste(which( !is.na(b$com.3) & b$com.3 == "O")+1, which( colnames(b)=="com.3" )-1, sep=".")
-
-# reload b as a workbook wb, which is a java object
-wb <- loadWorkbook("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx")
-
-# get cells with Tout commented O as java objects
-OFcells <- getCells(getRows(getSheets(wb)[[2]]))[FcellsToutCommentedO]
-OMcells <- getCells(getRows(getSheets(wb)[[2]]))[McellsToutCommentedO]
-
-# get style of these java objects
-styleOFcells <-  sapply (OFcells, getCellStyle)
-styleOMcells <-  sapply (OMcells, getCellStyle)
-
-# get color out of the style of those java objects
 FUNcellColor <- function(x) {
 	fg  <- x$getFillForegroundXSSFColor()
 	rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
 	rgb <- paste(rgb, collapse = "")
 	return(rgb)
 }	
+
 colornames <- list(blue = "00ffff", grey = "c0c0c0")
-	
-RGBcolorOFcells <- sapply(styleOFcells, FUNcellColor)
-RGBcolorOMcells <- sapply(styleOMcells, FUNcellColor)
-
-matchOF <- match(sapply(styleOFcells, FUNcellColor), colornames)
-matchOM <- match(sapply(styleOMcells, FUNcellColor), colornames)
-
-namecolorOFcells  <- data.frame(names(colornames)[matchOF])
-namecolorOMcells  <- data.frame(names(colornames)[matchOM])
-
-# create data.frame wtih list of cell index, values, color
-valueOFcells <- data.frame(sapply (OFcells, getCellValue))
-valueOMcells <- data.frame(sapply (OMcells, getCellValue))
-
-FcellsToutCommentedO
-McellsToutCommentedO
-
-OFColors <- cbind(FcellsToutCommentedO,valueOFcells,namecolorOFcells,0 )
-colnames(OFColors) <- c("index","Tout","colorname","Sex")
-
-OMColors <- cbind(McellsToutCommentedO,valueOMcells,namecolorOMcells,1 )
-colnames(OMColors) <- c("index","Tout","colorname","Sex")
-
-OColors <- rbind(OFColors,OMColors)
-
-
-bb$OColor <- NA
-merge(x=bbF, y=OFcolors, )
-merge(x=bbM, y=OMColors[,c("Tout","colorname")], by="Tout", all.x=TRUE)
-bbM$Tout
-OMColors$Tout
-}
-
-
-
-{### COPY OF create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
 
 out3 <- list()
 warningz <- list()
 warningzz <- list()
-	
-#for (j in 1:length(FilenamesOldTemplateXLS)){
 
-b <- read.xlsx("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx", sheetIndex =2)
+for (j in 1:length(FilenamesOldTemplateXLS)){
 
-
-
+filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
+b <- read.xlsx(filenamej, sheetIndex =2) # as data.frame
 
 warningz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
 warningzz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
@@ -1427,45 +1146,145 @@ if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prev
 
 }
 
-{### if no warningzz in chronology: combine both female and male visits
+{### if no warningzz in chronology: extract color O visits and combine both female and male visits
 
 if (length(warningz[[j]])==1 & length(warningzz[[j]])==1)
 {
-# when no bird ever visited, keep a line with NA
-if (nrow(bbF)== 0  & nrow(bbM)== 0)	
-{bb <- data.frame(rbind(c(NA,NA,NA,NA,NA)))
-colnames(bb) <- c('Tin','Tout','Sex','Com','Filename')
+
+{## extract color for O visits 
+
+# reload b as a workbook wb, which is a java object
+wb <- loadWorkbook(filenamej)
+
+{# Females > get OFColors if bbF with O comments not empty
+if (nrow(bbF[bbF$Com == "O",]) ==0)
+{
+bbF$Col <- NA
 }
 
-# otherwise combine both sex visits and order by Tin then Tout
-bbF <- bbF[,c('Tin','Tout','Sex','Com')]
-bbM <- bbM[,c('Tin','Tout','Sex','Com')]
-
-if(nrow(bbF)!= 0 | nrow(bbM)!= 0)
+if (nrow(bbF[bbF$Com == "O",]) >0)
 {
-bb <- rbind(bbF, bbM)
-bb <- bb[with(bb,order(bb$Tin, bb$Tout)),] 
+# in b, get index of cells where T.out has been commented O	
+# Rk: if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+FcellsToutCommentedO <- paste(which(!is.na(b$com.1) & b$com.1 == "O")+1, which(colnames(b)=="com.1")-1, sep=".")
 
- 
- 
- 
- 
+# get cells with Tout commented O as java objects
+OFcells <- getCells(getRows(getSheets(wb)[[2]]))[FcellsToutCommentedO]
+
+# get style of these java objects
+styleOFcells <-  sapply (OFcells, getCellStyle)
+
+# get color out of the style of those java objects
+RGBcolorOFcells <- sapply(styleOFcells, FUNcellColor)
+matchOF <- match(sapply(styleOFcells, FUNcellColor), colornames)
+namecolorOFcells  <- data.frame(names(colornames)[matchOF])
+
+# create data.frame wtih list of cell index, values, color
+valueOFcells <- data.frame(sapply (OFcells, getCellValue))
+OFColors <- cbind(FcellsToutCommentedO,valueOFcells,namecolorOFcells,0 )
+colnames(OFColors) <- c("index","Tout","Col","Sex")
+
+# merge it to bbF
+bbF <- merge(x=bbF, y=OFColors[,c("Tout","Col")], by="Tout", all.x=TRUE)
+}
+
+}
+
+{# Males > get OMColors if bbM not empty
+if (nrow(bbM[bbM$Com == "O",]) ==0)
+{
+bbM$Col <- NA
+}
+
+if (nrow(bbM[bbM$Com == "O",]) >0)
+{
+# in b, get index of cells where T.out has been commented O	
+# Rk: if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+McellsToutCommentedO <- paste(which(!is.na(b$com.3) & b$com.3 == "O")+1, which(colnames(b)=="com.3")-1, sep=".")
+
+# get cells with Tout commented O as java objects
+OMcells <- getCells(getRows(getSheets(wb)[[2]]))[McellsToutCommentedO]
+
+# get style of these java objects
+styleOMcells <-  sapply (OMcells, getCellStyle)
+
+# get color out of the style of those java objects
+RGBcolorOMcells <- sapply(styleOMcells, FUNcellColor)
+matchOM <- match(sapply(styleOMcells, FUNcellColor), colornames)
+namecolorOMcells  <- data.frame(names(colornames)[matchOM])
+
+# create data.frame wtih list of cell index, values, color
+valueOMcells <- data.frame(sapply (OMcells, getCellValue))
+OMColors <- cbind(McellsToutCommentedO,valueOMcells,namecolorOMcells,1 )
+colnames(OMColors) <- c("index","Tout","Col","Sex")
+
+# merge it to bbM
+bbM <- merge(x=bbM, y=OMColors[,c("Tout","Col")], by="Tout", all.x=TRUE)
+}
+
+}
+
  }
+ 
+{## create bb
+
+# when no bird ever visited: keep a line with NA
+if (nrow(bbF)== 0  & nrow(bbM)== 0)	
+{
+bb <- data.frame(rbind(c(NA,NA,NA,NA,NA,NA)))
+colnames(bb) <- c('Tin','Tout','Sex','Com','Col','Filename')
+}
+
+# when only one bird  visited
+if (nrow(bbF)!= 0  & nrow(bbM)== 0)
+{
+bb <- bbF[,c('Tin','Tout','Sex','Com','Col')]
+}
+
+if (nrow(bbF)== 0  & nrow(bbM)!= 0)
+{
+bb <- bbM[,c('Tin','Tout','Sex','Com','Col')]
+}
+
+# when both birds visited, combine both sex data and order by Tin then Tout
+if(nrow(bbF)!= 0 & nrow(bbM)!= 0)
+{
+bb <- rbind(bbF[,c('Tin','Tout','Sex','Com','Col')], bbM[,c('Tin','Tout','Sex','Com','Col')])
+bb <- bb[with(bb,order(bb$Tin, bb$Tout)),] 
+ }
+ 
 
 # add filename
-bb$Filename <- as.character("this_example")
-
+bb$Filename <- as.character(FilenamesOldTemplateXLS[j])
+}
 }
 
 out3[[j]] <- bb
 bb <- NULL
+
+}
+
+
+
+
+
+}
+
 }
 
 
+###########
 
-#}
 
-}
+
+
+
+
+
+
+
+
+
 
 
 
