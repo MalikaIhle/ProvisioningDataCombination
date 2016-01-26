@@ -577,11 +577,9 @@ out3[[j]] <- bb
 bb <- NULL
 }
 
-
-
 }
 
-
+{# get outputs: list of warningz and raw data
 condwarningz <- sapply(warningz, function(x) length(x) > 1)
 warningz <- warningz[condwarningz]
 condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
@@ -609,6 +607,7 @@ warningzOthers <- warningz[condwarningzOthers]
 
 
 combinedprovisioningOldTemplate = do.call(rbind, out3)
+}
 
 }
 
