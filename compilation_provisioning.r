@@ -1228,7 +1228,7 @@ OColors <- rbind(OFColors,OMColors)
 
 bb$OColor <- NA
 merge(x=bbF, y=OFcolors, )
-merge(x=bbM, y=OMColors[,"colorname"], by= "Tout", all.x=TRUE)
+merge(x=bbM, y=OMColors[,c("Tout","colorname")], by="Tout", all.x=TRUE)
 bbM$Tout
 OMColors$Tout
 }
