@@ -110,6 +110,73 @@ do.call(rbind,warningzz)
 
 
 
+{### extract color information of "O" visits
+
+# Rk :
+# code inspired from: https://nsaunders.wordpress.com/2014/08/06/when-life-gives-you-coloured-cells-make-categories/
+# if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+# in wb:
+# ALLcells[[39.3]] # this is not the correct cell - I don't get what it does
+# ALLcells[["39.3"]] # this is the correct cell
+# ALLcells[c("39.3", "14.7")] # takes both cells
+
+library(xlsx)
+
+	
+### get index of cells where T.out has been commented O	
+b <- read.xlsx("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx", sheetIndex =2)
+
+which( !is.na(b$com.1) & b$com.1 == "O")+1	# rows F where O 
+which( colnames(b)=="com.1" )-1 # column F Tout commented O
+which(!is.na(b$com.3) & b$com.3 == "O" )+1	# rows M where O
+which( colnames(b)=="com.3" )-1 # column M Tout commented O
+FcellsToutCommentedO <- paste(which( !is.na(b$com.1) & b$com.1 == "O")+1, which( colnames(b)=="com.1" )-1, sep=".")	# will have errors if no cell ToutCom == "O"
+McellsToutCommentedO <- paste(which( !is.na(b$com.3) & b$com.3 == "O")+1, which( colnames(b)=="com.3" )-1, sep=".")
+
+# reload b as a workbook wb, which is a java object
+wb <- loadWorkbook("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination\\example_60187modified.xlsx")
+
+# get cells with Tout commented O as java objects
+OFcells <- getCells(getRows(getSheets(wb)[[2]]))[FcellsToutCommentedO]
+OMcells <- getCells(getRows(getSheets(wb)[[2]]))[McellsToutCommentedO]
+
+# get style of these java objects
+styleOFcells <-  sapply (OFcells, getCellStyle)
+styleOMcells <-  sapply (OMcells, getCellStyle)
+
+# get color out of the style of those java objects
+FUNcellColor <- function(x) {
+	fg  <- x$getFillForegroundXSSFColor()
+	rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
+	rgb <- paste(rgb, collapse = "")
+	return(rgb)
+}	
+colornames <- list(blue = "00ffff", grey = "c0c0c0")
+	
+RGBcolorOFcells <- sapply(styleOFcells, FUNcellColor)
+RGBcolorOMcells <- sapply(styleOMcells, FUNcellColor)
+
+matchOF <- match(sapply(styleOFcells, FUNcellColor), colornames)
+matchOM <- match(sapply(styleOMcells, FUNcellColor), colornames)
+
+namecolorOFcells  <- data.frame(names(colornames)[matchOF])
+namecolorOMcells  <- data.frame(names(colornames)[matchOM])
+
+# create data.frame wtih list of cell index, values, color
+valueOFcells <- data.frame(sapply (OFcells, getCellValue))
+valueOMcells <- data.frame(sapply (OMcells, getCellValue))
+
+FcellsToutCommentedO
+McellsToutCommentedO
+
+OFColors <- cbind(FcellsToutCommentedO,valueOFcells,namecolorOFcells,0 )
+colnames(OFColors) <- c("index","Tout","colorname","Sex")
+
+OMColors <- cbind(McellsToutCommentedO,valueOMcells,namecolorOMcells,1 )
+colnames(OMColors) <- c("index","Tout","colorname","Sex")
+
+OColors <- rbind(OFColors,OMColors)
+}
 
 
 
