@@ -11,6 +11,7 @@
 #RQ
 # as we are changing the files directly on dropbox,  we need to keep the original copies somewhere on a permanent google drive
 # we need to figure out what is this 'wrong Method YN' about, I create an excel files that have the list of provisioning excel files in it, with columns having 'featurex YN' to tick.
+# all xls files were converted to xlsx > change Filename in database !!
 
 
 rm(list = ls(all = TRUE))
@@ -242,7 +243,7 @@ VK0299 # reformat to old template
 }
 
 
-{##### list or warningzz - run code
+{##### list or warningzz - run code  >> before colors and before conversion to xlsx
 
 {## piece to run before running error check
 
