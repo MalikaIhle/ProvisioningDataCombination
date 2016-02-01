@@ -168,10 +168,10 @@ excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCar
 ## not done > see with DVD (I've got most of them)
 {
 40119 # should check time in and out at the end for female > does not make sense
-40239 # should check time in and out at the end for female > does not make sense
-50176 # should check what's supposed to be in F19
-50548 # should check time in and out at the end for female > does not make sense
-50598 # should check time in and out in the middle for male > does not make sense
+40239 # should check time in and out at the end for female > does not make sense				# file not found !!!
+50176 # should check what's supposed to be in F19												# color changed to grey > MVisits2 = 4 ; MVisits1 = 20
+# Joel # 50548 # should check time in and out at the end for female > does not make sense
+50598 # should check time in and out in the middle for male > does not make sense		
 VK0027 # should check time in and out at the end for male > does not make sense
 40063 # check whether female and male stay when alternate
 }
@@ -180,26 +180,26 @@ VK0027 # should check time in and out at the end for male > does not make sense
 ## already done by me for conveniency > check accuracy (don't have DVD yet) >remove purple colour (I will need tyo extract grey)
 {
  40121 # change B5 from 22 to 21 as the bird entered 'later' than he exited
- 40172 # change H22 from 51.2 to 52
- 40200 # change H45 from 6.9 to 69.9
- 40261 # change D36 from 59 to 49
- 40269 # change D22 from 17.7 to 14.7
+ 40172 # change H22 from 51.2 to 52																# file not found !!!
+ 40200 # change H45 from 6.9 to 69.9															# file not found !!!
+ 40261 # change D36 from 59 to 49																# file not found !!!
+ # Joel # 40269 # change D22 from 17.7 to 14.7
  40307 # change H97 from 78.6 to 77.6
  40391 # change H43 from 43.8 to 43.4
  40454 # change B79 from 74.8 to 74.4
  40512 # change F7 from 24.6 to 20.8
  40558 # change D28 from 88.1 to 88.9
- 50161 # change F48 from 80.9 to 90.9 and H49 from 81.3 to 91.3
+ 50161 # change F48 from 80.9 to 90.9 and H49 from 81.3 to 91.3									# Nb visit 1 for male : 13 instead of 14
  50189 # change B59 from 83.7 to 84.7
  50191 # change F32 from 46.5 to 45.8
  50204 # change F32 from 48.7 to 45.7
  50209 # change H37 from 95.9 to 92.9
- 50211 # change D12 from 61.3 to 61.1
+ 50211 # change D12 from 61.3 to 61.1															# time delay from ~1.1 from B7 onward
  50232 # change B48 from 59.5 to 59.7
  50580 # change H45 from 40 to 48
- 50598 # change F17 from 20.8 to 21.8
+ 50598 # change F17 from 20.8 to 21.8															# Ftime = 44.1, MTime = 8.5, Share time = 2.8, Total = 52.6, %=53.36, M:F = 16.16; F:M=83.84
  60018 # change H28 from 48.5 to 48.3
- 60063 # change B7 from 12.5 to 12.9
+ 60063 # change B7 from 12.5 to 12.9															# FTime = 50.4, MTime = 18.7, Total = 69.1, M:F=27.06, F:M = 72.94, %=78.17
  60137 # change F22 from 18.7 to 18.5
  70106 # change F64 from 72.2 to 82.2, D65 from 72.4 to 82.4
  70108 # change H28 from 61.3 to 71.30
@@ -215,7 +215,7 @@ VK0027 # should check time in and out at the end for male > does not make sense
 
 # combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
 
-VK0212 # Time Out before Time in: 65.1 64.3
+VK0212 # Time Out before Time in: 65.1 64.3														# Mtime=21.7, Total=28.4, M:F=76.41, F:M=23.59
 VL0271 # Time Out before Time in: 31.9 31.1
 VN0158 # Time Out before Time in: 46.0 43.5
 
@@ -235,7 +235,7 @@ VK0293 # reformat to old template
 VK0296 # reformat to old template
 VK0299 # reformat to old template
 
-80055 # excel file empty (data in DB) -  corrupted ?? 
+80055 # excel file empty (data in DB) -  corrupted ?? DVD working
 
 50268 # commented: too difficult to distinguish male and female (and therefore file is empty) > put in junk folder ?
 }
