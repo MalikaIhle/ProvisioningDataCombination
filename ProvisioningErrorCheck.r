@@ -169,9 +169,8 @@ excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCar
 {
 40119 # should check time in and out at the end for female > does not make sense
 40239 # should check time in and out at the end for female > does not make sense				# file not found !!!
-50176 # should check what's supposed to be in F19												# color changed to grey > MVisits2 = 4 ; MVisits1 = 20
-# Joel # 50548 # should check time in and out at the end for female > does not make sense
-50598 # should check time in and out in the middle for male > does not make sense		
+50176 # should check what's supposed to be in F19												# color changed to grey > DB: MVisits2 = 4 ; MVisits1 = 20
+50548 # should check time in and out at the end for female > does not make sense				# Joel: to check with him + check impact on DB
 VK0027 # should check time in and out at the end for male > does not make sense
 40063 # check whether female and male stay when alternate
 }
@@ -183,7 +182,7 @@ VK0027 # should check time in and out at the end for male > does not make sense
  40172 # change H22 from 51.2 to 52																# file not found !!!
  40200 # change H45 from 6.9 to 69.9															# file not found !!!
  40261 # change D36 from 59 to 49																# file not found !!!
- # Joel # 40269 # change D22 from 17.7 to 14.7
+ 40269 # change D22 from 17.7 to 14.7															# Joel: to check with him + check impact on DB
  40307 # change H97 from 78.6 to 77.6
  40391 # change H43 from 43.8 to 43.4
  40454 # change B79 from 74.8 to 74.4
@@ -204,7 +203,7 @@ VK0027 # should check time in and out at the end for male > does not make sense
  70106 # change F64 from 72.2 to 82.2, D65 from 72.4 to 82.4
  70108 # change H28 from 61.3 to 71.30
  VK0010 # change E37 and I37 from 51.2 to 51.6
- VK0041 # change G70 from 77.9 to 77.8
+ VK0041 # change G50 from 77.9 to 77.8
  VK0070 # change I45 from 84.3 to 85.3
  VK0102 # change E57 from 83.1 to 84.1, I55 from 70.2 to 80.2
 }
@@ -216,8 +215,8 @@ VK0027 # should check time in and out at the end for male > does not make sense
 # combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
 
 VK0212 # Time Out before Time in: 65.1 64.3														# Mtime=21.7, Total=28.4, M:F=76.41, F:M=23.59
-VL0271 # Time Out before Time in: 31.9 31.1
-VN0158 # Time Out before Time in: 46.0 43.5
+VL0271 # Time Out before Time in: 31.9 31.1														# not done yet
+VN0158 # Time Out before Time in: 46.0 43.5														# not done yet
 
 
 }
@@ -243,13 +242,18 @@ VK0299 # reformat to old template
 }
 
 
-{##### list or warningzz - run code  >> before colors and before conversion to xlsx
+{##### list or warningzz - run code  >> integrate colors, after conversion files to xlsx, give rawdata for old Templates
+
+
+
+detach("package:openxlsx", unload=TRUE)
+require(xlsx)
+search()
 
 {## piece to run before running error check
 
 {# packages + DB
 library(RODBC)
-library(xlsx)	
 require(zoo)
 
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
@@ -329,12 +333,8 @@ tblDVD_XlsFiles$Filename != "2011\\VK0299.xls" &
 
 tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty or in another format ?? (data in DB)
 
-tblDVD_XlsFiles$Filename != "2004\\40119.xls" & # should check time in and out at the end for female > does not make sense
 tblDVD_XlsFiles$Filename != "2004\\40239.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2005\\50176.xls" &	# should check what's supposed to be in F19
 tblDVD_XlsFiles$Filename != "2005\\50548.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2005\\50598.xls" & # should check time in and out in the middle for male > does not make sense
-tblDVD_XlsFiles$Filename != "2011\\VK0027.xls" & # should check time in and out at the end for male > does not make sense
 
 tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty)
 ########
@@ -358,18 +358,34 @@ length(FilenamesOldTemplateXLS) # 848
 }
 
 
+# as long as filenames in the DB are not updated...
+FilenamesOldTemplateXLS <- gsub(".xls", ".xlsx",FilenamesOldTemplateXLS)
+
+
 {## create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
 
-options(warn=2)	# convert warning into error and therefore stop the loop when it happen
+options(warn=2)	
+
+FUNcellColor <- function(x) {
+	fg  <- x$getFillForegroundXSSFColor()
+	rgb <- tryCatch(fg$getRgb(), error = function(e) NULL)
+	rgb <- paste(rgb, collapse = "")
+	return(rgb)
+}	
+
+colornames <- list(blue = "00ffff", grey = "c0c0c0")
 
 out3 <- list()
 warningz <- list()
 warningzz <- list()
-	
-for (j in 1:length(FilenamesOldTemplateXLS)){
+
+#files not working: 70061 (j=693), 80021 (j=780), 80033 (j=789), 80051 (j=799), 80057 (j=804) > read.xlsx remove lines of only NAs, index creation of java object gets messed up...
+
+for (j in c(1:692, 694:779, 781:788, 790:798, 800:803, 805:length(FilenamesOldTemplateXLS))){
 
 filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
-b <- read.xlsx(filenamej, sheetIndex =2) # read.xlsx function from library 'xlsx' (not library 'openxlsx'): make sure openxlsx is not in the list given by 'search()'
+b <- read.xlsx(filenamej, sheetIndex =2) # as data.frame
+
 warningz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
 warningzz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
 
@@ -549,34 +565,128 @@ if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prev
 
 }
 
-{### if no warningzz in chronology: combine both female and male visits
+{### if no warningzz in chronology: extract color O visits and combine both female and male visits
 
 if (length(warningz[[j]])==1 & length(warningzz[[j]])==1)
 {
-# when no bird ever visited, keep a line with NA
-if (nrow(bbF)== 0  & nrow(bbM)== 0)	
-{bb <- data.frame(rbind(c(NA,NA,NA,NA,NA)))
-colnames(bb) <- c('Tin','Tout','Sex','Com','Filename')
+
+{## extract color for O visits 
+
+# reload b as a workbook wb, which is a java object
+wb <- loadWorkbook(filenamej)
+
+{# Females > get OFColors if bbF not empty and with O comments 
+
+if (nrow(bbF) != 0 & nrow(bbF[bbF$Com == "O",]) ==0)
+{
+bbF$Col <- NA
 }
 
-# otherwise combine both sex visits and order by Tin then Tout
-bbF <- bbF[,c('Tin','Tout','Sex','Com')]
-bbM <- bbM[,c('Tin','Tout','Sex','Com')]
-
-if(nrow(bbF)!= 0 | nrow(bbM)!= 0)
+if (nrow(bbF[bbF$Com == "O",]) >0)
 {
-bb <- rbind(bbF, bbM)
+# in b, get index of cells where T.out has been commented O	
+# Rk: if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+FcellsToutCommentedO <- paste(which(!is.na(b$com.1) & b$com.1 == "O")+1, which(colnames(b)=="com.1")-1, sep=".")
+
+# get cells with Tout commented O as java objects
+OFcells <- getCells(getRows(getSheets(wb)[[2]]))[FcellsToutCommentedO]
+
+# get style of these java objects
+styleOFcells <-  sapply (OFcells, getCellStyle)
+
+# get color out of the style of those java objects
+RGBcolorOFcells <- sapply(styleOFcells, FUNcellColor)
+matchOF <- match(sapply(styleOFcells, FUNcellColor), colornames)
+namecolorOFcells  <- data.frame(names(colornames)[matchOF])
+
+# create data.frame wtih list of cell index, values, color
+valueOFcells <- data.frame(sapply (OFcells, getCellValue))
+OFColors <- cbind(FcellsToutCommentedO,valueOFcells,namecolorOFcells,0 )
+colnames(OFColors) <- c("index","Tout","Col","Sex")
+
+# merge it to bbF
+bbF <- merge(x=bbF, y=OFColors[,c("Tout","Col")], by="Tout", all.x=TRUE)
+}
+
+}
+
+{# Males > get OMColors if bbM not empty and with O comments 
+if (nrow(bbM) != 0 & nrow(bbM[bbM$Com == "O",]) ==0)
+{
+bbM$Col <- NA
+}
+
+if (nrow(bbM[bbM$Com == "O",]) >0)
+{
+# in b, get index of cells where T.out has been commented O	
+# Rk: if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+McellsToutCommentedO <- paste(which(!is.na(b$com.3) & b$com.3 == "O")+1, which(colnames(b)=="com.3")-1, sep=".")
+
+# get cells with Tout commented O as java objects
+OMcells <- getCells(getRows(getSheets(wb)[[2]]))[McellsToutCommentedO]
+
+# get style of these java objects
+styleOMcells <-  sapply (OMcells, getCellStyle)
+
+# get color out of the style of those java objects
+RGBcolorOMcells <- sapply(styleOMcells, FUNcellColor)
+matchOM <- match(sapply(styleOMcells, FUNcellColor), colornames)
+namecolorOMcells  <- data.frame(names(colornames)[matchOM])
+
+# create data.frame wtih list of cell index, values, color
+valueOMcells <- data.frame(sapply (OMcells, getCellValue))
+OMColors <- cbind(McellsToutCommentedO,valueOMcells,namecolorOMcells,1 )
+colnames(OMColors) <- c("index","Tout","Col","Sex")
+
+# merge it to bbM
+bbM <- merge(x=bbM, y=OMColors[,c("Tout","Col")], by="Tout", all.x=TRUE)
+}
+
+}
+
+ }
+ 
+{## create bb
+
+# when no bird ever visited: keep a line with NA
+if (nrow(bbF)== 0  & nrow(bbM)== 0)	
+{
+bb <- data.frame(rbind(c(NA,NA,NA,NA,NA,NA)))
+colnames(bb) <- c('Tin','Tout','Sex','Com','Col','Filename')
+}
+
+# when only one bird  visited
+if (nrow(bbF)!= 0  & nrow(bbM)== 0)
+{
+bb <- bbF[,c('Tin','Tout','Sex','Com','Col')]
+}
+
+if (nrow(bbF)== 0  & nrow(bbM)!= 0)
+{
+bb <- bbM[,c('Tin','Tout','Sex','Com','Col')]
+}
+
+# when both birds visited, combine both sex data and order by Tin then Tout
+if(nrow(bbF)!= 0 & nrow(bbM)!= 0)
+{
+bb <- rbind(bbF[,c('Tin','Tout','Sex','Com','Col')], bbM[,c('Tin','Tout','Sex','Com','Col')])
 bb <- bb[with(bb,order(bb$Tin, bb$Tout)),] 
  }
+ 
 
 # add filename
 bb$Filename <- as.character(FilenamesOldTemplateXLS[j])
-
+}
 }
 
 out3[[j]] <- bb
 bb <- NULL
+
 }
+
+
+
+
 
 }
 
@@ -592,7 +702,7 @@ warningz
 warningzz
 length(out3)
 
-capture.output(warningz, file="warningz20160126.txt") 
+capture.output(warningz, file="warningz20160202.txt") 
 
 condwarningzBirdIN <- sapply(warningz, function(x) x[2] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" | x[3] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" )
 warningzBirdIN <- warningz[condwarningzBirdIN]
@@ -607,10 +717,23 @@ condwarningzOthers <- sapply(warningz, function(x) x[2] != "missing info in Tout
 warningzOthers <- warningz[condwarningzOthers]
 
 
+
+
+
 combinedprovisioningOldTemplate = do.call(rbind, out3)
-}
+head(combinedprovisioningOldTemplate)
+
+combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col),]
+
 
 }
+
+
+
+
+}
+
+
 
 }
 
