@@ -170,7 +170,7 @@ excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCar
 40119 # should check time in and out at the end for female > does not make sense
 40239 # should check time in and out at the end for female > does not make sense				# file not found !!!
 50176 # should check what's supposed to be in F19												# color changed to grey > DB: MVisits2 = 4 ; MVisits1 = 20
-50548 # should check time in and out at the end for female > does not make sense				# Joel: to check with him + check impact on DB
+50548 # should check time in and out at the end for female > does not make sense				# not done yet
 VK0027 # should check time in and out at the end for male > does not make sense
 40063 # check whether female and male stay when alternate
 }
@@ -182,14 +182,14 @@ VK0027 # should check time in and out at the end for male > does not make sense
  40172 # change H22 from 51.2 to 52																# file not found !!!
  40200 # change H45 from 6.9 to 69.9															# file not found !!!
  40261 # change D36 from 59 to 49																# file not found !!!
- 40269 # change D22 from 17.7 to 14.7															# Joel: to check with him + check impact on DB
+ 40269 # change D22 from 17.7 to 14.7															
  40307 # change H97 from 78.6 to 77.6
  40391 # change H43 from 43.8 to 43.4
  40454 # change B79 from 74.8 to 74.4
  40512 # change F7 from 24.6 to 20.8
  40558 # change D28 from 88.1 to 88.9
  50161 # change F48 from 80.9 to 90.9 and H49 from 81.3 to 91.3									# Nb visit 1 for male : 13 instead of 14
- 50189 # change B59 from 83.7 to 84.7
+ 50189 # change B59 from 83.7 to 84.7															# Nb visit1 for female = 28 (instead 26); for male visit1 = 16 (instead 14); FTime = 42 (instead 41.3); MTime =21 instead 23.7, total = 63; %=68.18, M:F = 33.33; F:M=66.67
  50191 # change F32 from 46.5 to 45.8
  50204 # change F32 from 48.7 to 45.7
  50209 # change H37 from 95.9 to 92.9
@@ -716,7 +716,7 @@ warningzMissInfo <- warningz[condwarningzMissInfo]
 condwarningzOthers <- sapply(warningz, function(x) x[2] != "missing info in Tout com  !" &  x[2] != "bird IN at end of video: please write Tout, move 'IN' into TouCom")
 warningzOthers <- warningz[condwarningzOthers]
 
-
+capture.output(warningzMissInfo, file="warningzMissInfo20160202.txt") 
 
 
 
