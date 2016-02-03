@@ -379,9 +379,8 @@ out3 <- list()
 warningz <- list()
 warningzz <- list()
 
-#files not working: 70061 (j=693), 80021 (j=780), 80033 (j=789), 80051 (j=799), 80057 (j=804) > read.xlsx remove lines of only NAs, index creation of java object gets messed up...
 
-for (j in c(1:692, 694:779, 781:788, 790:798, 800:803, 805:length(FilenamesOldTemplateXLS))){
+for (j in 1:length(FilenamesOldTemplateXLS)){
 
 filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheetIndex =2) # as data.frame
@@ -702,7 +701,7 @@ warningz
 warningzz
 length(out3)
 
-capture.output(warningz, file="warningz20160202.txt") 
+capture.output(warningz, file="warningz20160203.txt") 
 
 condwarningzBirdIN <- sapply(warningz, function(x) x[2] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" | x[3] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" )
 warningzBirdIN <- warningz[condwarningzBirdIN]

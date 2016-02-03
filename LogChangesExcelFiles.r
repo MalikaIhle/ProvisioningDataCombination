@@ -718,8 +718,34 @@ VJ0064: Move extra comment from F125 to N125
 VJ0070: Move N from J23, J29 to M23, M29, additional comments moved to N39,N40
 
 
+# 03/02/2016
+40108: delete Tin commented S in the end of the file, changed it to a O grey visit with Tou = tape length
+40224: delete Tin commented S in the end of the file for female (93.7)
+50145: deleted Tin commented S in the end of the file for male (93.7)
+50174: added Time out 'S' to complete Tin commented 'S'
+60104: move Tin commented 'S' to Tout commented 'S' in end video
+VK003: add Tout commented 'S' to a Tin commented 'S' for male at the end
 
+70040: deleted blank row 79 (for java to not mess up with index) and all rows where no numbers in it
+70131: added Tout (tape length) and 'IN' for male in 73
+70061: deleted blank rows
+80021: deleted blank rows
+70061: deleted blank rows
+80021: deleted blank rows
+80033: deleted blank rows
+80051: deleted blank rows
+80057: deleted blank rows
 
+40019: move 'COP' from E23 and I 23 to L23
+40066: added 'G' in I19
+40070: added 'S' in C2, added 'G' in E28, I25
+40073: added 'G' in I10
+40076: added 'G' in I24
+40089: change 'in' into "", 'out' into 'G' , 'D' into 'G' in E8, deleted 'F' in Tin com G11, C25, 'gone' to 'O' in I29, change 'Gone' to O in I29 ad I32, grey gor the first, blue for the second, change 'D' to 'G' in I41, change 'short stay' in G52, G58 and G18 to 'S'
+50017: I21 change to 'G', move comment to L21 (from Issie)
+40090: move 'N' from G2 to L2, replcaed by 'S'
+40119: change 'gone' to G, but in I9, I16, I17, I24, I31, I36, E48 > changed into 'O' blue (feeding from the outside), I25 > 'O' grey, B43 from 74.9 to 79.9, replaced comment by 'O'
+40200: remove space in C7
 
 }
 

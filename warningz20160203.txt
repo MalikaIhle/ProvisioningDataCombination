@@ -1,0 +1,1065 @@
+[[1]]
+[1] "2004\\40019.xlsx"          "Tout has weird comments !"
+
+[[2]]
+[1] "2004\\40066.xlsx"            "missing info in Tout com  !"
+
+[[3]]
+[1] "2004\\40070.xlsx"            "Tin has weird comments !"   
+[3] "missing info in Tout com  !" "missing info in Tout com  !"
+
+[[4]]
+[1] "2004\\40073.xlsx"            "missing info in Tout com  !"
+
+[[5]]
+[1] "2004\\40076.xlsx"            "missing info in Tout com  !"
+[3] "missing info in Tout com  !" "missing info in Tout com  !"
+
+[[6]]
+ [1] "2004\\40089.xlsx"            "Tin has weird comments !"   
+ [3] "Tout has weird comments !"   "Tin has weird comments !"   
+ [5] "Tout has weird comments !"   "Tin has weird comments !"   
+ [7] "Tout has weird comments !"   "Tin has weird comments !"   
+ [9] "Tout has weird comments !"   "Tin has weird comments !"   
+[11] "Tout has weird comments !"   "Tin has weird comments !"   
+[13] "Tout has weird comments !"   "Tin has weird comments !"   
+[15] "Tout has weird comments !"   "Tin has weird comments !"   
+[17] "Tin has weird comments !"    "Tout has weird comments !"  
+[19] "Tin has weird comments !"    "Tout has weird comments !"  
+[21] "Tin has weird comments !"    "Tout has weird comments !"  
+[23] "Tout has weird comments !"   "Tin has weird comments !"   
+[25] "Tin has weird comments !"    "Tout has weird comments !"  
+[27] "Tin has weird comments !"    "Tout has weird comments !"  
+[29] "Tout has weird comments !"   "Tin has weird comments !"   
+[31] "Tout has weird comments !"   "Tout has weird comments !"  
+[33] "Tout has weird comments !"   "Tin has weird comments !"   
+[35] "Tout has weird comments !"   "Tin has weird comments !"   
+[37] "Tout has weird comments !"   "Tin has weird comments !"   
+[39] "Tout has weird comments !"   "Tin has weird comments !"   
+[41] "Tout has weird comments !"   "Tin has weird comments !"   
+[43] "Tin has weird comments !"    "Tout has weird comments !"  
+[45] "Tout has weird comments !"   "Tin has weird comments !"   
+[47] "Tin has weird comments !"    "Tout has weird comments !"  
+[49] "Tout has weird comments !"   "Tin has weird comments !"   
+[51] "Tin has weird comments !"    "Tout has weird comments !"  
+[53] "Tin has weird comments !"    "Tout has weird comments !"  
+[55] "Tin has weird comments !"    "Tout has weird comments !"  
+[57] "Tin has weird comments !"    "Tout has weird comments !"  
+[59] "Tin has weird comments !"    "Tin has weird comments !"   
+[61] "Tout has weird comments !"   "Tin has weird comments !"   
+[63] "Tout has weird comments !"   "missing info in Tout com  !"
+[65] "missing info in Tout com  !"
+
+[[7]]
+[1] "2004\\40090.xlsx"         "Tin has weird comments !"
+
+[[8]]
+ [1] "2004\\40119.xlsx"            "Tin has weird comments !"   
+ [3] "Tout has weird comments !"   "Tout has weird comments !"  
+ [5] "Tin has weird comments !"    "Tout has weird comments !"  
+ [7] "Tin has weird comments !"    "Tout has weird comments !"  
+ [9] "Tout has weird comments !"   "Tout has weird comments !"  
+[11] "Tout has weird comments !"   "Tout has weird comments !"  
+[13] "Tout has weird comments !"   "Tout has weird comments !"  
+[15] "Tout has weird comments !"   "Tin has weird comments !"   
+[17] "Tout has weird comments !"   "Tout has weird comments !"  
+[19] "Tout has weird comments !"   "Tout has weird comments !"  
+[21] "Tout has weird comments !"   "Tout has weird comments !"  
+[23] "Tout has weird comments !"   "Tout has weird comments !"  
+[25] "Tout has weird comments !"   "Tout has weird comments !"  
+[27] "Tout has weird comments !"   "Tout has weird comments !"  
+[29] "Tout has weird comments !"   "Tout has weird comments !"  
+[31] "Tin has weird comments !"    "Tout has weird comments !"  
+[33] "Tout has weird comments !"   "Tout has weird comments !"  
+[35] "Tout has weird comments !"   "missing info in Tout com  !"
+
+[[9]]
+ [1] "2004\\40123.xlsx"          "Tout has weird comments !" "Tout has weird comments !"
+ [4] "Tin has weird comments !"  "Tout has weird comments !" "Tout has weird comments !"
+ [7] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[10] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[13] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[16] "Tin has weird comments !"  "Tout has weird comments !" "Tout has weird comments !"
+[19] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[22] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[25] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[28] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[31] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[34] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[37] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[40] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[43] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+
+[[10]]
+ [1] "2004\\40133.xlsx"          "Tout has weird comments !" "Tout has weird comments !"
+ [4] "Tout has weird comments !" "Tout has weird comments !" "Tin has weird comments !" 
+ [7] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[10] "Tout has weird comments !" "Tin has weird comments !"  "Tout has weird comments !"
+[13] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[16] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[19] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+
+[[11]]
+[1] "2004\\40200.xlsx"         "Tin has weird comments !"
+
+[[12]]
+[1] "2004\\40381.xlsx"          "Tout has weird comments !"
+
+[[13]]
+[1] "2004\\40390.xlsx"          "Tout has weird comments !"
+
+[[14]]
+[1] "2004\\40403.xlsx"          "Tin has weird comments !"  "Tout has weird comments !"
+
+[[15]]
+[1] "2004\\40405.xlsx"          "Tout has weird comments !"
+
+[[16]]
+[1] "2004\\40406.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[17]]
+[1] "2004\\40407.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[18]]
+[1] "2004\\40411.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[19]]
+[1] "2004\\40413.xlsx"          "Tout has weird comments !"
+
+[[20]]
+[1] "2004\\40414.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[21]]
+[1] "2004\\40415.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[22]]
+[1] "2004\\40417.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[23]]
+[1] "2004\\40420.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[24]]
+[1] "2004\\40422.xlsx"          "Tout has weird comments !"
+
+[[25]]
+[1] "2004\\40423.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[26]]
+[1] "2004\\40424.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[27]]
+[1] "2004\\40426.xlsx"          "Tout has weird comments !"
+
+[[28]]
+[1] "2004\\40427.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[29]]
+[1] "2004\\40428.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[30]]
+[1] "2004\\40429.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[31]]
+[1] "2004\\40431.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[32]]
+[1] "2004\\40432.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[33]]
+[1] "2004\\40433.xlsx"          "Tout has weird comments !"
+
+[[34]]
+[1] "2004\\40434.xlsx"          "Tout has weird comments !"
+
+[[35]]
+[1] "2004\\40435.xlsx"          "Tout has weird comments !"
+
+[[36]]
+[1] "2004\\40436.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[37]]
+[1] "2004\\40437.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[38]]
+[1] "2004\\40438.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[39]]
+[1] "2004\\40440.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[40]]
+[1] "2004\\40442.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[41]]
+[1] "2004\\40443.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[42]]
+[1] "2004\\40444.xlsx"          "Tout has weird comments !"
+
+[[43]]
+[1] "2004\\40446.xlsx"          "Tout has weird comments !"
+
+[[44]]
+[1] "2004\\40447.xlsx"          "Tout has weird comments !"
+
+[[45]]
+[1] "2004\\40449.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[46]]
+[1] "2004\\40450.xlsx"                                                 
+[2] "Tout has weird comments !"                                        
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[47]]
+[1] "2004\\40451.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[48]]
+[1] "2004\\40452.xlsx"          "Tout has weird comments !"
+
+[[49]]
+[1] "2004\\40453.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[50]]
+[1] "2004\\40454.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[51]]
+[1] "2004\\40456.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[52]]
+[1] "2004\\40458.xlsx"          "Tout has weird comments !"
+
+[[53]]
+[1] "2004\\40459.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[54]]
+[1] "2004\\40462.xlsx"          "Tout has weird comments !"
+
+[[55]]
+[1] "2004\\40463.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[56]]
+[1] "2004\\40464.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[57]]
+[1] "2004\\40465.xlsx"          "Tout has weird comments !"
+
+[[58]]
+[1] "2004\\40466.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[59]]
+[1] "2004\\40467.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[60]]
+[1] "2004\\40469.xlsx"          "Tout has weird comments !"
+
+[[61]]
+[1] "2004\\40470.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[62]]
+[1] "2004\\40471.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[4] "Tout has weird comments !"                                        
+
+[[63]]
+[1] "2004\\40473.xlsx"          "Tout has weird comments !"
+
+[[64]]
+[1] "2004\\40475.xlsx"          "Tout has weird comments !"
+
+[[65]]
+[1] "2004\\40476.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[66]]
+[1] "2004\\40477.xlsx"          "Tout has weird comments !"
+
+[[67]]
+[1] "2004\\40478.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[68]]
+[1] "2004\\40479.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[69]]
+[1] "2004\\40480.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[70]]
+[1] "2004\\40481.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[71]]
+[1] "2004\\40483.xlsx"          "Tout has weird comments !"
+
+[[72]]
+[1] "2004\\40487.xlsx"          "Tout has weird comments !"
+
+[[73]]
+[1] "2004\\40492.xlsx"          "Tout has weird comments !"
+
+[[74]]
+[1] "2004\\40495.xlsx"          "Tout has weird comments !"
+
+[[75]]
+[1] "2004\\40496.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[76]]
+[1] "2004\\40499.xlsx"          "Tout has weird comments !"
+
+[[77]]
+[1] "2004\\40500.xlsx"          "Tout has weird comments !"
+
+[[78]]
+[1] "2004\\40505.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[79]]
+[1] "2004\\40509.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[80]]
+[1] "2004\\40511.xlsx"          "Tout has weird comments !"
+
+[[81]]
+[1] "2004\\40512.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[82]]
+[1] "2004\\40514.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[83]]
+[1] "2004\\40515.xlsx"          "Tout has weird comments !"
+
+[[84]]
+[1] "2004\\40516.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[85]]
+[1] "2004\\40517.xlsx"          "Tout has weird comments !"
+
+[[86]]
+[1] "2004\\40518.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[87]]
+[1] "2004\\40519.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[88]]
+[1] "2004\\40520.xlsx"          "Tout has weird comments !"
+
+[[89]]
+[1] "2004\\40521.xlsx"          "Tout has weird comments !"
+
+[[90]]
+[1] "2004\\40522.xlsx"          "Tout has weird comments !"
+
+[[91]]
+[1] "2004\\40523.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[92]]
+[1] "2004\\40524.xlsx"          "Tout has weird comments !"
+
+[[93]]
+[1] "2004\\40525.xlsx"          "Tout has weird comments !"
+
+[[94]]
+[1] "2004\\40526.xlsx"          "Tout has weird comments !"
+
+[[95]]
+[1] "2004\\40527.xlsx"          "Tout has weird comments !"
+
+[[96]]
+[1] "2004\\40528.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[97]]
+[1] "2004\\40529.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[98]]
+[1] "2004\\40530.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[99]]
+[1] "2004\\40532.xlsx"          "Tout has weird comments !"
+
+[[100]]
+[1] "2004\\40533.xlsx"          "Tout has weird comments !"
+
+[[101]]
+[1] "2004\\40534.xlsx"          "Tout has weird comments !"
+
+[[102]]
+[1] "2004\\40535.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[103]]
+[1] "2004\\40536.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[104]]
+[1] "2004\\40537.xlsx"          "Tout has weird comments !"
+
+[[105]]
+[1] "2004\\40538.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[106]]
+[1] "2004\\40539.xlsx"          "Tout has weird comments !"
+
+[[107]]
+[1] "2004\\40540.xlsx"          "Tout has weird comments !"
+
+[[108]]
+[1] "2004\\40541.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[109]]
+[1] "2004\\40542.xlsx"          "Tout has weird comments !"
+
+[[110]]
+[1] "2004\\40543.xlsx"          "Tout has weird comments !"
+
+[[111]]
+[1] "2004\\40544.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[112]]
+[1] "2004\\40545.xlsx"          "Tout has weird comments !"
+
+[[113]]
+[1] "2004\\40546.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[114]]
+[1] "2004\\40547.xlsx"          "Tout has weird comments !"
+
+[[115]]
+[1] "2004\\40548.xlsx"          "Tout has weird comments !"
+
+[[116]]
+[1] "2004\\40549.xlsx"          "Tout has weird comments !"
+
+[[117]]
+[1] "2004\\40550.xlsx"          "Tout has weird comments !"
+
+[[118]]
+[1] "2004\\40551.xlsx"          "Tout has weird comments !"
+
+[[119]]
+[1] "2004\\40552.xlsx"          "Tout has weird comments !"
+
+[[120]]
+[1] "2004\\40553.xlsx"          "Tout has weird comments !"
+
+[[121]]
+[1] "2004\\40554.xlsx"          "Tout has weird comments !"
+
+[[122]]
+[1] "2004\\40555.xlsx"          "Tin has weird comments !"  "Tout has weird comments !"
+
+[[123]]
+[1] "2004\\40556.xlsx"          "Tout has weird comments !"
+
+[[124]]
+[1] "2004\\40557.xlsx"          "Tout has weird comments !"
+
+[[125]]
+[1] "2005\\50144.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+
+[[126]]
+[1] "2005\\50161.xlsx"            "Tout has weird comments !"  
+[3] "missing info in Tout com  !"
+
+[[127]]
+[1] "2005\\50175.xlsx"          "Tout has weird comments !"
+
+[[128]]
+[1] "2005\\50189.xlsx"            "missing info in Tout com  !"
+
+[[129]]
+[1] "2005\\50190.xlsx"            "Tout has weird comments !"  
+[3] "missing info in Tout com  !"
+
+[[130]]
+[1] "2005\\50504.xlsx"          "Tout has weird comments !"
+
+[[131]]
+[1] "2005\\50505.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[132]]
+[1] "2005\\50506.xlsx"          "Tout has weird comments !"
+
+[[133]]
+[1] "2005\\50507.xlsx"          "Tout has weird comments !"
+
+[[134]]
+[1] "2005\\50509.xlsx"          "Tout has weird comments !"
+
+[[135]]
+[1] "2005\\50511.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[136]]
+[1] "2005\\50515.xlsx"          "Tout has weird comments !"
+
+[[137]]
+[1] "2005\\50518.xlsx"          "Tout has weird comments !"
+
+[[138]]
+[1] "2005\\50519.xlsx"          "Tout has weird comments !"
+
+[[139]]
+[1] "2005\\50520.xlsx"          "Tout has weird comments !"
+
+[[140]]
+[1] "2005\\50525.xlsx"          "Tout has weird comments !"
+
+[[141]]
+[1] "2005\\50527.xlsx"          "Tout has weird comments !"
+
+[[142]]
+[1] "2005\\50533.xlsx"          "Tout has weird comments !"
+
+[[143]]
+[1] "2005\\50534.xlsx"          "Tout has weird comments !"
+
+[[144]]
+[1] "2005\\50536.xlsx"          "Tout has weird comments !"
+
+[[145]]
+[1] "2005\\50537.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[146]]
+[1] "2005\\50538.xlsx"          "Tout has weird comments !"
+
+[[147]]
+[1] "2005\\50546.xlsx"          "Tout has weird comments !"
+
+[[148]]
+[1] "2005\\50547.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[149]]
+[1] "2005\\50555.xlsx"          "Tout has weird comments !"
+
+[[150]]
+[1] "2005\\50558.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[151]]
+[1] "2005\\50559.xlsx"          "Tout has weird comments !"
+
+[[152]]
+[1] "2005\\50560.xlsx"          "Tout has weird comments !"
+
+[[153]]
+[1] "2005\\50568.xlsx"          "Tout has weird comments !"
+
+[[154]]
+[1] "2005\\50570.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[155]]
+[1] "2005\\50571.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[156]]
+[1] "2005\\50572.xlsx"          "Tout has weird comments !"
+
+[[157]]
+[1] "2005\\50579.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[158]]
+[1] "2005\\50580.xlsx"          "Tout has weird comments !"
+
+[[159]]
+[1] "2005\\50581.xlsx"          "Tout has weird comments !"
+
+[[160]]
+[1] "2005\\50589.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[161]]
+[1] "2005\\50590.xlsx"          "Tout has weird comments !"
+
+[[162]]
+[1] "2005\\50591.xlsx"          "Tout has weird comments !"
+
+[[163]]
+[1] "2005\\50598.xlsx"          "Tout has weird comments !"
+
+[[164]]
+[1] "2005\\50605.xlsx"          "Tout has weird comments !"
+
+[[165]]
+[1] "2005\\50606.xlsx"          "Tout has weird comments !"
+
+[[166]]
+[1] "2005\\50607.xlsx"          "Tout has weird comments !"
+
+[[167]]
+[1] "2005\\50608.xlsx"          "Tout has weird comments !"
+
+[[168]]
+[1] "2005\\50609.xlsx"          "Tout has weird comments !"
+
+[[169]]
+[1] "2005\\50620.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[170]]
+[1] "2005\\50629.xlsx"          "Tout has weird comments !"
+
+[[171]]
+[1] "2005\\50630.xlsx"          "Tout has weird comments !" "Tout has weird comments !"
+
+[[172]]
+ [1] "2005\\50666.xlsx"          "Tout has weird comments !" "Tout has weird comments !"
+ [4] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+ [7] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[10] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[13] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[16] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+[19] "Tout has weird comments !" "Tout has weird comments !" "Tout has weird comments !"
+
+[[173]]
+[1] "2005\\50667.xlsx"          "Tout has weird comments !"
+
+[[174]]
+[1] "2005\\50671.xlsx"          "Tout has weird comments !"
+
+[[175]]
+[1] "2005\\50673.xlsx"          "Tout has weird comments !"
+
+[[176]]
+[1] "2005\\50676.xlsx"                                                 
+[2] "Tin has weird comments !"                                         
+[3] "Tin has weird comments !"                                         
+[4] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[5] "Tout has weird comments !"                                        
+
+[[177]]
+[1] "2005\\50686.xlsx"          "Tout has weird comments !"
+
+[[178]]
+[1] "2005\\50687.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[179]]
+[1] "2005\\50689.xlsx"          "Tout has weird comments !"
+
+[[180]]
+[1] "2005\\50699.xlsx"          "Tout has weird comments !"
+
+[[181]]
+[1] "2005\\50700.xlsx"          "Tout has weird comments !"
+
+[[182]]
+[1] "2005\\50707.xlsx"          "Tout has weird comments !"
+
+[[183]]
+[1] "2005\\50709.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[184]]
+[1] "2005\\50710.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[185]]
+[1] "2005\\50713.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[186]]
+[1] "2005\\50734.xlsx"          "Tout has weird comments !"
+
+[[187]]
+[1] "2005\\50736.xlsx"          "Tout has weird comments !"
+
+[[188]]
+[1] "2005\\50742.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[189]]
+[1] "2005\\50745.xlsx"          "Tout has weird comments !"
+
+[[190]]
+[1] "2005\\50751.xlsx"          "Tout has weird comments !"
+
+[[191]]
+[1] "2005\\50752.xlsx"          "Tout has weird comments !"
+
+[[192]]
+[1] "2005\\50756.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[193]]
+[1] "2005\\50769.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[194]]
+[1] "2005\\50776.xlsx"          "Tout has weird comments !"
+
+[[195]]
+[1] "2005\\50787.xlsx"          "Tout has weird comments !"
+
+[[196]]
+[1] "2005\\50792.xlsx"          "Tout has weird comments !"
+
+[[197]]
+[1] "2005\\50793.xlsx"          "Tout has weird comments !"
+
+[[198]]
+[1] "2005\\50794.xlsx"          "Tout has weird comments !"
+
+[[199]]
+[1] "2005\\50795.xlsx"          "Tout has weird comments !"
+
+[[200]]
+[1] "2005\\50796.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[201]]
+[1] "2005\\50799.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[202]]
+[1] "2005\\50807.xlsx"          "Tout has weird comments !"
+
+[[203]]
+[1] "2005\\50815.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[204]]
+[1] "2005\\50816.xlsx"          "Tout has weird comments !"
+
+[[205]]
+[1] "2005\\50826.xlsx"                                                 
+[2] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+[3] "Tout has weird comments !"                                        
+
+[[206]]
+[1] "2005\\50829.xlsx"          "Tout has weird comments !"
+
+[[207]]
+[1] "2010\\VJ0041.xlsx"        "Tin has weird comments !"
+
+[[208]]
+ [1] "2010\\VJ0060.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+ [4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+ [7] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[10] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[13] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[16] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[19] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[22] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[25] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[28] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[31] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[34] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[37] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[40] "Tin has weird comments !"
+
+[[209]]
+[1] "2010\\VJ0079.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !"
+
+[[210]]
+[1] "2011\\VK0006.xlsx"         "Tin has weird comments !"  "Tout has weird comments !"
+
+[[211]]
+[1] "2011\\VK0017.xlsx"        "Tin has weird comments !"
+
+[[212]]
+[1] "2011\\VK0021.xlsx"         "Tout has weird comments !" "Tout has weird comments !"
+[4] "Tout has weird comments !" "Tout has weird comments !"
+
+[[213]]
+[1] "2011\\VK0022.xlsx"         "Tout has weird comments !" "Tout has weird comments !"
+[4] "Tout has weird comments !" "Tout has weird comments !"
+
+[[214]]
+[1] "2011\\VK0024.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+
+[[215]]
+[1] "2011\\VK0026.xlsx"         "Tin has weird comments !"  "Tin has weird comments !" 
+[4] "Tin has weird comments !"  "Tout has weird comments !" "Tout has weird comments !"
+[7] "Tout has weird comments !"
+
+[[216]]
+[1] "2011\\VK0027.xlsx"         "Tout has weird comments !"
+
+[[217]]
+[1] "2011\\VK0029.xlsx"         "Tout has weird comments !" "Tout has weird comments !"
+[4] "Tout has weird comments !"
+
+[[218]]
+ [1] "2011\\VK0031.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+ [4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+ [7] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[10] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[13] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[16] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[19] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[22] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+
+[[219]]
+[1] "2011\\VK0037.xlsx"           "Tin has weird comments !"   
+[3] "Tin has weird comments !"    "missing info in Tout com  !"
+
+[[220]]
+[1] "2011\\VK0038.xlsx"         "Tout has weird comments !" "Tout has weird comments !"
+[4] "Tout has weird comments !"
+
+[[221]]
+[1] "2011\\VK0039.xlsx"         "Tout has weird comments !" "Tout has weird comments !"
+[4] "Tout has weird comments !"
+
+[[222]]
+[1] "2011\\VK0041.xlsx"         "Tout has weird comments !" "Tin has weird comments !" 
+
+[[223]]
+[1] "2011\\VK0042.xlsx"         "Tout has weird comments !" "Tout has weird comments !"
+[4] "Tout has weird comments !"
+
+[[224]]
+[1] "2011\\VK0044.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !"
+
+[[225]]
+[1] "2011\\VK0047.xlsx"           "Tin has weird comments !"   
+[3] "Tin has weird comments !"    "missing info in Tout com  !"
+
+[[226]]
+[1] "2011\\VK0048.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+
+[[227]]
+[1] "2011\\VK0050.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !"
+
+[[228]]
+[1] "2011\\VK0051.xlsx"                                                
+[2] "Tin has weird comments !"                                         
+[3] "Tin has weird comments !"                                         
+[4] "bird IN at end of video: please write Tout, move 'IN' into TouCom"
+
+[[229]]
+ [1] "2011\\VK0056.xlsx"         "Tin has weird comments !"  "Tin has weird comments !" 
+ [4] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+ [7] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[10] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[13] "Tin has weird comments !"  "Tin has weird comments !"  "Tout has weird comments !"
+[16] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[19] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[22] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[25] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[28] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[31] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+[34] "Tin has weird comments !"  "Tin has weird comments !"  "Tin has weird comments !" 
+
+[[230]]
+ [1] "2011\\VK0062.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+ [4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+ [7] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[10] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[13] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[16] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[19] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[22] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[25] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[28] "Tin has weird comments !"
+
+[[231]]
+[1] "2011\\VK0067.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[7] "Tin has weird comments !" "Tin has weird comments !"
+
+[[232]]
+ [1] "2011\\VK0101.xlsx"           "Tin has weird comments !"   
+ [3] "Tin has weird comments !"    "Tin has weird comments !"   
+ [5] "missing info in Tout com  !" "Tin has weird comments !"   
+ [7] "Tin has weird comments !"    "Tin has weird comments !"   
+ [9] "Tin has weird comments !"    "Tin has weird comments !"   
+[11] "Tin has weird comments !"    "Tin has weird comments !"   
+[13] "Tin has weird comments !"    "Tin has weird comments !"   
+[15] "Tin has weird comments !"    "Tin has weird comments !"   
+[17] "Tin has weird comments !"    "Tin has weird comments !"   
+[19] "Tin has weird comments !"    "Tin has weird comments !"   
+[21] "Tin has weird comments !"    "Tin has weird comments !"   
+[23] "Tin has weird comments !"    "Tin has weird comments !"   
+[25] "Tin has weird comments !"    "Tin has weird comments !"   
+[27] "Tin has weird comments !"    "Tin has weird comments !"   
+[29] "Tin has weird comments !"    "Tin has weird comments !"   
+[31] "Tin has weird comments !"    "Tin has weird comments !"   
+[33] "Tin has weird comments !"    "Tin has weird comments !"   
+[35] "Tin has weird comments !"    "Tin has weird comments !"   
+[37] "Tin has weird comments !"    "Tin has weird comments !"   
+[39] "Tin has weird comments !"    "Tin has weird comments !"   
+[41] "Tin has weird comments !"    "Tin has weird comments !"   
+[43] "Tin has weird comments !"    "Tin has weird comments !"   
+[45] "Tin has weird comments !"    "Tin has weird comments !"   
+[47] "Tin has weird comments !"    "Tin has weird comments !"   
+[49] "Tin has weird comments !"    "Tin has weird comments !"   
+[51] "Tin has weird comments !"    "Tin has weird comments !"   
+[53] "Tin has weird comments !"    "Tin has weird comments !"   
+[55] "Tin has weird comments !"    "Tin has weird comments !"   
+[57] "Tin has weird comments !"    "Tin has weird comments !"   
+[59] "Tin has weird comments !"    "Tin has weird comments !"   
+[61] "Tin has weird comments !"   
+
+[[233]]
+[1] "2011\\VK0102.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+
+[[234]]
+[1] "2011\\VK0103.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+[4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[7] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+
+[[235]]
+ [1] "2011\\VK0105.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+ [4] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+ [7] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[10] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[13] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[16] "Tin has weird comments !" "Tin has weird comments !" "Tin has weird comments !"
+[19] "Tin has weird comments !" "Tin has weird comments !"
+
+[[236]]
+[1] "2011\\VK0106.xlsx"        "Tin has weird comments !"
+
+[[237]]
+[1] "2011\\VK0410.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+
+[[238]]
+[1] "2011\\VK0413.xlsx"        "Tin has weird comments !" "Tin has weird comments !"
+
+[[239]]
+[1] "2011\\VK0416.xlsx"        "Tin has weird comments !"
+
+[[240]]
+[1] "2011\\VK0418.xlsx"         "Tin has weird comments !"  "Tin has weird comments !" 
+[4] "Tout has weird comments !"
+
