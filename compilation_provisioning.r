@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 25/01/2016  
-#    try to get colours from old templates
+#	 last modif : 04/02/2016  
+#    try to get new files lifted to DB
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -35,7 +35,9 @@ library(RODBC)
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
 
 
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+#conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+conDB= odbcConnectAccess("C:\\Users\\mihle\\Dropbox\\Sparrow Lundy\\Database0.74_Jan2016GTUpToSummer2015Imported-upd20160204\\SparrowData.mdb")
+
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
 tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
 
@@ -57,12 +59,10 @@ head(tblDVD_XlsFilesALLDBINFO)
 tail(tblDVD_XlsFiles,30)
 
 
-##### CODE IS BROKEN: files with new template with xls do not have the right name for sheet 2
-
-{### extraction data in Excel files analyzed with newest excel template
+{### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx)
 
 require(openxlsx)
-search()
+search() # make sure 'xlsx' is not in the list
 
 
 {## create list of file names from files analysed after 2012 included
@@ -87,7 +87,7 @@ filename1011_oldtemplate <- c(
 "2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
 "2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
 "2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
-"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls", "2011\\VK0007",
+"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls", "2011\\VK0007.xls",
 "2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
 "2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
 "2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
@@ -116,6 +116,7 @@ head(Filenames1011newtemplate)
 {## combine all files analyzed with the new template (will take newly analyzed files IF put in the root of the year folder, with a normal file name)
 
 FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(FilenamesAfter2012))
+FilenamesNewTemplate <- gsub(".xlsx", ".xls",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 FilenamesNewTemplate <- gsub(".xls", ".xlsx",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 
 }
@@ -125,14 +126,11 @@ head(FilenamesNewTemplate)
 	
 {## create for each excel file with a new template, a table b containing: Tin, Tout, Sex and Filename
 
-	{## for xlsx files: use openxlsx otherwise it crashes (see remarks)
-
-FilenamesNewTemplateXLSX <- FilenamesNewTemplate[grepl("xlsx", FilenamesNewTemplate) == TRUE]
 
 out = list()
 	
-for (j in 1:length(FilenamesNewTemplateXLSX)){
-filenamej <- paste(pathdropboxfolder, FilenamesNewTemplateXLSX[j], sep="\\DVDs ")
+for (j in 1:length(FilenamesNewTemplate)){
+filenamej <- paste(pathdropboxfolder, FilenamesNewTemplate[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheet="DVD NO") # read.xlsx function from library 'openxlsx' (not library 'xlsx'): make sure xlsx is not in the list given by 'search()'
 b$Tin <- NA
 b$Tout <- NA
@@ -168,88 +166,17 @@ if(nrow(b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.n
 else {b <- unique(b[,c('Tin','Tout','Sex')])} # keep one line of NAs + filename
 
 
-b$Filename <- FilenamesNewTemplateXLSX[j]
+b$Filename <- FilenamesNewTemplate[j]
 
 out[[j]] <- b
 
 }
 
-combinedprovisioningNewTemplateXLSX = do.call(rbind, out)
+combinedprovisioningNewTemplate = do.call(rbind, out)
 }
 
-head(combinedprovisioningNewTemplateXLSX,30)
+head(combinedprovisioningNewTemplate,30)
 
-
-
-detach("package:openxlsx", unload=TRUE)
-require(xlsx)
-search()
-
-
-	{## for xls files: use xlsx package (take longer even though just a few files...)
-
-FilenamesNewTemplateXLS <- FilenamesNewTemplate[grepl("xlsx", FilenamesNewTemplate) == FALSE]
-
-out2 = list()
-	
-for (j in 1:length(FilenamesNewTemplateXLS)){
-filenamej <- paste(pathdropboxfolder, FilenamesNewTemplateXLS[j], sep="\\DVDs ")
-b <- read.xlsx(filenamej, sheetName="DVD NO") # read.xlsx function from package xlsx
-b$Tin <- NA
-b$Tout <- NA
-b$Sex <- NA
-
-for (i in 1:nrow(b)){
-
-if (!is.na(b$F.in[i]) & is.na(b$M.in[i]))
-{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$F.in[i])))} # some text is sometimes written down the column of Fin in the excel files > Tin is NA by coercion
-
-if (is.na(b$F.in[i]) & !is.na(b$M.in[i]))
-{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$M.in[i])))} # some text is sometimes written down the column of Min in the excel files > Tin is NA by coercion
-
-
-if (!is.na(b$F.out[i]) & is.na(b$M.out[i]))
-{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$F.out[i])))}
-
-if (is.na(b$F.out[i]) & !is.na(b$M.out[i]))
-{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$M.out[i])))}
-
-
-if ((!is.na(b$F.in[i]) | !is.na(b$F.out[i])) & is.na(b$M.in[i]) & is.na(b$M.out[i])) # if one or the other Tin or Tout in 'female' column
-{b$Sex[i] <- "0" }
-
-if (is.na(b$F.in[i]) & is.na(b$F.out[i]) & (!is.na(b$M.in[i]) | !is.na(b$M.out[i]))) # if one or the other Tin or Tout in 'male' column
-{b$Sex[i] <- "1" }
-
-}
-
-if(nrow(b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),])>0)
-{b <- b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),c('Tin','Tout','Sex')]} # keep lines of data when sex was allocated and at least Tin or Tout (supress lines where only comments with a sex allocated)
-else {b <- unique(b[,c('Tin','Tout','Sex')])} # keep one line of NAs + filename
-
-
-b$Filename <- FilenamesNewTemplateXLS[j]
-
-out2[[j]] <- b
-
-}
-
-combinedprovisioningNewTemplateXLS = do.call(rbind, out2)
-}
-
-head(combinedprovisioningNewTemplateXLS,30)
-
-
-	{## combine both xlsx and xls files into one data frame
-	
-combinedprovisioningNewTemplate <- rbind(combinedprovisioningNewTemplateXLSX, combinedprovisioningNewTemplateXLS)
-	
-nrow(combinedprovisioningNewTemplate)	# 22665
-}
-
-}
-
-head(combinedprovisioningNewTemplate)
 
 
 {## create an excel file with all raw data just to keep reference of it
@@ -269,8 +196,8 @@ which(duplicated(unique(merge(x=combinedprovisioningNewTemplate, y=tblDVD_XlsFil
 
 tail(combinedprovisioningNewTemplate,30)
 
-
-
+## error check for NewTemplate
+combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
 
 
 
@@ -385,20 +312,18 @@ length(FilenamesOldTemplate)	# 882 files, situation 4, old template
 which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
 
 
-FilenamesOldTemplateXLSX <- FilenamesOldTemplate[grepl("xlsx", FilenamesOldTemplate) == TRUE]	# only 3
-
-FilenamesOldTemplateXLS <- FilenamesOldTemplate[grepl("xlsx", FilenamesOldTemplate) == FALSE]
-length(FilenamesOldTemplateXLS) # 848
 }
 
 }
 
 
 # as long as filenames in the DB are not updated...
-FilenamesOldTemplateXLS <- gsub(".xls", ".xlsx",FilenamesOldTemplateXLS)
+FilenamesOldTemplate <- gsub(".xlsx", ".xls",FilenamesOldTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
+FilenamesOldTemplate <- gsub(".xls", ".xlsx",FilenamesOldTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 
 
-{## COPY OF create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
+
+{## create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
 
 options(warn=2)	
 
@@ -415,15 +340,13 @@ out3 <- list()
 warningz <- list()
 warningzz <- list()
 
-#files not working: 70061 (j=690), 80021 (j=777), 80033 (j=786), 80051 (j=796), 80057 (j=801) > read.xlsx remove lines of only NAs, index creation of java object gets messed up...
+for (j in 1:length(FilenamesOldTemplate)){
 
-for (j in c(1:689, 691:776, 778:785, 787:795, 797:800, 802:length(FilenamesOldTemplateXLS))){
-
-filenamej <- paste(pathdropboxfolder, FilenamesOldTemplateXLS[j], sep="\\DVDs ")
+filenamej <- paste(pathdropboxfolder, FilenamesOldTemplate[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheetIndex =2) # as data.frame
 
-warningz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
-warningzz[[j]] <- as.character(FilenamesOldTemplateXLS[j])
+warningz[[j]] <- as.character(FilenamesOldTemplate[j])
+warningzz[[j]] <- as.character(FilenamesOldTemplate[j])
 
 {### warningz in comments
 
@@ -711,7 +634,7 @@ bb <- bb[with(bb,order(bb$Tin, bb$Tout)),]
  
 
 # add filename
-bb$Filename <- as.character(FilenamesOldTemplateXLS[j])
+bb$Filename <- as.character(FilenamesOldTemplate[j])
 }
 }
 
@@ -738,7 +661,7 @@ warningz
 warningzz
 length(out3)
 
-capture.output(warningz, file="warningz20160126.txt") 
+capture.output(warningz, file="warningz20160204eve.txt") 
 
 condwarningzBirdIN <- sapply(warningz, function(x) x[2] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" | x[3] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" )
 warningzBirdIN <- warningz[condwarningzBirdIN]
