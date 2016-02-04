@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Log changes made to excel provisioning files
 #	 Start : 07/01/2016
-#	 last modif : 27/01/2016  
-#    convert all xls to xlsx
+#	 last modif : 04/02/2016  
+#    coorections sparrow meeting
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {## changes made in excel files

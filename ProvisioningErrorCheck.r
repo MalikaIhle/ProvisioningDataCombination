@@ -225,7 +225,7 @@ VN0158 # Time Out before Time in: 46.0 43.5														# not done yet
 }
 
 
-### File excluded from my code for diverse reason (mainly, need to reformat)
+### File excluded from my code for diverse reason (mainly, need to reformat) but that should be included
 {
 40055 # comments that are not standardized 
 40061 # comments that are not standardized 
@@ -237,12 +237,17 @@ VK0299 # reformat to old template
 80055 # excel file empty (data in DB) -  corrupted ?? DVD working
 
 50268 # commented: too difficult to distinguish male and female (and therefore file is empty) > put in junk folder ?
+
+VL0077 # named 'cant see the exit" > should be considered as no visit ?
+VM0212 # should be added as no visit ?
+VM0245 # named 'bad quality' but has data in DB > should be considered.
+VM0330 # named 'not 100% sure correct" but has data in DB > should be considered.
 }
 
 }
 
 
-{##### list or warningzz - run code  >> integrate colors, after conversion files to xlsx, give rawdata for old Templates
+{##### list or warningzz for old templates files - run code  >> integrate colors, after conversion files to xlsx, give rawdata for old Templates
 
 
 
