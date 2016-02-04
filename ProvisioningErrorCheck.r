@@ -3,8 +3,8 @@
 #	 check provisioning data 
 #   (where situation = 4 (chicks) in DVD info)
 #	 Start : 20/01/2016
-#	 last modif : 26/01/2016  
-#    for sparrow meeting Februray 2016
+#	 last modif : 04/02/2016  
+#    for sparrow meeting February 2016
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

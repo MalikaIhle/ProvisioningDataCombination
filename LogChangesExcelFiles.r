@@ -722,9 +722,9 @@ VJ0070: Move N from J23, J29 to M23, M29, additional comments moved to N39,N40
 40108: delete Tin commented S in the end of the file, changed it to a O grey visit with Tou = tape length
 40224: delete Tin commented S in the end of the file for female (93.7)
 50145: deleted Tin commented S in the end of the file for male (93.7)
-50174: added Time out 'S' to complete Tin commented 'S'
-60104: move Tin commented 'S' to Tout commented 'S' in end video
-VK003: add Tout commented 'S' to a Tin commented 'S' for male at the end
+50174: added Time out 'S' to complete Tin commented 'S' ## on the 04/02/2016: change this 'S' to O grey
+60104: move Tin commented 'S' to Tout commented 'S' in end video ## on the 04/02/2016: change this 'S' to O grey
+VK0003: add Tout commented 'S' to a Tin commented 'S' for male at the end ## on the 04/02/2016: change this 'S' to O grey
 
 70040: deleted blank row 79 (for java to not mess up with index) and all rows where no numbers in it
 70131: added Tout (tape length) and 'IN' for male in 73
@@ -746,6 +746,193 @@ VK003: add Tout commented 'S' to a Tin commented 'S' for male at the end
 40090: move 'N' from G2 to L2, replcaed by 'S'
 40119: change 'gone' to G, but in I9, I16, I17, I24, I31, I36, E48 > changed into 'O' blue (feeding from the outside), I25 > 'O' grey, B43 from 74.9 to 79.9, replaced comment by 'O'
 40200: remove space in C7
+
+# 04/02/2016
+40070: move 'F' from G18 to L18
+40076: added 'G' in I24 and E34
+40381: move 'P' from E18 to L18 
+40390: move 'W' from E65
+40403: deleted 'TOTAL', move Tin 'O' to Tout "O" in 62
+40405: deleted 'TOTAL'
+40406: deleted 'TOTAL', move Tin 'IN' to Tout in 32
+40407: deleted 'TOTAL', move Tin 'IN' to Tout in 42
+40411: deleted 'TOTAL', move Tin 'IN' to Tout in 62
+40413: deleted 'TOTAL'
+40414: deleted 'TOTAL', move Tin 'IN' to Tout in 34
+40415: deleted 'TOTAL', move Tin 'IN' to Tout in 72
+40417: deleted 'TOTAL', move Tin 'IN' to Tout in 35
+40420: deleted 'TOTAL', move Tin 'IN' to Tout in 53
+40422: deleted 'TOTAL'
+40423: deleted 'TOTAL', move Tin 'IN' to Tout in 34
+40424: deleted 'TOTAL', move Tin 'IN' to Tout in 83
+40426: deleted 'TOTAL'
+40427: deleted 'TOTAL', move Tin 'IN' to Tout in 114
+40428: deleted 'TOTAL', move Tin 'IN' to Tout in 68
+40429: deleted 'TOTAL', move Tin 'IN' to Tout in 36, move 'N' from G32 to I32, added 'S'
+40431: deleted 'TOTAL', move Tin 'IN' to Tout in 38, move 'N' from G17 to I17
+40432: deleted 'TOTAL', move Tin 'IN' to Tout in 17
+40433: deleted 'TOTAL'
+40434: deleted 'TOTAL'
+40435: deleted 'TOTAL'
+40436: deleted 'TOTAL', move Tin 'IN' to Tout in 60
+40437: deleted 'TOTAL', move Tin 'IN' to Tout in 28
+40438: deleted 'TOTAL', move Tin 'IN' to Tout in 35
+40440: deleted 'TOTAL', move Tin 'IN' to Tout in 61
+40442: deleted 'TOTAL', move Tin 'IN' to Tout in 17
+40443: deleted 'TOTAL', move Tin 'IN' to Tout in 59
+40444: deleted 'TOTAL'
+40446: deleted 'TOTAL'
+40447: deleted 'TOTAL'
+40449: deleted 'TOTAL', move Tin 'IN' to Tout in 67
+40450: deleted 'TOTAL',added Tout 'IN' in 106
+40451: deleted 'TOTAL', move Tin 'IN' to Tout in 68; move Time lost 53.3-55 from B42-43 to L42, move 'N' from G35 to L35, added 'S'
+40452: deleted 'TOTAL'
+40453: deleted 'TOTAL', move Tin 'IN' to Tout in 43
+40454: deleted 'TOTAL', move Tin 'IN' to Tout in 91
+40456: deleted 'TOTAL', move Tin 'IN' to Tout in 57
+40458: deleted 'TOTAL'
+40459: deleted 'TOTAL', move Tin 'IN' to Tout in 40
+40462: deleted 'TOTAL'
+40463: deleted 'TOTAL', move Tin 'IN' to Tout in 53
+40464: deleted 'TOTAL', move Tin 'IN' to Tout in 40
+40465: deleted 'TOTAL'
+40466: deleted 'TOTAL', move Tin 'IN' to Tout in 42
+40467: deleted 'TOTAL', move Tin 'IN' to Tout in 25, move 'N' from C23 to L23
+40469: deleted 'TOTAL'
+40470: deleted 'TOTAL', move Tin 'IN' to Tout in 52
+40470: deleted 'TOTAL', move Tin 'IN' to Tout in 54, move 'N' from C48 to L48, added 'S'
+40473: deleted 'TOTAL'
+40475: deleted 'TOTAL'
+40476: deleted 'TOTAL', move Tin 'IN' to Tout in 24
+40477: deleted 'TOTAL'
+40478: deleted 'TOTAL', move Tin 'IN' to Tout in 62
+40479: deleted 'TOTAL', move Tin 'IN' to Tout in 31
+40480: deleted 'TOTAL', move Tin 'IN' to Tout in 36
+40481: deleted 'TOTAL', move Tin 'IN' to Tout in 43
+40483: deleted 'TOTAL'
+40487: deleted 'TOTAL'
+40492: deleted 'TOTAL'
+40495: deleted 'TOTAL'
+40496: deleted 'TOTAL', move Tin 'IN' to Tout in 65
+40499: deleted 'TOTAL'
+40500: deleted 'TOTAL'
+40505: deleted 'TOTAL', move Tin 'IN' to Tout in 45
+40509: deleted 'TOTAL', move Tin 'IN' to Tout in 77
+40511: deleted 'TOTAL'
+40512: deleted 'TOTAL', move Tin 'IN' to Tout in 30
+40514: deleted 'TOTAL', move Tin 'IN' to Tout in 51
+40515: deleted 'TOTAL', move Tin 'O' to Tout 'O' in 119
+40516: deleted 'TOTAL', move Tin 'IN' to Tout in 27
+40517: deleted 'TOTAL'
+40518: deleted 'TOTAL', move Tin 'IN' to Tout in 30
+40519: deleted 'TOTAL', move Tin 'IN' to Tout in 51
+40520: deleted 'TOTAL'
+40521: deleted 'TOTAL'
+40522: deleted 'TOTAL'
+40523: deleted 'TOTAL', move Tin 'IN' to Tout in 20
+40524: deleted 'TOTAL'
+40525: deleted 'TOTAL'
+40526: deleted 'TOTAL'
+40527: deleted 'TOTAL'
+40528: deleted 'TOTAL', move Tin 'IN' to Tout in 53
+40529: deleted 'TOTAL', move Tin 'IN' to Tout in 30
+40530: deleted 'TOTAL', move Tin 'IN' to Tout in 29
+40532: deleted 'TOTAL'
+40533: deleted 'TOTAL'
+40534: deleted 'TOTAL'
+40535: deleted 'TOTAL', move Tin 'IN' to Tout in 53
+40536: deleted 'TOTAL', move Tin 'IN' to Tout in 40
+40537: deleted 'TOTAL'
+40538: deleted 'TOTAL', move Tin 'IN' to Tout in 60
+40539: deleted 'TOTAL', move Tin 'S' to Tout 'O' change color from blue to grey
+40540: deleted 'TOTAL'
+40541: deleted 'TOTAL', move Tin 'IN' to Tout in 60
+40542: deleted 'TOTAL'
+40543: deleted 'TOTAL'
+40544: deleted 'TOTAL', move Tin 'IN' to Tout in 22
+40545: deleted 'TOTAL'
+40546: deleted 'TOTAL', move Tin 'IN' to Tout in 30
+40547: deleted 'TOTAL'
+40548: deleted 'TOTAL'
+40549: deleted 'TOTAL'
+40550: deleted 'TOTAL'
+40551: deleted 'TOTAL'
+40552: deleted 'TOTAL'
+40553: deleted 'TOTAL'
+40554: deleted 'TOTAL'
+40555: deleted 'TOTAL'
+40556: deleted 'TOTAL'
+40557: deleted 'TOTAL'
+VJ0041: change 'O' to 'S' in H20
+50829: deleted 'TOTAL'
+50826: deleted 'TOTAL', move Tin 'IN' to Tout in 58
+50816: deleted 'TOTAL'
+50815: deleted 'TOTAL', move Tin 'IN' to Tout in 61
+50807: deleted 'TOTAL'
+50799: deleted 'TOTAL', move Tin 'IN' to Tout in 49
+50796: deleted 'TOTAL', move Tin 'IN' to Tout in 46
+50795: deleted 'TOTAL'
+50794: deleted 'TOTAL'
+50793: deleted 'TOTAL'
+50792: deleted 'TOTAL'
+50787: deleted 'TOTAL'
+50776: deleted 'TOTAL'
+50769: deleted 'TOTAL', move Tin 'IN' to Tout in 62
+50756: deleted 'TOTAL', move Tin 'IN' to Tout in 66
+50752: deleted 'TOTAL'
+50751: deleted 'TOTAL'
+50745: deleted 'TOTAL'
+50742: deleted 'TOTAL', move Tin 'IN' to Tout in 76
+50736: deleted 'TOTAL'
+50734: deleted 'TOTAL'
+50713: deleted 'TOTAL', move Tin 'IN' to Tout in 57
+50710: deleted 'TOTAL', move Tin 'IN' to Tout in 78
+50709: deleted 'TOTAL', move Tin 'IN' to Tout in 61
+50707: deleted 'TOTAL'
+50700: deleted 'TOTAL'
+50699: deleted 'TOTAL'
+50689: deleted 'TOTAL'
+50687: deleted 'TOTAL', move Tin 'IN' to Tout in 98
+50686: deleted 'TOTAL'
+50676: deleted 'TOTAL', move Tin 'IN' to Tout in 87, move 'N' from G81 to L81 and from G50 to L50
+50673: deleted 'TOTAL'
+50671: deleted 'TOTAL'
+50667: change 'ON' to 'IN'
+50630: added 'S' in C28, changed 'OF' into 'O' blue in I4 and I11
+50629: change 'OF' into 'O', added 'S' in G5 and G10
+50620: deleted 'TOTAL', move Tin 'IN' to Tout in 115
+50609: deleted 'TOTAL'
+50608: deleted 'TOTAL'
+50607: deleted 'TOTAL'
+50606: deleted 'TOTAL'
+50605: deleted 'TOTAL'
+50190: move 'OTHER' and time from 9 into L9, added 'S' in C10, added 'G' in E28
+50189: added 'IN' in E66
+50175: deleted 'TOTAL'
+50161: added 'S' in C26 and C10, G4 and G7, move time and 'OTHER' in L14, move G from I33 to I32
+50144: move Tin 'IN' to Tout in 28
+40450: move 'W' from E32 to L32
+40454: move 'N' from C68 to L68
+40555: move 'N' from C17 to L17
+50666: added 'S' C2
+VK0006: change 'In' into 'IN' F98 and D2 
+VK0017: deleted space in D42
+VK0021: deleted space in J86
+VK0022: deleted space in F5
+VK0037: deleted space in D44
+VK0039: deleted three spaces
+VK0410: add 'S' in G3, move 'N' from G15 to L15 and from G22 to L22, from C2 and L2
+VK0041: move 'N' from H52
+VK0044: change 'In' into 'IN'
+VK0050: change 'In' into 'IN'
+VK0413: change 'In' into 'IN'
+VK0007: deleted Tin 90 'S' from the end
+
+
+
+
+
+
 
 }
 

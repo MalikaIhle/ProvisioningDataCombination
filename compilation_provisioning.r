@@ -57,9 +57,10 @@ head(tblDVD_XlsFilesALLDBINFO)
 tail(tblDVD_XlsFiles,30)
 
 
+##### CODE IS BROKEN: files with new template with xls do not have the right name for sheet 2
+
 {### extraction data in Excel files analyzed with newest excel template
 
-detach("package:xlsx", unload=TRUE)
 require(openxlsx)
 search()
 
@@ -86,7 +87,7 @@ filename1011_oldtemplate <- c(
 "2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
 "2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
 "2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
-"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls",
+"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls", "2011\\VK0007",
 "2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
 "2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
 "2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
@@ -115,6 +116,8 @@ head(Filenames1011newtemplate)
 {## combine all files analyzed with the new template (will take newly analyzed files IF put in the root of the year folder, with a normal file name)
 
 FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(FilenamesAfter2012))
+FilenamesNewTemplate <- gsub(".xls", ".xlsx",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
+
 }
 
 head(FilenamesNewTemplate)
