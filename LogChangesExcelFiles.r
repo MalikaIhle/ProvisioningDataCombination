@@ -930,6 +930,75 @@ VK0007: deleted Tin 90 'S' from the end
 
 
 
+# 03.02.2016 Joel Pick
+
+50504: deleted "Total" in I126
+50505: deleted "Total" in I38; moved 93.7 from B37 Tin to D37 Tout, moved 'IN' from C37 TinCom to E37 ToutCom
+50506: deleted "Total" in I79
+50507: deleted "Total" in I151
+50509: deleted "Total" in I13
+50511: deleted "Total" in I54; moved 93.7 from B53 Tin to D53 Tout, moved 'IN' from C53 TinCom to E53 ToutCom
+50515: deleted "Total" in I78
+50518: deleted "Total" in I38
+50519: deleted "Total" in I61
+50520: deleted "Total" in I60
+50525: deleted "Total" in I92
+50527: deleted "Total" in I95
+50533: deleted "Total" in I63
+50534: deleted "Total" in I98
+50536: deleted "Total" in I74
+50537: deleted "Total" in I121; moved 93.8 from F120 Tin to H120 Tout, moved 'IN' from G120 TinCom to I120 ToutCom
+50538: deleted "Total" in I141
+50546: deleted "Total" in I36
+50547: deleted "Total" in I57; moved 92.7 from B56 Tin to D56 Tout, moved 'IN' from C56 TinCom to E56 ToutCom
+50555: deleted "Total" in I72
+50558: deleted "Total" in I68; moved 93.6 from B67 Tin to D67 Tout, moved 'IN' from C67 TinCom to E67 ToutCom
+50559: deleted "Total" in I148
+50560: deleted "Total" in I102
+50568: deleted "Total" in I105
+50570: deleted "Total" in I48; moved 93.7 from B47 Tin to D47 Tout, moved 'IN' from C47 TinCom to E47 ToutCom
+50571: deleted "Total" in I73; moved 93.7 from B72 Tin to D72 Tout, moved 'IN' from C72 TinCom to E72 ToutCom
+50572: deleted "Total" in I76
+50579: deleted "Total" in I49; moved 93.3 from B48 Tin to D48 Tout, moved 'IN' from C48 TinCom to E48 ToutCom
+50580: deleted "Total" in I104
+50581: deleted "Total" in I91
+50589: deleted "Total" in I52; moved 93.5 from F51 Tin to H51 Tout, moved 'IN' from G51 TinCom to I51 ToutCom
+50590: deleted "Total" in I66
+50591: deleted "Total" in I82
+50598: deleted "Total" in I44
+
+# 03/02/2016 Andrew Jones
+VK0002: Delete In from D65 (video continues longer), additional comments moved from J40 J46 to N40 N46
+VK0003: Remove surplus info In J5
+VK0005: Delete "No bird" from F2, J2.
+VK0006: Move "In" In 98. 
+VK0010: Move comments from J37 J43 to N37 N43, and H52,H64,H69,H73,H77 to N.
+VK0019: Add S to D21, move P to M37,M39, move timein and In to Timeout and Toucom in 84
+VK0021: Move additional comments from J11 to N11, H16 to N16
+VK0022: Remove F47 F48 F49 (random numbers??)
+vk0026: Remove additional comments from H15,H94. Remove F104 F105 F106 (random numbers)
+VK0027: Move additional comments from J21 to N21
+VK0029: Remove F65 F66 F67 (random numbers - I guess separate and total tape lengths)
+VK0037: Move time out In 62
+VK0038: Remove random numbers In F 
+VK0039: Move comments In F51, F59, F63 to N. 
+VK0041: Add G to F3, 
+VK0042: Remeove random numbers In F80 F81 F82
+VK0044: Add 90 In to E18F18
+VK0047: Move timeout In 120, Remove comment In H31
+VK0048: Move N from D12,D15,H17, to M column. Add 90 In to 47.
+VK0050: EFFECT TIME WAS WRONG changed from 99 to 89.Add 90 In to 52.
+VK0051: D16 H18, remove comments. Move 90In in 47
+VK0102: Change O to S In H2, D5, D9, H52. Change O to G In J40
+VK0103: Change G to O In J3. Change O to S in D4, H9, H17, H38, H44, H63, H66
+VK0106: Remove extra comments in D43, add N In M43
+VK0413: Move In to F48.
+VK0416: Remove extra comments In H70.
+VK0418: Remove extra comments In J35.
+
+# 05/02/2016
+
+VJ0039: change 'G' grey to 'O'
 
 
 
