@@ -1,0 +1,36 @@
+> combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
+       Tin Tout  Sex          Filename
+NA      NA   NA <NA>              <NA>
+NA.1    NA   NA <NA>              <NA>
+NA.2    NA   NA <NA>              <NA>
+9812  31.9 31.1    1 2012\\VL0271.xlsx
+NA.3    NA   NA <NA>              <NA>
+NA.4    NA   NA <NA>              <NA>
+NA.5    NA   NA <NA>              <NA>
+NA.6    NA   NA <NA>              <NA>
+16692 46.0 43.5    0 2014\\VN0158.xlsx
+NA.7    NA   NA <NA>              <NA>
+NA.8    NA   NA <NA>              <NA>
+> 
+
+
+filename1011_oldtemplate <- c(
+"2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
+"2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
+"2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
+"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls", "2011\\VK0007.xls",
+"2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
+"2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
+"2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
+"2011\\VK0041.xls", "2011\\VK0042.xls", "2011\\VK0044.xls", "2011\\VK0045.xls", "2011\\VK0046.xls", "2011\\VK0047.xls", "2011\\VK0048.xls",
+"2011\\VK0050.xls", "2011\\VK0051.xls", "2011\\VK0056.xls", "2011\\VK0061.xls", "2011\\VK0062.xls", "2011\\VK0063.xls", "2011\\VK0067.xls",
+"2011\\VK0069.xls", "2011\\VK0070.xls", "2011\\VK0072.xls",
+"2011\\VK0101.xls", "2011\\VK0102.xls", "2011\\VK0103.xls",
+"2011\\VK0105.xls", "2011\\VK0106.xls",
+"2011\\VK0410.xls", "2011\\VK0412.xls", "2011\\VK0413.xls", "2011\\VK0416.xls",
+"2011\\VK0418.xls", "2011\\VK0419.xls", "2011\\VK0421.xls", "2011\\VK0422.xls", "2011\\VK0423.xls",
+
+	# those have yet another template
+"2011\\VK0293.xls",				
+"2011\\VK0296.xls", "2011\\VK0299.xls"
+)

@@ -2,8 +2,9 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 04/02/2016  
-#    try to get new files lifted to DB
+#	 last modif : 05/02/2016  
+#    all filenames at beginning
+#	 delete code dealing with xls
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -31,11 +32,11 @@ rm(list = ls(all = TRUE))
 library(RODBC)
 # library(openxlsx) # package openxlsx will be needed later in the code (after detaching the conflicting xlsx nevertheless needed to get colors for old templates)
 # library(xlsx)	# package xlsx will be needed later in the code (after detaching the conflicting openxlsx nevertheless needed at first to be faster/not crashing)
+require(zoo)
+
 
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
 
-
-#conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Dropbox\\Sparrow Lundy\\Database0.74_Jan2016GTUpToSummer2015Imported-upd20160204\\SparrowData.mdb")
 
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
@@ -59,11 +60,8 @@ head(tblDVD_XlsFilesALLDBINFO)
 tail(tblDVD_XlsFiles,30)
 
 
-{### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx)
 
-require(openxlsx)
-search() # make sure 'xlsx' is not in the list
-
+{### create list of filenames for New and Old Template: check those not included yet but that should be + special code to account for the fact that name extension not corrected to xlsx in DB
 
 {## create list of file names from files analysed after 2012 included
 	# not elegant but the DB will probably not change.
@@ -121,140 +119,7 @@ FilenamesNewTemplate <- gsub(".xls", ".xlsx",FilenamesNewTemplate) # as long as 
 
 }
 
-head(FilenamesNewTemplate)
-
-	
-{## create for each excel file with a new template, a table b containing: Tin, Tout, Sex and Filename
-
-
-out = list()
-	
-for (j in 1:length(FilenamesNewTemplate)){
-filenamej <- paste(pathdropboxfolder, FilenamesNewTemplate[j], sep="\\DVDs ")
-b <- read.xlsx(filenamej, sheet="DVD NO") # read.xlsx function from library 'openxlsx' (not library 'xlsx'): make sure xlsx is not in the list given by 'search()'
-b$Tin <- NA
-b$Tout <- NA
-b$Sex <- NA
-
-for (i in 1:nrow(b)){
-
-
-if (!is.na(b$F.in[i]) & is.na(b$M.in[i]))
-{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$F.in[i])))} # some text is sometimes written down the column of Fin in the excel files > Tin is NA by coercion
-
-if (is.na(b$F.in[i]) & !is.na(b$M.in[i]))
-{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$M.in[i])))} # some text is sometimes written down the column of Min in the excel files > Tin is NA by coercion
-
-
-if (!is.na(b$F.out[i]) & is.na(b$M.out[i]))
-{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$F.out[i])))}
-
-if (is.na(b$F.out[i]) & !is.na(b$M.out[i]))
-{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$M.out[i])))}
-
-
-if ((!is.na(b$F.in[i]) | !is.na(b$F.out[i])) & is.na(b$M.in[i]) & is.na(b$M.out[i])) # if one or the other Tin or Tout in 'female' column is not NA
-{b$Sex[i] <- "0" }
-
-if (is.na(b$F.in[i]) & is.na(b$F.out[i]) & (!is.na(b$M.in[i]) | !is.na(b$M.out[i]))) # if one or the other Tin or Tout in 'male' column is not NA
-{b$Sex[i] <- "1" }
-
-}
-
-if(nrow(b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),])>0)
-{b <- b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),c('Tin','Tout','Sex')]} # keep lines of data when sex was allocated and at least Tin or Tout (supress lines where only comments with a sex allocated)
-else {b <- unique(b[,c('Tin','Tout','Sex')])} # keep one line of NAs + filename
-
-
-b$Filename <- FilenamesNewTemplate[j]
-
-out[[j]] <- b
-
-}
-
-combinedprovisioningNewTemplate = do.call(rbind, out)
-}
-
-head(combinedprovisioningNewTemplate,30)
-
-
-
-{## create an excel file with all raw data just to keep reference of it
-	
-	## write.table(combinedprovisioningNewTemplate, file = "R_combinedprovisioningNewTemplate.xls", col.names=TRUE, sep='\t')
-
-# after running the line above:
-# I save the xls file into a xlsx file
-# shift the headers one cell right
-# rename the first column 'order' 
-# > not elegant but write.xlsx from openxlsx isn't working for me
-}
-
-length(unique(combinedprovisioningNewTemplate$Filename))	# so far, 648 files with only chicks analyzed with new template
-which(duplicated(unique(merge(x=combinedprovisioningNewTemplate, y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by= "Filename",all.x=TRUE)[,c("DVDRef","Filename")])[,"DVDRef"]))	# no duplicates of DVDRef
-}
-
-tail(combinedprovisioningNewTemplate,30)
-
-## error check for NewTemplate
-combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
-
-
-
-
-
-########### error check, integrate colors, after conversion files to xlsx, give rawdata for old Templates
-
-detach("package:openxlsx", unload=TRUE)
-require(xlsx)
-search()
-
-{## piece to run before running error check
-
-{# packages + DB
-library(RODBC)
-require(zoo)
-
-pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
-
-
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
-tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
-tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
-
-# select vedo made when provisioning chick (situation = 4 )
-tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
-SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.ShareTime, tblParentalCare.MVisit1, tblParentalCare.FVisit1, tblParentalCare.MVisit2, tblParentalCare.FVisit2, tblParentalCare.MBout, tblParentalCare.FBout
-FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD_XlsFiles.DVDRef = tblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = tblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
-WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
-")	# contains duplicates (same DVD analyzed several times)
-
-
-close(conDB)
-}
-
-{## create list of filenames
-
-filename1011_oldtemplate <- c(
-"2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
-"2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
-"2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
-"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls",
-"2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
-"2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
-"2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
-"2011\\VK0041.xls", "2011\\VK0042.xls", "2011\\VK0044.xls", "2011\\VK0045.xls", "2011\\VK0046.xls", "2011\\VK0047.xls", "2011\\VK0048.xls",
-"2011\\VK0050.xls", "2011\\VK0051.xls", "2011\\VK0056.xls", "2011\\VK0061.xls", "2011\\VK0062.xls", "2011\\VK0063.xls", "2011\\VK0067.xls",
-"2011\\VK0069.xls", "2011\\VK0070.xls", "2011\\VK0072.xls",
-"2011\\VK0101.xls", "2011\\VK0102.xls", "2011\\VK0103.xls",
-"2011\\VK0105.xls", "2011\\VK0106.xls",
-"2011\\VK0410.xls", "2011\\VK0412.xls", "2011\\VK0413.xls", "2011\\VK0416.xls",
-"2011\\VK0418.xls", "2011\\VK0419.xls", "2011\\VK0421.xls", "2011\\VK0422.xls", "2011\\VK0423.xls",
-
-	# those have yet another template
-"2011\\VK0293.xls",				
-"2011\\VK0296.xls", "2011\\VK0299.xls"
-)
+{## combined all files analyzed with old templates
 
 {FilenamesOldTemplate <- tblDVD_XlsFiles$Filename[
 
@@ -311,17 +176,103 @@ tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb"
 length(FilenamesOldTemplate)	# 882 files, situation 4, old template
 which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
 
-
-}
-
-}
-
-
 # as long as filenames in the DB are not updated...
 FilenamesOldTemplate <- gsub(".xlsx", ".xls",FilenamesOldTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 FilenamesOldTemplate <- gsub(".xls", ".xlsx",FilenamesOldTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 
+}
 
+}
+
+head(FilenamesNewTemplate)
+head(FilenamesOldTemplate)
+
+
+require(openxlsx)
+search() # make sure 'xlsx' is not in the list
+
+
+{### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx)
+	
+{## create for each excel file with a new template, a table b containing: Tin, Tout, Sex and Filename
+
+
+out = list()
+	
+for (j in 1:length(FilenamesNewTemplate)){
+filenamej <- paste(pathdropboxfolder, FilenamesNewTemplate[j], sep="\\DVDs ")
+b <- read.xlsx(filenamej, sheet="DVD NO") # read.xlsx function from library 'openxlsx' (not library 'xlsx'): make sure xlsx is not in the list given by 'search()'
+b$Tin <- NA
+b$Tout <- NA
+b$Sex <- NA
+
+for (i in 1:nrow(b)){
+
+
+if (!is.na(b$F.in[i]) & is.na(b$M.in[i]))
+{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$F.in[i])))} # some text is sometimes written down the column of Fin in the excel files > Tin is NA by coercion
+
+if (is.na(b$F.in[i]) & !is.na(b$M.in[i]))
+{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$M.in[i])))} # some text is sometimes written down the column of Min in the excel files > Tin is NA by coercion
+
+
+if (!is.na(b$F.out[i]) & is.na(b$M.out[i]))
+{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$F.out[i])))}
+
+if (is.na(b$F.out[i]) & !is.na(b$M.out[i]))
+{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$M.out[i])))}
+
+
+if ((!is.na(b$F.in[i]) | !is.na(b$F.out[i])) & is.na(b$M.in[i]) & is.na(b$M.out[i])) # if one or the other Tin or Tout in 'female' column is not NA
+{b$Sex[i] <- "0" }
+
+if (is.na(b$F.in[i]) & is.na(b$F.out[i]) & (!is.na(b$M.in[i]) | !is.na(b$M.out[i]))) # if one or the other Tin or Tout in 'male' column is not NA
+{b$Sex[i] <- "1" }
+
+}
+
+if(nrow(b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),])>0)
+{b <- b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),c('Tin','Tout','Sex')]} # keep lines of data when sex was allocated and at least Tin or Tout (supress lines where only comments with a sex allocated)
+else {b <- unique(b[,c('Tin','Tout','Sex')])} # keep one line of NAs + filename
+
+
+b$Filename <- FilenamesNewTemplate[j]
+
+out[[j]] <- b
+
+}
+
+combinedprovisioningNewTemplate = do.call(rbind, out)
+}
+
+head(combinedprovisioningNewTemplate,30)
+
+{## create an excel file with all raw data just to keep reference of it
+	
+	## write.table(combinedprovisioningNewTemplate, file = "R_combinedprovisioningNewTemplate.xls", col.names=TRUE, sep='\t')
+
+# after running the line above:
+# I save the xls file into a xlsx file
+# shift the headers one cell right
+# rename the first column 'order' 
+# > not elegant but write.xlsx from openxlsx isn't working for me
+}
+
+length(unique(combinedprovisioningNewTemplate$Filename))	# so far, 648 files with only chicks analyzed with new template
+
+{## error check for NewTemplate
+combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
+which(duplicated(unique(merge(x=combinedprovisioningNewTemplate, y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by= "Filename",all.x=TRUE)[,c("DVDRef","Filename")])[,"DVDRef"]))	# no duplicates of DVDRef
+}
+
+}
+
+tail(combinedprovisioningNewTemplate,30)
+
+
+detach("package:openxlsx", unload=TRUE)
+require(xlsx)
+search()
 
 {## create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
 
@@ -649,37 +600,29 @@ bb <- NULL
 
 }
 
-{# get outputs: list of warningz and raw data
+{# get warningz
 condwarningz <- sapply(warningz, function(x) length(x) > 1)
 warningz <- warningz[condwarningz]
 condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
 warningzz <- warningzz[condwarningzz]
-condout3 <- sapply(out3, function(x) length(x) > 1)
-out3 <- out3[condout3]
+
 
 warningz
 warningzz
-length(out3)
+
 
 capture.output(warningz, file="warningz20160204eve.txt") 
 
-condwarningzBirdIN <- sapply(warningz, function(x) x[2] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" | x[3] == "bird IN at end of video: please write Tout, move 'IN' into TouCom" )
-warningzBirdIN <- warningz[condwarningzBirdIN]
-condwarningzBirdIN2 <- sapply(warningzBirdIN, function(x) length(x) > 1)
-warningzBirdIN <- warningzBirdIN[condwarningzBirdIN2]
+}
 
-
-condwarningzMissInfo <- sapply(warningz, function(x) x[2] == "missing info in Tout com  !" | x[2] == "file starts with Fout !"| x[2] == "file starts with Mout !")
-warningzMissInfo <- warningz[condwarningzMissInfo]
-
-condwarningzOthers <- sapply(warningz, function(x) x[2] != "missing info in Tout com  !" &  x[2] != "bird IN at end of video: please write Tout, move 'IN' into TouCom")
-warningzOthers <- warningz[condwarningzOthers]
-
-
-
-
+{# get raw data
+condout3 <- sapply(out3, function(x) length(x) > 1)
+out3 <- out3[condout3]
+length(out3)
 
 combinedprovisioningOldTemplate = do.call(rbind, out3)
+}
+
 head(combinedprovisioningOldTemplate)
 
 combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col),]
@@ -687,33 +630,27 @@ combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.
 
 }
 
-
-
-
-}
-
-
-###########
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 head(combinedprovisioningOldTemplate, 100)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 {### combine all data
