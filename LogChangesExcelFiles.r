@@ -998,10 +998,44 @@ VK0418: Remove extra comments In J35.
 
 # 05/02/2016
 
-VJ0039: change 'G' grey to 'O'
+VJ0039: change 'G' grey to 'O' in I13, I15, I22, I27 ; change 'O' blue to 'S'
+VJ0040: change 'O' to 'S' in J12, change 'G' grey to 'O' in J17, J26, J33, F35, J53, change back sommething from Andrew : put 88.5 in Tin at the end, and tape length at time out with 'IN'
+VJ0041: change back sommething from Andrew : put 87.5 in Tin at the end, and tape length at time out with 'IN', change 'G' grey into 'O' in J16, change 'O' to 'S' in J46
+VJ0044: change 'G' grey to 'O' in J16, J23, J26, J29, J44, J55
+VJ0050: change grey 'G' to blue 'O' in J11, J15, J42,I55,J109, J111, J113, change 'G' grey to grey 'O' in F33
+VJ0052: change J13
+VJ0064: change 'O' into 'S' in F3
+VJ0066: move comments from D56 to M56, change grey 'G' to "O" blue
+VJ0067: delete 'Feeds chicks from outside' every where: change to 'O' blue
+VJ0068: change grey 'G' to 'O' blue in J67, change grey 'S' to blue 'S' in F40
+VJ0070: change grey 'G' in 'O' blue in J25
+VJ0078: added Tout tape length and 'IN' at the end
+VJ0079: change 'G' grey to 'O' blue in J28, J67
+VJ0080: added Tout tape length and 'IN' at the end; move 'N' from H10 to M10, change 'G' grey to 'O' grey in J17, J19
+VJ0081: added Tout tape length and 'IN' at the end; 
+VK0423: change 'G' grey to 'O' grey in F3 and F6
+VK0419: change 'G' grey to 'O' grey in J3, J74 and F76
+VK0418: added blue to E28 and E30
+VK0413: change 'In' to 'IN' in H2
+VK0412: change 'G' grey to 'O' grey in  J10, J16, to 'O' blue in J24 and J26 and J33, change 'O' to 'S' in F46
+VK0410: change 'G' grey to 'O' blue in J20, move comment from H15, added 'S'
+VK0105: change grey 'G' to 'O' blue in J3, J69, move comment from D18, H23, D28, H35, D45 and add 'S' ; move 'N' from H24, D48, D31 , D21; change 'G' grey into 'O' grey in J63 and J67 and J44, change 'O' to 'S' in D42, D18, D57
+VK0103: move Tin 'S' G9 to G10 without comment, deleted 'S' in H38, H44, H63,H66 change 'G' grey into 'O' grey in J39, J45, J64, J67
+VK0102: change 'G' grey to 'O' grey in J40
+VK0101: deleted 'fed from perch' with 'G' grey to O blue, changed to 'S' in D17, D4, D26, D31, D57 D79 ....; delete 'enter nest'  in D5, added 'G' in F6, change 'G' grey to 'O' grey in F37
 
 
+# Andrew
+## Changing Grey&G to Blue&O
 
+VJ0060: Change G to O, and grey to blue In: F3 F5 F9 F11 F13 F15 J7 F22 F24 J26 F28 F30 F32 F34 F36 F38 J40 F42 F44 F46 F48 F50 F52 F54 J56 F58 F60 F62 F65 F68 F70 F72 F77 J79 F81 F83 J85 F91 J101 F103 F108
+VJ0079: Change G to O, and grey to blue In: J10 J15 J71. 
+VK0024: Change G to O and grey to blue In: J5 J22 J29 J31
+
+# Andrew 05/02/2016	# check impact on DB !!!!!!!!!!!!!!!!!!
+
+VL0271: In F17 change 31.9 to 30.9, In B16 change 30.9 to 31.1, Then swap B16C16 to B17C17, and F17G17 to F16G16 to reorder chronology
+VN0158: In C45 changed 43.5 to 46.5
 
 }
 
