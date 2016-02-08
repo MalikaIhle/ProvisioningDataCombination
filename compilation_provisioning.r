@@ -37,7 +37,7 @@ require(zoo)
 
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
 
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Dropbox\\Sparrow Lundy\\Database0.74_Jan2016GTUpToSummer2015Imported-upd20160204\\SparrowData.mdb")
+conDB= odbcConnectAccess("C:\\Users\\mihle\\Dropbox\\Sparrow Lundy\\Database0.74_Jan2016GTUpToSummer2015Imported-upd20160205\\SparrowData.mdb")
 
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
 tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
@@ -67,13 +67,6 @@ tail(tblDVD_XlsFiles,30)
 	# not elegant but the DB will probably not change.
 FilenamesAfter2012 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename]) 
 
-########## FILES THAT SHOULD BE INCLUDED
-	# really not elegant... to get rid of those files that don't have proper names in the dropbox
-FilenamesAfter2012 <- FilenamesAfter2012[FilenamesAfter2012!="2012\\VL0077.xlsx" &	## named 'cant see the exit" > should be considered as no visit ?
-										FilenamesAfter2012!="2013\\VM0212.xlsx" &	## should be added as no visit ?
-										FilenamesAfter2012!="2013\\VM0245.xlsx" &	## named 'bad quality' but has data in DB > should be considered.
-										FilenamesAfter2012!="2013\\VM0330.xlsx"]	## named 'not 100% sure correct" but has data in DB > should be considered.
-###########	
 }								   
 	
 head(FilenamesAfter2012)
@@ -95,11 +88,7 @@ filename1011_oldtemplate <- c(
 "2011\\VK0101.xls", "2011\\VK0102.xls", "2011\\VK0103.xls",
 "2011\\VK0105.xls", "2011\\VK0106.xls",
 "2011\\VK0410.xls", "2011\\VK0412.xls", "2011\\VK0413.xls", "2011\\VK0416.xls",
-"2011\\VK0418.xls", "2011\\VK0419.xls", "2011\\VK0421.xls", "2011\\VK0422.xls", "2011\\VK0423.xls",
-
-	# those have yet another template
-"2011\\VK0293.xls",				
-"2011\\VK0296.xls", "2011\\VK0299.xls"
+"2011\\VK0418.xls", "2011\\VK0419.xls", "2011\\VK0421.xls", "2011\\VK0422.xls", "2011\\VK0423.xls"
 )
 
 
@@ -145,28 +134,11 @@ tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
 
-######### FILE THAT SHOULD BE INCLUDED
-# excluded for the moment: files that contain comments that are not standardized 
-tblDVD_XlsFiles$Filename != "2004\\40055.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40061.xls" &
-
-# file with yet another template:
-tblDVD_XlsFiles$Filename != "2011\\VK0293.xls" &
-tblDVD_XlsFiles$Filename != "2011\\VK0296.xls" &
-tblDVD_XlsFiles$Filename != "2011\\VK0299.xls" &
-
+# EXCLUDED
+tblDVD_XlsFiles$Filename != "2004\\40055.xls" & # files that contain comments that are not standardized 
+tblDVD_XlsFiles$Filename != "2004\\40061.xls" & # files that contain comments that are not standardized 
 tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty or in another format ?? (data in DB)
-
-tblDVD_XlsFiles$Filename != "2004\\40119.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2004\\40239.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2005\\50176.xls" &	# should check what's supposed to be in F19
-tblDVD_XlsFiles$Filename != "2005\\50548.xls" & # should check time in and out at the end for female > does not make sense
-tblDVD_XlsFiles$Filename != "2005\\50598.xls" & # should check time in and out in the middle for male > does not make sense
-tblDVD_XlsFiles$Filename != "2011\\VK0027.xls" & # should check time in and out at the end for male > does not make sense
-
 tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty)
-########
-
 tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & 
 tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" & 
 tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb"
@@ -258,11 +230,11 @@ head(combinedprovisioningNewTemplate,30)
 # > not elegant but write.xlsx from openxlsx isn't working for me
 }
 
-length(unique(combinedprovisioningNewTemplate$Filename))	# so far, 648 files with only chicks analyzed with new template
+length(unique(combinedprovisioningNewTemplate$Filename))	# 858 files with only chicks analyzed with new template
 
 {## error check for NewTemplate
 combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
-which(duplicated(unique(merge(x=combinedprovisioningNewTemplate, y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by= "Filename",all.x=TRUE)[,c("DVDRef","Filename")])[,"DVDRef"]))	# no duplicates of DVDRef
+
 }
 
 }
@@ -611,7 +583,7 @@ warningz
 warningzz
 
 
-capture.output(warningz, file="warningz20160204eve.txt") 
+capture.output(warningz, file="warningz20160208.txt") 
 
 }
 
@@ -625,8 +597,8 @@ combinedprovisioningOldTemplate = do.call(rbind, out3)
 
 head(combinedprovisioningOldTemplate)
 
+# check for unknown colors for 'O' visits (blue = feeding from the ouside - grey: hanging out around the NB)
 combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col),]
-
 
 }
 

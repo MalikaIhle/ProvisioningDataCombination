@@ -87,10 +87,11 @@ VK0418: displace comment from J7 to M7
 VK0050: added 'S' in J32, displace 'O, grooming' to M32
 50021: added 'S' in G16, G25, G32
 
+# done for conveniency - later verified and changed by Andrew Jones
 40121: change B5 from 22 to 21 as the bird entered 'later' than he exited
-40172: change H22 from 51.2 to 52
-40200: change H45 from 6.9 to 69.9
-40261: change D36 from 59 to 49
+40172: change H22 from 51.2 to 52 (could not confirm with DVD: missing)
+40200: change H45 from 6.9 to 69.9 (could not confirm with DVD: missing)
+40261: change D36 from 59 to 49 (could not confirm with DVD: missing)
 40269: change D22 from 17.7 to 14.7
 40307: change H97 from 78.6 to 77.6
 40391: change H43 from 43.8 to 43.4
@@ -977,7 +978,7 @@ VK0019: Add S to D21, move P to M37,M39, move timein and In to Timeout and Touco
 VK0021: Move additional comments from J11 to N11, H16 to N16
 VK0022: Remove F47 F48 F49 (random numbers??)
 vk0026: Remove additional comments from H15,H94. Remove F104 F105 F106 (random numbers)
-VK0027: Move additional comments from J21 to N21
+VK0027: Move additional comments from J21 to N21 + corrected chronology
 VK0029: Remove F65 F66 F67 (random numbers - I guess separate and total tape lengths)
 VK0037: Move time out In 62
 VK0038: Remove random numbers In F 
@@ -1023,6 +1024,46 @@ VK0105: change grey 'G' to 'O' blue in J3, J69, move comment from D18, H23, D28,
 VK0103: move Tin 'S' G9 to G10 without comment, deleted 'S' in H38, H44, H63,H66 change 'G' grey into 'O' grey in J39, J45, J64, J67
 VK0102: change 'G' grey to 'O' grey in J40
 VK0101: deleted 'fed from perch' with 'G' grey to O blue, changed to 'S' in D17, D4, D26, D31, D57 D79 ....; delete 'enter nest'  in D5, added 'G' in F6, change 'G' grey to 'O' grey in F37
+VK0072: change 'G' grey to 'O' grey in J15 and J35
+VK0070: change 'G' grey to 'O' grey in J24, change 'O' to 'S' in F51
+VK0069: change 'G' grey to 'O' grey in J22, J66, J81, J106
+VK0067: change 'G' grey to 'O' grey in J3 J12 F30 J34 F79 F86 J96 J167; change 'G' grey 'fed from outside' to 'O' blue J61 J75 J87 J99 F100 J126 J175
+VK0063:  change 'G' grey to 'O' grey in J4 J9 J67, change 'O' to 'S' in J57
+VK0062: change all 'S, feeding from outside' to O blue: F4 F9 F30 J63 J75 J79 F94; change grey 'G, feeding from outside' to 'O' blue in J3 J8 J13 F18 J33 J37 F40 J42 J46 J53 J55 J57 J59 J68 J70 J72 J74 J84 F86 J91 F93
+VK0061: change 'G' grey to 'O' grey in J14
+VK0056: change grey 'G, feeding from outside' to 'O' blue in J6 F12 J14 F16 J18 J20 F22 J24 J28 J30 J37 J39 J47 F49 J51 J53 F55 J59 F61 J63 F65 J67 J69 J70 J73 J75 J77 F79 F83 J85 F87; change 'G' grey into 'O' grey in J8 F10 F26 J34 J41 (deleted 'NG'); change 'S, feeding from outside' to 'O' blue: F31 F42 , change 'G' grey to 'O' grey in F57 F81
+VK0051: change 'G' grey to 'O' blue in F7 F17 J19 ; change 'G' grey to 'O' grey in J25 F28 J37 J44
+VK0050: change 'G' grey to 'O' grey in F14 F16
+VK0048: change 'G' grey to 'O' grey in J11 J44
+VK0047: change 'G' grey to 'O' grey in J33 J37
+VK0046: change 'G' grey to 'O' grey in J35
+VK0045: change 'G' grey to 'O' grey in J15 J32 J36
+VK0042: change 'G' grey to 'O' grey in J19 J21 J23 J34 J37
+VK0041: change 'O' green to 'S' in F14, change 'G' grey to 'O' grey in J44
+VK0040: change 'G' grey to 'O' grey in F9 F29
+VK0039: change 'G' grey to 'O' grey in F3 F5 F19 J26 J37 J41 J43 J45 F63 J63
+VK0038: change 'G' grey to 'O' grey in F3 F5 J7 J39 J54
+VK0037: change 'G' grey to 'O' grey in J7 F28 J33 J52
+Vk0034: change 'G' grey to 'O' grey in J10 J16 J51
+VK0031: change 'G' grey 'Fed chicks from outside' to 'O' blue in F11 F13 F15 J3 J5 J20 J24 F26 F28 J32 J36 F28 F40 F43 J44 J51 J56 J64 J66 F54 F58 ; change 'G'g grey to "O" grey in J7 J10, change 'S feeding chicks' to O bleu in F45
+VK0029: change 'G' grey to 'O' grey in J12 J21 F28 F35 F37 J33 J41 J54 J56 J58
+VK0028: change 'G' grey to 'O' grey in J12
+VK0027: change 'G' grey to 'O' grey in J6 J8 J10 J12 J14 J16 J18 J23
+VK0026: added 'S' in D10 H7 ; change 'G' grey to 'O' grey in J36
+VK0025: added 'S' in D59
+VK0024: change 'G' grey to 'O' grey in J8 J11 F13 J27 J38 J43 J45 J50
+VK0022: change 'G' grey to 'O' grey in J12 J19 J27 J33
+VK0021: change 'G' grey to 'O' grey in J17 F28 J80 ; added 'S' in D84 D68
+VK0020: added 'S' in H29 D67 H74 ; change 'G' grey to 'O' grey in F38 F40 J70 J89
+VK0019: put back Tin 'In' at the end for male, addd Tapelength for Tout 'IN', change 'G' grey to 'O' grey in J13 J15 J17 J41 J63 J68 F73, added 'S' in G76
+VK0017: change 'G' grey to 'O' grey in F3 F5 J14 J19 J29 J67
+VK0013: change 'G' grey to 'O' grey in F9 F22 J4, move 'copulation' from D21 to M22; added 'S' in H12; added Tout 'IN' as tape length in I22, move comment 'N feathers' from H21 to M21 and added 'S' in H21
+VK0012: change 'G' grey to 'O' grey in F4 F6 F23 J11
+VK0011: added zero in G2 ; change 'G' grey to 'O' grey in J17, added tape length in Tout I42
+VK0010: change 'G' grey to 'O' grey in J37 J43 J54 J65 J70 J74 J78; change 'O' to 'S' in F41
+VK0003: change 'G' grey to 'O' grey in J8 J12 J25 J39 F35
+VK0002: change 'G' grey to 'O' grey in F10 F34 F36 F107 J108
+VK0001: replace 'O' by 'S' in J8,  change 'G' grey to 'O' grey in J25 J45 J56 J109
 
 
 # Andrew
@@ -1033,9 +1074,22 @@ VJ0079: Change G to O, and grey to blue In: J10 J15 J71.
 VK0024: Change G to O and grey to blue In: J5 J22 J29 J31
 
 # Andrew 05/02/2016	# check impact on DB !!!!!!!!!!!!!!!!!!
-
+VK0212: G21 change from 64.3 to 65.3
 VL0271: In F17 change 31.9 to 30.9, In B16 change 30.9 to 31.1, Then swap B16C16 to B17C17, and F17G17 to F16G16 to reorder chronology
 VN0158: In C45 changed 43.5 to 46.5
+
+
+# 08/02/2016 last weird files
+VK0299: shift all Tout Time Bout time one cel up to be at the same line as time In
+VK0296: shift all Tout Time Bout time one cel up to be at the same line as time In
+VK0293: shift all Tout Time Bout time one cel up to be at the same line as time In
+40239: delete 'TOTAL' ; move Tin to Tout 'IN'; change B64 from 84.9 to 89.4
+50548: delete 'TOTAL' ; change 75.2 to 85.2 in F64, 75.4 to 85.4 in H65, 75.5 to 85.5 in B66, 75.6 to 85.6 in B67
+50176: andrew added F19 number and color changed to grey
+VL0077_cant see the exit: renamed VL0077 (since already in DB)
+VM0212_novisits: renamed VM0212 (since already in DB)
+VM0245(bad quality): renamed VM0245 (since already in DB) # add comment in DB: bad quality
+VM0330 - not 100percent sure this one is correct! May want to re-do (sorry): renamed VM0330 (since already in DB) # add comment in DB: not 100% sure this one is correct
 
 }
 
