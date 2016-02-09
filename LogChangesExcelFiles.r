@@ -2,9 +2,33 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Log changes made to excel provisioning files
 #	 Start : 07/01/2016
-#	 last modif : 04/02/2016  
-#    coorections sparrow meeting
+#	 last modif : 09/02/2016  
+#    corrections during sparrow meeting
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+{## IMPORTANT REMARKS
+
+# for files with Old Template
+
+# I am assuming that 
+# 'O' blue means feeding from the outside
+# 'O' grey means hanging out of the nest box
+# 'S' is hanging out at the nest box before entering it or after leaving it
+# and therefore I changed files accordingly (specifically files for 2010-2011 with old template)
+
+# we corrected all illogical chronology with the videos unless specified (a few missing DVDs)
+
+# we removed all comments other than 'O' 'G' 'S' 'IN' to the next empty column or the 'activity' column
+# and replaced it appropriately
+
+# we standardized  all time when bird was 'IN' at begining (Tin = 0) and at the end (Tout = tape length)
+
+# the data is contained in the second sheet (create sheet1 otherwise)
+
+
+}
+
+
 
 {## changes made in excel files
 VL0106: displace remarks from M.in
@@ -1079,7 +1103,7 @@ VL0271: In F17 change 31.9 to 30.9, In B16 change 30.9 to 31.1, Then swap B16C16
 VN0158: In C45 changed 43.5 to 46.5
 
 
-# 08/02/2016 last weird files
+# 08/02/2016 weird files
 VK0299: shift all Tout Time Bout time one cel up to be at the same line as time In
 VK0296: shift all Tout Time Bout time one cel up to be at the same line as time In
 VK0293: shift all Tout Time Bout time one cel up to be at the same line as time In
@@ -1091,6 +1115,29 @@ VM0212_novisits: renamed VM0212 (since already in DB)
 VM0245(bad quality): renamed VM0245 (since already in DB) # add comment in DB: bad quality
 VM0330 - not 100percent sure this one is correct! May want to re-do (sorry): renamed VM0330 (since already in DB) # add comment in DB: not 100% sure this one is correct
 
+# 09/02/2016 some more last files
+40123: rewatched the video and changed to: 'O' blue in E2 I3 E7 E10 E11 E13 I14 E18 E24 I25 E26 I27 E37 E38 E41 E44 E59 I61; 'O' grey in E4 I19 I58 ; change all 'gone' to 'G'
+40133: replace 'gone' by 'G', change 'G' grey to 'O' grey in I9 I19, added added blue 'G' in I2 (he actually goes inside on video)
+50666: replace all 'OF' blue by 'O' blue; added 'S' in C37 C43
+VK0101: delete space in line 80
+VK0105: delete space in line 49, and another
+VK0067: change E65 from 24.3 to 25.3
+50490: change B16 from 56.2 to 56.9
+40551: change F24 from 50.7 to 58.7
+40427: move Tout 'S' to Tin 'S' in B83
+40315: move 'COP' and time from line 38 and 49
+40148: DVD missing could not check what the real number should be: change F58 from 57.4 to 57
+VK0101: change C132 from 84.9 to 84.5, C125 from 81 to 80.1
+40427: delete Tin 'S' in  B83
+50296: change O 'green' to 'O' grey in I86
+50253: added 'S' in C21
+50242: move 31.7 31.7 'O' red from B19 to L19 (nothing on video at that time... ?)
+50221: added 'S' in G16 C5 G31 C46 G69 G72, change 'O' green to "O" grey in I3
+50165: added 'S' in G3 G9
+80027: delete blank rows
+80031: delete blank rows
+80006: delete blank rows
+VK0101: delete blank rows
 }
 
 

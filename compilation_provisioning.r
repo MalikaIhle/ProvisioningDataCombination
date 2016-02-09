@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 05/02/2016  
+#	 last modif : 09/02/2016  
 #    all filenames at beginning
 #	 delete code dealing with xls
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -134,10 +134,12 @@ tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
 
-# EXCLUDED
+# EXCLUDED BUT WITH DATA IN DB (could be included if rewatched)
 tblDVD_XlsFiles$Filename != "2004\\40055.xls" & # files that contain comments that are not standardized 
 tblDVD_XlsFiles$Filename != "2004\\40061.xls" & # files that contain comments that are not standardized 
-tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty or in another format ?? (data in DB)
+tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty (data in DB)
+
+# non sense
 tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty)
 tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & 
 tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" & 
@@ -578,12 +580,8 @@ warningz <- warningz[condwarningz]
 condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
 warningzz <- warningzz[condwarningzz]
 
-
 warningz
 warningzz
-
-
-capture.output(warningz, file="warningz20160208.txt") 
 
 }
 
@@ -599,36 +597,20 @@ head(combinedprovisioningOldTemplate)
 
 # check for unknown colors for 'O' visits (blue = feeding from the ouside - grey: hanging out around the NB)
 combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col),]
+unique(combinedprovisioningOldTemplate$Filename[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col)])
+
 
 }
 
 head(combinedprovisioningOldTemplate, 100)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 {### combine all data
 
 combinedprovisioningNewTemplate$Template <- "New"
 combinedprovisioningOldTemplate$Template <- "Old"
+combinedprovisioningNewTemplate$Com <- NA
+combinedprovisioningNewTemplate$Col <- NA
 
 combinedprovisioningALL <- rbind(combinedprovisioningOldTemplate,combinedprovisioningNewTemplate)
 
