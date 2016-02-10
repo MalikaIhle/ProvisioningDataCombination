@@ -118,11 +118,11 @@ tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename &
 # years before 2010, or after 2010 but belonging to list created above
 (tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
 
-# exclude duplicates
+# exclude duplicates (take the one with data in DB parental care)
 tblDVD_XlsFiles$Filename != "2004\\40001LM19.xls" & 
-tblDVD_XlsFiles$Filename != "2004\\40032.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-tblDVD_XlsFiles$Filename != "2004\\40036.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-tblDVD_XlsFiles$Filename != "2004\\40039.xls" & # select D file as the 'normally named' file was not presented in the standardized way
+tblDVD_XlsFiles$Filename != "2004\\40032D.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40036.xls" & 
+tblDVD_XlsFiles$Filename != "2004\\40039.xls" & 
 tblDVD_XlsFiles$Filename != "2004\\40055S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40069S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40071S.xls" &
@@ -138,12 +138,10 @@ tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40055.xls" & # files that contain comments that are not standardized 
 tblDVD_XlsFiles$Filename != "2004\\40061.xls" & # files that contain comments that are not standardized 
 tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty (data in DB)
-
-# non sense
-tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty)
-tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & 
-tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" & 
-tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb"
+tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & # why wrong ?
+tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" &  # what is not sure ?
+tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty, DB parental care = line of NA)
+tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb" # nonsense
 ] 
 }
 

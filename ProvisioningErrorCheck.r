@@ -19,8 +19,6 @@ rm(list = ls(all = TRUE))
 library(RODBC)
 
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
-pathlocalfolder <- "C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\ProvisioningDataCombination"
-
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 
@@ -37,24 +35,8 @@ HAVING (((Count(tblDVD_XlsFiles.[DVDRef]))>1));
 ")
 
 # take the excel file that is entered in parental care (and/or hopefully the most standardized version), put the other file in a 'junk' subfolder
-# delete entry for the duplicate in tblDVD_XlsFiles (leave the unique entry in tblDVDInfo)
+###### >>>> DB IMPROVEMENT POSSIBLE: delete entry for the duplicate in tblDVD_XlsFiles (leave the unique entry in tblDVDInfo)
 
-			# so far (in the script only) I excluded those duplicates > my rule was 'take the file with the normal name' assuming this would be the one in the DB. 
-			# need to check that this is the case
-			tblDVD_XlsFiles$Filename != "2004\\40001LM19.xls" & 
-			tblDVD_XlsFiles$Filename != "2004\\40032.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-			tblDVD_XlsFiles$Filename != "2004\\40036.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-			tblDVD_XlsFiles$Filename != "2004\\40039.xls" & # select D file as the 'normally named' file was not presented in the standardized way
-			tblDVD_XlsFiles$Filename != "2004\\40055S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40069S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40071S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40074S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40075S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40079S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40089S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
-			tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
 }
 
 
@@ -70,6 +52,17 @@ WHERE (((tblParentalCare.DVDRef) Is Null));
 
 # decide whether to enter data in ParentalCare or not. If not, put the file in the 'junk' folder. 
 # delete the entry in tblDVD_XlsFiles (leave entry in tblDVDInfo)
+
+
+# output: 
+#   DVDRef              Filename DVDNumber
+# 1    195       2004\\40195.xls     40195		# excel with data - but no chicks so keep data empty in DB is ok ?
+# 2   1144       2005\\50587.xls     50587		# excel with data - no reasons not to enter them in DB ?
+# 3   1582       2006\\60011.xls     60011		# excel with data - no reasons not to enter them in DB ? though only one short visit at the end > no chiks was left maybe ?
+# 4   1587       2006\\60016.xls     60016		# excel with data - no reasons not to enter them in DB ? very few visits, mostly hanging around > no chiks was left maybe ?
+# 5   1674       2006\\60103.xls     60103		# excel with data - but tape length = 13 min (camera fell)
+# 6   2016 2008\\SparrowData.mdb     80073		# to delete
+
 }
 
 
@@ -96,13 +89,18 @@ WHERE (((tblDVD_XlsFiles.DVDRef) Is Null));
 	# check whether those with NA and comments should be with 0 (no visits but video watchable?)
 	# check if those with zero but with TapeTime should be NA ? add comments if there isn't ?
 	# check those with NA and without comments 
+	
+	
+# partial output
+# 90091 and 90098 excel files do not exit
+	
 
 }
 	
 	
 	
 	
-### Is DVD Number the real Filename ?
+### Is DVD Number the real Filename ? YES
 {
 List_AlltblParentalCare_DVDRef <- sqlQuery(conDB, "
 SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVD_XlsFiles.Filename
@@ -118,7 +116,7 @@ Unmatched_DVDNumber_NewFilename <- List_AlltblParentalCare_DVDRef[as.character(L
 Unmatched_DVDNumber_NewFilename <- Unmatched_DVDNumber_NewFilename[complete.cases(Unmatched_DVDNumber_NewFilename),]
 Unmatched_DVDNumber_NewFilename
 
-# check with duplicates above, if all were taken care of
+# check with duplicates above, if all were taken care of: YES
 
 }
 
@@ -139,14 +137,118 @@ excelfilelists <- do.call(rbind, excelfilelists)
 colnames(excelfilelists) <- "Filename"
 head(excelfilelists)
 
-excelfilelists$NewFilename <-gsub(".xlsx", "", excelfilelists$Filename )
-excelfilelists$NewFilename <- gsub(".xls", "", excelfilelists$NewFilename )
+excelfilelists$NewFilename <-gsub(".xlsm|.xlsx", "", excelfilelists$Filename )
+
 head(excelfilelists)
 
-excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCare_DVDRef$DVDNumber]
+ExcelNOTinDB <- excelfilelists$NewFilename[!excelfilelists$NewFilename%in%List_AlltblParentalCare_DVDRef$DVDNumber & excelfilelists$NewFilename!= "z_ToLeaveAside"]
+data.frame(ExcelNOTinDB)
 
 # check if and why those are not in DB, if should not be, move to 'junk' folder
 
+
+1                     40001LM18	# DVD number is 40001LM18	# ok
+2                        40036D	# DVD number is 40036		# ok
+3                        40039D # DVD number is 40039		# ok
+8                        60029D # DVD number is 60029		# ok
+
+4                         40195 # have entry in DVD_XlsFiles but not in paternal care (see above)	# dont'know why
+5                         50587 # have entry in DVD_XlsFiles but not in paternal care (see above)	# dont'know why
+6                         60011 # have entry in DVD_XlsFiles but not in paternal care (see above)	# dont'know why
+7                         60016 # have entry in DVD_XlsFiles but not in paternal care (see above)	# dont'know why
+9                         60103 # have entry in DVD_XlsFiles but not in paternal care (see above)	# dont'know why
+
+10                        80000	# empty excel 				# moved to junk folder
+11                       90028A # duplicate not in DB 		# moved to junk folder
+12                      90052TR # duplicate with data in DB # move duplicate '90052' to junk folder
+13                90056NOT90059 # duplicate with data in DB # move duplicate '90056' to junk folder
+
+14                       VK0079 # data in file - Andy Turner - why not imported ?
+15                       VK0080 # data in file - Andy Turner - why not imported ?
+16                       VK0081 # data in file - Andy Turner - why not imported ?
+17                       VK0082 # data in file - Andy Turner - what are those colors in there ?? - why not imported ?
+18                       VK0083 # data in file - Andy Turner - what are those colors in there ?? - why not imported ?
+19                       VK0084 # data in file - Andy Turner - why not imported ?
+20                       VK0085 # data in file - Andy Turner - why not imported ?
+21                       VK0120 # data in file - Rob White - why not imported ?
+22                       VK0121 # data in file - Rob White - why not imported ?
+23                       VK0122 # data in file - Rob White - why not imported ?
+24                       VK0125 # data in file - Rob White - why not imported ?
+25                       VK0240 # data in file - Andy Turner - why not imported ?
+26                       VK0241 # data in file - Andy Turner - why not imported ?
+27                       VK0243 # data in file - Andy Turner - why not imported ?
+28                       VK0244 # data in file - Andy Turner - why not imported ?
+29                       VK0245 # data in file - Andy Turner - why not imported ?
+30                       VK0246 # data in file - Andy Turner - why not imported ?
+31                       VK0248 # data in file - Andy Turner - why not imported ?
+32                       VK0249 # data in file - Andy Turner - why not imported ?
+33                       VK0250 # data in file - Andy Turner - why not imported ?
+34                       VK0251 # data in file - Andy Turner - why not imported ?
+35                       VK0252 # data in file - Andy Turner - why not imported ?
+36                       VK0254 # data in file - Andy Turner - why not imported ?
+37                       VK0256 # data in file - Andy Turner - why not imported ?
+
+38                       VK0337 # some data in file - EH - why not imported ?  - wild nest  									# moved to junk folder
+39                       VK0365 # some data in file - EH - why not imported ? - wild nest 										# moved to junk folder
+40                       VK0389 # empty file - EH - hasn't been watched ?? - wild nest - dark video  							# moved to junk folder
+41                       VK0409 # empty file - EH -hasn't been watched ?? - wild nest  											# moved to junk folder
+42                       VK0411 # data in file (within file, name is VK0410) - EH - why not imported ? - video is dark  		# moved to junk folder
+43                       VK0420 # empty file - EH - hasn't been watched ??  - video is dark  									# moved to junk folder
+44                       VK0424 # empty file - EH - hasn't been watched ?? (within file, name is VK0423) - video is dark  		# moved to junk folder
+45                       VK0708 # file name within file is VK0408: just a copy to get the template  - EH - video does not exist # moved to junk folder
+
+46       VL0331_impossiblevideo # have entry in DVD_XlsFiles but not in paternal care # moved to junk folder
+47 VM0052 part-watched- blurred # have entry in DVD_XlsFiles but not in paternal care # moved to junk folder
+48 VM0057 watched up to 43 mins # have entry in DVD_XlsFiles but not in paternal care # moved to junk folder
+
+49                       VM0363 # data in file -  Adam Gosztonyi - why not imported ?
+50                       VM0366 # data in file -  Adam Gosztonyi - why not imported ?
+51                       VM0373 # data in file -  Adam Gosztonyi - why not imported ?
+52                       VM0374 # data in file -  Adam Gosztonyi - why not imported ?
+53                       VM0382 # data in file -  Adam Gosztonyi - why not imported ?
+54                       VM0385 # data in file -  Adam Gosztonyi - why not imported ?
+55                       VM0386 # data in file -  Adam Gosztonyi - why not imported ?
+56                       VM0388 # data in file -  Adam Gosztonyi - why not imported ?
+57                       VM0398 # data in file -  Adam Gosztonyi - why not imported ?
+58                       VM0403 # data in file -  Adam Gosztonyi - why not imported ?
+59                       VM0411 # data in file -  Adam Gosztonyi - why not imported ?
+60                       VM0418 # data in file -  Adam Gosztonyi - why not imported ?
+61                       VM0430 # data in file -  Adam Gosztonyi - why not imported ?
+62                       VM0443 # data in file -  Adam Gosztonyi - why not imported ?
+63                       VM0450 # data in file -  Adam Gosztonyi - why not imported ?
+64                       VM0456 # data in file -  Adam Gosztonyi - why not imported ?
+
+65          VM0470 - incomplete # data in parental care from duplicate 'VM0470' - should be deleted from DB ? # moved to junk folder
+66          VM0470 - poor video # data in parental care from duplicate 'VM0470' - should be deleted from DB ? # moved to junk folder
+
+67                       VM0498 # data in file -  Adam Gosztonyi - why not imported ?
+68                       VM0499 # data in file -  Adam Gosztonyi - why not imported ?
+69                       VM0504 # data in file -  Adam Gosztonyi - why not imported ?
+70                       VM0506 # data in file -  Adam Gosztonyi - why not imported ?
+71                       VM0521 # data in file -  Adam Gosztonyi - why not imported ?
+72                       VM0523 # data in file -  Adam Gosztonyi - why not imported ?
+73                       VM0526 # data in file -  Adam Gosztonyi - why not imported ?
+74                       VM0528 # data in file -  Adam Gosztonyi - why not imported ?
+75                       VM0534 # data in file -  Adam Gosztonyi - why not imported ?
+
+76              VM0547-1minlong # move to junk folder
+
+77                       VM0554 # data in file -  Adam Gosztonyi - why not imported ?
+78                       VM0555 # data in file -  Adam Gosztonyi - why not imported ?
+79                       VM0569 # data in file -  Adam Gosztonyi - why not imported ?
+80                       VM0581 # data in file -  Adam Gosztonyi - why not imported ?
+81                       VM0582 # data in file -  Adam Gosztonyi - why not imported ?
+82                       VM0583 # data in file -  Adam Gosztonyi - why not imported ?
+83                       VM0584 # data in file -  Adam Gosztonyi - why not imported ?
+84                       VM0588 # data in file -  Adam Gosztonyi - why not imported ?
+85                       VM0593 # data in file -  Adam Gosztonyi - why not imported ?
+86                       VM0594 # data in file -  Adam Gosztonyi - why not imported ?
+87                       VM0595 # data in file -  Adam Gosztonyi - why not imported ?
+88                       VM0603 # data in file -  Adam Gosztonyi - why not imported ?
+89                       VM0605 # data in file -  Adam Gosztonyi - why not imported ?
+90                       VM0607 # data in file -  Adam Gosztonyi - why not imported ?
+91                       VM0613 # data in file -  Adam Gosztonyi - why not imported ?
+92                       VM0615 # data in file -  Adam Gosztonyi - why not imported ? some numbers have colors what is that ?
 
 }
 

@@ -1138,6 +1138,20 @@ VK0101: change C132 from 84.9 to 84.5, C125 from 81 to 80.1
 80031: delete blank rows
 80006: delete blank rows
 VK0101: delete blank rows
+
+
+# 10/02/2016 choice of files that were analyzed twice: pick the one that has data in the DB
+40032: added 'S' in I5 I12, move 'copulating' from J14 to L14, move genral comment in L22
+
+
+
+
+
+
+
+
+
+
 }
 
 
@@ -1178,6 +1192,5 @@ https://support.microsoft.com/en-us/kb/196158	# to list filenames in a folder (s
 50835
 50982
 50983
-
 
 }
