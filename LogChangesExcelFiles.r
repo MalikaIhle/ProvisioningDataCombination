@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Log changes made to excel provisioning files
 #	 Start : 07/01/2016
-#	 last modif : 09/02/2016  
+#	 last modif : 11/02/2016  
 #    corrections during sparrow meeting
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -19,7 +19,7 @@
 # we corrected all illogical chronology with the videos unless specified (a few missing DVDs)
 
 # we removed all comments other than 'O' 'G' 'S' 'IN' to the next empty column or the 'activity' column
-# and replaced it appropriately
+# and replaced it appropriately (i.e. following the definitions above)
 
 # we standardized  all time when bird was 'IN' at begining (Tin = 0) and at the end (Tout = tape length)
 
@@ -1144,11 +1144,16 @@ VK0101: delete blank rows
 40032: added 'S' in I5 I12, move 'copulating' from J14 to L14, move genral comment in L22
 
 
-
-
-
-
-
+# 11/02/2016
+VK0195: move comment 'video ends early'
+VK0218: move comment 'battery cut out'
+VK0255: move comment 'video finishes early'
+VK0233: move comment 'tape ends early'
+VK0234: move comment 'short video'
+VK0223: added '48.5' in G18
+VN0824: added 20.1 in C5
+VN0191: added 22.4 in G23, change G22 from 22.4 to 22.3
+VN0124: added 51.1 in G25, 54.3 in G26
 
 
 

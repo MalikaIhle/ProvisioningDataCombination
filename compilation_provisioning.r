@@ -2,31 +2,37 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 09/02/2016  
-#    all filenames at beginning
-#	 delete code dealing with xls
+#	 last modif : 11/02/2016  
+#	 check inconsistencies with DB
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-{### remarks
+{### remarks about packages
 
 ## library 'xlsx' run with rjava, does not have enough memory to go through all excel files, hence the change to 'openxlsx', that can only read xlsx files (not xls)
 ## but to get colors out of old templates, need to have excel files as java object, hence use of package 'xlsx'. 
 ## In addition, this require to convert all xls files to xlsx
 
-}
+## within package xlsx:
+## if load workbook as a java object > header is index = 1 ; while with read.xlsx function > header has no index but the 1st row of data has index = 1
+# in addition: load workbook supress lines without data, which read.xlsx does not do, so index not matching if long excel files with blank lines (needs to be deleted)
 
+
+}
 
 {### overview decisions taken
 
 ## excel files considered are only the one which have:
-# an entry in tblDVD_XlsFiles (rk: some files have an entry in DB but are not included here: see '########## FILES THAT SHOULD BE INCLUDED')
+# an entry in tblDVD_XlsFiles (rk: some files have an entry in DB but are not included here: see 'FILES THAT SHOULD BE INCLUDED')
 # a situation = 4 in tblDVDInfo (i.e. only chicks)
+
+## decision still to be taken:
 # should excluded early age chicks because can still be brooded ??
+# should exclude recordings when the next nest visit revealed every chicks were dead ?
 
 }
 
-rm(list = ls(all = TRUE))
 
+rm(list = ls(all = TRUE))
 
 {### packages, working directories and connection to Access DB
 library(RODBC)
@@ -34,10 +40,11 @@ library(RODBC)
 # library(xlsx)	# package xlsx will be needed later in the code (after detaching the conflicting openxlsx nevertheless needed at first to be faster/not crashing)
 require(zoo)
 
+options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
 
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
 
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Dropbox\\Sparrow Lundy\\Database0.74_Jan2016GTUpToSummer2015Imported-upd20160205\\SparrowData.mdb")
+conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
 tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
@@ -60,7 +67,6 @@ head(tblDVD_XlsFilesALLDBINFO)
 tail(tblDVD_XlsFiles,30)
 
 
-
 {### create list of filenames for New and Old Template: check those not included yet but that should be + special code to account for the fact that name extension not corrected to xlsx in DB
 
 {## create list of file names from files analysed after 2012 included
@@ -72,7 +78,7 @@ FilenamesAfter2012 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=293
 head(FilenamesAfter2012)
 
 
-{##  create list of file names from files analysed in 2010 and 2011 with the new template (from what I could see opening hopefully all the files)
+{##  create list of file names from files analysed in 2010 and 2011 with the new template (from what I could see opening all the files)
 
 filename1011_oldtemplate <- c(
 "2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
@@ -98,15 +104,18 @@ Filenames1011newtemplate <- tblDVD_XlsFiles$Filename[grepl("2010|2011", tblDVD_X
 }
 
 head(Filenames1011newtemplate)													
-
 	
-{## combine all files analyzed with the new template (will take newly analyzed files IF put in the root of the year folder, with a normal file name)
+	
+{## combine all files analyzed with the new template (will take newly analyzed files only if those are put in the root of the year folder, with a normal file name)
 
 FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(FilenamesAfter2012))
+length(FilenamesNewTemplate)	# 858 files, situation 4, new template
+
 FilenamesNewTemplate <- gsub(".xlsx", ".xls",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 FilenamesNewTemplate <- gsub(".xls", ".xlsx",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 
 }
+
 
 {## combined all files analyzed with old templates
 
@@ -118,7 +127,7 @@ tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename &
 # years before 2010, or after 2010 but belonging to list created above
 (tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
 
-# exclude duplicates (take the one with data in DB parental care)
+# exclude duplicates (take the one with data in DB tblParentalCare)
 tblDVD_XlsFiles$Filename != "2004\\40001LM19.xls" & 
 tblDVD_XlsFiles$Filename != "2004\\40032D.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40036.xls" & 
@@ -134,18 +143,18 @@ tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
 tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
 
-# EXCLUDED BUT WITH DATA IN DB (could be included if rewatched)
-tblDVD_XlsFiles$Filename != "2004\\40055.xls" & # files that contain comments that are not standardized 
-tblDVD_XlsFiles$Filename != "2004\\40061.xls" & # files that contain comments that are not standardized 
+# EXCLUDED BUT WITH DATA IN DB (COULD BE INCLUDED if rewatched)
+tblDVD_XlsFiles$Filename != "2004\\40055.xls" & # files that contain comments that are not standardized (data in DB)
+tblDVD_XlsFiles$Filename != "2004\\40061.xls" & # files that contain comments that are not standardized (data in DB)
 tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty (data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & # why wrong ?
-tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" &  # what is not sure ?
+tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & # why wrong ? (the copy '50368' file has data in DB)
+tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" &  # what is not sure ? (the copy '50370' file has data in DB)
 tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty, DB parental care = line of NA)
 tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb" # nonsense
 ] 
 }
 
-length(FilenamesOldTemplate)	# 882 files, situation 4, old template
+length(FilenamesOldTemplate)	# 888 files, situation 4, old template
 which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
 
 # as long as filenames in the DB are not updated...
@@ -154,6 +163,7 @@ FilenamesOldTemplate <- gsub(".xls", ".xlsx",FilenamesOldTemplate) # as long as 
 
 }
 
+
 }
 
 head(FilenamesNewTemplate)
@@ -161,13 +171,9 @@ head(FilenamesOldTemplate)
 
 
 require(openxlsx)
-search() # make sure 'xlsx' is not in the list
+search() # make sure package 'xlsx' is not in the list
 
-
-{### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx)
-	
-{## create for each excel file with a new template, a table b containing: Tin, Tout, Sex and Filename
-
+{### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx) and error checking
 
 out = list()
 	
@@ -180,20 +186,18 @@ b$Sex <- NA
 
 for (i in 1:nrow(b)){
 
-
 if (!is.na(b$F.in[i]) & is.na(b$M.in[i]))
-{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$F.in[i])))} # some text is sometimes written down the column of Fin in the excel files > Tin is NA by coercion
+{b$Tin[i] <- (as.numeric(as.character(b$F.in[i])))} 
 
 if (is.na(b$F.in[i]) & !is.na(b$M.in[i]))
-{b$Tin[i] <- suppressWarnings(as.numeric(as.character(b$M.in[i])))} # some text is sometimes written down the column of Min in the excel files > Tin is NA by coercion
+{b$Tin[i] <- (as.numeric(as.character(b$M.in[i])))}
 
 
 if (!is.na(b$F.out[i]) & is.na(b$M.out[i]))
-{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$F.out[i])))}
+{b$Tout[i] <- (as.numeric(as.character(b$F.out[i])))}
 
 if (is.na(b$F.out[i]) & !is.na(b$M.out[i]))
-{b$Tout[i] <- suppressWarnings(as.numeric(as.character(b$M.out[i])))}
-
+{b$Tout[i] <- (as.numeric(as.character(b$M.out[i])))}
 
 if ((!is.na(b$F.in[i]) | !is.na(b$F.out[i])) & is.na(b$M.in[i]) & is.na(b$M.out[i])) # if one or the other Tin or Tout in 'female' column is not NA
 {b$Sex[i] <- "0" }
@@ -215,40 +219,45 @@ out[[j]] <- b
 }
 
 combinedprovisioningNewTemplate = do.call(rbind, out)
-}
 
-head(combinedprovisioningNewTemplate,30)
-
-{## create an excel file with all raw data just to keep reference of it
-	
-	## write.table(combinedprovisioningNewTemplate, file = "R_combinedprovisioningNewTemplate.xls", col.names=TRUE, sep='\t')
-
-# after running the line above:
-# I save the xls file into a xlsx file
-# shift the headers one cell right
-# rename the first column 'order' 
-# > not elegant but write.xlsx from openxlsx isn't working for me
-}
-
-length(unique(combinedprovisioningNewTemplate$Filename))	# 858 files with only chicks analyzed with new template
 
 {## error check for NewTemplate
-combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0,]
+
+length(unique(combinedprovisioningNewTemplate$Filename))	# 11/02/2016: 858 files, situation 4, new template
+
+# missing Time
+combinedprovisioningNewTemplate[is.na(combinedprovisioningNewTemplate$Tout) & !is.na(combinedprovisioningNewTemplate$Tin),] # should be 0 rows
+combinedprovisioningNewTemplate[!is.na(combinedprovisioningNewTemplate$Tout) & is.na(combinedprovisioningNewTemplate$Tin),] # should be 0 rows
+
+# error in chronology
+combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0 ,] # should be Nas, number of lines = number of empty files (with no birds)
+
+splitNewTemplates_byFilenames_bySex <- split(combinedprovisioningNewTemplate, paste(combinedprovisioningNewTemplate$Filename, combinedprovisioningNewTemplate$Sex))
+
+splitNewTemplates_byFilenames_bySex_fun = function(x)  {
+x$prevOut <- c(NA,x$Tout[-nrow(x)])
+x$Diff_Tin_prevOut <- x$Tin-x$prevOut
+return(x)
+ }
+
+splitNewTemplates_byFilenames_bySexout <- lapply(splitNewTemplates_byFilenames_bySex, FUN=splitNewTemplates_byFilenames_bySex_fun)
+splitNewTemplates_byFilenames_bySext_df <- do.call(rbind, splitNewTemplates_byFilenames_bySexout)
+rownames(splitNewTemplates_byFilenames_bySext_df) <- NULL
+head(splitNewTemplates_byFilenames_bySext_df)
+splitNewTemplates_byFilenames_bySext_df[splitNewTemplates_byFilenames_bySext_df$Diff_Tim_prevOut <0,]  # should be 0 rows
 
 }
 
 }
 
-tail(combinedprovisioningNewTemplate,30)
+head(combinedprovisioningNewTemplate,100)
 
 
 detach("package:openxlsx", unload=TRUE)
 require(xlsx)
 search()
 
-{## create for each excel file with an old template, a table bb containing: Tin, Tout, Sex and Filename and a list of warningz and warningzz
-
-options(warn=2)	
+{## extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx) and creation of lists of errors
 
 FUNcellColor <- function(x) {
 	fg  <- x$getFillForegroundXSSFColor()
@@ -257,7 +266,7 @@ FUNcellColor <- function(x) {
 	return(rgb)
 }	
 
-colornames <- list(blue = "00ffff", grey = "c0c0c0")
+colornames <- list(blue = "00ffff", grey = "c0c0c0") # 'O' blue = feeding from outside ; 'O' grey = hanging around the NB
 
 out3 <- list()
 warningz <- list()
@@ -275,7 +284,7 @@ warningzz[[j]] <- as.character(FilenamesOldTemplate[j])
 
 for (i in 1:nrow(b))
 {
-# check if bird IN at beginning or end in TinCom
+# check if bird IN at the end in TinCom
 if ((!is.na(b$com[i]) & b$com[i] == "IN" & !is.na(b$F.in[i]) & b$F.in[i] != 0) | (!is.na(b$com.2[i]) & b$com.2[i] == "IN"& !is.na(b$M.in[i]) & b$M.in[i] != 0))
 {warningz[[j]] <- c(warningz[[j]], "bird IN at end of video: please write Tout, move 'IN' into TouCom")}
 
@@ -325,11 +334,11 @@ if (nrow(bbF)>0)
 {
 for (i in 1:nrow(bbF))
 {
-# accept comment O	############ AT THE MOMENT I DO NOT HAVE ITS COLOR !!!!!! ####################
+# accept comment O
 if (!is.na(bbF$ToutCom[i]) & bbF$ToutCom[i] == "O")
 {bbF$Com[i] <- "O"}
 
-# change ToutCom from IN, S or G, into IN
+# change ToutCom from IN, S or G, into IN (some will be replaced in the next loop)
 if (!is.na(bbF$ToutCom[i]) &( bbF$ToutCom[i] == "S" | bbF$ToutCom[i] == "G" | bbF$ToutCom[i] == "IN"))
 {bbF$Com[i] <- "IN"}
 }
@@ -356,7 +365,6 @@ if (!is.na(bbF$ToutCom[i]) & bbF$ToutCom[i] == "S" & bbF$Tout[i] != bbF$Tin[i+1]
 }
 
 }
-
 
 if (nrow(bbF)>0)
 {
@@ -467,7 +475,9 @@ bbF$Col <- NA
 if (nrow(bbF[bbF$Com == "O",]) >0)
 {
 # in b, get index of cells where T.out has been commented O	
-# Rk: if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+# Rk: if load workbook > header is index = 1 ; while with read.xlsx > header has no index but the 1st row of data has index = 1
+# 					   > load workbook supress lines without data, which read.xlsx does not do, so index not matching if long excel files with blank lines (needs to be deleted)
+
 FcellsToutCommentedO <- paste(which(!is.na(b$com.1) & b$com.1 == "O")+1, which(colnames(b)=="com.1")-1, sep=".")
 
 # get cells with Tout commented O as java objects
@@ -481,7 +491,7 @@ RGBcolorOFcells <- sapply(styleOFcells, FUNcellColor)
 matchOF <- match(sapply(styleOFcells, FUNcellColor), colornames)
 namecolorOFcells  <- data.frame(names(colornames)[matchOF])
 
-# create data.frame wtih list of cell index, values, color
+# create data.frame with list of cell indexes, values, colors
 valueOFcells <- data.frame(sapply (OFcells, getCellValue))
 OFColors <- cbind(FcellsToutCommentedO,valueOFcells,namecolorOFcells,0 )
 colnames(OFColors) <- c("index","Tout","Col","Sex")
@@ -493,6 +503,7 @@ bbF <- merge(x=bbF, y=OFColors[,c("Tout","Col")], by="Tout", all.x=TRUE)
 }
 
 {# Males > get OMColors if bbM not empty and with O comments 
+
 if (nrow(bbM) != 0 & nrow(bbM[bbM$Com == "O",]) ==0)
 {
 bbM$Col <- NA
@@ -501,7 +512,9 @@ bbM$Col <- NA
 if (nrow(bbM[bbM$Com == "O",]) >0)
 {
 # in b, get index of cells where T.out has been commented O	
-# Rk: if load workbook > hearder is index = 1 ; if read.xlsx > header has no index, 1st row of data has index = 1
+# Rk: if load workbook > header is index = 1 ; while with read.xlsx > header has no index but the 1st row of data has index = 1
+# 					   > load workbook supress lines without data, which read.xlsx does not do, so index not matching if long excel files with blank lines (needs to be deleted)
+
 McellsToutCommentedO <- paste(which(!is.na(b$com.3) & b$com.3 == "O")+1, which(colnames(b)=="com.3")-1, sep=".")
 
 # get cells with Tout commented O as java objects
@@ -534,7 +547,7 @@ bbM <- merge(x=bbM, y=OMColors[,c("Tout","Col")], by="Tout", all.x=TRUE)
 if (nrow(bbF)== 0  & nrow(bbM)== 0)	
 {
 bb <- data.frame(rbind(c(NA,NA,NA,NA,NA,NA)))
-colnames(bb) <- c('Tin','Tout','Sex','Com','Col','Filename')
+colnames(bb) <- c('Tin','Tout','Sex','Com','Col','Filename') # filename will be filled in later
 }
 
 # when only one bird  visited
@@ -572,30 +585,32 @@ bb <- NULL
 
 }
 
-{# get warningz
-condwarningz <- sapply(warningz, function(x) length(x) > 1)
-warningz <- warningz[condwarningz]
-condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
-warningzz <- warningzz[condwarningzz]
-
-warningz
-warningzz
-
-}
-
-{# get raw data
 condout3 <- sapply(out3, function(x) length(x) > 1)
 out3 <- out3[condout3]
 length(out3)
 
 combinedprovisioningOldTemplate = do.call(rbind, out3)
-}
 
-head(combinedprovisioningOldTemplate)
+
+{# error check for OldTemplate 
+
+# weird comments or missing info
+condwarningz <- sapply(warningz, function(x) length(x) > 1)
+warningz <- warningz[condwarningz]
+
+warningz	# should be empty list
+
+# mistake in chronology
+condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
+warningzz <- warningzz[condwarningzz]
+
+warningzz	# should be empty list
 
 # check for unknown colors for 'O' visits (blue = feeding from the ouside - grey: hanging out around the NB)
-combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col),]
-unique(combinedprovisioningOldTemplate$Filename[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col)])
+combinedprovisioningOldTemplate[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col),] # should be NAs
+unique(combinedprovisioningOldTemplate$Filename[combinedprovisioningOldTemplate$Com == "O" & is.na(combinedprovisioningOldTemplate$Col)]) # should be NA
+
+}
 
 
 }
@@ -613,7 +628,11 @@ combinedprovisioningNewTemplate$Col <- NA
 combinedprovisioningALL <- rbind(combinedprovisioningOldTemplate,combinedprovisioningNewTemplate)
 
 ## write.table(combinedprovisioningALL, file = "R_combinedprovisioningALL.xls", col.names=TRUE, sep='\t')
-
+# after running the line above:
+# I save the xls file into a xlsx file
+# shift the headers one cell right
+# rename the first column 'order' 
+# > not elegant but write.xlsx from openxlsx isn't working for me
 }
 
 head(combinedprovisioningALL, 100)
@@ -622,44 +641,6 @@ tail(combinedprovisioningALL, 100)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{################## MESSSSSSS about different methods used for Old template
 
 {### recreate tblParentalCare
 
@@ -723,13 +704,8 @@ head(ParentalCare)
 nrow(ParentalCare) # 216
 }
 
-sample(tblDVD_XlsFilesALLDBINFO$Filename[tblDVD_XlsFilesALLDBINFO$Method == 1], 1)
-sample(tblDVD_XlsFilesALLDBINFO$Filename[tblDVD_XlsFilesALLDBINFO$Method == 0 & tblDVD_XlsFilesALLDBINFO$DVDdate < as.POSIXct("2006-01-01")], 1)
 
-visualize <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$Filename %in% combinedprovisioningALL$Filename,c("DVDRef","Filename","OffspringNo", "Age","Method","Observer","FVisit2", "MVisit2")]
-#write.table(visualize, file = "R_VisualizeOldMethods.xls", col.names=TRUE, sep='\t')
 
-}
 
 
 

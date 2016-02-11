@@ -3,7 +3,7 @@
 #	 check provisioning data 
 #   (where situation = 4 (chicks) in DVD info)
 #	 Start : 20/01/2016
-#	 last modif : 09/02/2016  
+#	 last modif : 11/02/2016  
 #    Sparrow meeting February 2016
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -35,6 +35,51 @@ HAVING (((Count(tblDVD_XlsFiles.[DVDRef]))>1));
 ")
 
 # take the excel file that is entered in parental care (and/or hopefully the most standardized version), put the other file in a 'junk' subfolder
+
+# output:
+# those in the DB are:
+40001LM18
+40032
+40036D
+40039D
+40055
+40069
+40071
+40074
+40075
+40079
+40089
+40119
+40123
+40133
+50368 (just a copy of the 'wrong' > add a comment in DB !)
+50370 (just a copy of the 'not sure' > add a comment in DB !)
+50408
+60029D
+
+# those move to junk folder are:
+40001LM19
+40032D
+40036
+40039
+40055S
+40069S
+40071S
+40074S
+40075S
+40079S
+40089S
+40119S
+40123S
+40133S
+50368-wrong
+50370-not sure
+50408-D
+60029J
+
+
+
+
 ###### >>>> DB IMPROVEMENT POSSIBLE: delete entry for the duplicate in tblDVD_XlsFiles (leave the unique entry in tblDVDInfo)
 
 }
@@ -106,6 +151,7 @@ List_AlltblParentalCare_DVDRef <- sqlQuery(conDB, "
 SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVD_XlsFiles.Filename
 FROM (tblDVDInfo INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef) LEFT JOIN tblDVD_XlsFiles ON tblParentalCare.DVDRef = tblDVD_XlsFiles.DVDRef;
 ")
+
 head(List_AlltblParentalCare_DVDRef)
 List_AlltblParentalCare_DVDRef$NewFilename <- gsub(".xlsx", "", List_AlltblParentalCare_DVDRef$Filename )
 List_AlltblParentalCare_DVDRef$NewFilename <- gsub(".xls", "", List_AlltblParentalCare_DVDRef$NewFilename )
@@ -147,7 +193,7 @@ data.frame(ExcelNOTinDB)
 # check if and why those are not in DB, if should not be, move to 'junk' folder
 
 
-1                     40001LM18	# DVD number is 40001LM18	# ok
+1                     40001LM18	# DVD number is 40001		# ok
 2                        40036D	# DVD number is 40036		# ok
 3                        40039D # DVD number is 40039		# ok
 8                        60029D # DVD number is 60029		# ok
@@ -166,7 +212,7 @@ data.frame(ExcelNOTinDB)
 14                       VK0079 # data in file - Andy Turner - why not imported ?
 15                       VK0080 # data in file - Andy Turner - why not imported ?
 16                       VK0081 # data in file - Andy Turner - why not imported ?
-17                       VK0082 # data in file - Andy Turner - what are those colors in there ?? - why not imported ?
+17                       VK0082 # data in file - Andy Turner - what are those colors in there ?? > does not look different - why not imported ?
 18                       VK0083 # data in file - Andy Turner - what are those colors in there ?? - why not imported ?
 19                       VK0084 # data in file - Andy Turner - why not imported ?
 20                       VK0085 # data in file - Andy Turner - why not imported ?
@@ -188,14 +234,14 @@ data.frame(ExcelNOTinDB)
 36                       VK0254 # data in file - Andy Turner - why not imported ?
 37                       VK0256 # data in file - Andy Turner - why not imported ?
 
-38                       VK0337 # some data in file - EH - why not imported ?  - wild nest  									# moved to junk folder
-39                       VK0365 # some data in file - EH - why not imported ? - wild nest 										# moved to junk folder
+38                       VK0337 # some data in file - EH - why not imported ?  - wild nest  bad angle							# moved to junk folder
+39                       VK0365 # some data in file - EH - why not imported ? - wild nest  bad angle							# moved to junk folder
 40                       VK0389 # empty file - EH - hasn't been watched ?? - wild nest - dark video  							# moved to junk folder
-41                       VK0409 # empty file - EH -hasn't been watched ?? - wild nest  											# moved to junk folder
+41                       VK0409 # empty file - EH -hasn't been watched ?? - wild nest  - hard to identify						# moved to junk folder
 42                       VK0411 # data in file (within file, name is VK0410) - EH - why not imported ? - video is dark  		# moved to junk folder
 43                       VK0420 # empty file - EH - hasn't been watched ??  - video is dark  									# moved to junk folder
 44                       VK0424 # empty file - EH - hasn't been watched ?? (within file, name is VK0423) - video is dark  		# moved to junk folder
-45                       VK0708 # file name within file is VK0408: just a copy to get the template  - EH - video does not exist # moved to junk folder
+45                       VK0708 # file name within file is VK0408: just a copy to get the template? - EH - video does not exist # moved to junk folder
 
 46       VL0331_impossiblevideo # have entry in DVD_XlsFiles but not in paternal care # moved to junk folder
 47 VM0052 part-watched- blurred # have entry in DVD_XlsFiles but not in paternal care # moved to junk folder
@@ -248,7 +294,7 @@ data.frame(ExcelNOTinDB)
 89                       VM0605 # data in file -  Adam Gosztonyi - why not imported ?
 90                       VM0607 # data in file -  Adam Gosztonyi - why not imported ?
 91                       VM0613 # data in file -  Adam Gosztonyi - why not imported ?
-92                       VM0615 # data in file -  Adam Gosztonyi - why not imported ? some numbers have colors what is that ?
+92                       VM0615 # data in file -  Adam Gosztonyi - why not imported ? some numbers have colors what is that ? > commented so OK
 
 }
 
