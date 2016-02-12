@@ -3,7 +3,7 @@
 #	 Log changes made to excel provisioning files
 #	 Start : 07/01/2016
 #	 last modif : 11/02/2016  
-#    corrections during sparrow meeting
+#  corrections during sparrow meeting
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {## IMPORTANT REMARKS
