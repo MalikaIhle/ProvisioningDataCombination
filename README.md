@@ -34,6 +34,8 @@ we standardized  all time when bird was 'IN' at begining (Tin = 0) and at the en
 
 the data is contained in the second sheet (create sheet1 otherwise)
 
+#### importantly: we corrected the raw data of each excel files but not their summary. This will be directl corrected in the DB
+
 
 
 ### for files with New Template
