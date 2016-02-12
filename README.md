@@ -17,7 +17,7 @@ create variables: synchrony, duration dbl attended, duration unattended, duratio
 
 ## ProvisioningErrorCheck: to standardize file, correct chronology, fill in missing info
 
-# for files with Old Template
+### for files with Old Template
 
 I am assuming that 
 'O' blue means feeding from the outside
@@ -36,7 +36,7 @@ the data is contained in the second sheet (create sheet1 otherwise)
 
 
 
-# for files with New Template
+### for files with New Template
 
 Checked that all Tout were filled in, chronology logical, no comments within the raw data
 
