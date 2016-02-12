@@ -9,9 +9,8 @@
 
 
 #RQ
-# as we are changing the files directly on dropbox,  we need to keep the original copies somewhere on a permanent google drive
-# we need to figure out what is this 'wrong Method YN' about, I create an excel files that have the list of provisioning excel files in it, with columns having 'featurex YN' to tick.
-# all xls files were converted to xlsx > change Filename in database !!
+# the original copies wre backedup on the HS google drive
+# all xls files were converted to xlsx
 
 
 rm(list = ls(all = TRUE))
@@ -356,26 +355,3 @@ VM0245(bad quality): renamed VM0245 (since already in DB) # add comment in DB: b
 VM0330 - not 100percent sure this one is correct! May want to re-do (sorry): renamed VM0330 (since already in DB) # add comment in DB: not 100% sure this one is correct
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
