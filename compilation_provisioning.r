@@ -58,6 +58,15 @@ WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 
 head(tblDVD_XlsFilesALLDBINFO)
 
+# as long as filenames in the DB are not updated...
+tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
+tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
+
+
+# get the original tblParentalCare for checking discrepancies with new extraction or raw data and automatic calculation of summary
+tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
+
+head(tblParentalCare)
 
 close(conDB)
 
@@ -624,8 +633,26 @@ combinedprovisioningNewTemplate$Template <- "New"
 combinedprovisioningOldTemplate$Template <- "Old"
 combinedprovisioningNewTemplate$Com <- NA
 combinedprovisioningNewTemplate$Col <- NA
+combinedprovisioningNewTemplate$Com[!is.na(combinedprovisioningNewTemplate$Tin)] <- 'IN'
+combinedprovisioningNewTemplate[is.na(combinedprovisioningNewTemplate$Com),] # empty files
 
 combinedprovisioningALL <- rbind(combinedprovisioningOldTemplate,combinedprovisioningNewTemplate)
+
+combinedprovisioningALL$FeedYN <- NA
+
+for (i in 1: nrow(combinedprovisioningALL)) {
+if (!is.na(combinedprovisioningALL$Com[i]))
+	{
+	if (combinedprovisioningALL$Com[i] == 'IN' | (combinedprovisioningALL$Com[i] == 'O' & combinedprovisioningALL$Col[i] == 'blue'))
+	{combinedprovisioningALL$FeedYN[i] <- 1}
+	if (combinedprovisioningALL$Com[i] == 'S' | (combinedprovisioningALL$Com[i] == 'O' & combinedprovisioningALL$Col[i] == 'grey'))
+	{combinedprovisioningALL$FeedYN[i] <- 0}
+	}
+}
+
+combinedprovisioningALL$Duration <- combinedprovisioningALL$Tout-combinedprovisioningALL$Tin
+
+combinedprovisioningALL <- merge(x=combinedprovisioningALL, y=tblDVD_XlsFilesALLDBINFO[,c('Filename','DVDRef')], all.x=TRUE, by='Filename')
 
 ## write.table(combinedprovisioningALL, file = "R_combinedprovisioningALL.xls", col.names=TRUE, sep='\t')
 # after running the line above:
@@ -642,16 +669,140 @@ tail(combinedprovisioningALL, 100)
 
 
 
-{### recreate tblParentalCare
+{### recreate tblParentalCare to check for discrepancies
 
+{## forseen discrepancies:
+# minor changes we've made in chronology (MTime, FTime) and in color (#visits1 and 2, MTime, FTime) but normally not so much from changes in letters 'G', 'O', 'S'
+# different calculations of MTime and sharedTime (I have seen files where MTime = sum MTime-0.5*ShareTime)
+# Time 'IN' when bird 'IN' at the beginning or end of the files
+}
+
+{## definitoins columns in DB tblParentalCare from what I can get:
+# MTime / FTime = duration in NB (or, for New Template) feeding outside the nest box for visits longer than 1 min. 
+# > I believe this was initially to have an idea of brooding, as the new template does not distinguish feeding from outside from being in the nest box, the measure does not make sense anymore
+# ShareTime = duration of double attendance in the NB (or feeding from the outside of the NB in the New Template)
+# MVisit1/FVisit1 = # feeding visits including those < 1 min
+# MVisit2/FVisit2 = # non feeding visits (not reported in New Template)
+# MBout/FBout = # feeding visits > 1 min
+}
+
+head(tblParentalCare)
 head(tblDVD_XlsFilesALLDBINFO)
 summary(tblDVD_XlsFilesALLDBINFO)
-length(unique(combinedprovisioningALL$Filename))	# 1527
-length(unique(tblDVD_XlsFilesALLDBINFO$Filename))	# 1561
+length(unique(combinedprovisioningALL$Filename))	# 1746
+length(unique(tblDVD_XlsFilesALLDBINFO$Filename))	# 1764
 
-
+{# To calculate duration and number of visits
 combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
-x <- combinedprovisioningALL_listperFilename[[6]]
+x <- combinedprovisioningALL_listperFilename[[7]]
+
+combinedprovisioningALL_listperFilename_fun = function(x)  {
+x <- x[order(x$Tin, -x$Tout),]
+
+return(c(
+sum(x$Duration[x$Sex==1 & x$FeedYN == 1 & x$Duration > 1]),  	# MTime
+sum(x$Duration[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]),  	# FTime
+length(x$FeedYN[x$Sex==1 & x$FeedYN == 1]),   				 	# MVisit1
+length(x$FeedYN[x$Sex==0 & x$FeedYN == 1]),						# FVisit1
+length(x$FeedYN[x$Sex==1 & !is.na(x$Col) & x$Col == 'grey']),	# MVisit2
+length(x$FeedYN[x$Sex==0 & !is.na(x$Col) & x$Col == 'grey']),	# FVisit2
+length(x$FeedYN[x$Sex==1 & x$FeedYN == 1 & x$Duration > 1]),	# MBout
+length(x$FeedYN[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]))	# FBout
+)
+
+
+}
+
+combinedprovisioningALL_listperFilename_out1 <- lapply(combinedprovisioningALL_listperFilename, FUN=combinedprovisioningALL_listperFilename_fun)
+combinedprovisioningALL_listperFilename_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilename_out1)),do.call(rbind, combinedprovisioningALL_listperFilename_out1))
+
+nrow(combinedprovisioningALL_listperFilename_out2)	# 1746
+rownames(combinedprovisioningALL_listperFilename_out2) <- NULL
+colnames(combinedprovisioningALL_listperFilename_out2) <- c('Filename','MTime', 'FTime','MVisit1', 'FVisit1', 'MVisit2', 'FVisit2', 'MBout', 'FBout')
+}
+
+head(combinedprovisioningALL_listperFilename_out2)
+
+
+{# To calculate ShareTime
+
+combinedprovisioningALL_listperFilenameFeedY <- split(combinedprovisioningALL[combinedprovisioningALL$FeedYN == 1,],combinedprovisioningALL$Filename[combinedprovisioningALL$FeedYN == 1])
+x <- combinedprovisioningALL_listperFilenameFeedY[[1]]
+
+combinedprovisioningALL_listperFilenameFeedY_fun = function(x)  {
+x <- x[order(x$Tin, -x$Tout),]
+														# from Anne Rutten
+x$other <-  x$Sex != c(NA,x$Sex[-nrow(x)]) 				# identify whether the previous visit was by the other bird
+x$prevOut = c(NA,x$Tout[-nrow(x)])*x$other 				# save the previous Tout as prevOut if the previous bird was the other bird
+x$prevOut[x$prevOut==0] = NA 							# set prevOut to NA if the previous bird was NOT the other bird
+x$prevOut = na.locf(x$prevOut,na.rm=FALSE) 				# fill all NA values in prevOut with the last non-NA value: this means that every visit gets the Tout for the last visit of the other bird as prevOut
+x$together = x$Tin<x$prevOut							# now it's easy. If this bird enters before the other bird left, the visit overlaps
+x$ShareTime = x$together*(pmin(x$prevOut,x$Tout)-x$Tin) # and your dblattendedetcetera is either the own Tout (if this birds leaves first) or prevOut (if the partner leaves first), i.e., the minimum of both, minus Tin.
+
+return(sum(x$ShareTime, na.rm=T)/2)									# ShareTime
+}
+
+combinedprovisioningALL_listperFilenameFeedY_out1 <- lapply(combinedprovisioningALL_listperFilenameFeedY, FUN=combinedprovisioningALL_listperFilenameFeedY_fun)
+combinedprovisioningALL_listperFilenameFeedY_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameFeedY_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameFeedY_out1))
+
+nrow(combinedprovisioningALL_listperFilenameFeedY_out2)	# 1746
+rownames(combinedprovisioningALL_listperFilenameFeedY_out2) <- NULL
+colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','ShareTime')
+}
+
+head(combinedprovisioningALL_listperFilenameFeedY_out2)
+
+MY_tblParentalCare <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')
+MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=tblDVD_XlsFilesALLDBINFO[,c('Filename','DVDRef')],all.x=TRUE, by='Filename')
+
+
+head(MY_tblParentalCare)
+
+nrow(MY_tblParentalCare) # 1746
+
+Compare_tblParentalCare <- merge(x=MY_tblParentalCare,y=tblParentalCare[,c('DVDRef','MTime', 'FTime','MVisit1', 'FVisit1', 'MVisit2', 'FVisit2', 'MBout', 'FBout', 'ShareTime')], all.x=TRUE, by ='DVDRef')
+head(Compare_tblParentalCare)
+
+S <- Compare_tblParentalCare[,grepl("*\\.x$",names(Compare_tblParentalCare))] - Compare_tblParentalCare[,grepl("*\\.y$",names(Compare_tblParentalCare))]
+Compare_tblParentalCare <- cbind(Compare_tblParentalCare[,1,drop=FALSE],S)
+Compare_tblParentalCare <- merge(x=Compare_tblParentalCare,y=MY_tblParentalCare[,c('Filename','DVDRef')], all.x=TRUE, by='DVDRef')
+head(Compare_tblParentalCare)
+
+hist(Compare_tblParentalCare$MTime.x)
+hist(Compare_tblParentalCare$FTime.x)
+hist(Compare_tblParentalCare$MVisit1.x)
+hist(Compare_tblParentalCare$FVisit1.x)
+hist(Compare_tblParentalCare$MVisit2.x)
+hist(Compare_tblParentalCare$FVisit2.x)
+hist(Compare_tblParentalCare$MBout.x)
+hist(Compare_tblParentalCare$FBout.x)
+hist(Compare_tblParentalCare$ShareTime.x)
+
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 19,]
+tblParentalCare[tblParentalCare$DVDRef == 19,]
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 19,]
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{## start creating variables for compatiblity......... in construction
 
 combinedprovisioningALL_listperFilename_fun = function(x)  {
 x <- x[order(x$Tin, -x$Tout),]
@@ -702,24 +853,8 @@ y = tblDVD_XlsFilesALLDBINFO[,c('DVDRef', 'Filename','BroodRef','OffspringNo','D
 
 head(ParentalCare)
 nrow(ParentalCare) # 216
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
