@@ -33,6 +33,8 @@
 
 
 rm(list = ls(all = TRUE))
+TimeStart <- Sys.time()
+
 
 {### packages, working directories and connection to Access DB
 library(RODBC)
@@ -61,6 +63,8 @@ head(tblDVD_XlsFilesALLDBINFO)
 # as long as filenames in the DB are not updated...
 tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
 tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
+tblDVD_XlsFiles$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFiles$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
+tblDVD_XlsFiles$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFiles$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
 
 
 # get the original tblParentalCare for checking discrepancies with new extraction or raw data and automatic calculation of summary
@@ -73,7 +77,7 @@ close(conDB)
 }
 
 head(tblDVD_XlsFilesALLDBINFO)
-tail(tblDVD_XlsFiles,30)
+head(tblDVD_XlsFiles,30)
 
 
 {### create list of filenames for New and Old Template: check those not included yet but that should be + special code to account for the fact that name extension not corrected to xlsx in DB
@@ -90,20 +94,20 @@ head(FilenamesAfter2012)
 {##  create list of file names from files analysed in 2010 and 2011 with the new template (from what I could see opening all the files)
 
 filename1011_oldtemplate <- c(
-"2010\\VJ0039.xls", "2010\\VJ0040.xls", "2010\\VJ0041.xls", "2010\\VJ0044.xls", "2010\\VJ0050.xls", "2010\\VJ0052.xls",
-"2010\\VJ0058.xls", "2010\\VJ0059.xls", "2010\\VJ0060.xls", "2010\\VJ0064.xls", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
-"2010\\VJ0068.xlsx", "2010\\VJ0070.xls", "2010\\VJ0078.xls", "2010\\VJ0079.xls", "2010\\VJ0080.xls", "2010\\VJ0081.xls",
-"2011\\VK0001.xls", "2011\\VK0002.xls", "2011\\VK0003.xls", "2011\\VK0005.xls", "2011\\VK0006.xls", "2011\\VK0007.xls",
-"2011\\VK0010.xls", "2011\\VK0011.xls", "2011\\VK0012.xls", "2011\\VK0013.xls", "2011\\VK0017.xls", "2011\\VK0019.xls", "2011\\VK0020.xls",
-"2011\\VK0021.xls", "2011\\VK0022.xls", "2011\\VK0024.xls", "2011\\VK0025.xls", "2011\\VK0026.xls", "2011\\VK0027.xls", "2011\\VK0028.xls",
-"2011\\VK0029.xls", "2011\\VK0031.xls", "2011\\VK0034.xls", "2011\\VK0037.xls", "2011\\VK0038.xls", "2011\\VK0039.xls", "2011\\VK0040.xls",
-"2011\\VK0041.xls", "2011\\VK0042.xls", "2011\\VK0044.xls", "2011\\VK0045.xls", "2011\\VK0046.xls", "2011\\VK0047.xls", "2011\\VK0048.xls",
-"2011\\VK0050.xls", "2011\\VK0051.xls", "2011\\VK0056.xls", "2011\\VK0061.xls", "2011\\VK0062.xls", "2011\\VK0063.xls", "2011\\VK0067.xls",
-"2011\\VK0069.xls", "2011\\VK0070.xls", "2011\\VK0072.xls",
-"2011\\VK0101.xls", "2011\\VK0102.xls", "2011\\VK0103.xls",
-"2011\\VK0105.xls", "2011\\VK0106.xls",
-"2011\\VK0410.xls", "2011\\VK0412.xls", "2011\\VK0413.xls", "2011\\VK0416.xls",
-"2011\\VK0418.xls", "2011\\VK0419.xls", "2011\\VK0421.xls", "2011\\VK0422.xls", "2011\\VK0423.xls"
+"2010\\VJ0039.xlsx", "2010\\VJ0040.xlsx", "2010\\VJ0041.xlsx", "2010\\VJ0044.xlsx", "2010\\VJ0050.xlsx", "2010\\VJ0052.xlsx",
+"2010\\VJ0058.xlsx", "2010\\VJ0059.xlsx", "2010\\VJ0060.xlsx", "2010\\VJ0064.xlsx", "2010\\VJ0066.xlsx", "2010\\VJ0067.xlsx",
+"2010\\VJ0068.xlsx", "2010\\VJ0070.xlsx", "2010\\VJ0078.xlsx", "2010\\VJ0079.xlsx", "2010\\VJ0080.xlsx", "2010\\VJ0081.xlsx",
+"2011\\VK0001.xlsx", "2011\\VK0002.xlsx", "2011\\VK0003.xlsx", "2011\\VK0005.xlsx", "2011\\VK0006.xlsx", "2011\\VK0007.xlsx",
+"2011\\VK0010.xlsx", "2011\\VK0011.xlsx", "2011\\VK0012.xlsx", "2011\\VK0013.xlsx", "2011\\VK0017.xlsx", "2011\\VK0019.xlsx", "2011\\VK0020.xlsx",
+"2011\\VK0021.xlsx", "2011\\VK0022.xlsx", "2011\\VK0024.xlsx", "2011\\VK0025.xlsx", "2011\\VK0026.xlsx", "2011\\VK0027.xlsx", "2011\\VK0028.xlsx",
+"2011\\VK0029.xlsx", "2011\\VK0031.xlsx", "2011\\VK0034.xlsx", "2011\\VK0037.xlsx", "2011\\VK0038.xlsx", "2011\\VK0039.xlsx", "2011\\VK0040.xlsx",
+"2011\\VK0041.xlsx", "2011\\VK0042.xlsx", "2011\\VK0044.xlsx", "2011\\VK0045.xlsx", "2011\\VK0046.xlsx", "2011\\VK0047.xlsx", "2011\\VK0048.xlsx",
+"2011\\VK0050.xlsx", "2011\\VK0051.xlsx", "2011\\VK0056.xlsx", "2011\\VK0061.xlsx", "2011\\VK0062.xlsx", "2011\\VK0063.xlsx", "2011\\VK0067.xlsx",
+"2011\\VK0069.xlsx", "2011\\VK0070.xlsx", "2011\\VK0072.xlsx",
+"2011\\VK0101.xlsx", "2011\\VK0102.xlsx", "2011\\VK0103.xlsx",
+"2011\\VK0105.xlsx", "2011\\VK0106.xlsx",
+"2011\\VK0410.xlsx", "2011\\VK0412.xlsx", "2011\\VK0413.xlsx", "2011\\VK0416.xlsx",
+"2011\\VK0418.xlsx", "2011\\VK0419.xlsx", "2011\\VK0421.xlsx", "2011\\VK0422.xlsx", "2011\\VK0423.xlsx"
 )
 
 
@@ -120,9 +124,6 @@ head(Filenames1011newtemplate)
 FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(FilenamesAfter2012))
 length(FilenamesNewTemplate)	# 858 files, situation 4, new template
 
-FilenamesNewTemplate <- gsub(".xlsx", ".xls",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
-FilenamesNewTemplate <- gsub(".xls", ".xlsx",FilenamesNewTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
-
 }
 
 
@@ -137,38 +138,34 @@ tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename &
 (tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
 
 # exclude duplicates (take the one with data in DB tblParentalCare)
-tblDVD_XlsFiles$Filename != "2004\\40001LM19.xls" & 
-tblDVD_XlsFiles$Filename != "2004\\40032D.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40036.xls" & 
-tblDVD_XlsFiles$Filename != "2004\\40039.xls" & 
-tblDVD_XlsFiles$Filename != "2004\\40055S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40069S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40071S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40074S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40075S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40079S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40089S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40119S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40123S.xls" &
-tblDVD_XlsFiles$Filename != "2004\\40133S.xls" &
+tblDVD_XlsFiles$Filename != "2004\\40001LM19.xlsx" & 
+tblDVD_XlsFiles$Filename != "2004\\40032D.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40036.xlsx" & 
+tblDVD_XlsFiles$Filename != "2004\\40039.xlsx" & 
+tblDVD_XlsFiles$Filename != "2004\\40055S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40069S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40071S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40074S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40075S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40079S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40089S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40119S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40123S.xlsx" &
+tblDVD_XlsFiles$Filename != "2004\\40133S.xlsx" &
 
 # EXCLUDED BUT WITH DATA IN DB (COULD BE INCLUDED if rewatched)
-tblDVD_XlsFiles$Filename != "2004\\40055.xls" & # files that contain comments that are not standardized (data in DB)
-tblDVD_XlsFiles$Filename != "2004\\40061.xls" & # files that contain comments that are not standardized (data in DB)
-tblDVD_XlsFiles$Filename != "2008\\80055.xls" & # file empty (data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xls" & # why wrong ? (the copy '50368' file has data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xls" &  # what is not sure ? (the copy '50370' file has data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50268.xls" & # commented: too difficult to distinguish nale and female (and therefore file is empty, DB parental care = line of NA)
+tblDVD_XlsFiles$Filename != "2004\\40055.xlsx" & # files that contain comments that are not standardized (data in DB)
+tblDVD_XlsFiles$Filename != "2004\\40061.xlsx" & # files that contain comments that are not standardized (data in DB)
+tblDVD_XlsFiles$Filename != "2008\\80055.xlsx" & # file empty (data in DB)
+tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xlsx" & # why wrong ? (the copy '50368' file has data in DB)
+tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xlsx" &  # what is not sure ? (the copy '50370' file has data in DB)
+tblDVD_XlsFiles$Filename != "2005\\50268.xlsx" & # commented: too difficult to distinguish nale and female (and therefore file is empty, DB parental care = line of NA)
 tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb" # nonsense
 ] 
 }
 
 length(FilenamesOldTemplate)	# 888 files, situation 4, old template
 which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
-
-# as long as filenames in the DB are not updated...
-FilenamesOldTemplate <- gsub(".xlsx", ".xls",FilenamesOldTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
-FilenamesOldTemplate <- gsub(".xls", ".xlsx",FilenamesOldTemplate) # as long as we do not have changed the names in the DB (xls to xlsx)
 
 }
 
@@ -185,79 +182,141 @@ search() # make sure package 'xlsx' is not in the list
 {### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx) and error checking
 
 out = list()
+warningz <- list()
+warningzz <- list()
 	
 for (j in 1:length(FilenamesNewTemplate)){
 filenamej <- paste(pathdropboxfolder, FilenamesNewTemplate[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheet="DVD NO") # read.xlsx function from library 'openxlsx' (not library 'xlsx'): make sure xlsx is not in the list given by 'search()'
-b$Tin <- NA
-b$Tout <- NA
-b$Sex <- NA
 
-for (i in 1:nrow(b)){
+warningz[[j]] <- as.character(FilenamesNewTemplate[j])
+warningzz[[j]] <- as.character(FilenamesNewTemplate[j])
 
-if (!is.na(b$F.in[i]) & is.na(b$M.in[i]))
-{b$Tin[i] <- (as.numeric(as.character(b$F.in[i])))} 
+{### warningz in raw data (only numbers and no blank)
 
-if (is.na(b$F.in[i]) & !is.na(b$M.in[i]))
-{b$Tin[i] <- (as.numeric(as.character(b$M.in[i])))}
+# check if no missing Time
+if ((length(b$F.out[!is.na(b$F.out)]) != length(b$F.in[!is.na(b$F.in)])) | (length(b$M.out[!is.na(b$M.out)]) != length(b$M.in[!is.na(b$M.in)])))
+{warningz[[j]] <- c(warningz[[j]],"missing Time !")}	
+
+# check if no comments in raw data
+if (is.numeric(b$F.in) == FALSE | is.numeric(b$F.out) == FALSE | is.numeric(b$M.in) == FALSE | is.numeric(b$M.out) == FALSE)
+{warningz[[j]] <- c(warningz[[j]],"character in raw data")}
+}
+
+{### if no warningz: extract Female and Male raw data separately
+if (length(warningz[[j]]) == 1)
+{
+bbF <- data.frame(b$F.in, b$F.out, 0, NA,NA)
+colnames(bbF) <- c("Tin", "Tout", "Sex", "prevOut","Diff_Tin_prevOut")
+bbF <- bbF[!is.na(bbF$Tin) | !is.na(bbF$Tout),]
 
 
-if (!is.na(b$F.out[i]) & is.na(b$M.out[i]))
-{b$Tout[i] <- (as.numeric(as.character(b$F.out[i])))}
+bbM <- data.frame(b$M.in, b$M.out, 1,NA,NA)
+colnames(bbM) <- c("Tin", "Tout", "Sex", "prevOut","Diff_Tin_prevOut")
+bbM <- bbM[!is.na(bbM$Tin) | !is.na(bbM$Tout),]
 
-if (is.na(b$F.out[i]) & !is.na(b$M.out[i]))
-{b$Tout[i] <- (as.numeric(as.character(b$M.out[i])))}
+if (nrow(bbF)>0)
+{
+bbF$prevOut <- c(NA,bbF$Tout[-nrow(bbF)])
+bbF$Diff_Tin_prevOut <- bbF$Tin-bbF$prevOut
+}
 
-if ((!is.na(b$F.in[i]) | !is.na(b$F.out[i])) & is.na(b$M.in[i]) & is.na(b$M.out[i])) # if one or the other Tin or Tout in 'female' column is not NA
-{b$Sex[i] <- "0" }
+if (nrow(bbM)>0)
+{
+bbM$prevOut <- c(NA,bbM$Tout[-nrow(bbM)])
+bbM$Diff_Tin_prevOut <- bbM$Tin-bbM$prevOut
+}
 
-if (is.na(b$F.in[i]) & is.na(b$F.out[i]) & (!is.na(b$M.in[i]) | !is.na(b$M.out[i]))) # if one or the other Tin or Tout in 'male' column is not NA
-{b$Sex[i] <- "1" }
+}
+}
+
+{### warningzz in chronology
+
+
+
+if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prevOut) & bbF$Diff_Tin_prevOut <0,]) > 0) | 
+	(nrow(bbM[bbM$Tout - bbM$Tin <0,])) > 0 | (nrow(bbM[!is.na(bbM$Diff_Tin_prevOut) & bbM$Diff_Tin_prevOut <0,]) > 0))
+
+	{warningzz[[j]] <-c(warningzz[[j]], "wrong chronology in female or male!")
+	bbF <- NULL
+	bbM <- NULL}
+
+
 
 }
 
-if(nrow(b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),])>0)
-{b <- b[!is.na(b$Sex) & (!is.na(as.numeric(as.character(b$Tin))) | !is.na(as.numeric(as.character(b$Tout)))),c('Tin','Tout','Sex')]} # keep lines of data when sex was allocated and at least Tin or Tout (supress lines where only comments with a sex allocated)
-else {b <- unique(b[,c('Tin','Tout','Sex')])} # keep one line of NAs + filename
+{## if no warningzz: create bb
+if (length(warningz[[j]])==1 & length(warningzz[[j]])==1)
+{
+# when no bird ever visited: keep a line with NA
+if (nrow(bbF)== 0  & nrow(bbM)== 0)	
+{
+bb <- data.frame(rbind(c(NA,NA,NA,NA)))
+colnames(bb) <- c('Tin','Tout','Sex','Filename') # filename will be filled in later
+}
 
+# when only one bird  visited
+if (nrow(bbF)!= 0  & nrow(bbM)== 0)
+{
+bb <- bbF[,c('Tin','Tout','Sex')]
+}
 
-b$Filename <- FilenamesNewTemplate[j]
+if (nrow(bbF)== 0  & nrow(bbM)!= 0)
+{
+bb <- bbM[,c('Tin','Tout','Sex')]
+}
 
-out[[j]] <- b
+# when both birds visited, combine both sex data and order by Tin then Tout
+if(nrow(bbF)!= 0 & nrow(bbM)!= 0)
+{
+bb <- rbind(bbF[,c('Tin','Tout','Sex')], bbM[,c('Tin','Tout','Sex')])
+bb <- bb[with(bb,order(bb$Tin, bb$Tout)),] 
+ }
+ 
+
+# add filename
+bb$Filename <- as.character(FilenamesNewTemplate[j])
+}
+
+out[[j]] <- bb
+bb <-NULL
+}
 
 }
+
+condout <- sapply(out, function(x) length(x) > 1)
+out <- out[condout]
+length(out)
 
 combinedprovisioningNewTemplate = do.call(rbind, out)
 
 
-{## error check for NewTemplate
+{# error check for NewTemplate
+ 
+length(unique(combinedprovisioningNewTemplate$Filename))	# 15/02/2016: 861 files, situation 4, new template
 
-length(unique(combinedprovisioningNewTemplate$Filename))	# 11/02/2016: 858 files, situation 4, new template
+# weird comments or missing info
+condwarningz <- sapply(warningz, function(x) length(x) > 1)
+warningz <- warningz[condwarningz]
 
-# missing Time
-combinedprovisioningNewTemplate[is.na(combinedprovisioningNewTemplate$Tout) & !is.na(combinedprovisioningNewTemplate$Tin),] # should be 0 rows
-combinedprovisioningNewTemplate[!is.na(combinedprovisioningNewTemplate$Tout) & is.na(combinedprovisioningNewTemplate$Tin),] # should be 0 rows
+warningz	# should be empty list
 
-# error in chronology
-combinedprovisioningNewTemplate[combinedprovisioningNewTemplate$Tout - combinedprovisioningNewTemplate$Tin < 0 ,] # should be Nas, number of lines = number of empty files (with no birds)
+# mistake in chronology
+condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
+warningzz <- warningzz[condwarningzz]
 
-splitNewTemplates_byFilenames_bySex <- split(combinedprovisioningNewTemplate, paste(combinedprovisioningNewTemplate$Filename, combinedprovisioningNewTemplate$Sex))
-
-splitNewTemplates_byFilenames_bySex_fun = function(x)  {
-x$prevOut <- c(NA,x$Tout[-nrow(x)])
-x$Diff_Tin_prevOut <- x$Tin-x$prevOut
-return(x)
- }
-
-splitNewTemplates_byFilenames_bySexout <- lapply(splitNewTemplates_byFilenames_bySex, FUN=splitNewTemplates_byFilenames_bySex_fun)
-splitNewTemplates_byFilenames_bySext_df <- do.call(rbind, splitNewTemplates_byFilenames_bySexout)
-rownames(splitNewTemplates_byFilenames_bySext_df) <- NULL
-head(splitNewTemplates_byFilenames_bySext_df)
-splitNewTemplates_byFilenames_bySext_df[splitNewTemplates_byFilenames_bySext_df$Diff_Tim_prevOut <0,]  # should be 0 rows
+warningzz	# should be empty list
 
 }
 
+
 }
+
+
+length(unique(combinedprovisioningNewTemplate$Filename))	# 15/02/2016: 861 files, situation 4, new template
+
+
+
 
 head(combinedprovisioningNewTemplate,100)
 
@@ -266,7 +325,7 @@ detach("package:openxlsx", unload=TRUE)
 require(xlsx)
 search()
 
-{## extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx) and creation of lists of errors
+{## extraction data in Excel files analyzed with oldest excel template (after conversion all files to xlsx) and creation of lists of errors
 
 FUNcellColor <- function(x) {
 	fg  <- x$getFillForegroundXSSFColor()
@@ -601,7 +660,9 @@ length(out3)
 combinedprovisioningOldTemplate = do.call(rbind, out3)
 
 
-{# error check for OldTemplate 
+{# error check for OldTemplate
+ 
+length(unique(combinedprovisioningOldTemplate$Filename))	# 15/02/2016: 885 files, situation 4, old template
 
 # weird comments or missing info
 condwarningz <- sapply(warningz, function(x) length(x) > 1)
@@ -666,7 +727,8 @@ head(combinedprovisioningALL, 100)
 tail(combinedprovisioningALL, 100)
 
 
-
+DurationScript <- Sys.time() - TimeStart
+DurationScript
 
 
 {### recreate tblParentalCare to check for discrepancies
@@ -677,8 +739,8 @@ tail(combinedprovisioningALL, 100)
 # Time 'IN' when bird 'IN' at the beginning or end of the files
 }
 
-{## definitoins columns in DB tblParentalCare from what I can get:
-# MTime / FTime = duration in NB (or, for New Template) feeding outside the nest box for visits longer than 1 min. 
+{## definitions columns in DB tblParentalCare from what I can get:
+# MTime / FTime = duration in NB (or, for New Template, feeding outside the nest box) for visits longer than 1 min. 
 # > I believe this was initially to have an idea of brooding, as the new template does not distinguish feeding from outside from being in the nest box, the measure does not make sense anymore
 # ShareTime = duration of double attendance in the NB (or feeding from the outside of the NB in the New Template)
 # MVisit1/FVisit1 = # feeding visits including those < 1 min
@@ -739,7 +801,7 @@ x$prevOut = na.locf(x$prevOut,na.rm=FALSE) 				# fill all NA values in prevOut w
 x$together = x$Tin<x$prevOut							# now it's easy. If this bird enters before the other bird left, the visit overlaps
 x$ShareTime = x$together*(pmin(x$prevOut,x$Tout)-x$Tin) # and your dblattendedetcetera is either the own Tout (if this birds leaves first) or prevOut (if the partner leaves first), i.e., the minimum of both, minus Tin.
 
-return(sum(x$ShareTime, na.rm=T)/2)									# ShareTime
+return(sum(x$ShareTime, na.rm=T)/2)						# ShareTime
 }
 
 combinedprovisioningALL_listperFilenameFeedY_out1 <- lapply(combinedprovisioningALL_listperFilenameFeedY, FUN=combinedprovisioningALL_listperFilenameFeedY_fun)
@@ -752,12 +814,11 @@ colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','Sha
 
 head(combinedprovisioningALL_listperFilenameFeedY_out2)
 
+# create MY_tblParentalCare and Compare_tblParentalCare
 MY_tblParentalCare <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')
 MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=tblDVD_XlsFilesALLDBINFO[,c('Filename','DVDRef')],all.x=TRUE, by='Filename')
 
-
 head(MY_tblParentalCare)
-
 nrow(MY_tblParentalCare) # 1746
 
 Compare_tblParentalCare <- merge(x=MY_tblParentalCare,y=tblParentalCare[,c('DVDRef','MTime', 'FTime','MVisit1', 'FVisit1', 'MVisit2', 'FVisit2', 'MBout', 'FBout', 'ShareTime')], all.x=TRUE, by ='DVDRef')
@@ -766,6 +827,9 @@ head(Compare_tblParentalCare)
 S <- Compare_tblParentalCare[,grepl("*\\.x$",names(Compare_tblParentalCare))] - Compare_tblParentalCare[,grepl("*\\.y$",names(Compare_tblParentalCare))]
 Compare_tblParentalCare <- cbind(Compare_tblParentalCare[,1,drop=FALSE],S)
 Compare_tblParentalCare <- merge(x=Compare_tblParentalCare,y=MY_tblParentalCare[,c('Filename','DVDRef')], all.x=TRUE, by='DVDRef')
+Compare_tblParentalCare$MTime.x <- round(Compare_tblParentalCare$MTime.x,2)
+Compare_tblParentalCare$FTime.x <- round(Compare_tblParentalCare$FTime.x,2)
+Compare_tblParentalCare$ShareTime.x <- round(Compare_tblParentalCare$ShareTime.x,2)
 head(Compare_tblParentalCare)
 
 hist(Compare_tblParentalCare$MTime.x)
@@ -778,11 +842,11 @@ hist(Compare_tblParentalCare$MBout.x)
 hist(Compare_tblParentalCare$FBout.x)
 hist(Compare_tblParentalCare$ShareTime.x)
 
-MY_tblParentalCare[MY_tblParentalCare$DVDRef == 19,]
-tblParentalCare[tblParentalCare$DVDRef == 19,]
-combinedprovisioningALL[combinedprovisioningALL$DVDRef == 19,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3663,]
+tblParentalCare[tblParentalCare$DVDRef == 3663,]
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3663,]
 
-
+## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCare.xls", col.names=TRUE, sep='\t')
 }
 
 

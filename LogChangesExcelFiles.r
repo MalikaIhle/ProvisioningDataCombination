@@ -1155,8 +1155,26 @@ VN0824: added 20.1 in C5
 VN0191: added 22.4 in G23, change G22 from 22.4 to 22.3
 VN0124: added 51.1 in G25, 54.3 in G26
 
+# 15/02/2016
+VNxxx change time stored as text to number is all Leti files (dots are text in her langage version of excel...)
+VJ0167: deleted space in a cell
+VK0112: deleted space in a cell
+VK0116: deleted space in a cell
+VK0156: deleted space in a cell
+VM0339: deleted space in a cell
+VN0313: deleted space in a cell
+VN0537: deleted space in a cell
+VN0590: deleted space in a cell
+VN0630: deleted space in a cell
+VN0642: deleted space in a cell
 
-
+VJ0157: B37 changed from 31.1 to 31.4
+VK0182: B9 and C9 from 12.8 to 22.8
+VK0188: change F37 from 81.6 to 82.3
+VK0201: change F31 from 60.1 to 61.1, G31 from 61.2 to 61.2, B32 from 60.2 to 61.2, C32 from 61.4 to 61.4
+VK0208: change F51 from 71.2 to 72.1, G51 from 71.3 to 72.2
+VK0214: change B46 from 85.1 to 85.9
+VK0225: change B12, C12, F11 and G11 from 12.2 to 20.2
 }
 
 
@@ -1179,6 +1197,7 @@ https://support.microsoft.com/en-us/kb/196158	# to list filenames in a folder (s
 # a few files converted to xlsm (which supports macro) instead of xlsx
 # I suspect they could be the files opened when I tried to write a macro to read colors ???
 # I kept a copy of the original xls files in the folder z_ToLeaveAside
+# and manually saved them as xlsx
 # the list is:
 
 40216
