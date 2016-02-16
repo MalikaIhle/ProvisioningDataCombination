@@ -182,29 +182,29 @@ search() # make sure package 'xlsx' is not in the list
 {### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx) and error checking
 
 out = list()
-warningz <- list()
-warningzz <- list()
+warninggz <- list()
+warninggzz <- list()
 	
 for (j in 1:length(FilenamesNewTemplate)){
 filenamej <- paste(pathdropboxfolder, FilenamesNewTemplate[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheet="DVD NO") # read.xlsx function from library 'openxlsx' (not library 'xlsx'): make sure xlsx is not in the list given by 'search()'
 
-warningz[[j]] <- as.character(FilenamesNewTemplate[j])
-warningzz[[j]] <- as.character(FilenamesNewTemplate[j])
+warninggz[[j]] <- as.character(FilenamesNewTemplate[j])
+warninggzz[[j]] <- as.character(FilenamesNewTemplate[j])
 
 {### warningz in raw data (only numbers and no blank)
 
 # check if no missing Time
 if ((length(b$F.out[!is.na(b$F.out)]) != length(b$F.in[!is.na(b$F.in)])) | (length(b$M.out[!is.na(b$M.out)]) != length(b$M.in[!is.na(b$M.in)])))
-{warningz[[j]] <- c(warningz[[j]],"missing Time !")}	
+{warninggz[[j]] <- c(warninggz[[j]],"missing Time !")}	
 
 # check if no comments in raw data
 if (is.numeric(b$F.in) == FALSE | is.numeric(b$F.out) == FALSE | is.numeric(b$M.in) == FALSE | is.numeric(b$M.out) == FALSE)
-{warningz[[j]] <- c(warningz[[j]],"character in raw data")}
+{warninggz[[j]] <- c(warninggz[[j]],"character in raw data")}
 }
 
 {### if no warningz: extract Female and Male raw data separately
-if (length(warningz[[j]]) == 1)
+if (length(warninggz[[j]]) == 1)
 {
 bbF <- data.frame(b$F.in, b$F.out, 0, NA,NA)
 colnames(bbF) <- c("Tin", "Tout", "Sex", "prevOut","Diff_Tin_prevOut")
@@ -237,7 +237,7 @@ bbM$Diff_Tin_prevOut <- bbM$Tin-bbM$prevOut
 if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prevOut) & bbF$Diff_Tin_prevOut <0,]) > 0) | 
 	(nrow(bbM[bbM$Tout - bbM$Tin <0,])) > 0 | (nrow(bbM[!is.na(bbM$Diff_Tin_prevOut) & bbM$Diff_Tin_prevOut <0,]) > 0))
 
-	{warningzz[[j]] <-c(warningzz[[j]], "wrong chronology in female or male!")
+	{warninggzz[[j]] <-c(warninggzz[[j]], "wrong chronology in female or male!")
 	bbF <- NULL
 	bbM <- NULL}
 
@@ -246,7 +246,7 @@ if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prev
 }
 
 {## if no warningzz: create bb
-if (length(warningz[[j]])==1 & length(warningzz[[j]])==1)
+if (length(warninggz[[j]])==1 & length(warninggzz[[j]])==1)
 {
 # when no bird ever visited: keep a line with NA
 if (nrow(bbF)== 0  & nrow(bbM)== 0)	
@@ -296,16 +296,16 @@ combinedprovisioningNewTemplate = do.call(rbind, out)
 length(unique(combinedprovisioningNewTemplate$Filename))	# 15/02/2016: 861 files, situation 4, new template
 
 # weird comments or missing info
-condwarningz <- sapply(warningz, function(x) length(x) > 1)
-warningz <- warningz[condwarningz]
+condwarninggz <- sapply(warninggz, function(x) length(x) > 1)
+warninggz <- warninggz[condwarninggz]
 
-warningz	# should be empty list
+warninggz	# should be empty list
 
 # mistake in chronology
-condwarningzz <- sapply(warningzz, function(x) length(x) > 1)
-warningzz <- warningzz[condwarningzz]
+condwarninggzz <- sapply(warninggzz, function(x) length(x) > 1)
+warninggzz <- warninggzz[condwarninggzz]
 
-warningzz	# should be empty list
+warninggzz	# should be empty list
 
 }
 
@@ -728,7 +728,7 @@ tail(combinedprovisioningALL, 100)
 
 
 DurationScript <- Sys.time() - TimeStart
-DurationScript
+DurationScript # 11-12 min
 
 
 {### recreate tblParentalCare to check for discrepancies

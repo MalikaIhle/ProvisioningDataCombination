@@ -1157,6 +1157,7 @@ VN0124: added 51.1 in G25, 54.3 in G26
 
 # 15/02/2016
 VNxxx change time stored as text to number is all Leti files (dots are text in her langage version of excel...)
+
 VJ0167: deleted space in a cell
 VK0112: deleted space in a cell
 VK0116: deleted space in a cell
@@ -1168,13 +1169,37 @@ VN0590: deleted space in a cell
 VN0630: deleted space in a cell
 VN0642: deleted space in a cell
 
-VJ0157: B37 changed from 31.1 to 31.4
-VK0182: B9 and C9 from 12.8 to 22.8
+VJ0157: change B37 from 31.1 to 31.4
+VK0182: change B9 and C9 from 12.8 to 22.8
 VK0188: change F37 from 81.6 to 82.3
 VK0201: change F31 from 60.1 to 61.1, G31 from 61.2 to 61.2, B32 from 60.2 to 61.2, C32 from 61.4 to 61.4
 VK0208: change F51 from 71.2 to 72.1, G51 from 71.3 to 72.2
 VK0214: change B46 from 85.1 to 85.9
 VK0225: change B12, C12, F11 and G11 from 12.2 to 20.2
+
+# 16/02/2016
+VN0833: change C4 from 36.5 to 23.5
+VN0826: change G1 from 2 to G2 from 38 to 2, delete B4 (37.9) and C4 (60.4), add 37.9 in F4 and 38 in G4 # > miss exit, and if one sex present, miss the movement of the other sex !
+VN0805: delete F4 (12.7) and G4 (13.7) # > miss exit !
+VN0777: delete duplicate visit F21 (52.6) and F21 (52.9), added missing female visit B21 (53.1), C3 (53.2) # > miss exit, and if one sex present, miss the movement of the other sex !
+VN0775: change F25 from 60 to 62, C25 from 65.1 to 62.4
+VN0735: change B9 from 47.8 to 39, C9 from 61.8 to 47.8
+VN0731: change C21 from 86.8 to 76.7
+VN0723: change C47 from 93.2 to 82.3
+VN0700: change C23 from 81.8 to 77.8
+VN0632: change F53 from 80.3 to 81.3
+VN0615: change C5 from 36.6 to 26.6
+VN0604: change G13 from 23.1 to 22.4, change F54 from 57.8 to 58
+VN0546: change C24 from 69.9 to 68.9
+VN0538: change G24 from 59.9 to 56.8
+VN0522: deleted B6 (4.6) and C6 (4.8), added 4.7 in F6 and 8.8 in G6
+VN0513: change F48 from 68.1 to 69.1
+VN0462: change B74 from 78.6 to 87.6
+VN0406: change F42 from 73.5 to 74.2
+VN0386: delete B30 (40) and C30 (40.4)
+VN0248: change B37 and C37 (both 44.4) to 40.4, move B99 C99 to B81 C81 (76.6-76.8)
+VN0173: delete B27 (36.3) and C27 (40), added 36.3 in F27 and 36.5 in G27, change G25 (36.5) to 35.8, change C29 (40) to 38.8
+
 }
 
 
