@@ -1200,6 +1200,22 @@ VN0386: delete B30 (40) and C30 (40.4)
 VN0248: change B37 and C37 (both 44.4) to 40.4, move B99 C99 to B81 C81 (76.6-76.8)
 VN0173: delete B27 (36.3) and C27 (40), added 36.3 in F27 and 36.5 in G27, change G25 (36.5) to 35.8, change C29 (40) to 38.8
 
+# 17/02/2016
+VK0289: change F11 (30.4) to 39.4
+VK0229: change B35 from 63.6 to 66.5
+VK0226: change B38 (86.2) to 87.7, C38 (86.2) to 87.8
+VL0269: change B27 (74.3) to 75.2
+VL0323L delete F10 (33.4) and G10 (36)
+VL0377: change G6 (44) to 34.1
+VM0339: change C8 from 97 to 9.7
+VM0335: change B12 from 60.8 to 62.9
+VM0325: change C23 from 55.5 to 51.5
+VM0318: change B5 from 2.6 to 3.6
+VM0060: change F27 (66.5) to 69.5 and G27 from 66.7 to 69.7
+VM0574: change B29 from 69.4 to 76.4 #(random  check in mismatching shared time... not a chronology mistake... cant see this type of mistake automatically, was just luck with this one!)
+
+
+
 }
 
 

@@ -290,10 +290,9 @@ length(out)
 
 combinedprovisioningNewTemplate = do.call(rbind, out)
 
-
 {# error check for NewTemplate
  
-length(unique(combinedprovisioningNewTemplate$Filename))	# 15/02/2016: 861 files, situation 4, new template
+length(unique(combinedprovisioningNewTemplate$Filename))	# 858 files, situation 4, new template
 
 # weird comments or missing info
 condwarninggz <- sapply(warninggz, function(x) length(x) > 1)
@@ -312,13 +311,9 @@ warninggzz	# should be empty list
 
 }
 
-
-length(unique(combinedprovisioningNewTemplate$Filename))	# 15/02/2016: 861 files, situation 4, new template
-
-
-
-
 head(combinedprovisioningNewTemplate,100)
+
+
 
 
 detach("package:openxlsx", unload=TRUE)
@@ -756,20 +751,19 @@ length(unique(tblDVD_XlsFilesALLDBINFO$Filename))	# 1764
 
 {# To calculate duration and number of visits
 combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
-x <- combinedprovisioningALL_listperFilename[[7]]
 
 combinedprovisioningALL_listperFilename_fun = function(x)  {
 x <- x[order(x$Tin, -x$Tout),]
 
 return(c(
-sum(x$Duration[x$Sex==1 & x$FeedYN == 1 & x$Duration > 1]),  	# MTime
-sum(x$Duration[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]),  	# FTime
-length(x$FeedYN[x$Sex==1 & x$FeedYN == 1]),   				 	# MVisit1
-length(x$FeedYN[x$Sex==0 & x$FeedYN == 1]),						# FVisit1
-length(x$FeedYN[x$Sex==1 & !is.na(x$Col) & x$Col == 'grey']),	# MVisit2
-length(x$FeedYN[x$Sex==0 & !is.na(x$Col) & x$Col == 'grey']),	# FVisit2
-length(x$FeedYN[x$Sex==1 & x$FeedYN == 1 & x$Duration > 1]),	# MBout
-length(x$FeedYN[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]))	# FBout
+sum(x$Duration[x$Sex==1 & x$FeedYN == 1 & x$Duration > 1]),  					# MTime
+sum(x$Duration[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]),  					# FTime
+length(x$FeedYN[x$Sex==1 & x$FeedYN == 1 & !is.na(x$FeedYN)]),  				# MVisit1
+length(x$FeedYN[x$Sex==0 & x$FeedYN == 1 & !is.na(x$FeedYN)]),					# FVisit1
+length(x$FeedYN[x$Sex==1 & !is.na(x$Col) & x$Col == 'grey' & !is.na(x$FeedYN)]),# MVisit2
+length(x$FeedYN[x$Sex==0 & !is.na(x$Col) & x$Col == 'grey' & !is.na(x$FeedYN)]),# FVisit2
+length(x$FeedYN[x$Sex==1 & x$FeedYN == 1 & x$Duration > 1 & !is.na(x$FeedYN)]),	# MBout
+length(x$FeedYN[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1 & !is.na(x$FeedYN)]))	# FBout
 )
 
 
@@ -789,7 +783,7 @@ head(combinedprovisioningALL_listperFilename_out2)
 {# To calculate ShareTime
 
 combinedprovisioningALL_listperFilenameFeedY <- split(combinedprovisioningALL[combinedprovisioningALL$FeedYN == 1,],combinedprovisioningALL$Filename[combinedprovisioningALL$FeedYN == 1])
-x <- combinedprovisioningALL_listperFilenameFeedY[[1]]
+x <- combinedprovisioningALL_listperFilenameFeedY[['2014\\VN0585.xlsx']]
 
 combinedprovisioningALL_listperFilenameFeedY_fun = function(x)  {
 x <- x[order(x$Tin, -x$Tout),]
@@ -801,7 +795,9 @@ x$prevOut = na.locf(x$prevOut,na.rm=FALSE) 				# fill all NA values in prevOut w
 x$together = x$Tin<x$prevOut							# now it's easy. If this bird enters before the other bird left, the visit overlaps
 x$ShareTime = x$together*(pmin(x$prevOut,x$Tout)-x$Tin) # and your dblattendedetcetera is either the own Tout (if this birds leaves first) or prevOut (if the partner leaves first), i.e., the minimum of both, minus Tin.
 
-return(sum(x$ShareTime, na.rm=T)/2)						# ShareTime
+return(c(sum(x$ShareTime, na.rm=T)/2,					# ShareTime
+		sum(x$ShareTime[x$Sex == 0], na.rm=T),			# FShareTime
+		sum(x$ShareTime[x$Sex == 1], na.rm=T)))			# MShareTime
 }
 
 combinedprovisioningALL_listperFilenameFeedY_out1 <- lapply(combinedprovisioningALL_listperFilenameFeedY, FUN=combinedprovisioningALL_listperFilenameFeedY_fun)
@@ -809,17 +805,14 @@ combinedprovisioningALL_listperFilenameFeedY_out2 <- data.frame(rownames(do.call
 
 nrow(combinedprovisioningALL_listperFilenameFeedY_out2)	# 1746
 rownames(combinedprovisioningALL_listperFilenameFeedY_out2) <- NULL
-colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','ShareTime')
+colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','ShareTime','FShareTime','MShareTime' )
 }
 
 head(combinedprovisioningALL_listperFilenameFeedY_out2)
 
-# create MY_tblParentalCare and Compare_tblParentalCare
+{# create MY_tblParentalCare and Compare_tblParentalCare
 MY_tblParentalCare <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')
 MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=tblDVD_XlsFilesALLDBINFO[,c('Filename','DVDRef')],all.x=TRUE, by='Filename')
-
-head(MY_tblParentalCare)
-nrow(MY_tblParentalCare) # 1746
 
 Compare_tblParentalCare <- merge(x=MY_tblParentalCare,y=tblParentalCare[,c('DVDRef','MTime', 'FTime','MVisit1', 'FVisit1', 'MVisit2', 'FVisit2', 'MBout', 'FBout', 'ShareTime')], all.x=TRUE, by ='DVDRef')
 head(Compare_tblParentalCare)
@@ -830,7 +823,6 @@ Compare_tblParentalCare <- merge(x=Compare_tblParentalCare,y=MY_tblParentalCare[
 Compare_tblParentalCare$MTime.x <- round(Compare_tblParentalCare$MTime.x,2)
 Compare_tblParentalCare$FTime.x <- round(Compare_tblParentalCare$FTime.x,2)
 Compare_tblParentalCare$ShareTime.x <- round(Compare_tblParentalCare$ShareTime.x,2)
-head(Compare_tblParentalCare)
 
 hist(Compare_tblParentalCare$MTime.x)
 hist(Compare_tblParentalCare$FTime.x)
@@ -841,18 +833,122 @@ hist(Compare_tblParentalCare$FVisit2.x)
 hist(Compare_tblParentalCare$MBout.x)
 hist(Compare_tblParentalCare$FBout.x)
 hist(Compare_tblParentalCare$ShareTime.x)
-
-MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3663,]
-tblParentalCare[tblParentalCare$DVDRef == 3663,]
-combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3663,]
-
-## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCare.xls", col.names=TRUE, sep='\t')
 }
 
+head(MY_tblParentalCare)
+head(Compare_tblParentalCare)
 
+## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCare.xls", col.names=TRUE, sep='\t')
 
+{## checking the largest mismatches
 
+# VK0115 > my code is correct, data in DB for a file where no bird visits
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2622,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2622,]
+tblParentalCare[tblParentalCare$DVDRef == 2622,]
 
+# VK0101 > my code is correct, Haslina exchange visit1 and 2
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2606,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2606,]
+tblParentalCare[tblParentalCare$DVDRef == 2606,]
+
+# VN0826 > my code is correct, data have change dramatically after correction of chronology
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 4786,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 4786,]
+tblParentalCare[tblParentalCare$DVDRef == 4786,]
+
+# 50412 > my code is correct, the observer did not fill in Visits2
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 973,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 973,]
+tblParentalCare[tblParentalCare$DVDRef == 973,]
+
+# 50201 > my code is correct, data in DB do not match what's written in excel for MVisits2 (which is correct)
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 759,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 759,]
+tblParentalCare[tblParentalCare$DVDRef == 759,]
+
+# VK0002 > my code is correct, summary done by hand in excel is wrong
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2346,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2346,]
+tblParentalCare[tblParentalCare$DVDRef == 2346,]
+
+# 50177 > my code is correct, colors in excel files wrong (blue instead of green for long visits) leading the observer to fail to counting manually the bouts
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 735,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 735,]
+tblParentalCare[tblParentalCare$DVDRef == 735,]
+
+# 80005 > my code is correct, formula in excel fail to include all the relevant cells to sum
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 1948,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 1948,]
+tblParentalCare[tblParentalCare$DVDRef == 1948,]
+
+# VM0628 > my code is correct, excel formula did not reach that line
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3967,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3967,]
+tblParentalCare[tblParentalCare$DVDRef == 3967,]
+
+# VK0410 > my code is correct, summary times were misfilled by hand by the observer, + we made a few corrections for colors
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2918,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2918,]
+tblParentalCare[tblParentalCare$DVDRef == 2918,]
+
+# 60161 > my code is correct, observer did not include short feeding visits in his count
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 1732,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 1732,]
+tblParentalCare[tblParentalCare$DVDRef == 1732,]
+
+# 50255 > my code is correct, observer forgot to color a visit and to count it as visit 1 + observer included visit 2 in the count of visit 1
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 813,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 813,]
+tblParentalCare[tblParentalCare$DVDRef == 813,]
+
+# 50580 > my code is correct, observer has a weird function to calculate Mtime (i.e. minus half the shared time), corrected chronology, Visits2 in excel files are correct, data in DB are different and incorrect
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 1137,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 1137,]
+tblParentalCare[tblParentalCare$DVDRef == 1137,]
+
+# VK0413 > my code is correct, summary in excel call wrong cell
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2921,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2921,]
+tblParentalCare[tblParentalCare$DVDRef == 2921,]
+
+# VK0412 > my code is correct, summary in excel filled in by hand wrongly
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2920,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2920,]
+tblParentalCare[tblParentalCare$DVDRef == 2920,]
+
+# VK0422 > my code is correct, summary in excel filled in by hand wrongly and calling wrong cell if function
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2930,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2930,]
+tblParentalCare[tblParentalCare$DVDRef == 2930,]
+
+# 40148 > my code is correct, summary in excel filled in by hand wrongly
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 148,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 148,]
+tblParentalCare[tblParentalCare$DVDRef == 148,]
+
+# VK0106 > my code is correct, summary in excel filled in by hand wrongly
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2613,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2613,]
+tblParentalCare[tblParentalCare$DVDRef == 2613,]
+
+# 70167 > my code is correct, shared time not filled in by observer
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 1925,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 1925,]
+tblParentalCare[tblParentalCare$DVDRef == 1925,]
+
+# VM0574 > my code is correct, shared time missed by observer, in fact, wrong time in (checked video as it looked suspicious...)
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3913,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3913,]
+tblParentalCare[tblParentalCare$DVDRef == 3913,]
+
+# VN0585 > my code is correct, 
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 4544,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 4544,]
+tblParentalCare[tblParentalCare$DVDRef == 4544,]
+}
+
+}
 
 
 
