@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 11/02/2016  
+#	 last modif : 18/02/2016  
 #	 check inconsistencies with DB
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -60,6 +60,8 @@ WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 
 head(tblDVD_XlsFilesALLDBINFO)
 
+
+
 # as long as filenames in the DB are not updated...
 tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
 tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
@@ -67,10 +69,28 @@ tblDVD_XlsFiles$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFiles$Filename) # as 
 tblDVD_XlsFiles$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFiles$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
 
 
+
 # get the original tblParentalCare for checking discrepancies with new extraction or raw data and automatic calculation of summary
 tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
 
 head(tblParentalCare)
+
+
+PotentialFailedNest_Recordings_NextVisit <- sqlQuery(conDB, "
+SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, Min(tblBroodEvents.EventDate) AS NextBroodEventDate, tblBroodEvents.OffspringNest, tblDVDInfo.Deaths,  tblParentalCare.Notes
+FROM ((tblBroods INNER JOIN tblBroodEvents ON tblBroods.BroodRef = tblBroodEvents.BroodRef) INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
+GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblBroodEvents.OffspringNest, tblDVDInfo.Deaths,  tblDVDInfo.Situation, tblParentalCare.Notes
+HAVING (((Min(tblBroodEvents.EventDate))>=[tblDVDInfo].[DVDdate]) AND ((tblBroodEvents.OffspringNest)=0) AND ((tblDVDInfo.Situation)=4));
+")
+
+PotentialFailedNest_Recordings_DeathYes <- sqlQuery(conDB, "
+SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes
+FROM (tblBroods INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
+GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes, tblDVDInfo.Situation
+HAVING (((tblDVDInfo.Deaths)=Yes) AND ((tblDVDInfo.Situation)=4));
+")
+
+
 
 close(conDB)
 
@@ -312,8 +332,6 @@ warninggzz	# should be empty list
 }
 
 head(combinedprovisioningNewTemplate,100)
-
-
 
 
 detach("package:openxlsx", unload=TRUE)
@@ -744,10 +762,7 @@ DurationScript # 11-12 min
 }
 
 head(tblParentalCare)
-head(tblDVD_XlsFilesALLDBINFO)
-summary(tblDVD_XlsFilesALLDBINFO)
-length(unique(combinedprovisioningALL$Filename))	# 1746
-length(unique(tblDVD_XlsFilesALLDBINFO$Filename))	# 1764
+
 
 {# To calculate duration and number of visits
 combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
@@ -782,33 +797,104 @@ head(combinedprovisioningALL_listperFilename_out2)
 
 {# To calculate ShareTime
 
+{# calculate share time for each visit (for both sexes separately) in the raw data
+
 combinedprovisioningALL_listperFilenameFeedY <- split(combinedprovisioningALL[combinedprovisioningALL$FeedYN == 1,],combinedprovisioningALL$Filename[combinedprovisioningALL$FeedYN == 1])
-x <- combinedprovisioningALL_listperFilenameFeedY[['2014\\VN0585.xlsx']]
+	# x <- combinedprovisioningALL_listperFilenameFeedY[['2014\\VN0585.xlsx']] # example where 1 male visit nested within female visit
+	# x <- combinedprovisioningALL_listperFilenameFeedY[['2007\\70124.xlsx']]  # example where no male visit
+	# x <- combinedprovisioningALL_listperFilenameFeedY[['2004\\40369.xlsx']]  # example where several nested visits
+	# x <- combinedprovisioningALL_listperFilenameFeedY[['2004\\40034.xlsx']]  # example where one visit per sex
+	# x <- combinedprovisioningALL_listperFilenameFeedY[['2005\\50208.xlsx']]  # example where length one vector is equal to second vector, and therefore data frame is created instead of list
 
-combinedprovisioningALL_listperFilenameFeedY_fun = function(x)  {
-x <- x[order(x$Tin, -x$Tout),]
-														# from Anne Rutten
-x$other <-  x$Sex != c(NA,x$Sex[-nrow(x)]) 				# identify whether the previous visit was by the other bird
-x$prevOut = c(NA,x$Tout[-nrow(x)])*x$other 				# save the previous Tout as prevOut if the previous bird was the other bird
-x$prevOut[x$prevOut==0] = NA 							# set prevOut to NA if the previous bird was NOT the other bird
-x$prevOut = na.locf(x$prevOut,na.rm=FALSE) 				# fill all NA values in prevOut with the last non-NA value: this means that every visit gets the Tout for the last visit of the other bird as prevOut
-x$together = x$Tin<x$prevOut							# now it's easy. If this bird enters before the other bird left, the visit overlaps
-x$ShareTime = x$together*(pmin(x$prevOut,x$Tout)-x$Tin) # and your dblattendedetcetera is either the own Tout (if this birds leaves first) or prevOut (if the partner leaves first), i.e., the minimum of both, minus Tin.
 
-return(c(sum(x$ShareTime, na.rm=T)/2,					# ShareTime
-		sum(x$ShareTime[x$Sex == 0], na.rm=T),			# FShareTime
-		sum(x$ShareTime[x$Sex == 1], na.rm=T)))			# MShareTime
+out4 <- list()
+
+for (j in 1:length(combinedprovisioningALL_listperFilenameFeedY) )		{ 
+		x <-combinedprovisioningALL_listperFilenameFeedY[[j]]
+		
+		# Modified from Lotte Schlicht
+		#1. find the times when males/females are present at the box
+		#1.a subset to each sex
+		x0 = subset(x, Sex == 0)
+		x1 = subset(x, Sex == 1)
+		
+		#1.b create vector of times present (the *10 and then /10 are the easiest way to construct thenths of minutes)
+			# remove the last tenth of second for each visits, unless the visit entry and exit has the same time
+			# write the output in a list in case only one visit or several visits of equal length of decimals (in those cases, mapply creates data.frame instead of lists!)
+		
+		sex0_presence = mapply(FUN = function(Tin, Tout) {  if (Tin==Tout) {return (Tin)} 
+		if (Tin!=Tout)	{return(list(((Tin*10) : (Tout*10-1))/10))}}, Tin = x0$Tin, Tout = x0$Tout)
+			
+		sex1_presence = mapply(FUN = function(Tin, Tout) {  if (Tin==Tout) {return (Tin*10)} 
+		if (Tin!=Tout)	{return(list(((Tin*10) : (Tout*10-1))/10))}}, Tin = x1$Tin, Tout = x1$Tout)
+
+		
+		#2. check for each list entry of each sex (= each row in the original table) how many of the numbers also occur for the other sex
+		# this gives you the number of tenths-of-minutes that both birds were inside the box.
+		# for when just one visit per sex
+		
+		sex0 = lapply(sex0_presence, FUN = function(x1, x2) { 
+					return( length(which(x1 %in% x2)) ) # seem to take each list of sex0_prsence as x1 length(which(sex0_presence[[2]] %in% unlist(sex1_presence)))
+				}, 
+				x2 = unlist(sex1_presence)
+			)
+						
+		sex1 = lapply(sex1_presence, FUN = function(x1, x2) { 
+					return( length(which(x1 %in% x2)) ) 
+
+				}, 
+				x2 = unlist(sex0_presence)
+			)
+
+			
+		#4. attach to original data - in order to make sure that the order remains intact, add the columns to the sex-specific datasets and then rbind these together.
+		x0$ShareTime = unlist(sex0)
+		x1$ShareTime = unlist(sex1)
+		x = as.data.frame(rbind(x0, x1))
+
+		#5. devide by 10 to get the unit "minutes"
+		x$ShareTime = x$ShareTime/10
+		
+		x <- x[order(x$Tin, -x$Tout),]
+		out4[[j]] <- x
+		
+		#6. clean up
+		sex0_presence <- NULL
+		sex1_presence <- NULL
+		sex0 <- NULL
+		sex1 <- NULL
+		x0 <- NULL		
+		x1 <- NULL
+		x <- NULL
 }
 
-combinedprovisioningALL_listperFilenameFeedY_out1 <- lapply(combinedprovisioningALL_listperFilenameFeedY, FUN=combinedprovisioningALL_listperFilenameFeedY_fun)
+combinedprovisioningALL_FeedY <- do.call(rbind, out4)
+}
+
+{# calculate share time for each file
+
+combinedprovisioningALL_listperFilenameFeedY_withShare <- split(combinedprovisioningALL[combinedprovisioningALL$FeedYN == 1,],combinedprovisioningALL$Filename[combinedprovisioningALL$FeedYN == 1])
+
+combinedprovisioningALL_listperFilenameFeedY_fun = function(x)  {
+		
+return(c(sum(x$ShareTime, na.rm=T)/2,					# ShareTime
+		# sum(x$ShareTime[x$Sex == 0], na.rm=T),		# FShareTime is the same
+		# sum(x$ShareTime[x$Sex == 1], na.rm=T)))		# MShareTime is the same
+}
+
+
+combinedprovisioningALL_listperFilenameFeedY_out1 <- lapply(combinedprovisioningALL_listperFilenameFeedY_withShare, FUN=combinedprovisioningALL_listperFilenameFeedY_fun)
 combinedprovisioningALL_listperFilenameFeedY_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameFeedY_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameFeedY_out1))
 
-nrow(combinedprovisioningALL_listperFilenameFeedY_out2)	# 1746
+nrow(combinedprovisioningALL_listperFilenameFeedY_out2)	# 1734
 rownames(combinedprovisioningALL_listperFilenameFeedY_out2) <- NULL
 colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','ShareTime','FShareTime','MShareTime' )
 }
 
+}
+
 head(combinedprovisioningALL_listperFilenameFeedY_out2)
+
 
 {# create MY_tblParentalCare and Compare_tblParentalCare
 MY_tblParentalCare <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')
@@ -824,23 +910,25 @@ Compare_tblParentalCare$MTime.x <- round(Compare_tblParentalCare$MTime.x,2)
 Compare_tblParentalCare$FTime.x <- round(Compare_tblParentalCare$FTime.x,2)
 Compare_tblParentalCare$ShareTime.x <- round(Compare_tblParentalCare$ShareTime.x,2)
 
-hist(Compare_tblParentalCare$MTime.x)
-hist(Compare_tblParentalCare$FTime.x)
-hist(Compare_tblParentalCare$MVisit1.x)
-hist(Compare_tblParentalCare$FVisit1.x)
-hist(Compare_tblParentalCare$MVisit2.x)
-hist(Compare_tblParentalCare$FVisit2.x)
-hist(Compare_tblParentalCare$MBout.x)
-hist(Compare_tblParentalCare$FBout.x)
-hist(Compare_tblParentalCare$ShareTime.x)
+	# hist(Compare_tblParentalCare$MTime.x)
+	# hist(Compare_tblParentalCare$FTime.x)
+	# hist(Compare_tblParentalCare$MVisit1.x)
+	# hist(Compare_tblParentalCare$FVisit1.x)
+	# hist(Compare_tblParentalCare$MVisit2.x)
+	# hist(Compare_tblParentalCare$FVisit2.x)
+	# hist(Compare_tblParentalCare$MBout.x)
+	# hist(Compare_tblParentalCare$FBout.x)
+	# hist(Compare_tblParentalCare$ShareTime.x)
 }
 
 head(MY_tblParentalCare)
 head(Compare_tblParentalCare)
 
+
+{## checking the largest mismatches - 30 cases
+
 ## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCare.xls", col.names=TRUE, sep='\t')
 
-{## checking the largest mismatches
 
 # VK0115 > my code is correct, data in DB for a file where no bird visits
 combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2622,]
@@ -942,21 +1030,75 @@ combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3913,]
 MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3913,]
 tblParentalCare[tblParentalCare$DVDRef == 3913,]
 
-# VN0585 > my code is correct, 
+# VN0585 > my code is NOW correct for ShareTime
 combinedprovisioningALL[combinedprovisioningALL$DVDRef == 4544,]
 MY_tblParentalCare[MY_tblParentalCare$DVDRef == 4544,]
 tblParentalCare[tblParentalCare$DVDRef == 4544,]
-}
+
+# VN0622 > my code is correct, observer forgot a shared time
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 4582,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 4582,]
+tblParentalCare[tblParentalCare$DVDRef == 4582,]
+
+# 50179 > my code is ~ correct: Oblue is counted as a 'bout' if longer than 1 minute so I guess this is not what this measurement was meant for (potentially to control for incuabtion/brooding??) + observer forgot to calculate any share time
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 737,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 737,]
+tblParentalCare[tblParentalCare$DVDRef == 737,]
+
+# 70114 > my code is correct, observer did not calculate shared time and missed a green bout (color is blue but should be green)
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 1872,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 1872,]
+tblParentalCare[tblParentalCare$DVDRef == 1872,]
+
+# VM0242 > my code is correct, observer wrote a typo in one shared time
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3574,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3574,]
+tblParentalCare[tblParentalCare$DVDRef == 3574,]
+
+# VK0229 > my code is correct, due to a correction in chronology, Ftime, and share time have changed
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2739,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 2739,]
+tblParentalCare[tblParentalCare$DVDRef == 2739,]
+
+# VM0339 > my code is correct, mismatch due to a correction in chronology (big typo)
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 3665,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 3665,]
+tblParentalCare[tblParentalCare$DVDRef == 3665,]
+
+# 60004 > my code is correct, observer did wrong calculation share time
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 1575,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 1575,]
+tblParentalCare[tblParentalCare$DVDRef == 1575,]
+
+# 50021 > my code is correct, summary written in excel is wrong + share time not calculated
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 579,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 579,]
+tblParentalCare[tblParentalCare$DVDRef == 579,]
+
+# 50197 > my code is correct, one Oblue count as a bout (>1 min), share time not calculated
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 755,]
+MY_tblParentalCare[MY_tblParentalCare$DVDRef == 755,]
+tblParentalCare[tblParentalCare$DVDRef == 755,]
+
+
 
 }
 
+}
+
+head(combinedprovisioningALL_FeedY)
+head(MY_tblParentalCare)
+head(Compare_tblParentalCare)
 
 
+### refine which files are valid for analysis
+# situation 4 = with chicks
+# if during next visit (on the day of recording or within a few days after), nunmber of chicks = 0, maybe nest was already empty... ? 
+# exclude recording where one or the two bird did not visit AND where the next nest check indicates 0 chicks ??
+# what if in DVDInfo, DeathYN=Yes ?? how did they know ?
 
-
-
-
-
+PotentialFailedNest_Recordings_NextVisit
+PotentialFailedNest_Recordings_DeathYes
 
 
 
