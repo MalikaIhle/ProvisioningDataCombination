@@ -77,10 +77,10 @@ head(tblParentalCare)
 
 
 PotentialFailedNest_Recordings_NextVisit <- sqlQuery(conDB, "
-SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, Min(tblBroodEvents.EventDate) AS NextBroodEventDate, tblBroodEvents.OffspringNest, tblDVDInfo.Deaths,  tblParentalCare.Notes
+SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, Min(tblBroodEvents.EventDate) AS NextBroodEventDate, tblBroodEvents.OffspringNest, [NextBroodEventDate]-[DVDdate] AS DelayToNextCheck, tblParentalCare.Notes, tblBroods.BroodName, tblBroods.BroodRef
 FROM ((tblBroods INNER JOIN tblBroodEvents ON tblBroods.BroodRef = tblBroodEvents.BroodRef) INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
-GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblBroodEvents.OffspringNest, tblDVDInfo.Deaths,  tblDVDInfo.Situation, tblParentalCare.Notes
-HAVING (((Min(tblBroodEvents.EventDate))>=[tblDVDInfo].[DVDdate]) AND ((tblBroodEvents.OffspringNest)=0) AND ((tblDVDInfo.Situation)=4));
+GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblBroodEvents.OffspringNest, tblDVDInfo.Deaths, [NextBroodEventDate]-[DVDdate], tblParentalCare.Notes, tblBroods.BroodName, tblBroods.BroodRef, tblDVDInfo.Situation
+HAVING (((Min(tblBroodEvents.EventDate))>=[tblDVDInfo].[DVDdate] Or (Min(tblBroodEvents.EventDate)) Is Null) AND ((tblBroodEvents.OffspringNest) Is Null Or (tblBroodEvents.OffspringNest)=0) AND ((tblDVDInfo.Deaths)=No) AND ((tblDVDInfo.Situation)=4));
 ")
 
 PotentialFailedNest_Recordings_DeathYes <- sqlQuery(conDB, "
@@ -877,7 +877,7 @@ combinedprovisioningALL_listperFilenameFeedY_withShare <- split(combinedprovisio
 
 combinedprovisioningALL_listperFilenameFeedY_fun = function(x)  {
 		
-return(c(sum(x$ShareTime, na.rm=T)/2,					# ShareTime
+return(c(sum(x$ShareTime, na.rm=T)/2))					# ShareTime
 		# sum(x$ShareTime[x$Sex == 0], na.rm=T),		# FShareTime is the same
 		# sum(x$ShareTime[x$Sex == 1], na.rm=T)))		# MShareTime is the same
 }
@@ -888,7 +888,7 @@ combinedprovisioningALL_listperFilenameFeedY_out2 <- data.frame(rownames(do.call
 
 nrow(combinedprovisioningALL_listperFilenameFeedY_out2)	# 1734
 rownames(combinedprovisioningALL_listperFilenameFeedY_out2) <- NULL
-colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','ShareTime','FShareTime','MShareTime' )
+colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','ShareTime')
 }
 
 }
