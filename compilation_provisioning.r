@@ -24,6 +24,7 @@
 ## excel files considered are only the one which have:
 # an entry in tblDVD_XlsFiles (rk: some files have an entry in DB but are not included here: see 'FILES THAT SHOULD BE INCLUDED')
 # a situation = 4 in tblDVDInfo (i.e. only chicks)
+# wrong = No in tblDVDInfo
 
 ## decision still to be taken:
 # should excluded early age chicks because can still be brooded ??
@@ -74,23 +75,6 @@ tblDVD_XlsFiles$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFiles$Filename) # as 
 tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
 
 head(tblParentalCare)
-
-
-PotentialFailedNest_Recordings_NextVisit <- sqlQuery(conDB, "
-SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, Min(tblBroodEvents.EventDate) AS NextBroodEventDate, tblBroodEvents.OffspringNest, [NextBroodEventDate]-[DVDdate] AS DelayToNextCheck, tblParentalCare.Notes, tblBroods.BroodName, tblBroods.BroodRef
-FROM ((tblBroods INNER JOIN tblBroodEvents ON tblBroods.BroodRef = tblBroodEvents.BroodRef) INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
-GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblBroodEvents.OffspringNest, tblDVDInfo.Deaths, [NextBroodEventDate]-[DVDdate], tblParentalCare.Notes, tblBroods.BroodName, tblBroods.BroodRef, tblDVDInfo.Situation
-HAVING (((Min(tblBroodEvents.EventDate))>=[tblDVDInfo].[DVDdate] Or (Min(tblBroodEvents.EventDate)) Is Null) AND ((tblBroodEvents.OffspringNest) Is Null Or (tblBroodEvents.OffspringNest)=0) AND ((tblDVDInfo.Deaths)=No) AND ((tblDVDInfo.Situation)=4));
-")
-
-PotentialFailedNest_Recordings_DeathYes <- sqlQuery(conDB, "
-SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes
-FROM (tblBroods INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
-GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes, tblDVDInfo.Situation
-HAVING (((tblDVDInfo.Deaths)=Yes) AND ((tblDVDInfo.Situation)=4));
-")
-
-
 
 close(conDB)
 
@@ -740,8 +724,6 @@ head(combinedprovisioningALL, 100)
 tail(combinedprovisioningALL, 100)
 
 
-DurationScript <- Sys.time() - TimeStart
-DurationScript # 11-12 min
 
 
 {### recreate tblParentalCare to check for discrepancies
@@ -1091,18 +1073,84 @@ head(MY_tblParentalCare)
 head(Compare_tblParentalCare)
 
 
+
+DurationScript <- Sys.time() - TimeStart
+DurationScript # ~ 14 min
+
+
+
+
+
+
 ### refine which files are valid for analysis
 # situation 4 = with chicks
 # if during next visit (on the day of recording or within a few days after), nunmber of chicks = 0, maybe nest was already empty... ? 
 # exclude recording where one or the two bird did not visit AND where the next nest check indicates 0 chicks ??
 # what if in DVDInfo, DeathYN=Yes ?? how did they know ?
 
-PotentialFailedNest_Recordings_NextVisit
-PotentialFailedNest_Recordings_DeathYes
+
+combinedprovisioningALL$Filename
+MY_tblParentalCare
+
+
+{## get back to querying the DB
+
+conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+
+tblBroods <- sqlFetch(conDB, "tblBroods")
+tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
+head(tblBroods)
+head(tblBroodEvents)
+
+MY_LARGE_tblParentalCare <- merge(x=MY_tblParentalCare, y=tblDVD_XlsFilesALLDBINFO[,c('DVDRef','BroodRef','OffspringNo')], all.x=TRUE, by='DVDRef')
+MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=tblBroods, all.x=TRUE, by='BroodRef')
+
+
+
+head(MY_LARGE_tblParentalCare)
+
+
+RearingBrood_allBirds <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
+FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
+WHERE (((tblBirdID.BroodRef) Is Not Null));
+")
+head(RearingBrood_allBirds)
+
+
+RearingBrood_allBirds_splitperBrood <- split(RearingBrood_allBirds, RearingBrood_allBirds$RearingBrood)
+RearingBrood_allBirds_splitperBrood[1]
 
 
 
 
+
+
+
+PotentialFailedNest_Recordings_DeathYes <- sqlQuery(conDB, "
+SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes
+FROM (tblBroods INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
+GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes, tblDVDInfo.Situation
+HAVING (((tblDVDInfo.Deaths)=Yes) AND ((tblDVDInfo.Situation)=4));
+")
+
+
+
+
+BroodTaped = sqlQuery (conDB, "SELECT RearingBrood_allbirds.RearingBrood, AllRecordings.BroodName, AllRecordings.DVDdate, AllRecordings.DVDNumber, Abs(Sum([LastStage]>1)) AS Nbhatched, Abs(Sum([LastStage]=3)) AS NbFL, tblDVDInfo.OffspringNo AS DVDInfoNbChicks
+FROM ((AllRecordings LEFT JOIN RearingBrood_allbirds ON AllRecordings.BroodRef = RearingBrood_allbirds.RearingBrood) INNER JOIN tblDVDInfo ON AllRecordings.DVDRef = tblDVDInfo.DVDRef) LEFT JOIN tblBroodEvents ON AllRecordings.BroodRef = tblBroodEvents.BroodRef
+GROUP BY RearingBrood_allbirds.RearingBrood, AllRecordings.BroodName, AllRecordings.DVDdate, AllRecordings.DVDNumber, tblDVDInfo.OffspringNo
+ORDER BY RearingBrood_allbirds.RearingBrood, AllRecordings.DVDdate;
+")
+
+
+
+
+
+
+
+
+
+}
 
 {## start creating variables for compatiblity......... in construction
 
