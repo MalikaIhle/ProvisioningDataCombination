@@ -1214,7 +1214,8 @@ VM0318: change B5 from 2.6 to 3.6
 VM0060: change F27 (66.5) to 69.5 and G27 from 66.7 to 69.7
 VM0574: change B29 from 69.4 to 76.4 #(random  check in mismatching shared time... not a chronology mistake... cant see this type of mistake automatically, was just luck with this one!)
 
-
+# 25/02/2016
+4001LM19: delete 'TOTAL', bird in at the end, move B and C83 to D and E 83
 
 }
 

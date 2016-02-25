@@ -1103,9 +1103,8 @@ head(tblBroods)
 head(tblBroodEvents)
 
 MY_LARGE_tblParentalCare <- merge(x=MY_tblParentalCare, y=tblDVD_XlsFilesALLDBINFO[,c('DVDRef','BroodRef','OffspringNo')], all.x=TRUE, by='DVDRef')
+colnames(MY_LARGE_tblParentalCare)[which(names(MY_LARGE_tblParentalCare) == "OffspringNo")] <- "DVDInfoChickNb"
 MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=tblBroods, all.x=TRUE, by='BroodRef')
-
-
 
 head(MY_LARGE_tblParentalCare)
 
@@ -1119,6 +1118,24 @@ head(RearingBrood_allBirds)
 
 RearingBrood_allBirds_splitperBrood <- split(RearingBrood_allBirds, RearingBrood_allBirds$RearingBrood)
 RearingBrood_allBirds_splitperBrood[1]
+
+RearingBrood_allBirds_splitperBrood_fun <- function(x) {
+return(c(
+length(x$BirdID[x$LastStage>1]),  				# NbHatched
+length(x$BirdID[x$LastStage==3])  				# NbFL
+))
+}
+
+RearingBrood_allBirds_splitperBrood_out1 <- lapply(RearingBrood_allBirds_splitperBrood, FUN=RearingBrood_allBirds_splitperBrood_fun)
+RearingBrood_allBirds_splitperBrood_out2 <- data.frame(rownames(do.call(rbind,RearingBrood_allBirds_splitperBrood_out1)),do.call(rbind, RearingBrood_allBirds_splitperBrood_out1))
+
+nrow(RearingBrood_allBirds_splitperBrood_out2)	# 1940
+rownames(RearingBrood_allBirds_splitperBrood_out2) <- NULL
+colnames(RearingBrood_allBirds_splitperBrood_out2) <- c('RearingBrood','NbHatched', 'NbFL')
+}
+)
+head(RearingBrood_allBirds_splitperBrood_out2)
+
 
 
 

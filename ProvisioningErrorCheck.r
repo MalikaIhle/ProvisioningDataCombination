@@ -24,7 +24,7 @@ conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRE
 ###### DB Checks
 {
 
-### Wich duplicate of video analysed was entered in tbl Parental care ?
+### Wich duplicate of video analysed was entered in tbl Parental care ? DONE
 {
 Duplicate_tblDVD_XlsFiles_DVDRef <- sqlQuery(conDB, "
 SELECT First(tblDVD_XlsFiles.[DVDRef]) AS [DVDRef Field], Count(tblDVD_XlsFiles.[DVDRef]) AS NumberOfDups, First(tblDVD_XlsFiles.Filename) AS FirstOfFilename, Last(tblDVD_XlsFiles.Filename) AS LastOfFilename, tblParentalCare.TapeTime, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.Observer, tblParentalCare.Notes
@@ -57,24 +57,24 @@ HAVING (((Count(tblDVD_XlsFiles.[DVDRef]))>1));
 60029D
 
 # those move to junk folder are:
-40001LM19
-40032D
-40036
-40039
-40055S
-40069S
-40071S
-40074S
-40075S
-40079S
-40089S
-40119S
-40123S
-40133S
-50368-wrong
-50370-not sure
-50408-D
-60029J
+40001LM19 # this has been moved back to the root of the folder, new line created in DVD info > the code should now read it and latter the data will get into the new table parental care
+40032D # deleted from tblDVDXlsFiles
+40036 # deleted from tblDVDXlsFiles
+40039 # deleted from tblDVDXlsFiles
+40055S # deleted from tblDVDXlsFiles
+40069S # deleted from tblDVDXlsFiles
+40071S # deleted from tblDVDXlsFiles
+40074S # deleted from tblDVDXlsFiles
+40075S # deleted from tblDVDXlsFiles
+40079S # deleted from tblDVDXlsFiles
+40089S # deleted from tblDVDXlsFiles
+40119S # deleted from tblDVDXlsFiles
+40123S # deleted from tblDVDXlsFiles
+40133S # deleted from tblDVDXlsFiles
+50368-wrong # deleted from tblDVDXlsFiles
+50370-not sure # deleted from tblDVDXlsFiles
+50408-D # deleted from tblDVDXlsFiles
+60029J # deleted from tblDVDXlsFiles
 
 
 
@@ -86,7 +86,7 @@ HAVING (((Count(tblDVD_XlsFiles.[DVDRef]))>1));
 
 
 
-### Wich excel file was lifted but with no data in tbl Parental care ?
+### Wich excel file was lifted but with no data in tbl Parental care ? DONE
 {
 Unmatched_tblDVD_XlsFiles_DVDRef_in_tblParentalCare <- sqlQuery(conDB, "
 SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.DVDNumber
@@ -95,24 +95,24 @@ WHERE (((tblParentalCare.DVDRef) Is Null));
 ")
 
 # decide whether to enter data in ParentalCare or not. If not, put the file in the 'junk' folder. 
-# delete the entry in tblDVD_XlsFiles (leave entry in tblDVDInfo)
+# delete the entry in tblDVD_XlsFiles (leave entry in tblDVDInfo + comment)
 
 
 # output: 
 #   DVDRef              Filename DVDNumber
-# 1    195       2004\\40195.xls     40195		# excel with data - but no chicks so keep data empty in DB is ok ?
-# 2   1144       2005\\50587.xls     50587		# excel with data - no reasons not to enter them in DB ?
-# 3   1582       2006\\60011.xls     60011		# excel with data - no reasons not to enter them in DB ? though only one short visit at the end > no chiks was left maybe ?
-# 4   1587       2006\\60016.xls     60016		# excel with data - no reasons not to enter them in DB ? very few visits, mostly hanging around > no chiks was left maybe ?
-# 5   1674       2006\\60103.xls     60103		# excel with data - but tape length = 13 min (camera fell)
-# 6   2016 2008\\SparrowData.mdb     80073		# to delete
+# 1    195       2004\\40195.xls     40195		# excel with data - but no chicks so keep data empty in DB is ok ? > NOT TO ENTER  # excel file moved to junk folder ; deleted row in tblDVD_XlsFiles ; comment in DVD info
+# 2   1144       2005\\50587.xls     50587		# excel with data - no reasons not to enter them in DB ? 1 chick alive at time of video > SHOULD BE ENTERED
+# 3   1582       2006\\60011.xls     60011		# excel with data - there only was eggs ever and there is an accident > nest was abandonned ? > NOT TO ENTER  # excel file moved to junk folder ; deleted row in tblDVD_XlsFiles ; comment in DVD info
+# 4   1587       2006\\60016.xls     60016		# excel with data - no reasons not to enter them in DB ? very few visits, mostly hanging around > no longer incubating their eggs > NOT TO ENTER  # excel file moved to junk folder ; deleted row in tblDVD_XlsFiles ; comment in DVD info
+# 5   1674       2006\\60103.xls     60103		# excel with data - but tape length = 13 min (camera fell) > SHOULD BE ENTERED
+# 6   2016 2008\\SparrowData.mdb     80073		# to delete # deleted
 
 }
 
 
 
 
-### Files with no visits because of pb with video or because of bad parental care ?
+### Files with no visits because of pb with video or because of bad parental care ?  >>>>>  MORE WORK TO BE DONE
 {
 Unmatched_tblParentalCare_DVDRef_in_tblDVD_XlsFiles <- sqlQuery(conDB, "
 SELECT tblParentalCare.DVDRef, tblParentalCare.Notes, tblParentalCare.TapeTime, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.DVDNumber
@@ -136,7 +136,7 @@ WHERE (((tblDVD_XlsFiles.DVDRef) Is Null));
 	
 	
 # partial output
-# 90091 and 90098 excel files do not exit
+# 90091 and 90098 excel files do not exit > TO DELETE ? in parental care check N drive for excel files ? check if DVD exist ?
 	
 
 }
@@ -168,7 +168,7 @@ Unmatched_DVDNumber_NewFilename
 
 
 
-### Which Excel files not in DB ?
+### Which Excel files not in DB ? DONE
 {
 
 excelfilelists <- list()
