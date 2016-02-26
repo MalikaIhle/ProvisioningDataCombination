@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Log changes made to excel provisioning files
 #	 Start : 07/01/2016
-#	 last modif : 12/02/2016  
-#  corrections during sparrow meeting
+#	 last modif : 26/02/2016  
+# 	 corrections during sparrow meeting and beyond
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {## IMPORTANT REMARKS
@@ -1217,6 +1217,17 @@ VM0574: change B29 from 69.4 to 76.4 #(random  check in mismatching shared time.
 # 25/02/2016
 4001LM19: delete 'TOTAL', bird in at the end, move B and C83 to D and E 83
 
+# 26/02/2016
+VM0398: change F17 from 23.6 to 274.5, change G17 from 23.6 to 24.6
+VM0386: delete duplicate visit B8 (50.1) C8 (50.5)
+VM0504: change F13 from 28.4 to 29.4, G13 from 28.5 to 29.5
+VM0554: change B29 (50) to 50.9, I also happen to see random mistake for male visit: change G30 from 53.5 to 52.5
+VM0603: change B40 from 82.5 to 83.5
+VM0615: visit from a second female (at the same time) as been moved to comment K6
+VK0080: change C14 from 24.7 to 23.7
+VK0082: change B51 from 21.5 to 70.8, change C51 from 22.6 to 71.9
+VK0083: change F30 from 31.9 to 41.9
+VK0084: change F24 from 59.2 to 60, G24 from 59.3 to 60.2
 }
 
 

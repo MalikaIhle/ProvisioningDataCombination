@@ -29,6 +29,7 @@
 ## decision still to be taken:
 # should excluded early age chicks because can still be brooded ??
 # should exclude recordings when the next nest visit revealed every chicks were dead ?
+# methodYN = ??
 
 }
 
@@ -57,19 +58,9 @@ tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
 SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.ShareTime, tblParentalCare.MVisit1, tblParentalCare.FVisit1, tblParentalCare.MVisit2, tblParentalCare.FVisit2, tblParentalCare.MBout, tblParentalCare.FBout
 FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD_XlsFiles.DVDRef = tblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = tblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
 WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
-")	# contains duplicates (same DVD analyzed several times)
+")
 
 head(tblDVD_XlsFilesALLDBINFO)
-
-
-
-# as long as filenames in the DB are not updated...
-tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
-tblDVD_XlsFilesALLDBINFO$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFilesALLDBINFO$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
-tblDVD_XlsFiles$Filename <- gsub(".xlsx", ".xls",tblDVD_XlsFiles$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
-tblDVD_XlsFiles$Filename <- gsub(".xls", ".xlsx",tblDVD_XlsFiles$Filename) # as long as we do not have changed the names in the DB (xls to xlsx)
-
-
 
 # get the original tblParentalCare for checking discrepancies with new extraction or raw data and automatic calculation of summary
 tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
@@ -80,15 +71,15 @@ close(conDB)
 
 }
 
-head(tblDVD_XlsFilesALLDBINFO)
-head(tblDVD_XlsFiles,30)
+tail(tblDVD_XlsFilesALLDBINFO)
+tail(tblDVD_XlsFiles,30)
 
 
 {### create list of filenames for New and Old Template: check those not included yet but that should be + special code to account for the fact that name extension not corrected to xlsx in DB
 
 {## create list of file names from files analysed after 2012 included
 	# not elegant but the DB will probably not change.
-FilenamesAfter2012 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename]) 
+FilenamesAfter2012 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename & tblDVD_XlsFiles$DVDRef !=5147]) # 4001LM19 was reedited, DVDRef 5147
 
 }								   
 	
@@ -126,7 +117,7 @@ head(Filenames1011newtemplate)
 {## combine all files analyzed with the new template (will take newly analyzed files only if those are put in the root of the year folder, with a normal file name)
 
 FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(FilenamesAfter2012))
-length(FilenamesNewTemplate)	# 858 files, situation 4, new template
+length(FilenamesNewTemplate)	# 915 files, situation 4, new template
 
 }
 
@@ -139,36 +130,17 @@ length(FilenamesNewTemplate)	# 858 files, situation 4, new template
 tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename &
 
 # years before 2010, or after 2010 but belonging to list created above
-(tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
-
-# exclude duplicates (take the one with data in DB tblParentalCare)
-tblDVD_XlsFiles$Filename != "2004\\40001LM19.xlsx" & 
-tblDVD_XlsFiles$Filename != "2004\\40032D.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40036.xlsx" & 
-tblDVD_XlsFiles$Filename != "2004\\40039.xlsx" & 
-tblDVD_XlsFiles$Filename != "2004\\40055S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40069S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40071S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40074S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40075S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40079S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40089S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40119S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40123S.xlsx" &
-tblDVD_XlsFiles$Filename != "2004\\40133S.xlsx" &
+(tblDVD_XlsFiles$DVDRef <2016 | tblDVD_XlsFiles$DVDRef ==5147 | tblDVD_XlsFiles$Filename%in%filename1011_oldtemplate) & 
 
 # EXCLUDED BUT WITH DATA IN DB (COULD BE INCLUDED if rewatched)
 tblDVD_XlsFiles$Filename != "2004\\40055.xlsx" & # files that contain comments that are not standardized (data in DB)
 tblDVD_XlsFiles$Filename != "2004\\40061.xlsx" & # files that contain comments that are not standardized (data in DB)
 tblDVD_XlsFiles$Filename != "2008\\80055.xlsx" & # file empty (data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50368-wrong.xlsx" & # why wrong ? (the copy '50368' file has data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50370-not sure.xlsx" &  # what is not sure ? (the copy '50370' file has data in DB)
-tblDVD_XlsFiles$Filename != "2005\\50268.xlsx" & # commented: too difficult to distinguish nale and female (and therefore file is empty, DB parental care = line of NA)
-tblDVD_XlsFiles$Filename != "2008\\SparrowData.mdb" # nonsense
+tblDVD_XlsFiles$Filename != "2005\\50268.xlsx"   # commented: too difficult to distinguish nale and female (and therefore file is empty, DB parental care = line of NA)
 ] 
 }
 
-length(FilenamesOldTemplate)	# 888 files, situation 4, old template
+length(FilenamesOldTemplate)	# 889 files, situation 4, old template
 which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
 
 }
@@ -1102,12 +1074,11 @@ tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
 head(tblBroods)
 head(tblBroodEvents)
 
-MY_LARGE_tblParentalCare <- merge(x=MY_tblParentalCare, y=tblDVD_XlsFilesALLDBINFO[,c('DVDRef','BroodRef','OffspringNo')], all.x=TRUE, by='DVDRef')
+MY_LARGE_tblParentalCare <- merge(x=MY_tblParentalCare, y=tblDVD_XlsFilesALLDBINFO[,c('DVDRef','BroodRef','OffspringNo', 'DVDdate')], all.x=TRUE, by='DVDRef')
 colnames(MY_LARGE_tblParentalCare)[which(names(MY_LARGE_tblParentalCare) == "OffspringNo")] <- "DVDInfoChickNb"
 MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=tblBroods, all.x=TRUE, by='BroodRef')
 
-head(MY_LARGE_tblParentalCare)
-
+{# Nb of hatched and FL chicks per rearing broods
 
 RearingBrood_allBirds <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
 FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
@@ -1133,10 +1104,44 @@ nrow(RearingBrood_allBirds_splitperBrood_out2)	# 1940
 rownames(RearingBrood_allBirds_splitperBrood_out2) <- NULL
 colnames(RearingBrood_allBirds_splitperBrood_out2) <- c('RearingBrood','NbHatched', 'NbFL')
 }
-)
+
 head(RearingBrood_allBirds_splitperBrood_out2)
 
 
+MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=RearingBrood_allBirds_splitperBrood_out2, all.x=TRUE, by.x='BroodRef', by.y='RearingBrood')
+head(MY_LARGE_tblParentalCare)
+
+head(tblBroodEvents)
+
+
+# select max of BroodEvent data before (or equal) Recording date, and select min of BroodEvent date after (or equal) recording date
+MY_LARGE_tblParentalCare$PrevEventDate <- NULL
+MY_LARGE_tblParentalCare$NextEventDate <- NULL
+
+options(warn=0)
+
+for (i in 1:nrow(MY_LARGE_tblParentalCare))
+{
+MY_LARGE_tblParentalCare$PrevEventDate[i] <- as.character(max(tblBroodEvents$EventDate[MY_LARGE_tblParentalCare$BroodRef[i] == tblBroodEvents$BroodRef & 
+																					tblBroodEvents$EventDate <= MY_LARGE_tblParentalCare$DVDdate[i]], na.rm=TRUE))
+MY_LARGE_tblParentalCare$NextEventDate[i] <- as.character(min(tblBroodEvents$EventDate[MY_LARGE_tblParentalCare$BroodRef[i] == tblBroodEvents$BroodRef & 
+																					tblBroodEvents$EventDate >= MY_LARGE_tblParentalCare$DVDdate[i]], na.rm=TRUE))	
+MY_LARGE_tblParentalCare$PrevEventNbChicks[i] <- tblBroodEvents$OffspringNest[MY_LARGE_tblParentalCare$BroodRef[i] == tblBroodEvents$BroodRef & 
+																					tblBroodEvents$EventDate == MY_LARGE_tblParentalCare$PrevEventDate[i]]
+MY_LARGE_tblParentalCare$NextEventNbChicks[i] <- tblBroodEvents$OffspringNest[MY_LARGE_tblParentalCare$BroodRef[i] == tblBroodEvents$BroodRef & 
+																					tblBroodEvents$EventDate == MY_LARGE_tblParentalCare$NextEventDate[i]]																					
+}
+
+MY_LARGE_tblParentalCare$DelayPrevEventRec <- difftime(MY_LARGE_tblParentalCare$DVDdate, MY_LARGE_tblParentalCare$PrevEventDate, units='days')
+MY_LARGE_tblParentalCare$DelayNextEventRec <- difftime(MY_LARGE_tblParentalCare$NextEventDate, MY_LARGE_tblParentalCare$DVDdate, units='days')
+
+
+
+head(MY_LARGE_tblParentalCare)
+
+
+
+}
 
 
 
