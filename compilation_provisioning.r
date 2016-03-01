@@ -1092,12 +1092,20 @@ head(MY_LONG_tblParentalCare_withAllBirds, 20)
 
 MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename <- split(MY_LONG_tblParentalCare_withAllBirds, MY_LONG_tblParentalCare_withAllBirds$Filename)
 x <-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[[6]]
+x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2011\\VK0062.xlsx']]
+x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2005\\50166.xlsx']]
+
+
 
 MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_fun <- function(x) {
 return(c(
 length(x$BirdID[x$LastStage>1]),  				# NbHatched
 length(x$BirdID[x$LastStage==3]), 				# NbFL
-length(x$BirdID[is.na(x$DeathDate) | x$DeathDate > x$DVDdate]) # NbAliveAtDVDDate
+length(x$BirdID[(is.na(x$DeathDate) | x$DeathDate > x$DVDdate) & x$LastStage > 1]), # NbAliveAtDVDDate
+length(x$BirdID[!is.na(x$DeathDat) & x$DeathDate == x$DVDdate & x$LastStage > 1]), # NbDeadAtDVDDate
+length(x$BirdID[!is.na(x$DeathDat) &x$DeathDate == x$DVDdate & x$LastStage > 1 & !is.na(x$DeathStatus) & x$DeathStatus == 3]), # NbDeadAtDVDDatebyAccident
+length(x$BirdID[is.na(x$DeathDate) & x$DeathStatus > 0]), # NbDeadAtUnknownDate
+length(x$BirdID[is.na(x$DeathDate) & is.na(x$DeathStatus) & x$LastStage!=3]) # NbNestlingNotKilled
 ))
 }
 
@@ -1106,7 +1114,7 @@ MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2 <- data.frame(
 
 nrow(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2)	# 1940
 rownames(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2) <- NULL
-colnames(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2) <- c('Filename','NbHatched', 'NbFL','NbAliveAtDVDDate')
+colnames(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2) <- c('Filename','NbHatched', 'NbFL','NbAliveAtDVDDate','NbDeadAtDVDDate','NbDeadAtDVDDatebyAccident','NbDeadAtUnknownDate','NbNestlingNotKilled')
 
 head(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2)
 
@@ -1126,8 +1134,6 @@ MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename <- split(MY_V
 x <-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename[[8]]
 x <-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename[[5]]
 
-options(warn=0)
-
 MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_fun <- function(x) {
 
 if (is.infinite(suppressWarnings(min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE))) | is.na(suppressWarnings(min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE)))) # if no next visit
@@ -1135,7 +1141,7 @@ if (is.infinite(suppressWarnings(min(x$EventDate[x$EventDate >= unique(x$DVDdate
 return(c(
 as.character(max(x$EventDate[x$EventDate <= unique(x$DVDdate)], na.rm=TRUE)), # PrevEventDate
 NA, # NextEventDate
-unique(x$OffspringNest[!is.na(x$EventDate) & x$EventDate == max(x$EventDate[x$EventDate <= unique(x$DVDdate)], na.rm=TRUE)), # PrevEventNbChicks # added unique because of duplicated of visits on tbleBroodEvents...
+unique(x$OffspringNest[!is.na(x$EventDate) & x$EventDate == max(x$EventDate[x$EventDate <= unique(x$DVDdate)], na.rm=TRUE)]), # PrevEventNbChicks # added unique because of duplicated of visits on tbleBroodEvents...
 NA # NextEventNbChicks
 ))
 }
@@ -1175,8 +1181,8 @@ MY_LARGE_tblParentalCare$DelayNextEventRec <- difftime(MY_LARGE_tblParentalCare$
 
 MY_LARGE_tblParentalCare$DiffNbChickDVDInfoNbAliveatDVDdate <- MY_LARGE_tblParentalCare$DVDInfoChickNb - MY_LARGE_tblParentalCare$NbAliveAtDVDDate
 MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit <- NA
-MY_LARGE_tblParentalCare$PrevEventNbChicks <- as.numeric(MY_LARGE_tblParentalCare$PrevEventNbChicks)
-MY_LARGE_tblParentalCare$NextEventNbChicks <- as.numeric(MY_LARGE_tblParentalCare$NextEventNbChicks)
+MY_LARGE_tblParentalCare$PrevEventNbChicks <- as.numeric(as.character(MY_LARGE_tblParentalCare$PrevEventNbChicks))
+MY_LARGE_tblParentalCare$NextEventNbChicks <- as.numeric(as.character(MY_LARGE_tblParentalCare$NextEventNbChicks))
 MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] <- MY_LARGE_tblParentalCare$DVDInfoChickNb[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] - 
 																									  MY_LARGE_tblParentalCare$PrevEventNbChicks[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ]
 MY_LARGE_tblParentalCare$DiffNbAliveatDVDdateVisit[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] <- MY_LARGE_tblParentalCare$NbAliveAtDVDDate[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] - 
@@ -1188,9 +1194,6 @@ head(MY_LARGE_tblParentalCare)
 head(MY_LARGE_tblParentalCare[MY_LARGE_tblParentalCare$DiffNbChickDVDInfoNbAliveatDVDdate != 0 | !is.na(MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit),])
 ## write.table(MY_LARGE_tblParentalCare, file = "R_Compare_NbChicksDuringRecording.xls", col.names=TRUE, sep='\t')
 }
-
-
-
 
 
 
