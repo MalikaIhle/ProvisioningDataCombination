@@ -1054,11 +1054,12 @@ DurationScript # ~ 14 min
 
 
 
-### refine which files are valid for analysis
+{### refine which files are valid for analysis and figure out the number of chicks in the nest at time of recording
 # situation 4 = with chicks
 # if during next visit (on the day of recording or within a few days after), nunmber of chicks = 0, maybe nest was already empty... ? 
 # exclude recording where one or the two bird did not visit AND where the next nest check indicates 0 chicks ??
 # what if in DVDInfo, DeathYN=Yes ?? how did they know ?
+# calculate nb of chicks in nest at time of recording (DVDInfo nb of chicks, Nb of chicks alive in rearing brood, nb of offsrping at visit when visit on same day)
 
 
 combinedprovisioningALL$Filename
@@ -1222,6 +1223,9 @@ ORDER BY RearingBrood_allbirds.RearingBrood, AllRecordings.DVDdate;
 
 
 }
+
+
+
 
 {## start creating variables for compatiblity......... in construction
 
