@@ -26,6 +26,11 @@
 # a situation = 4 in tblDVDInfo (i.e. only chicks)
 # wrong = No in tblDVDInfo
 
+## nb of chicks considered in nest at time of recording
+# DVDInfo nb of offspring 
+# mismatches with nb of chiks alive at time of recording bigger than 1 were corrected
+# for 2004-2005 nest checks were actually done after the recording and reported in DVD Info as Shinishi wanted to use those data
+
 ## decision still to be taken:
 # should excluded early age chicks because can still be brooded ??
 # should exclude recordings when the next nest visit revealed every chicks were dead ?
@@ -707,11 +712,11 @@ tail(combinedprovisioningALL, 100)
 }
 
 {## definitions columns in DB tblParentalCare from what I can get:
-# MTime / FTime = duration in NB (or, for New Template, feeding outside the nest box) for visits longer than 1 min. 
-# > I believe this was initially to have an idea of brooding, as the new template does not distinguish feeding from outside from being in the nest box, the measure does not make sense anymore
-# ShareTime = duration of double attendance in the NB (or feeding from the outside of the NB in the New Template)
+# MTime / FTime = duration in NB (or, for Issie's Template, feeding outside the nest box) for visits longer than 1 min. 
+# > I believe this was initially to have an idea of brooding, but as Issie's template does not distinguish feeding from outside from being in the nest box, the measure does not make sense anymore
+# ShareTime = duration of double attendance in the NB (or feeding from the outside of the NB in Issie's Template)
 # MVisit1/FVisit1 = # feeding visits including those < 1 min
-# MVisit2/FVisit2 = # non feeding visits (not reported in New Template)
+# MVisit2/FVisit2 = # non feeding visits (not reported in Issie's Template)
 # MBout/FBout = # feeding visits > 1 min
 }
 
