@@ -1052,7 +1052,7 @@ head(Compare_tblParentalCare)
 
 
 DurationScript <- Sys.time() - TimeStart
-DurationScript # ~ 14 min
+DurationScript # ~ 12-14 min
 
 
 
@@ -1100,6 +1100,7 @@ MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename <- split(MY_LONG_tb
 x <-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[[6]]
 x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2011\\VK0062.xlsx']]
 x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2005\\50166.xlsx']]
+x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2004\\40077.xlsx']]
 
 
 
@@ -1199,6 +1200,9 @@ head(MY_LARGE_tblParentalCare)
 
 head(MY_LARGE_tblParentalCare[MY_LARGE_tblParentalCare$DiffNbChickDVDInfoNbAliveatDVDdate != 0 | !is.na(MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit),])
 ## write.table(MY_LARGE_tblParentalCare, file = "R_Compare_NbChicksDuringRecording.xls", col.names=TRUE, sep='\t')
+
+MY_LARGE_tblParentalCare[MY_LARGE_tblParentalCare$NbHatched - MY_LARGE_tblParentalCare$DVDInfoChickNb <0,]
+
 }
 
 
