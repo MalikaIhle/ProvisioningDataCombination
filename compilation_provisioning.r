@@ -701,8 +701,6 @@ head(combinedprovisioningALL, 100)
 tail(combinedprovisioningALL, 100)
 
 
-
-
 {### recreate tblParentalCare to check for discrepancies
 
 {## forseen discrepancies:
@@ -1048,6 +1046,47 @@ tblParentalCare[tblParentalCare$DVDRef == 755,]
 head(combinedprovisioningALL_FeedY)
 head(MY_tblParentalCare)
 head(Compare_tblParentalCare)
+
+
+
+
+{## reformate raw data for DB
+for (i in 1:nrow(combinedprovisioningALL))
+{
+if (is.na(combinedprovisioningALL$Com[i]))
+{combinedprovisioningALL$State[i] <- NA}
+
+if (!is.na(combinedprovisioningALL$Com[i]) & combinedprovisioningALL$Com[i] == 'O' &  !is.na(combinedprovisioningALL$Col[i]) & combinedprovisioningALL$Col[i] == 'blue')
+{combinedprovisioningALL$State[i] <- 'OF'}
+
+if ((!is.na(combinedprovisioningALL$Com[i]) & combinedprovisioningALL$Com[i] == 'O' &  !is.na(combinedprovisioningALL$Col[i]) & combinedprovisioningALL$Col[i] == 'grey') 
+	| (!is.na(combinedprovisioningALL$Com[i]) & combinedprovisioningALL$Com[i] == 'S'))
+{combinedprovisioningALL$State[i] <- 'A'}
+
+if (!is.na(combinedprovisioningALL$Com[i]) & combinedprovisioningALL$Com[i] == 'IN' & combinedprovisioningALL$Template[i] == 'Old')
+{combinedprovisioningALL$State[i] <- 'IN'}
+
+if (!is.na(combinedprovisioningALL$Com[i]) & combinedprovisioningALL$Com[i] == 'IN' & combinedprovisioningALL$Template[i] == 'New')
+{combinedprovisioningALL$State[i] <- 'INorOF'}
+
+
+}
+
+head(combinedprovisioningALL, 100)
+tail(combinedprovisioningALL, 100)
+
+combinedprovisioningALLforDB <- combinedprovisioningALL[,c('DVDRef','Tin', 'Tout','State', 'Sex', 'Template')]
+colnames(combinedprovisioningALLforDB) <- c('DVDRef','Tstart', 'Tend','State', 'Sex','Template')
+combinedprovisioningALLforDB$Template[combinedprovisioningALLforDB$Template== 'New'] <- 'Issie'
+combinedprovisioningALLforDB$Template[combinedprovisioningALLforDB$Template== 'Old'] <- 'Shinichi'
+
+## write.table(combinedprovisioningALLforDB, file = "R_combinedprovisioningALLforDB.xls", col.names=TRUE, sep='\t')
+
+}
+
+head(combinedprovisioningALLforDB)
+tail(combinedprovisioningALLforDB)
+
 
 
 
