@@ -1228,6 +1228,62 @@ VK0080: change C14 from 24.7 to 23.7
 VK0082: change B51 from 21.5 to 70.8, change C51 from 22.6 to 71.9
 VK0083: change F30 from 31.9 to 41.9
 VK0084: change F24 from 59.2 to 60, G24 from 59.3 to 60.2
+
+#14/03/2016
+50920: added sheet1, added 'S' in C2, replaced 'OF' blue by 'O' blue in I28 I30 I46 I54 I59 I64 I67 I75 I77
+50937: added sheet1
+50938: added sheet1
+50939: added sheet1
+50940: added sheet1
+50941: added sheet1
+50942: added sheet1
+50943: added sheet1
+50944: added sheet1
+50946: added sheet1
+50947: added sheet1
+50948: added sheet1
+50949: added sheet1
+50951: added sheet1
+50952: move sheet1 to sheet 2
+50958: added sheet1
+50959: added sheet1
+50962: added sheet1
+50963: added sheet1
+50964: added sheet1
+50969: added sheet1
+50970: added sheet1
+50971: move sheet1 to sheet 2
+50976: added sheet1
+50978: added sheet1
+50979: added sheet1
+51004: added sheet1
+51005: added sheet1
+51006: added sheet1
+51007: added sheet1
+51008: added sheet1
+51009: added sheet1
+51010: added sheet1
+51011: added sheet1
+51012: added sheet1
+51013: added sheet1
+51014: added sheet1
+
+90111: deleted empty lines at the end, added grey to "O" F44-H44
+90113: deleted empty lines
+90126: deleted empty lines
+90129: deleted empty lines, added tape length and 'IN' at end for male
+90133: deleted empty lines
+90184: deleted empty lines
+90196: deleted empty lines
+90203: deleted empty lines
+90209: deleted empty lines, added tape length and 'IN' at end for male
+90211: deleted empty lines
+90215: deleted empty lines
+90216: deleted empty lines
+90236: deleted empty lines
+90247: deleted empty lines
+90261: deleted empty lines
+
 }
 
 

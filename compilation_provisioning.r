@@ -43,7 +43,7 @@ rm(list = ls(all = TRUE))
 TimeStart <- Sys.time()
 
 
-{### packages, working directories and connection to Access DB
+{### packages, settings, working directories, connection to Access DB, sqlFetch and sqlQuery
 library(RODBC)
 # library(openxlsx) # package openxlsx will be needed later in the code (after detaching the conflicting xlsx nevertheless needed to get colors for old templates)
 # library(xlsx)	# package xlsx will be needed later in the code (after detaching the conflicting openxlsx nevertheless needed at first to be faster/not crashing)
@@ -55,8 +55,16 @@ pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video 
 
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
+# SqlFetch
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
 tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
+tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
+tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
+tblBroods <- sqlFetch(conDB, "tblBroods")
+tblAllCodes <- sqlFetch(conDB, "tblAllCodes")
+tblDVDInfo <- sqlFetch(conDB, "tblDVDInfo")
+
+sys_LastSeenAlive <- read.table("sys_LastSeenAlive_20160314.txt", sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 
 # select video made when provisioning chick (situation = 4 )
 tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
@@ -65,12 +73,19 @@ FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD
 WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 ")
 
-head(tblDVD_XlsFilesALLDBINFO)
+# get the missing DVD Filenames (those in tblParentalCare but not in tblXlsFiles)
+missingDVDFilenames <- sqlQuery(conDB, "SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename
+FROM tblDVDInfo INNER JOIN (tblParentalCare LEFT JOIN tblDVD_XlsFiles ON tblParentalCare.[DVDRef] = tblDVD_XlsFiles.[DVDRef]) ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
+WHERE (((tblParentalCare.TapeTime) Is Not Null) AND ((tblDVD_XlsFiles.DVDRef) Is Null) AND ((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=No));
+")
 
-# get the original tblParentalCare for checking discrepancies with new extraction or raw data and automatic calculation of summary
-tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
+# get the rearing brood for all birds
+RearingBrood_allBirds <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, tblBirdID.Cohort, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
+FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
+WHERE (((tblBirdID.BroodRef) Is Not Null));
+")
 
-head(tblParentalCare)
+
 
 close(conDB)
 
@@ -145,8 +160,15 @@ tblDVD_XlsFiles$Filename != "2005\\50268.xlsx"   # commented: too difficult to d
 ] 
 }
 
-length(FilenamesOldTemplate)	# 889 files, situation 4, old template
 which(duplicated(merge(x=data.frame(FilenamesOldTemplate), y=tblDVD_XlsFilesALLDBINFO[,c("DVDRef","Filename")], by.x= "FilenamesOldTemplate", by.y= "Filename",all.x=TRUE)[,"DVDRef"]))	# no duplicates of DVDRef
+
+# add missing Filenames
+FilenamesOldTemplate <- c(as.character(FilenamesOldTemplate),as.character(missingDVDFilenames$Filename[missingDVDFilenames$Filename != "2007\\70004.xlsx"]))  # excel file not found !
+
+which(duplicated(missingDVDFilenames[,c("DVDRef","Filename")][,"DVDRef"]))	# no duplicates of DVDRef
+
+length(FilenamesOldTemplate)	# 889 files, situation 4, old template # on 20160314: addition missing Filename > 1095 files
+
 
 }
 
@@ -314,7 +336,7 @@ out3 <- list()
 warningz <- list()
 warningzz <- list()
 
-for (j in 1:length(FilenamesOldTemplate)){
+for (j in 961:length(FilenamesOldTemplate)){
 
 filenamej <- paste(pathdropboxfolder, FilenamesOldTemplate[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheetIndex =2) # as data.frame
@@ -1091,7 +1113,159 @@ tail(combinedprovisioningALLforDB)
 
 
 DurationScript <- Sys.time() - TimeStart
-DurationScript # ~ 12-14 min
+DurationScript # ~ 14 min
+
+
+
+
+
+
+###### assuming data are correct
+
+## get number of broods watched and descriptive stats 
+# remove when DVDinfo # of chicks = 0
+# remove when age < ?? (when brooding) or separate stage into early and late ?
+
+head(tblDVD_XlsFilesALLDBINFO)
+head(combinedprovisioningALLforDB)
+head(tblBroodEvents)
+head(tblBroods)
+head(tblAllCodes)
+head(RearingBrood_allBirds)
+
+
+{# MY_tblDVDInfo
+MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef) & tblDVD_XlsFilesALLDBINFO$OffspringNo != 0,c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','EffectTime','Notes.1')]
+
+{# re calculate chick age at DVDdate
+MY_tblDVDInfo <- merge (x= MY_tblDVDInfo, 
+						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
+						all.x=TRUE, by ='BroodRef')
+						
+colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','EffectTime','ParentalCareNotes','HatchingDate')
+
+MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$HatchingDate)+1 # chicks are aged 1 day at date of hatching
+
+hist(MY_tblDVDInfo$DVDInfoAge)
+hist(MY_tblDVDInfo$ChickAge)
+hist(MY_tblDVDInfo$DVDInfoAge-MY_tblDVDInfo$ChickAge)
+
+table(MY_tblDVDInfo$BroodRef,MY_tblDVDInfo$ChickAge)
+}
+
+{# check numbers of broods with certain conditions
+length(unique(MY_tblDVDInfo$BroodRef)) # 933 (20160314)
+length(unique(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 891 (20160314)
+mean(table(MY_tblDVDInfo$BroodRef)) # 1.93 (20160314)
+mean(table(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 1.84 (20160314)
+
+hist(MY_tblDVDInfo$DVDdate, breaks = 'years')
+
+MY_tblDVDInfo <- merge(x= MY_tblDVDInfo, 
+						y= unique(combinedprovisioningALLforDB[,c('DVDRef', 'Template')]),
+						all.x=TRUE,
+						by ='DVDRef')
+						
+table(MY_tblDVDInfo$Template) # Issie 914  Shinichi  884
+table(MY_tblDVDInfo$Template[MY_tblDVDInfo$ChickAge>5]) # Issie 912  Shinichi  727
+
+table(MY_tblDVDInfo$DVDdate)
+
+}
+}
+
+head(MY_tblDVDInfo)
+
+
+{# MY_tblBroods
+
+MY_tblBroods <- tblBroods[tblBroods$BroodRef %in% MY_tblDVDInfo$BroodRef,]
+nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 90 brood with al least one parents unknown or uncertain
+
+{# add hatching date from tblBroodEvent
+MY_tblBroods <- merge (x= MY_tblBroods, 
+						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
+						all.x=TRUE, by ='BroodRef')
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "EventDate")] <- "HatchingDate"
+}
+
+{# add ringedYN to RearingBrood_allBirds
+for (i in 1:nrow(RearingBrood_allBirds))
+{
+if (RearingBrood_allBirds$BirdID[i] %in% unique(tblAllCodes$BirdID))
+{RearingBrood_allBirds$RingedYN[i] <- 1}
+else
+{RearingBrood_allBirds$RingedYN[i] <- 0}
+}
+}
+
+{# add nb of chicks per rearing brood
+
+RearingBrood_allBirds_split_per_RearingBrood <- split(RearingBrood_allBirds,RearingBrood_allBirds$RearingBrood)
+
+RearingBrood_allBirds_split_per_RearingBrood_fun <- function(x) {
+return(c(
+length(x$BirdID[x$LastStage>1]),  				# NbHatched
+length(x$BirdID[x$LastStage==3]), 				# Nb3
+length(x$BirdID[x$RingedYN==1])))  				# NbRinged
+}
+
+RearingBrood_allBirds_split_per_RearingBrood_out1 <- lapply(RearingBrood_allBirds_split_per_RearingBrood, FUN=RearingBrood_allBirds_split_per_RearingBrood_fun)
+RearingBrood_allBirds_split_per_RearingBrood_out2 <- data.frame(rownames(do.call(rbind,RearingBrood_allBirds_split_per_RearingBrood_out1)),do.call(rbind, RearingBrood_allBirds_split_per_RearingBrood_out1))
+
+nrow(RearingBrood_allBirds_split_per_RearingBrood_out2)	# 1940
+rownames(RearingBrood_allBirds_split_per_RearingBrood_out2) <- NULL
+colnames(RearingBrood_allBirds_split_per_RearingBrood_out2) <- c('RearingBrood','NbHatched', 'Nb3','NbRinged')
+
+head(RearingBrood_allBirds_split_per_RearingBrood_out2)
+
+MY_tblBroods <- merge(x=MY_tblBroods, y=RearingBrood_allBirds_split_per_RearingBrood_out2, all.x=TRUE, by.x='BroodRef', by.y='RearingBrood')
+
+}
+
+{# add lastSeenAlive for social mum and dad
+head(sys_LastSeenAlive)
+
+MY_tblBroods <- merge(x=MY_tblBroods, y=sys_LastSeenAlive, all.x = TRUE, by.x = 'SocialDadID', by.y = 'BirdID')
+MY_tblBroods <- merge(x=MY_tblBroods, y=sys_LastSeenAlive, all.x = TRUE, by.x = 'SocialMumID', by.y = 'BirdID')
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "LastLiveRecord.x")] <- "LastLiveRecordSocialDad"
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "LastLiveRecord.y")] <- "LastLiveRecordSocialMum"
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Source.x")] <- "LastLiveRecordSocialDadSource"
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Source.y")] <- "LastLiveRecordSocialMumSource"
+}
+
+{# add cohort and age of social parents
+MY_tblBroods <- merge(x=MY_tblBroods, y=RearingBrood_allBirds[,c('BirdID','Cohort')], all.x=TRUE, by.x='SocialDadID', by.y='BirdID')
+MY_tblBroods <- merge(x=MY_tblBroods, y=RearingBrood_allBirds[,c('BirdID','Cohort')], all.x=TRUE, by.x='SocialMumID', by.y='BirdID')
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Cohort.x")] <- "CohortDad"
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Cohort.y")] <- "CohortMum"
+
+MY_tblBroods$BreedingYear <- as.numeric(format(MY_tblBroods$HatchingDate,'%Y'))
+MY_tblBroods$DadAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortDad
+MY_tblBroods$MumAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortMum
+}
+
+
+MY_tblBroods_split_per_SocialDadID <- split(MY_tblBroods,MY_tblBroods$SocialDadID)
+MY_tblBroods_split_per_SocialDadID[[1]]
+MY_tblBroods_split_per_SocialDadID[[2]]
+MY_tblBroods_split_per_SocialDadID[[3]]
+
+
+}
+
+head(MY_tblBroods)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1112,10 +1286,6 @@ MY_tblParentalCare
 
 {## get back to querying the DB
 
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
-
-tblBroods <- sqlFetch(conDB, "tblBroods")
-tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
 head(tblBroods)
 head(tblBroodEvents)
 
@@ -1125,10 +1295,6 @@ MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=tblBroods, all.x
 
 {# Nb of hatched, FL, and chicks alive per DVDdate from tblBirdID, per rearing broods
 
-RearingBrood_allBirds <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
-FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
-WHERE (((tblBirdID.BroodRef) Is Not Null));
-")
 head(RearingBrood_allBirds)
 
 MY_LONG_tblParentalCare_withAllBirds <- merge(x=MY_LARGE_tblParentalCare, y=RearingBrood_allBirds, by.x='BroodRef', by.y='RearingBrood', all.x=TRUE)

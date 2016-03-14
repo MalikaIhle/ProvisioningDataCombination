@@ -142,6 +142,10 @@ WHERE (((tblDVD_XlsFiles.DVDRef) Is Null));
 }
 	
 	
+### Files with video analyzed but with no entry in tblXlsFiles and therefore not included in compilation_provisioning until 20160314
+
+	
+	
 	
 	
 ### Is DVD Number the real Filename ? YES
