@@ -1268,6 +1268,9 @@ VK0084: change F24 from 59.2 to 60, G24 from 59.3 to 60.2
 51013: added sheet1
 51014: added sheet1
 
+90038: deleted empty lines
+90047: deleted empty lines
+90094: deleted empty lines, remove extra comma in H26
 90111: deleted empty lines at the end, added grey to "O" F44-H44
 90113: deleted empty lines
 90126: deleted empty lines
@@ -1284,6 +1287,155 @@ VK0084: change F24 from 59.2 to 60, G24 from 59.3 to 60.2
 90247: deleted empty lines
 90261: deleted empty lines
 
+# 16/03/2016
+90245: replace IN by 0 in F2, added grey for O in E10 and I13, remove extra comma in D10, deleted empty lines
+90212: replace IN by 0 in B2, added grey for O in E35, deleted empty lines
+90209: deleted empty lines, added grey for O in I30
+90181: deleted empty lines
+90171: deleted empty lines, added grey for O in I66
+90170: deleted empty lines
+90129: deleted empty lines
+90127: deleted empty lines
+90124: deleted empty lines
+90094: deleted extra comme F35
+90033: deleted empty lines, deleted extra comme H64
+
+50840: deleted 'TOTAL'
+50844: deleted 'TOTAL', move 'IN' to E62
+50844: deleted 'TOTAL', move 'N' from C70 to L70
+50857: deleted 'TOTAL'
+50858: deleted 'TOTAL', move 'IN' to E42
+50859: deleted 'TOTAL', move 'IN' to I48
+50861: deleted 'TOTAL'
+50868: deleted 'TOTAL'
+50869: deleted 'TOTAL',  move 'IN' to I77, replace 'N' by 'S' in C69
+50877: deleted 'TOTAL',  move 'IN' to E65
+50883: deleted 'TOTAL'
+50884: deleted 'TOTAL',  move 'IN' to E46
+50885: deleted 'TOTAL',  deleted empty lines
+50890: deleted 'TOTAL',  move 'IN' to I76
+50892: deleted 'TOTAL'
+50893: deleted 'TOTAL'
+50895: deleted 'TOTAL',  move 'IN' to E78
+50897: deleted 'TOTAL'
+50900: deleted 'TOTAL',  move 'IN' to I71
+50901: deleted 'TOTAL',  move 'IN' to I66
+50902: deleted 'TOTAL'
+50906: deleted 'TOTAL'
+50907: deleted 'TOTAL',  move 'IN' to E75
+50908: deleted 'TOTAL'
+50909: deleted 'TOTAL',  move 'IN' to E151
+50910: deleted 'TOTAL'
+50912: deleted 'TOTAL'
+50915: deleted 'TOTAL'
+50916: deleted 'TOTAL'
+50917: deleted 'TOTAL',  move 'IN' to E30
+50918: deleted 'TOTAL'
+50919: deleted 'TOTAL',  move 'IN' to E11
+50923: deleted 'TOTAL'
+50924: deleted 'TOTAL',  move 'IN' to E80
+50925: deleted 'TOTAL',  move 'IN' to E52
+50931: deleted 'TOTAL',  move 'N' from C10 to L10
+50933: deleted 'TOTAL'
+50937: added 'S' in I13 I17 I25
+50938: added 'S' in E3
+50940: added 'S' in E13 E24
+50941: added 'S' in I11 C22 G25 G29 I31 I35 I47
+50942: added 'S' in G4 C8 G11 I13
+50943: added 'S' in I3 E14 I58
+50947: added 'S' in I9 G30
+50948: replaced 'G' in E15 by 'S', added 'S' in C44 I54 I66
+50952: added 'S' in C24 G32 E57
+50959: added 'S' in C5 I3 I9
+50962: added 'S' in C2 E26 E50 G51
+50964: added 'S' in E23 E29
+50969: added 'S' in C8, move 'N' from C11 to L11
+50971: added 'S' in E3 
+50979: added 'S' in C2, deleted spaces in E9
+50985: deleted 'TOTAL'
+50986: deleted 'TOTAL', move 'IN' to I18
+50987: deleted 'TOTAL'
+50994: deleted 'TOTAL'
+50997: deleted 'TOTAL'
+51000: deleted 'TOTAL'
+51001: deleted 'TOTAL'
+51003: deleted 'TOTAL'
+51005: deleted 'TOTAL',  deleted empty lines
+51006: deleted 'TOTAL'
+51007: added 'S' in G18 E35
+51008: added 'S' in G3 E12
+51009: added 'S' in G3 E12
+51010: deleted 'TOTAL', added 'S' in C4 C9 C29
+51011: added 'S' in I3 G73
+51012: added 'S' in E20 
+51013: added 'S' in E87 
+90049: added tape length in D45, move 'IN' to E45, replace comma in B38
+90040: replce 'IN' by 0, move 'N' from C7 to L7 and fron G17 to L17, added tape length in D42, move 'IN' to E42
+90039: added 'G' in E52
+90034: added tape length in D38, move 'IN' to E38, added "O" in I22
+90032: deleted empty lines, added tape length in D49, move 'IN' to E49, deleted double comma in F30
+90005: added tape length in D79, move 'IN' to E79,  deleted empty lines
+90055: move D2 to B2, added 'S' in C2
+90061: added tape length in H52, move 'IN' to I52
+90081: added tape length in H51, move 'IN' to I51
+90082: added 'G' to E10
+90093: added tape length in D59, move 'IN' to E59
+90100: added tape length in D50, move 'IN' to E50
+90103: replace 'GO' by 'G' in I76
+90106: added tape length in D114, move 'IN' to E114,  deleted empty lines, move C87 D87 to D87 E87
+90108: deleted empty lines, added grey for 'O' in H67
+90112: deleted empty lines, added grey for 'O' in H40, added tape length in D54, move 'IN' to E54
+90115: deleted empty lines,added tape length in D67, move 'IN' to E67
+90117: deleted empty lines,added tape length in D52, move 'IN' to E52
+90118: deleted empty lines,added tape length in D81, move 'IN' to E81,dded grey for 'O' in D35
+90119: move 'N' from C23 to L23, deleted empty lines
+90123: deleted empty lines, added tape length in D87, move 'IN' to E87
+90157: deleted empty lines, added tape length in H48, move 'IN' to I48, added 'G' in I46
+90162: deleted empty lines, added tape length in D64, move 'IN' to E64
+90163: deleted empty lines, added 'G' in E80
+90172: deleted empty lines, added tape length in D131, move 'IN' to E131, added 'G' in I121 E55
+90174: deleted empty lines, added tape length in D44, move 'IN' to E44
+90175: deleted empty lines, replace comma by dot in B14, added tape length in H47, move 'IN' to I47
+90179: deleted empty lines, added tape length in D93, move 'IN' to E93
+90180: deleted empty lines, added 'G' in E90
+90185: deleted empty lines, added 'G' in I34
+90188: deleted empty lines, added grey for 'O' in H17, added tape length in D91, move 'IN' to E91
+90194: deleted empty lines, added grey for 'O' in H29, added 'G' in E24
+90197: deleted empty lines, added tape length in D90, move 'IN' to E90, added 'G' in E52
+90200: deleted empty lines, replaced 'IN' by 0 in C2, added grey for 'O' in H53 H60 H62 H64 H70, added tape length in D69, move 'IN' to E69
+90202: deleted empty lines, added tape length in D84, move 'IN' to E84, added tape length in H86, move 'IN' to I86
+90206: deleted empty lines, added tape length in D67, move 'IN' to E67
+90207: deleted empty lines, added tape length in D61, move 'IN' to E61, added grey for 'O' in H2 D18 D20
+90210: deleted empty lines, added tape length in D58, move 'IN' to E58, added grey for 'O' in H20 D20
+90221: deleted empty lines, added tape length in D73, move 'IN' to E73, added grey for 'O' in D2
+90229: deleted empty lines, added tape length in D73, move 'IN' to E73, added grey for 'O' in H10, remove comma in F21
+90230: deleted empty lines, added grey for 'O' in D96, added 'G' in I90
+90232: deleted empty lines, added tape length in D56, move 'IN' to E56, added grey for 'O' in H43
+90233: move 'N' from C9 to L9, change blue of 'O' H27
+90238: added tape length in D43, move 'IN' to E43
+90240: deleted empty lines, added tape length in D23, move 'IN' to E23
+90243: deleted empty lines, added tape length in D45, move 'IN' to E45
+90248: deleted empty lines, added tape length in H29, move 'IN' to I29, replace 'IN' by 0, added grey for 'O' in H7
+90249: deleted empty lines, added tape length in D62, move 'IN' to E62, added grey for 'O' in D21
+90254: added tape length in D32, move 'IN' to E32, replace 'IN' by 0
+90260: deleted empty lines, added tape length in D51, move 'IN' to E51
+90262: deleted empty lines, added 'G' in I55, remove coma in H124, change D86 from 412.7 to 41.7
+90263: deleted empty lines, added tape length in D122, move 'IN' to E122, added grey for 'O' in H69
+90265: deleted empty lines, added tape length in D63, move 'IN' to E63
+50943: added 'S' in G56 E55 
+51010: added 'S' in I37 I12 I5
+51014: added 'S' in I82
+50901: change F45 from 69 to 69.1
+50962: added 'S' in G12, change H8 from 6.1 to 7.1
+51013: change B54 from 48.9 to 48.7 and D55 from 48.7 to 48.9
+90181: change D80 from 85.2 to 89
+90124: replace comme in D52
+90127: change F35 from 35.2 to 36.2, H36 from 35.4 to 36.7
+90129: remove extra comma in F45
+90170: replace comma in H55
+90171: exchange F55 - G56
+90209: remove double comma  in B51
+90180: remove dot in F82
 }
 
 

@@ -336,7 +336,7 @@ out3 <- list()
 warningz <- list()
 warningzz <- list()
 
-for (j in 961:length(FilenamesOldTemplate)){
+for (j in 1:length(FilenamesOldTemplate)){
 
 filenamej <- paste(pathdropboxfolder, FilenamesOldTemplate[j], sep="\\DVDs ")
 b <- read.xlsx(filenamej, sheetIndex =2) # as data.frame
