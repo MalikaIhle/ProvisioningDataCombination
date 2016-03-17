@@ -22,19 +22,24 @@
 {### overview decisions taken
 
 ## excel files considered are only the one which have:
-# an entry in tblDVD_XlsFiles (rk: some files have an entry in DB but are not included here: see 'FILES THAT SHOULD BE INCLUDED')
+# an entry in tblDVD_XlsFiles (rk: some files have an entry in DB but are not included here: see 'FILES THAT SHOULD BE INCLUDED') 
+# OR that should have one and belong to 'missingDVDFilenames'...
 # a situation = 4 in tblDVDInfo (i.e. only chicks)
 # wrong = No in tblDVDInfo
+# methodYN = either yes or no as no one figured out what it was about...
 
 ## nb of chicks considered in nest at time of recording
 # DVDInfo nb of offspring 
-# mismatches with nb of chiks alive at time of recording bigger than 1 were corrected
-# for 2004-2005 nest checks were actually done after the recording and reported in DVD Info as Shinishi wanted to use those data
+# mismatches with nb of chiks alive at time of recording bigger than 1 were SOMETIMES corrected
+# for 2004-2005 nest checks were actually done after the recording and reported in DVD Info as Shinishi wanted to use those data, so its correct for those years
+
+## last seen alive is the output of the DB query 
+#> needs to be updated whennew pedigree imported
 
 ## decision still to be taken:
 # should excluded early age chicks because can still be brooded ??
 # should exclude recordings when the next nest visit revealed every chicks were dead ?
-# methodYN = ??
+
 
 }
 
@@ -66,7 +71,7 @@ tblDVDInfo <- sqlFetch(conDB, "tblDVDInfo")
 
 sys_LastSeenAlive <- read.table("sys_LastSeenAlive_20160314.txt", sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 
-# select video made when provisioning chick (situation = 4 )
+# select video made when provisioning chick (situation = 4 )			# this is the query that I used to select which excel files to be considered, but it appears that some files in 205 and all files in 2009 dont have an entry in tblXlsFiles...
 tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
 SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.ShareTime, tblParentalCare.MVisit1, tblParentalCare.FVisit1, tblParentalCare.MVisit2, tblParentalCare.FVisit2, tblParentalCare.MBout, tblParentalCare.FBout
 FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD_XlsFiles.DVDRef = tblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = tblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
@@ -74,7 +79,8 @@ WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 ")
 
 # get the missing DVD Filenames (those in tblParentalCare but not in tblXlsFiles)
-missingDVDFilenames <- sqlQuery(conDB, "SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename
+missingDVDFilenames <- sqlQuery(conDB, "
+SELECT tblParentalCare.DVDRef, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename, tblDVDInfo.BroodRef, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Notes, tblParentalCare.EffectTime, tblParentalCare.Notes
 FROM tblDVDInfo INNER JOIN (tblParentalCare LEFT JOIN tblDVD_XlsFiles ON tblParentalCare.[DVDRef] = tblDVD_XlsFiles.[DVDRef]) ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
 WHERE (((tblParentalCare.TapeTime) Is Not Null) AND ((tblDVD_XlsFiles.DVDRef) Is Null) AND ((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=No));
 ")
@@ -91,8 +97,15 @@ close(conDB)
 
 }
 
-tail(tblDVD_XlsFilesALLDBINFO)
-tail(tblDVD_XlsFiles,30)
+head(tblDVD_XlsFiles)
+head(tblParentalCare)
+head(tblBroodEvents)
+head(tblBroods)
+head(tblAllCodes)
+head(tblDVDInfo)
+head(tblDVD_XlsFilesALLDBINFO)
+head(missingDVDFilenames)
+head(RearingBrood_allBirds)
 
 
 {### create list of filenames for New and Old Template: check those not included yet but that should be + special code to account for the fact that name extension not corrected to xlsx in DB
@@ -167,7 +180,7 @@ FilenamesOldTemplate <- c(as.character(FilenamesOldTemplate),as.character(missin
 
 which(duplicated(missingDVDFilenames[,c("DVDRef","Filename")][,"DVDRef"]))	# no duplicates of DVDRef
 
-length(FilenamesOldTemplate)	# 889 files, situation 4, old template # on 20160314: addition missing Filename > 1095 files
+length(FilenamesOldTemplate)	# 889 files, situation 4, old template # on 20160314: addition missing Filename > 1094 files
 
 
 }
@@ -709,7 +722,15 @@ if (!is.na(combinedprovisioningALL$Com[i]))
 
 combinedprovisioningALL$Duration <- combinedprovisioningALL$Tout-combinedprovisioningALL$Tin
 
+
 combinedprovisioningALL <- merge(x=combinedprovisioningALL, y=tblDVD_XlsFilesALLDBINFO[,c('Filename','DVDRef')], all.x=TRUE, by='Filename')
+
+# add DVD Ref for thos missing files in tblDVD_XlsFile
+for (i in 1:nrow(combinedprovisioningALL))
+{
+if (combinedprovisioningALL$Filename[i] %in% missingDVDFilenames$Filename)
+{combinedprovisioningALL$DVDRef[i] <- missingDVDFilenames$DVDRef[missingDVDFilenames$Filename ==combinedprovisioningALL$Filename[i]]}
+}
 
 ## write.table(combinedprovisioningALL, file = "R_combinedprovisioningALL.xls", col.names=TRUE, sep='\t')
 # after running the line above:
@@ -1132,10 +1153,11 @@ head(tblBroodEvents)
 head(tblBroods)
 head(tblAllCodes)
 head(RearingBrood_allBirds)
-
+head(missingDVDFilenames)
 
 {# MY_tblDVDInfo
 MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef) & tblDVD_XlsFilesALLDBINFO$OffspringNo != 0,c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','EffectTime','Notes.1')]
+MY_tblDVDInfo <- rbind(MY_tblDVDInfo, missingDVDFilenames)
 
 {# re calculate chick age at DVDdate
 MY_tblDVDInfo <- merge (x= MY_tblDVDInfo, 
@@ -1154,20 +1176,20 @@ table(MY_tblDVDInfo$BroodRef,MY_tblDVDInfo$ChickAge)
 }
 
 {# check numbers of broods with certain conditions
-length(unique(MY_tblDVDInfo$BroodRef)) # 933 (20160314)
-length(unique(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 891 (20160314)
-mean(table(MY_tblDVDInfo$BroodRef)) # 1.93 (20160314)
-mean(table(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 1.84 (20160314)
+length(unique(MY_tblDVDInfo$BroodRef)) # 933 (20160314) 1014 (20160317)
+length(unique(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 891 (20160314) 972 (20160317)
+mean(table(MY_tblDVDInfo$BroodRef)) # 1.93 (20160314) 1.98 (20160317)
+mean(table(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 1.84 (20160314) 1.89 (20160317)
 
-hist(MY_tblDVDInfo$DVDdate, breaks = 'years')
+hist(MY_tblDVDInfo$DVDdate, breaks = 'years', freq=TRUE)
 
 MY_tblDVDInfo <- merge(x= MY_tblDVDInfo, 
 						y= unique(combinedprovisioningALLforDB[,c('DVDRef', 'Template')]),
 						all.x=TRUE,
 						by ='DVDRef')
 						
-table(MY_tblDVDInfo$Template) # Issie 914  Shinichi  884
-table(MY_tblDVDInfo$Template[MY_tblDVDInfo$ChickAge>5]) # Issie 912  Shinichi  727
+table(MY_tblDVDInfo$Template) # Issie 914  Shinichi  1089
+table(MY_tblDVDInfo$Template[MY_tblDVDInfo$ChickAge>5]) # Issie 912  Shinichi  931
 
 table(MY_tblDVDInfo$DVDdate)
 
@@ -1180,7 +1202,7 @@ head(MY_tblDVDInfo)
 {# MY_tblBroods
 
 MY_tblBroods <- tblBroods[tblBroods$BroodRef %in% MY_tblDVDInfo$BroodRef,]
-nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 90 brood with at least one parents unknown or uncertain
+nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 92 brood with at least one parents unknown or uncertain
 
 {# add hatching date from tblBroodEvent
 MY_tblBroods <- merge (x= MY_tblBroods, 
@@ -1223,7 +1245,7 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=RearingBrood_allBirds_split_per_RearingB
 
 }
 
-{# add lastSeenAlive for social mum and dad
+{# add lastSeenAlive for social mum and dad		>> update txt files when pedigree updated !!!!!!!!!!!!!!!!!!!!!!!!!!!
 head(sys_LastSeenAlive)
 
 MY_tblBroods <- merge(x=MY_tblBroods, y=sys_LastSeenAlive, all.x = TRUE, by.x = 'SocialDadID', by.y = 'BirdID')
