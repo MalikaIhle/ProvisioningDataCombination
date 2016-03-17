@@ -137,7 +137,8 @@ WHERE (((tblDVD_XlsFiles.DVDRef) Is Null));
 	
 # partial output
 # 90091 and 90098 excel files do not exit > TO DELETE ? in parental care check N drive for excel files ? check if DVD exist ?
-	
+
+# in fact: many files from 2005, and all files from 2009 dont have entries in tblXlsFiles(and did not go through my code before mid-march 2016...) > should this be corrected ?	
 
 }
 	
