@@ -45,6 +45,8 @@ Checked that all Tout were filled in, chronology logical, no comments within the
 
 
 
+
+
 ## LogChangesExcelFiles
 
 all changes made to the original excel files from the dropbox according to the rules above, the queries in ProvisioningErroCheck, and the code in compilation_provisioning, were logged in here.
@@ -52,6 +54,9 @@ all changes made to the original excel files from the dropbox according to the r
 the original copies were backedup on the HS google drive
 
 all original xls files were converted to xlsx
+
+
+
 
 
 ## R_ files > these are R_table_output
@@ -68,7 +73,7 @@ this compare the number of chicks calculated to be alive at time of recording, t
 - tblDVDInfo number of chicks is estimated after that (from previous nest check) but about correct...
 
 
-## R_combinedprovisionningALLforDB
+### R_combinedprovisionningALLforDB
 
 this as all the raw data until time of code run (last: 20160317)
 this ais the raw data I will do my analyses on, this is also what Ian Stevensson could import into the DB
