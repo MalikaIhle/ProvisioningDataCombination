@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 18/02/2016  
-#	 check inconsistencies with DB
+#	 last modif : 17/03/2016  
+#	 add 200+ files
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks about packages
@@ -658,7 +658,7 @@ combinedprovisioningOldTemplate = do.call(rbind, out3)
 
 {# error check for OldTemplate
  
-length(unique(combinedprovisioningOldTemplate$Filename))	# 15/02/2016: 885 files, situation 4, old template
+length(unique(combinedprovisioningOldTemplate$Filename))	# 15/02/2016: 885 files, situation 4, old template 		17/03/2016: 1094
 
 # weird comments or missing info
 condwarningz <- sapply(warningz, function(x) length(x) > 1)
@@ -1124,7 +1124,7 @@ DurationScript # ~ 14 min
 
 ## get number of broods watched and descriptive stats 
 # remove when DVDinfo # of chicks = 0
-# remove when age < ?? (when brooding) or separate stage into early and late ?
+# remove when age < ?? (when brooding) or separate stages into early and late ?
 
 head(tblDVD_XlsFilesALLDBINFO)
 head(combinedprovisioningALLforDB)
@@ -1180,7 +1180,7 @@ head(MY_tblDVDInfo)
 {# MY_tblBroods
 
 MY_tblBroods <- tblBroods[tblBroods$BroodRef %in% MY_tblDVDInfo$BroodRef,]
-nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 90 brood with al least one parents unknown or uncertain
+nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 90 brood with at least one parents unknown or uncertain
 
 {# add hatching date from tblBroodEvent
 MY_tblBroods <- merge (x= MY_tblBroods, 
