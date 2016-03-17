@@ -1430,12 +1430,54 @@ VK0084: change F24 from 59.2 to 60, G24 from 59.3 to 60.2
 51013: change B54 from 48.9 to 48.7 and D55 from 48.7 to 48.9
 90181: change D80 from 85.2 to 89
 90124: replace comme in D52
-90127: change F35 from 35.2 to 36.2, H36 from 35.4 to 36.7
+90127: change F35 from 35.2 to 36.2, H36 from 35.4 to 36.7, change comma in F27
 90129: remove extra comma in F45
 90170: replace comma in H55
 90171: exchange F55 - G56
 90209: remove double comma  in B51
 90180: remove dot in F82
+90129: exchange F168 H168
+51010: change D30 from 54.7 to 64.7, change F30 from 54.2 to 64.2
+
+# 17/03/2016
+50940: change "O" green into blue in H35
+50962: change "O" green into blue in H62
+50978: change "O" green into blue in D18, added 'S' in G11 C14 C29 C44 C55
+90039: adjusted grey to "O" in D61
+90101: added grey to "O" in D40
+90113: added grey to "O" in H80 H88
+90114: change "O" pink into grey in H46
+90117: added grey to "O" in D14
+90125: added grey to "O" in H87 H24
+90128: added grey to "O" in H5 H18
+90133: added grey to "O" in H16 H61 H118
+90162: added grey to "O" in H43
+90184: added grey to "O" in H12 D7
+90186: added grey to "O" in H9
+90195: added grey to "O" in D5
+90196: added grey to "O" in D27
+90200: added grey to "O" in H57
+90203: added grey to "O" in H2 D76
+90204: added grey to "O" in D20
+92206: added grey to "O" in H32
+92211: added grey to "O" in H16 H84
+92215: added grey to "O" in H19 H51 H53
+92216: added grey to "O" in H12 D37
+92219: added grey to "O" in H51 
+90233: adjusted blue to "O" in D22
+92236: added grey to "O" in H34 D50 D53
+92244: added grey to "O" in H16
+92247: added grey to "O" in H53
+92261: added grey to "O" in H55 H16
+92261: added grey to "O" in H187 H189
+90039: deleted empty lines
+90125: deleted empty lines
+90219: deleted empty lines
+90263: deleted empty lines
+90264: deleted empty lines
+
+
+
 }
 
 
