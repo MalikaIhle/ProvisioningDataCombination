@@ -28,8 +28,6 @@
 
 }
 
-
-
 {## changes made in excel files
 VL0106: displace remarks from M.in
 VL0165: displace remarks from M.in
@@ -1479,7 +1477,6 @@ VK0084: change F24 from 59.2 to 60, G24 from 59.3 to 60.2
 
 
 }
-
 
 {## conversion all files xls to xlsx
 http://www.labnol.org/software/bulk-convert-office-documents-in-2007-format/4291/	# to bulk convert
