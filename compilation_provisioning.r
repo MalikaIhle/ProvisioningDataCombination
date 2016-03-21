@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 17/03/2016  
-#	 add 200+ files
+#	 last modif : 21/03/2016  
+#	 adding Andrews files
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks about packages
@@ -40,7 +40,22 @@
 # should excluded early age chicks because can still be brooded ??
 # should exclude recordings when the next nest visit revealed every chicks were dead ?
 
+## LHT calculation
+# prior residence accross year (does not start fresh each year)
 
+
+}
+
+{### annotations
+
+## New and Old template mess up
+# New means Issie's template
+# Old means Shinichi's
+# Malika means Malika's
+
+## Mother Father Mum Dad Male Female mess up
+# for me M  always stands for Male, F for Female
+#'Mum' and 'Dad' are sometimes used
 }
 
 
@@ -108,18 +123,23 @@ head(missingDVDFilenames)
 head(RearingBrood_allBirds)
 
 
-{### create list of filenames for New and Old Template: check those not included yet but that should be + special code to account for the fact that name extension not corrected to xlsx in DB
+{### create list of filenames for New and Old Template: check those not included yet but that should be
 
-{## create list of file names from files analysed after 2012 included
-	# not elegant but the DB will probably not change.
-FilenamesAfter2012 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename & tblDVD_XlsFiles$DVDRef !=5147]) # 4001LM19 was reedited, DVDRef 5147
+{## create list of file names from files analysed from 2015 with Malika's protocol in Issie's template
+	# not elegant as require that the DVDRef of the DB not to change
+FilenamesMalikaTemplate <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$RowRef >= 3180 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename ])
+}
+
+{## create list of file names from files analysed between 2012 and 2015 with Issie's protocol
+	# not elegant as require that the DVDRef of the DB not to change
+Filenames1215 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & tblDVD_XlsFiles$DVDRef <=5146 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename ])
 
 }								   
 	
-head(FilenamesAfter2012)
+head(Filenames1215)
 
 
-{##  create list of file names from files analysed in 2010 and 2011 with the new template (from what I could see opening all the files)
+{##  create list of file names from files analysed in 2010 and 2011 with the Issie's template (from what I could see opening all the files)
 
 filename1011_oldtemplate <- c(
 "2010\\VJ0039.xlsx", "2010\\VJ0040.xlsx", "2010\\VJ0041.xlsx", "2010\\VJ0044.xlsx", "2010\\VJ0050.xlsx", "2010\\VJ0052.xlsx",
@@ -149,8 +169,8 @@ head(Filenames1011newtemplate)
 	
 {## combine all files analyzed with the new template (will take newly analyzed files only if those are put in the root of the year folder, with a normal file name)
 
-FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(FilenamesAfter2012))
-length(FilenamesNewTemplate)	# 915 files, situation 4, new template
+FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(Filenames1215))
+length(FilenamesNewTemplate)	# 915 files, situation 4, new template # 20160321 with addition AJ files with Issie's template: 935
 
 }
 
@@ -190,12 +210,152 @@ length(FilenamesOldTemplate)	# 889 files, situation 4, old template # on 2016031
 
 head(FilenamesNewTemplate)
 head(FilenamesOldTemplate)
+head(FilenamesMalikaTemplate)
 
 
 require(openxlsx)
 search() # make sure package 'xlsx' is not in the list
 
-{### extraction data in Excel files analyzed with newest excel template (after conversion all files to xlsx) and error checking
+{### extraction data in Excel files analyzed with Malika's excel template and error checking
+
+out = list()
+warninggz <- list()
+warninggzz <- list()
+	
+for (j in 1:length(FilenamesMalikaTemplate)){
+filenamej <- paste(pathdropboxfolder, FilenamesMalikaTemplate[j], sep="\\DVDs ")
+b <- read.xlsx(filenamej, sheet="DVD NO") # read.xlsx function from library 'openxlsx' (not library 'xlsx'): make sure xlsx is not in the list given by 'search()'
+
+warninggz[[j]] <- as.character(FilenamesMalikaTemplate[j])
+warninggzz[[j]] <- as.character(FilenamesMalikaTemplate[j])
+
+{### warningz in raw data (only numbers and no blank)
+
+# check if no missing Time or state
+if ((length(b$Fend[!is.na(b$Fend)]) != length(b$Fstart[!is.na(b$Fstart)])) | (length(b$Mend[!is.na(b$Mend)]) != length(b$Mstart[!is.na(b$Mstart)])))
+{warninggz[[j]] <- c(warninggz[[j]],"missing Time !")}	
+
+# check if no comments in raw data
+if (is.numeric(b$Fstart) == FALSE | is.numeric(b$Fend) == FALSE | is.numeric(b$Mstart) == FALSE | is.numeric(b$Mend) == FALSE)
+{warninggz[[j]] <- c(warninggz[[j]],"character in raw data")}
+
+# check if no state
+if ((length(b$Fend[!is.na(b$Fend)]) != length(b$Fstate[!is.na(b$Fstate)])) | (length(b$Mend[!is.na(b$Mend)]) != length(b$Mstate[!is.na(b$Mstate)])))
+{warninggz[[j]] <- c(warninggz[[j]],"missing state !")}	
+}
+
+{### if no warningz: extract Female and Male raw data separately
+if (length(warninggz[[j]]) == 1)
+{
+bbF <- data.frame(b$Fstart, b$Fend, 0, NA,NA)
+colnames(bbF) <- c("Tstart", "Tend", "Sex", "prevOut","Diff_Tin_prevOut")
+bbF <- bbF[!is.na(bbF$Tstart) | !is.na(bbF$Tend),]
+
+
+bbM <- data.frame(b$Mstart, b$Mend, 1,NA,NA)
+colnames(bbM) <- c("Tstart", "Tend", "Sex", "prevOut","Diff_Tin_prevOut")
+bbM <- bbM[!is.na(bbM$Tstart) | !is.na(bbM$Tend),]
+
+if (nrow(bbF)>0)
+{
+bbF$prevOut <- c(NA,bbF$Tend[-nrow(bbF)])
+bbF$Diff_Tin_prevOut <- bbF$Tin-bbF$prevOut
+}
+
+if (nrow(bbM)>0)
+{
+bbM$prevOut <- c(NA,bbM$Tout[-nrow(bbM)])
+bbM$Diff_Tin_prevOut <- bbM$Tin-bbM$prevOut
+}
+
+}
+}
+
+{### warningzz in chronology
+
+
+
+if ((nrow(bbF[bbF$Tout - bbF$Tin <0,]) > 0) | (nrow(bbF[!is.na(bbF$Diff_Tin_prevOut) & bbF$Diff_Tin_prevOut <0,]) > 0) | 
+	(nrow(bbM[bbM$Tout - bbM$Tin <0,])) > 0 | (nrow(bbM[!is.na(bbM$Diff_Tin_prevOut) & bbM$Diff_Tin_prevOut <0,]) > 0))
+
+	{warninggzz[[j]] <-c(warninggzz[[j]], "wrong chronology in female or male!")
+	bbF <- NULL
+	bbM <- NULL}
+
+
+
+}
+
+{## if no warningzz: create bb
+if (length(warninggz[[j]])==1 & length(warninggzz[[j]])==1)
+{
+# when no bird ever visited: keep a line with NA
+if (nrow(bbF)== 0  & nrow(bbM)== 0)	
+{
+bb <- data.frame(rbind(c(NA,NA,NA,NA)))
+colnames(bb) <- c('Tin','Tout','Sex','Filename') # filename will be filled in later
+}
+
+# when only one bird  visited
+if (nrow(bbF)!= 0  & nrow(bbM)== 0)
+{
+bb <- bbF[,c('Tin','Tout','Sex')]
+}
+
+if (nrow(bbF)== 0  & nrow(bbM)!= 0)
+{
+bb <- bbM[,c('Tin','Tout','Sex')]
+}
+
+# when both birds visited, combine both sex data and order by Tin then Tout
+if(nrow(bbF)!= 0 & nrow(bbM)!= 0)
+{
+bb <- rbind(bbF[,c('Tin','Tout','Sex')], bbM[,c('Tin','Tout','Sex')])
+bb <- bb[with(bb,order(bb$Tin, bb$Tout)),] 
+ }
+ 
+
+# add filename
+bb$Filename <- as.character(FilenamesNewTemplate[j])
+}
+
+out[[j]] <- bb
+bb <-NULL
+}
+
+}
+
+condout <- sapply(out, function(x) length(x) > 1)
+out <- out[condout]
+length(out)
+
+combinedprovisioningNewTemplate = do.call(rbind, out)
+
+{# error check for NewTemplate
+ 
+length(unique(combinedprovisioningNewTemplate$Filename))	# 858 files, situation 4, new template
+
+# weird comments or missing info
+condwarninggz <- sapply(warninggz, function(x) length(x) > 1)
+warninggz <- warninggz[condwarninggz]
+
+warninggz	# should be empty list
+
+# mistake in chronology
+condwarninggzz <- sapply(warninggzz, function(x) length(x) > 1)
+warninggzz <- warninggzz[condwarninggzz]
+
+warninggzz	# should be empty list
+
+}
+
+
+}
+
+head(combinedprovisioningMalikaTemplate)
+
+
+{### extraction data in Excel files analyzed with Issie's excel template (after conversion all files to xlsx) and error checking
 
 out = list()
 warninggz <- list()
@@ -327,14 +487,14 @@ warninggzz	# should be empty list
 
 }
 
-head(combinedprovisioningNewTemplate,100)
+head(combinedprovisioningNewTemplate)
 
 
 detach("package:openxlsx", unload=TRUE)
 require(xlsx)
 search()
 
-{## extraction data in Excel files analyzed with oldest excel template (after conversion all files to xlsx) and creation of lists of errors
+{## extraction data in Excel files analyzed with Shinichi's old excel template (after conversion all files to xlsx) and creation of lists of errors
 
 FUNcellColor <- function(x) {
 	fg  <- x$getFillForegroundXSSFColor()
@@ -694,7 +854,7 @@ unique(combinedprovisioningOldTemplate$Filename[combinedprovisioningOldTemplate$
 
 }
 
-head(combinedprovisioningOldTemplate, 100)
+head(combinedprovisioningOldTemplate)
 
 
 {### combine all data
@@ -1267,18 +1427,75 @@ MY_tblBroods$DadAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortDad
 MY_tblBroods$MumAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortMum
 }
 
-
+{# add Male divorce
 MY_tblBroods_split_per_SocialDadID <- split(MY_tblBroods,MY_tblBroods$SocialDadID)
-MY_tblBroods_split_per_SocialDadID[[1]]
-MY_tblBroods_split_per_SocialDadID[[2]]
-MY_tblBroods_split_per_SocialDadID[[3]]
+#x <- MY_tblBroods_split_per_SocialDadID[[21]]
 
+MY_tblBroods_split_per_SocialDadID_fun = function(x)  {
+x <- x[order(x$HatchingDate),]
+
+x$MPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # MPrevNbRinged
+x$MBroodNb <- 1:nrow(x) # MBroodNb
+x$MPriorResidence <- x$NestboxRef == c(NA,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here.
+x$MPrevFemaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialMum[-nrow(x)]))
+x$MwithsameF <- x$SocialMumID == c(NA,x$SocialMumID[-nrow(x)]) # Mwith same Female does not take into account change of year here. and neither if male goes back with an example
+x$MDivorce <- as.POSIXct(x$MPrevFemaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$MwithsameF == FALSE
+
+x$MDivorceforEx <- NA
+if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MDivorce[i]) & x$MDivorce[i] == TRUE)
+{x$MDivorceforEx[i] <- x$SocialMumID[i] %in% x$SocialMumID[1:i-1]}}}
+if(nrow(x)==1)
+{x$MDivorceforEx <- NA}
+
+return(x)
+
+}
+
+MY_tblBroods_split_per_SocialDadID_out1 <- lapply(MY_tblBroods_split_per_SocialDadID, FUN=MY_tblBroods_split_per_SocialDadID_fun)
+MY_tblBroods_split_per_SocialDadID_out2 <- data.frame(rownames(do.call(rbind,MY_tblBroods_split_per_SocialDadID_out1)),do.call(rbind, MY_tblBroods_split_per_SocialDadID_out1))
+
+nrow(MY_tblBroods_split_per_SocialDadID_out2)	# 975
+rownames(MY_tblBroods_split_per_SocialDadID_out2) <- NULL
+
+MY_tblBroods <- MY_tblBroods_split_per_SocialDadID_out2[,-1]
+}
+
+{# add Female divorce
+MY_tblBroods_split_per_SocialMumID <- split(MY_tblBroods,MY_tblBroods$SocialMumID)
+x <- MY_tblBroods_split_per_SocialMumID[[5]]
+
+MY_tblBroods_split_per_SocialMumID_fun = function(x)  {
+x <- x[order(x$HatchingDate),]
+
+x$FPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # MPrevNbRinged
+x$FBroodNb <- 1:nrow(x) # MBroodNb
+x$FPriorResidence <- x$NestboxRef == c(NA,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here.
+x$FPrevMaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialDad[-nrow(x)]))
+x$FwithsameM <- x$SocialMumID == c(NA,x$SocialDadID[-nrow(x)]) # Mwith same Female does not take into account change of year here. and neither if male goes back with an example
+x$FDivorce <- as.POSIXct(x$FPrevMaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$FwithsameM == FALSE
+
+x$FDivorceforEx <- NA
+if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FDivorce[i]) & x$FDivorce[i] == TRUE)
+{x$FDivorceforEx[i] <- x$SocialDadID[i] %in% x$SocialDadID[1:i-1]}}}
+if(nrow(x)==1)
+{x$FDivorceforEx <- NA}
+
+return(x)
+
+}
+
+MY_tblBroods_split_per_SocialMumID_out1 <- lapply(MY_tblBroods_split_per_SocialMumID, FUN=MY_tblBroods_split_per_SocialMumID_fun)
+MY_tblBroods_split_per_SocialMumID_out2 <- data.frame(rownames(do.call(rbind,MY_tblBroods_split_per_SocialMumID_out1)),do.call(rbind, MY_tblBroods_split_per_SocialMumID_out1))
+
+nrow(MY_tblBroods_split_per_SocialMumID_out2)	# 962
+rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
+
+MY_tblBroods <- MY_tblBroods_split_per_SocialMumID_out2[,-1]
+}
 
 }
 
 head(MY_tblBroods)
-
-
 
 
 
