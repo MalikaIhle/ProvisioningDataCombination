@@ -75,7 +75,6 @@ this compare the number of chicks calculated to be alive at time of recording, t
 
 ### R_combinedprovisionningALLforDB
 
-this as all the raw data until time of code run (last: 20160317)
-this ais the raw data I will do my analyses on, this is also what Ian Stevensson could import into the DB
-videos from 2015 will be added to this in the next weeks
-
+this as all the raw data until time of code run (last: 20160323)
+this is the raw data I will do my analyses on, this is also what Ian Stevensson could import into the DB
+(historically, it first included files from 2004 to 2014, then 206 missing files from this period, then videos from 2015 from Andrew)
