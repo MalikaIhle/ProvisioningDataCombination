@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 21/03/2016  
-#	 adding Andrews files
+#	 last modif : 23/03/2016  
+#	 commit: get My_tblParentalCare right
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -137,6 +137,7 @@ length(FilenamesMalikaTemplate) # 83 (20160322)
 
 }
 
+
 {## create list of file names from files analysed between 2012 and 2015 with Issie's protocol
 	# not elegant as require that the DVDRef of the DB not to change
 #Filenames1215 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & tblDVD_XlsFiles$DVDRef <=5146 & tblDVD_XlsFiles$Filename%in%tblDVD_XlsFilesALLDBINFO$Filename ])
@@ -146,8 +147,7 @@ Filenames1215 <- sort(tblDVD_XlsFiles$Filename[tblDVD_XlsFiles$DVDRef >=2933 & t
 	
 head(Filenames1215)
 
-
-{##  create list of file names from files analysed in 2010 and 2011 with the Issie's template (from what I could see opening all the files)
+{##  create list of file names from files analysed in 2010 and 2011 with Issie's template
 
 filename1011_oldtemplate <- c(
 "2010\\VJ0039.xlsx", "2010\\VJ0040.xlsx", "2010\\VJ0041.xlsx", "2010\\VJ0044.xlsx", "2010\\VJ0050.xlsx", "2010\\VJ0052.xlsx",
@@ -173,9 +173,8 @@ Filenames1011newtemplate <- tblDVD_XlsFiles$Filename[grepl("2010|2011", tblDVD_X
 }
 
 head(Filenames1011newtemplate)													
-	
-	
-{## combine all files analyzed with the new template (will take newly analyzed files only if those are put in the root of the year folder, with a normal file name)
+		
+{## combine all files analyzed with Issie's template (will take newly analyzed files only if those are put in the root of the year folder, with a normal file name)
 
 FilenamesNewTemplate <- c(as.character(Filenames1011newtemplate), as.character(Filenames1215))
 length(FilenamesNewTemplate)	# 915 files, situation 4, new template # 20160321 with addition AJ files with Issie's template: 935
@@ -183,7 +182,7 @@ length(FilenamesNewTemplate)	# 915 files, situation 4, new template # 20160321 w
 }
 
 
-{## combined all files analyzed with old templates
+{## combined all files analyzed with Shinichi's templates
 
 {FilenamesOldTemplate <- tblDVD_XlsFiles$Filename[
 
@@ -932,9 +931,6 @@ combinedprovisioningALLforDB <- combinedprovisioningALL[,c('DVDRef','Tstart', 'T
 head(combinedprovisioningALLforDB)
 head(combinedprovisioningALL)
 
-DurationScript <- Sys.time() - TimeStart
-DurationScript # ~ 14 min
-
 
 {### recreate tblParentalCare to check for discrepancies
 
@@ -1009,10 +1005,12 @@ colnames(combinedprovisioningALL_listperFilename_out2) <- c('Filename','MTime', 
 head(combinedprovisioningALL_listperFilename_out2)
 
 {# To calculate number of visits (feeding visits (1) and non feeding visits (2) )
-combinedprovisioningALL_listperFilenameperSex <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
-	# x <- combinedprovisioningALL_listperFilenameperSex[[1]]
-	# x <- combinedprovisioningALL_listperFilenameperSex[[1543]]
+combinedprovisioningALL_listperFilenameperSex0 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 0,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 0])
+combinedprovisioningALL_listperFilenameperSex1 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 1,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 1])
 
+	# x <- combinedprovisioningALL_listperFilenameperSex0[['2015\\VO0170.xlsx']]
+	# x <- combinedprovisioningALL_listperFilenameperSex[[1543]]
+	
 combinedprovisioningALL_listperFilenameperSex_fun = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
 
@@ -1032,8 +1030,8 @@ x$Visit2 <- (x$State == 'A' &
 			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE')) & 
 			(is.na(x$PrevTimeSame) | (!is.na(x$PrevTimeSame) & x$PrevTimeSame == 'FALSE'))) == TRUE # when all conditions are met, i.e. 'A' T start and Tend are both different from state above (if exist) or below (if exist)
 
-x$Visit1 <- ((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF' & 
-			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE')))
+x$Visit1 <- ((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
+			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE'))
 				|
 			((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
 			(!is.na(x$NextTimeSame) & x$NextTimeSame == 'TRUE') &
@@ -1047,16 +1045,27 @@ length(x$Visit1[!is.na(x$Visit2) & x$Visit2 == TRUE])	# Visit2
 
 }
 
-combinedprovisioningALL_listperFilenameperSex_out1 <- lapply(combinedprovisioningALL_listperFilename, FUN=combinedprovisioningALL_listperFilenameperSex_fun)
-combinedprovisioningALL_listperFilenameperSex_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameperSex_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameperSex_out1))
+combinedprovisioningALL_listperFilenameperSex0_out1 <- lapply(combinedprovisioningALL_listperFilenameperSex0, FUN=combinedprovisioningALL_listperFilenameperSex_fun)
+combinedprovisioningALL_listperFilenameperSex0_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameperSex0_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameperSex0_out1))
 
-nrow(combinedprovisioningALL_listperFilenameperSex_out2)
-rownames(combinedprovisioningALL_listperFilenameperSex_out2) <- NULL
-colnames(combinedprovisioningALL_listperFilenameperSex_out2) <- c('Filename','Visit1', 'Visit2')
+nrow(combinedprovisioningALL_listperFilenameperSex0_out2)
+rownames(combinedprovisioningALL_listperFilenameperSex0_out2) <- NULL
+colnames(combinedprovisioningALL_listperFilenameperSex0_out2) <- c('Filename','FVisit1', 'FVisit2')
+
+combinedprovisioningALL_listperFilenameperSex1_out1 <- lapply(combinedprovisioningALL_listperFilenameperSex1, FUN=combinedprovisioningALL_listperFilenameperSex_fun)
+combinedprovisioningALL_listperFilenameperSex1_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameperSex1_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameperSex1_out1))
+
+nrow(combinedprovisioningALL_listperFilenameperSex1_out2)
+rownames(combinedprovisioningALL_listperFilenameperSex1_out2) <- NULL
+colnames(combinedprovisioningALL_listperFilenameperSex1_out2) <- c('Filename','MVisit1', 'MVisit2')
+
+combinedprovisioningALL_listperFilenameperSex_out2 <- merge (x= combinedprovisioningALL_listperFilenameperSex0_out2, y = combinedprovisioningALL_listperFilenameperSex1_out2, all.x =TRUE, all.y = TRUE, by='Filename')
+combinedprovisioningALL_listperFilenameperSex_out2[is.na(combinedprovisioningALL_listperFilenameperSex_out2)] <- 0
 
 }
 
-head(combinedprovisioningALL_listperFilenameperSex_out2)
+head(combinedprovisioningALL_listperFilenameperSex_out2) # files with no visits by either sex have been removed...
+
 
 {# To calculate ShareTime
 
@@ -1136,7 +1145,7 @@ combinedprovisioningALL_FeedY <- do.call(rbind, out4)
 
 {# calculate share time for each file
 
-combinedprovisioningALL_listperFilenameFeedY_withShare <- split(combinedprovisioningALL[combinedprovisioningALL$FeedYN == 1,],combinedprovisioningALL$Filename[combinedprovisioningALL$FeedYN == 1])
+combinedprovisioningALL_listperFilenameFeedY_withShare <- split(combinedprovisioningALL_FeedY,combinedprovisioningALL_FeedY$Filename)
 
 combinedprovisioningALL_listperFilenameFeedY_fun = function(x)  {
 		
@@ -1156,24 +1165,23 @@ colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','Sha
 
 }
 
-head(combinedprovisioningALL_listperFilenameFeedY_out2)
+head(combinedprovisioningALL_listperFilenameFeedY_out2) # files with no feeding visits by either sex have been removed... 
 
 
 {# create MY_tblParentalCareforComparison and Compare_tblParentalCare
-MY_tblParentalCareforComparison <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameperSex_out2,all.x=TRUE, by='Filename')
-MY_tblParentalCareforComparison <- merge(x=MY_tblParentalCareforComparison,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')
-MY_tblParentalCareforComparison <- merge(x=MY_tblParentalCareforComparison,y=tblDVD_XlsFilesALLDBINFO[,c('Filename','DVDRef')],all.x=TRUE, by='Filename')
+MY_tblParentalCareforComparison <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameperSex_out2,all.x=TRUE, by='Filename')# files with no visits by either sex are back !
+MY_tblParentalCareforComparison <- merge(x=MY_tblParentalCareforComparison,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')# files with no feeding visits by either sex are back !
+MY_tblParentalCareforComparison <- merge(x=MY_tblParentalCareforComparison,y=unique(combinedprovisioningALL[,c('Filename','DVDRef')]),all.x=TRUE, by='Filename')
+MY_tblParentalCareforComparison <- MY_tblParentalCareforComparison[,c('Filename','DVDRef','MTime', 'FTime','MVisit1', 'FVisit1', 'MVisit2', 'FVisit2', 'MBout', 'FBout', 'ShareTime')] # just to reorder columns
 
 Compare_tblParentalCare <- merge(x=MY_tblParentalCareforComparison,y=tblParentalCare[,c('DVDRef','MTime', 'FTime','MVisit1', 'FVisit1', 'MVisit2', 'FVisit2', 'MBout', 'FBout', 'ShareTime')], all.x=TRUE, by ='DVDRef')
 head(Compare_tblParentalCare)
 
 S <- Compare_tblParentalCare[,grepl("*\\.x$",names(Compare_tblParentalCare))] - Compare_tblParentalCare[,grepl("*\\.y$",names(Compare_tblParentalCare))]
-Compare_tblParentalCare <- cbind(Compare_tblParentalCare[,1,drop=FALSE],S)
-Compare_tblParentalCare <- merge(x=Compare_tblParentalCare,y=MY_tblParentalCareforComparison[,c('Filename','DVDRef')], all.x=TRUE, by='DVDRef')
+Compare_tblParentalCare <- cbind(Compare_tblParentalCare[,c(1,2),drop=FALSE],S)
 Compare_tblParentalCare$MTime.x <- round(Compare_tblParentalCare$MTime.x,2)
 Compare_tblParentalCare$FTime.x <- round(Compare_tblParentalCare$FTime.x,2)
 Compare_tblParentalCare$ShareTime.x <- round(Compare_tblParentalCare$ShareTime.x,2)
-Compare_tblParentalCare <- Compare_tblParentalCare[!is.na(Compare_tblParentalCare$DVDRef),]
 
 	# hist(Compare_tblParentalCare$MTime.x)
 	# hist(Compare_tblParentalCare$FTime.x)
@@ -1196,11 +1204,25 @@ head(Compare_tblParentalCare)
 
 {# Andrews files with Malika's protocol
 
-# 4977  
+# 5031 > file had been corrected explaining the discrepancy, both code and excel files are correct now, onlt tblParentalCare in DB is wrong
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 5031,]
+MY_tblParentalCareforComparison[!is.na(MY_tblParentalCareforComparison$DVDRef ) & MY_tblParentalCareforComparison$DVDRef == 5031,]
+tblParentalCare[tblParentalCare$DVDRef == 5031,]
+
+# 4977 > discrepancy between bout with OF (included in code) or not (not in excel file with Malika's protocol) > tblParentalCare makes more sense like this, but not consistent with Issies calculation (includes OF). Will be removed anyways from 'MY-tblParentalCare'
 combinedprovisioningALL[combinedprovisioningALL$DVDRef == 4977,]
 MY_tblParentalCareforComparison[!is.na(MY_tblParentalCareforComparison$DVDRef ) & MY_tblParentalCareforComparison$DVDRef == 4977,]
 tblParentalCare[tblParentalCare$DVDRef == 4977,]
 
+# 5044 > share time in code > only if feeding, in Andrews files, also when present around "A", so he often has more shared time
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 5044,]
+MY_tblParentalCareforComparison[!is.na(MY_tblParentalCareforComparison$DVDRef ) & MY_tblParentalCareforComparison$DVDRef == 5044,]
+tblParentalCare[tblParentalCare$DVDRef == 5044,]
+
+# 4847 > not from Andrew, the guy missed some shared time
+combinedprovisioningALL[combinedprovisioningALL$DVDRef == 4847,]
+MY_tblParentalCareforComparison[!is.na(MY_tblParentalCareforComparison$DVDRef ) & MY_tblParentalCareforComparison$DVDRef == 4847,]
+tblParentalCare[tblParentalCare$DVDRef == 4847,]
 }
 
 {# before Malika's protocol imported - 30 cases
@@ -1367,30 +1389,15 @@ head(Compare_tblParentalCare)
 
 
 
+DurationScript <- Sys.time() - TimeStart
+DurationScript # ~ 14 min
 
 
-
-
-
-###### assuming data are correct
-
-## get number of broods watched and descriptive stats 
-# remove when DVDinfo # of chicks = 0
-# remove when age < ?? (when brooding) or separate stages into early and late ?
-
-head(tblDVD_XlsFilesALLDBINFO)
-head(combinedprovisioningALLforDB)
-head(tblBroodEvents)
-head(tblBroods)
-head(tblAllCodes)
-head(RearingBrood_allBirds)
-head(missingDVDFilenames)
 
 {### MY_tblParentalCare
 
-{# replace Mtime Ftime (sum duration only of visits > 1 min) to sum duration of all feeding visits
-M
-Y_tblParentalCare <- MY_tblParentalCareforComparison[,c("DVDRef","MVisit1","FVisit1","MVisit2","FVisit2","ShareTime","Filename"]
+{# replace Mtime Ftime (sum duration only of visits > 1 min) to sum duration of all feeding visits (including those < 1 min), whether OF or IN
+MY_tblParentalCare <- MY_tblParentalCareforComparison[,c("DVDRef","MVisit1","FVisit1","MVisit2","FVisit2","ShareTime","Filename")]
 
 combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
 
@@ -1399,8 +1406,8 @@ x <- x[order(x$Tstart, -x$Tend),]
 
 return(c(
 sum(x$Duration[x$Sex==1 & x$FeedYN == 1 ]),  # MTime
-sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ]),  # FTime
-)
+sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ])   # FTime
+))
 }
 
 combinedprovisioningALL_listperFilename_out1b <- lapply(combinedprovisioningALL_listperFilename, FUN=combinedprovisioningALL_listperFilename_fun2)
@@ -1413,6 +1420,90 @@ colnames(combinedprovisioningALL_listperFilename_out2b) <- c('Filename','MTime',
 MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=combinedprovisioningALL_listperFilename_out2b,all.x=TRUE, by='Filename')
 
 }
+
+{# add protocol and replace zeros in Visit2 for Issie's protocol to NA because they were not recorded, it is not that they did not occur
+
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y= unique(combinedprovisioningALLforDB[,c('DVDRef', 'Protocol')]), all.x=TRUE, by='DVDRef')
+MY_tblParentalCare$MVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
+MY_tblParentalCare$FVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
+}
+
+{# add time attended and tinme unattended
+
+combinedprovisioningALL_FeedY_splitperFilename <- split(combinedprovisioningALL_FeedY, combinedprovisioningALL_FeedY$Filename)
+x <- combinedprovisioningALL_FeedY_splitperFilename[[1]]
+
+combinedprovisioningALL_FeedY_splitperFilename_fun = function(x)  {
+x <- x[order(x$Tstart, -x$Tend),]
+
+return(c(
+sum(x$Duration),  					# Tattended
+sum(x$Duration[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]),  					# Tunattended
+
+)
+
+
+}
+
+combinedprovisioningALL_FeedY_splitperFilename_out1 <- lapply(combinedprovisioningALL_FeedY_splitperFilename, FUN=combinedprovisioningALL_FeedY_splitperFilename_fun)
+combinedprovisioningALL_FeedY_splitperFilename_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_FeedY_splitperFilename_out1)),do.call(rbind, combinedprovisioningALL_FeedY_splitperFilename_out1))
+
+nrow(combinedprovisioningALL_FeedY_splitperFilename_out2)
+rownames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- NULL
+colnames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- c('Filename','')
+}
+
+{# calculate alternation
+combinedprovisioningALL_FeedY_listperFilenameperSex0 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 0,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 0])
+combinedprovisioningALL_FeedY_listperFilenameperSex1 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 1,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 1])
+
+	x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2015\\VO0170.xlsx']]
+	# x <- combinedprovisioningALL_FeedY_listperFilenameperSex[[1543]]
+	
+combinedprovisioningALL_FeedY_listperFilenameperSex_fun = function(x)  {
+x <- x[order(x$Tstart, -x$Tend),]
+
+x$NextTime <-  c(x$Tstart[-1],NA)
+x$NextTimeSame <-  x$Tend == x$NextTime
+
+x$PrevTime <-  c(NA, x$Tend[-nrow(x)])
+x$PrevTimeSame <-  x$Tstart == x$PrevTime
+
+x$NextState <- c(as.character(x$State[-1]),NA)
+
+x$Visit <- 0
+
+x$Visit <- ((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
+			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE'))
+				|
+			((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
+			(!is.na(x$NextTimeSame) & x$NextTimeSame == 'TRUE') &
+			(!is.na(x$NextState) & x$NextState == 'A' ))) == TRUE
+			
+
+return(x[x$Visit == TRUE,c('Filename','Tstart','Tend','State','Sex','Protocol','DVDRef','FeedYN','Duration','Visit')])
+
+}
+
+combinedprovisioningALL_FeedY_listperFilenameperSex0_out1 <- lapply(combinedprovisioningALL_FeedY_listperFilenameperSex0, FUN=combinedprovisioningALL_FeedY_listperFilenameperSex_fun)
+combinedprovisioningALL_FeedY_listperFilenameperSex0_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_FeedY_listperFilenameperSex0_out1)),do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex0_out1))
+
+nrow(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2)
+rownames(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2) <- NULL
+
+
+combinedprovisioningALL_FeedY_listperFilenameperSex1_out1 <- lapply(combinedprovisioningALL_FeedY_listperFilenameperSex1, FUN=combinedprovisioningALL_FeedY_listperFilenameperSex_fun)
+combinedprovisioningALL_FeedY_listperFilenameperSex1_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_FeedY_listperFilenameperSex1_out1)),do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex1_out1))
+
+nrow(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
+rownames(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2) <- NULL
+
+
+# combinedprovisioningALL_FeedY_listperFilenameperSex_out2 <- merge (x= combinedprovisioningALL_FeedY_listperFilenameperSex0_out2, y = combinedprovisioningALL_FeedY_listperFilenameperSex1_out2, all.x =TRUE, all.y = TRUE, by='Filename')
+# combinedprovisioningALL_FeedY_listperFilenameperSex_out2[is.na(combinedprovisioningALL_FeedY_listperFilenameperSex_out2)] <- 0
+
+}
+
 
 }
 
@@ -1436,26 +1527,25 @@ hist(MY_tblDVDInfo$DVDInfoAge)
 hist(MY_tblDVDInfo$ChickAge)
 hist(MY_tblDVDInfo$DVDInfoAge-MY_tblDVDInfo$ChickAge)
 
-table(MY_tblDVDInfo$BroodRef,MY_tblDVDInfo$ChickAge)
 }
 
 {# check numbers of broods with certain conditions
-length(unique(MY_tblDVDInfo$BroodRef)) # 933 (20160314) 1014 (20160317)
-length(unique(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 891 (20160314) 972 (20160317)
-mean(table(MY_tblDVDInfo$BroodRef)) # 1.93 (20160314) 1.98 (20160317)
-mean(table(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 1.84 (20160314) 1.89 (20160317)
+length(unique(MY_tblDVDInfo$BroodRef)) # 933 (20160314) 1014 (20160317) 1067 (20160323)
+length(unique(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 891 (20160314) 972 (20160317) 1025 (20160323)
+mean(table(MY_tblDVDInfo$BroodRef)) # 1.93 (20160314) 1.98 (20160317) 1.97 (20160323)
+mean(table(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 1.84 (20160314) 1.89 (20160317) 1.90 (20160323)
 
 hist(MY_tblDVDInfo$DVDdate, breaks = 'years', freq=TRUE)
 
 MY_tblDVDInfo <- merge(x= MY_tblDVDInfo, 
-						y= unique(combinedprovisioningALLforDB[,c('DVDRef', 'Template')]),
+						y= unique(combinedprovisioningALLforDB[,c('DVDRef', 'Protocol')]),
 						all.x=TRUE,
 						by ='DVDRef')
 						
-table(MY_tblDVDInfo$Template) # Issie 914  Shinichi  1089
-table(MY_tblDVDInfo$Template[MY_tblDVDInfo$ChickAge>5]) # Issie 912  Shinichi  931
 
-table(MY_tblDVDInfo$DVDdate)
+table(MY_tblDVDInfo$Protocol[MY_tblDVDInfo$ChickAge>5]) # Issie 932  Shinichi  931  Malika 83
+table(MY_tblDVDInfo$Protocol) # Issie 934  Shinichi  1089  Malika 83
+
 
 }
 }
@@ -1463,7 +1553,7 @@ table(MY_tblDVDInfo$DVDdate)
 head(MY_tblDVDInfo)
 
 
-{### MY_tblBroods
+{### MY_tblBroods								>> update txt files when pedigree updated !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 MY_tblBroods <- tblBroods[tblBroods$BroodRef %in% MY_tblDVDInfo$BroodRef,]
 nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 92 brood with at least one parents unknown or uncertain
@@ -1605,15 +1695,9 @@ head(MY_tblBroods)
 
 
 
-
-
-
-
-
-
-
-
-
+# decision still to take:
+# remove when number of chicks = 0 (how to detect them ? first attempt in next big braket)
+# remove when age < 6 (when brooding) or separate stages into early and late ? ('only' lose 160 files > 1946 files left)
 
 {### refine which files are valid for analysis and figure out the number of chicks in the nest at time of recording
 # situation 4 = with chicks
@@ -1780,66 +1864,5 @@ ORDER BY RearingBrood_allbirds.RearingBrood, AllRecordings.DVDdate;
 
 
 }
-
-
-
-
-{## start creating variables for compatiblity......... in construction
-
-combinedprovisioningALL_listperFilename_fun = function(x)  {
-x <- x[order(x$Tin, -x$Tout),]
-x$unattended <-0
-x$attended <-0
-x$dblattended <-0
-
-# for normal sequence where next Tin is after last Tout
-for (i in 1:(nrow(x)-1))
-{
-	if (x$Tin[i+1] >= x$Tout[i])
-	{x$unattended[i] <- round(x$Tin[i+1]-x$Tout[i],2)
-	x$attended[i] <- x$Tout[i]-x$Tin[i]
-	}
-
-# for the last row to get unattended time: substract from the TapeTime
-	if (tblDVD_XlsFilesALLDBINFO$TapeTime[as.character(tblDVD_XlsFilesALLDBINFO$Filename) == as.character(x$Filename[1])] > x$Tout[nrow(x)])  	# added 'as.character' otherwise compare 2 factors who do not have the same number of categories so R can't make it...
-	x$unattended[nrow(x)] <- round(tblDVD_XlsFilesALLDBINFO$TapeTime[as.character(tblDVD_XlsFilesALLDBINFO$Filename) == as.character(x$Filename[1])] - x$Tout[nrow(x)],2)
-}
-
-# when one sex visit while the other partner is in
-for (i in 2:(nrow(x)))
-{
-if (x$Tin[i] < x$Tout[i-1] & x$Sex[i]!=x$Sex[i-1])
-{x$dblattended[i] <- x$Tout[i-1]-x$Tin[i]
-}
-}
-
-
-
-return(c(
-nrow(x),
-sum(x$attended),
-sum(x$unattended),
-tblDVD_XlsFilesALLDBINFO$EffectTime[as.character(tblDVD_XlsFilesALLDBINFO$Filename) == as.character(x$Filename[1])] 
-))
-}
-
-combinedprovisioningALL_listperFilename_out1 <- lapply(combinedprovisioningALL_listperFilename, FUN=combinedprovisioningALL_listperFilename_fun)
-combinedprovisioningALL_listperFilename_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilename_out1)),do.call(rbind, combinedprovisioningALL_listperFilename_out1))
-
-nrow(combinedprovisioningALL_listperFilename_out2)	# 216
-rownames(combinedprovisioningALL_listperFilename_out2) <- NULL
-colnames(combinedprovisioningALL_listperFilename_out2) <- c('', '','')
-
-ParentalCare <- merge(x=combinedprovisioningALL_listperFilename_out2, 
-y = tblDVD_XlsFilesALLDBINFO[,c('DVDRef', 'Filename','BroodRef','OffspringNo','DVDdate','DVDtime','Weather','Wind','TapeTime','EffectTime','Method','Observer')], by = 'Filename', all.x=TRUE)
-
-head(ParentalCare)
-nrow(ParentalCare) # 216
-
-}
-
-
-
-
 
 
