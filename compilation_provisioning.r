@@ -1390,7 +1390,7 @@ head(Compare_tblParentalCare)
 
 
 DurationScript <- Sys.time() - TimeStart
-DurationScript # ~ 14 min
+DurationScript # ~ 17 min
 
 
 
@@ -1413,11 +1413,12 @@ sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ])   # FTime
 combinedprovisioningALL_listperFilename_out1b <- lapply(combinedprovisioningALL_listperFilename, FUN=combinedprovisioningALL_listperFilename_fun2)
 combinedprovisioningALL_listperFilename_out2b <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilename_out1b)),do.call(rbind, combinedprovisioningALL_listperFilename_out1b))
 
-nrow(combinedprovisioningALL_listperFilename_out2b)	# 1746
+nrow(combinedprovisioningALL_listperFilename_out2b)	# 2112
 rownames(combinedprovisioningALL_listperFilename_out2b) <- NULL
 colnames(combinedprovisioningALL_listperFilename_out2b) <- c('Filename','MTime', 'FTime')
 
 MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=combinedprovisioningALL_listperFilename_out2b,all.x=TRUE, by='Filename')
+nrow(MY_tblParentalCare[(MY_tblParentalCare$MTime == 0 | is.na(MY_tblParentalCare$MTime) ) & (MY_tblParentalCare$FTime == 0 | is.na(MY_tblParentalCare$FTime)),])
 
 }
 
@@ -1428,7 +1429,7 @@ MY_tblParentalCare$MVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 MY_tblParentalCare$FVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 }
 
-{# add time attended and tinme unattended
+{# add time attended and time unattended
 
 combinedprovisioningALL_FeedY_splitperFilename <- split(combinedprovisioningALL_FeedY, combinedprovisioningALL_FeedY$Filename)
 x <- combinedprovisioningALL_FeedY_splitperFilename[[1]]
@@ -1453,12 +1454,13 @@ rownames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- NULL
 colnames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- c('Filename','')
 }
 
-{# calculate alternation
-combinedprovisioningALL_FeedY_listperFilenameperSex0 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 0,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 0])
-combinedprovisioningALL_FeedY_listperFilenameperSex1 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 1,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 1])
+{# calculate alternation and provisioning rates per sex
 
-	x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2015\\VO0170.xlsx']]
-	# x <- combinedprovisioningALL_FeedY_listperFilenameperSex[[1543]]
+{# create RawFeedingVisit ('A' bouts removed, one succession OF-IN give the Tstart of OF and the Tend of IN - split per sex and recombine)
+
+combinedprovisioningALL_FeedY_listperFilenameperSex0 <- split(combinedprovisioningALL_FeedY[combinedprovisioningALL_FeedY$Sex == 0,], combinedprovisioningALL_FeedY$Filename[combinedprovisioningALL_FeedY$Sex == 0])
+combinedprovisioningALL_FeedY_listperFilenameperSex1 <- split(combinedprovisioningALL_FeedY[combinedprovisioningALL_FeedY$Sex == 1,], combinedprovisioningALL_FeedY$Filename[combinedprovisioningALL_FeedY$Sex == 1])
+x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2015\\VO0170.xlsx']]
 	
 combinedprovisioningALL_FeedY_listperFilenameperSex_fun = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
@@ -1471,43 +1473,72 @@ x$PrevTimeSame <-  x$Tstart == x$PrevTime
 
 x$NextState <- c(as.character(x$State[-1]),NA)
 
-x$Visit <- 0
+for (i in 1: nrow(x))
+{
+if (!is.na(x$PrevTimeSame[i]) & x$PrevTimeSame[i] == 'TRUE')
+{x$TstartFeedVisit[i] <- x$Tstart[i-1]}
+else {x$TstartFeedVisit[i] <- x$Tstart[i]}
 
-x$Visit <- ((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
-			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE'))
-				|
-			((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
-			(!is.na(x$NextTimeSame) & x$NextTimeSame == 'TRUE') &
-			(!is.na(x$NextState) & x$NextState == 'A' ))) == TRUE
-			
+if (!is.na(x$NextTimeSame[i]) & x$NextTimeSame[i] == 'TRUE')
+{x$TendFeedVisit[i] <- x$Tend[i+1]}
+else {x$TendFeedVisit[i] <- x$Tend[i]}
 
-return(x[x$Visit == TRUE,c('Filename','Tstart','Tend','State','Sex','Protocol','DVDRef','FeedYN','Duration','Visit')])
+}
+
+
+return(unique(x[,c('Filename','TstartFeedVisit','TendFeedVisit','Sex')]))
 
 }
 
 combinedprovisioningALL_FeedY_listperFilenameperSex0_out1 <- lapply(combinedprovisioningALL_FeedY_listperFilenameperSex0, FUN=combinedprovisioningALL_FeedY_listperFilenameperSex_fun)
-combinedprovisioningALL_FeedY_listperFilenameperSex0_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_FeedY_listperFilenameperSex0_out1)),do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex0_out1))
-
-nrow(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2)
+combinedprovisioningALL_FeedY_listperFilenameperSex0_out2 <- data.frame(do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex0_out1))
 rownames(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2) <- NULL
-
+head(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2)
 
 combinedprovisioningALL_FeedY_listperFilenameperSex1_out1 <- lapply(combinedprovisioningALL_FeedY_listperFilenameperSex1, FUN=combinedprovisioningALL_FeedY_listperFilenameperSex_fun)
-combinedprovisioningALL_FeedY_listperFilenameperSex1_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_FeedY_listperFilenameperSex1_out1)),do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex1_out1))
-
-nrow(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
+combinedprovisioningALL_FeedY_listperFilenameperSex1_out2 <- data.frame(do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex1_out1))
 rownames(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2) <- NULL
+head(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 
 
-# combinedprovisioningALL_FeedY_listperFilenameperSex_out2 <- merge (x= combinedprovisioningALL_FeedY_listperFilenameperSex0_out2, y = combinedprovisioningALL_FeedY_listperFilenameperSex1_out2, all.x =TRUE, all.y = TRUE, by='Filename')
-# combinedprovisioningALL_FeedY_listperFilenameperSex_out2[is.na(combinedprovisioningALL_FeedY_listperFilenameperSex_out2)] <- 0
-
-}
-
+RawFeedingVisits <- rbind(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2,combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
+# write.table(RawFeedingVisits, file = "R_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324
 
 }
 
+# calculate alternation and provisioning rate per file
+
+RawFeedingVisits_listperDVDRef <- split (RawFeedingVisits, RawFeedingVisits$Filename)
+x <- RawFeedingVisits_listperDVDRef[[3]]
+
+RawFeedingVisits_listperDVDRef_fun = function(x) {
+x <- x[order(x$DVDRef, x$Tstart, -x$Tend),]
+
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+
+return(c(
+length(x$NextSexSame[x$NextSexSame == FALSE]),	#NbAlternation
+length(x$NextSexSame[!is.na(x$NextSexSame)]),	#MaxNbAlternation
+length(x$Sex[x$Sex == 1]),	#NbMVisit
+length(x$Sex[x$Sex == 0])	#NBFVisit
+))
+
+}
+
+RawFeedingVisits_listperDVDRef_out1 <- lapply(RawFeedingVisits_listperDVDRef, FUN=RawFeedingVisits_listperDVDRef_fun)
+RawFeedingVisits_listperDVDRef_out2 <- data.frame(rownames(do.call(rbind,RawFeedingVisits_listperDVDRef_out1)),do.call(rbind, RawFeedingVisits_listperDVDRef_out1))
+
+nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visits)
+rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
+colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','MaxNbAlternation','NbMVisit','NBFVisit')
+
+
+}
+}
+
+tail(RawFeedingVisits,30)
 head(MY_tblParentalCare)
+
 
 
 {### MY_tblDVDInfo
