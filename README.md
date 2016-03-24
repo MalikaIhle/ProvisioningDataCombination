@@ -73,6 +73,11 @@ this compare the number of chicks calculated to be alive at time of recording, t
 - tblDVDInfo number of chicks is estimated after that (from previous nest check) but about correct...
 
 
+### R_RawFeedingVisits
+
+thi is all the raw data with only feeding visits (OF, IN or INorOF), where a succession OF-IN has been merged into one visit (run 20160324)
+
+
 ### R_combinedprovisionningALLforDB
 
 this as all the raw data until time of code run (last: 20160323)
