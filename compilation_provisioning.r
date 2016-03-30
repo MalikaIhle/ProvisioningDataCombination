@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 24/03/2016  
-#	 commit: calculate alternation
+#	 last modif : 30/03/2016  
+#	 commit: realize time in decimal make my code wrong > I should sometimes not join visits to make one feeding visit
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -1010,6 +1010,7 @@ combinedprovisioningALL_listperFilenameperSex1 <- split(combinedprovisioningALL[
 
 	# x <- combinedprovisioningALL_listperFilenameperSex0[['2015\\VO0170.xlsx']]
 	# x <- combinedprovisioningALL_listperFilenameperSex[[1543]]
+	# x <- combinedprovisioningALL_listperFilenameperSex0[['2013\\VM0540.xlsx']]
 	
 combinedprovisioningALL_listperFilenameperSex_fun = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
@@ -1200,7 +1201,7 @@ head(Compare_tblParentalCare)
 
 {## checking the largest mismatches
 
-## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCare.xls", col.names=TRUE, sep='\t') # 20160217
+## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCareNewVisitNbCalculation.xls", col.names=TRUE, sep='\t') # 20160217
 
 {# Andrews files with Malika's protocol
 
@@ -1226,6 +1227,11 @@ tblParentalCare[tblParentalCare$DVDRef == 4847,]
 }
 
 {# before Malika's protocol imported - 30 cases
+
+# When Nb of visits were calculated with this code:
+# length(x$FeedYN[x$Sex==1 & x$FeedYN == 1 & !is.na(x$FeedYN)]),  				# MVisit1
+# length(x$FeedYN[x$Sex==0 & x$FeedYN == 1 & !is.na(x$FeedYN)]),					# FVisit1
+
 
 # VK0115 > my code is correct, data in DB for a file where no bird visits
 combinedprovisioningALL[combinedprovisioningALL$DVDRef == 2622,]
@@ -1388,7 +1394,6 @@ head(MY_tblParentalCareforComparison)
 head(Compare_tblParentalCare)
 
 
-
 DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 17 min
 
@@ -1461,6 +1466,8 @@ colnames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- c('Filename',''
 combinedprovisioningALL_FeedY_listperFilenameperSex0 <- split(combinedprovisioningALL_FeedY[combinedprovisioningALL_FeedY$Sex == 0,], combinedprovisioningALL_FeedY$Filename[combinedprovisioningALL_FeedY$Sex == 0])
 combinedprovisioningALL_FeedY_listperFilenameperSex1 <- split(combinedprovisioningALL_FeedY[combinedprovisioningALL_FeedY$Sex == 1,], combinedprovisioningALL_FeedY$Filename[combinedprovisioningALL_FeedY$Sex == 1])
 x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2015\\VO0170.xlsx']]
+x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2013\\VM0540.xlsx']]
+
 	
 combinedprovisioningALL_FeedY_listperFilenameperSex_fun = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
@@ -1506,13 +1513,13 @@ RawFeedingVisits <- rbind(combinedprovisioningALL_FeedY_listperFilenameperSex0_o
 
 }
 
-# calculate alternation and provisioning rate per file
+{# calculate alternation and provisioning rate per file
 
 RawFeedingVisits_listperDVDRef <- split (RawFeedingVisits, RawFeedingVisits$Filename)
 x <- RawFeedingVisits_listperDVDRef[[3]]
 
 RawFeedingVisits_listperDVDRef_fun = function(x) {
-x <- x[order(x$DVDRef, x$Tstart, -x$Tend),]
+x <- x[order(x$Filename, x$Tstart, -x$Tend),]
 
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 
@@ -1520,7 +1527,7 @@ return(c(
 length(x$NextSexSame[x$NextSexSame == FALSE]),	#NbAlternation
 length(x$NextSexSame[!is.na(x$NextSexSame)]),	#MaxNbAlternation
 length(x$Sex[x$Sex == 1]),	#NbMVisit
-length(x$Sex[x$Sex == 0])	#NBFVisit
+length(x$Sex[x$Sex == 0])	#NbFVisit
 ))
 
 }
@@ -1530,7 +1537,19 @@ RawFeedingVisits_listperDVDRef_out2 <- data.frame(rownames(do.call(rbind,RawFeed
 
 nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visits)
 rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
-colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','MaxNbAlternation','NbMVisit','NBFVisit')
+colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','MaxNbAlternation','NbMVisit','NbFVisit')
+head(RawFeedingVisits_listperDVDRef_out2)
+
+}
+
+# compare Visit1 and NbFeedingVisit (should be equal)
+MY_tblParentalCare2 <- merge(x=MY_tblParentalCare, y=RawFeedingVisits_listperDVDRef_out2, by='Filename')
+head(MY_tblParentalCare2)
+
+MY_tblParentalCare2$DiffMVisit1 <- MY_tblParentalCare2$MVisit1 - MY_tblParentalCare2$NbMVisit
+MY_tblParentalCare2$DiffFVisit1 <- MY_tblParentalCare2$FVisit1 - MY_tblParentalCare2$NbFVisit
+MY_tblParentalCare2[MY_tblParentalCare2$DiffFVisit1 != 0 | MY_tblParentalCare2$DiffMVisit1!= 0,]
+RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0540.xlsx',]
 
 
 }
@@ -1723,6 +1742,10 @@ MY_tblBroods <- MY_tblBroods_split_per_SocialMumID_out2[,-1]
 head(MY_tblBroods)
 
 
+
+
+head(tblDVD_XlsFilesALLDBINFO)
+head(missingDVDFilenames)
 
 
 
