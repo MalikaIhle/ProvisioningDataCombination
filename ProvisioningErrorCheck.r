@@ -304,6 +304,16 @@ data.frame(ExcelNOTinDB)
 
 
 
+### Which DVDinfo situation 4, with chicks, with Wrong = 'No', not a wild nest (i.e. nest name = letter number and letter again or full word), removing personality videos, AND with no data in parental care / no excel file
+
+DVDInfoWithoutMatchingParentalCare <- sqlQuery(conDB, "
+SELECT tblDVDInfo.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.OffspringNo, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Age, tblNestboxes.NestboxName
+FROM tblNestboxes INNER JOIN (tblBroods INNER JOIN (tblDVDInfo LEFT JOIN tblParentalCare ON tblDVDInfo.[DVDRef] = tblParentalCare.[DVDRef]) ON tblBroods.BroodRef = tblDVDInfo.BroodRef) ON tblNestboxes.NestboxRef = tblBroods.NestboxRef
+WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.OffspringNo)<>0) AND ((tblDVDInfo.Wrong)=False) AND ((tblDVDInfo.DVDdate)<#1/1/2015#) AND ((tblParentalCare.DVDRef) Is Null) AND ((tblDVDInfo.Notes) Is Null));
+")
+
+# among those, 2 third are wild nest, the others have no apparent reasons not to be watched
+
 
 }
 
