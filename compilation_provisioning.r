@@ -45,6 +45,14 @@
 ## LHT calculation
 # prior residence accross year (does not start fresh each year)
 
+## Nb Visit1 calculation:
+# if OF is followed by IN and if time end and start are similar > this is merged into one visit 
+# this is the procedure for Malika's protocol, but the code has been apllied to all files
+# since time in decimal can be similar despite the bird leaving for 6 second, this can lead to (very few) 'mistakes'
+# Nevertheless, in Shinishi's files, if a bird stay around the nest boxe for a few second before entering again, this was counted as two visits
+# it still is in this code, although this is arguable.
+
+
 
 }
 
@@ -932,7 +940,7 @@ head(combinedprovisioningALLforDB)
 head(combinedprovisioningALL)
 
 
-{### recreate tblParentalCare to check for discrepancies
+{### recreate tblParentalCare to check for discrepancies - some variables also used for 'MY_tblParentalCare'
 
 {## forseen discrepancies:
 # minor changes we've made in chronology (MTime, FTime) and in color (#visits1 and 2, MTime, FTime) but normally not so much from changes in letters 'G', 'O', 'S'
@@ -1004,12 +1012,13 @@ colnames(combinedprovisioningALL_listperFilename_out2) <- c('Filename','MTime', 
 
 head(combinedprovisioningALL_listperFilename_out2)
 
+
 {# To calculate number of visits (feeding visits (1) and non feeding visits (2) )
 combinedprovisioningALL_listperFilenameperSex0 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 0,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 0])
 combinedprovisioningALL_listperFilenameperSex1 <- split(combinedprovisioningALL[combinedprovisioningALL$Sex == 1,], combinedprovisioningALL$Filename[combinedprovisioningALL$Sex == 1])
 
 	# x <- combinedprovisioningALL_listperFilenameperSex0[['2015\\VO0170.xlsx']]
-	# x <- combinedprovisioningALL_listperFilenameperSex[[1543]]
+	# x <- combinedprovisioningALL_listperFilenameperSex0[[1543]]
 	# x <- combinedprovisioningALL_listperFilenameperSex0[['2013\\VM0540.xlsx']]
 	
 combinedprovisioningALL_listperFilenameperSex_fun = function(x)  {
@@ -1029,15 +1038,15 @@ x$Visit2 <- 0
 
 x$Visit2 <- (x$State == 'A' & 
 			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE')) & 
-			(is.na(x$PrevTimeSame) | (!is.na(x$PrevTimeSame) & x$PrevTimeSame == 'FALSE'))) == TRUE # when all conditions are met, i.e. 'A' T start and Tend are both different from state above (if exist) or below (if exist)
+			(is.na(x$PrevTimeSame) | (!is.na(x$PrevTimeSame) & x$PrevTimeSame == 'FALSE'))) == TRUE # when all conditions are met, i.e. 'A' T start and Tend are both different from state above (if exist) or below (if exist) > this remove 'S' time in shinishi's protocol for when arrive and stay before entering, or leave the NB but stick around, also remove those specific 'A' time in Malik's protocol
 
-x$Visit1 <- ((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
-			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE'))
+		
+x$Visit1 <- ((x$State == 'INorOF') | (x$State == 'IN') 
 				|
-			((x$State == 'IN' |  x$State == 'OF' | x$State == 'INorOF') & 
-			(!is.na(x$NextTimeSame) & x$NextTimeSame == 'TRUE') &
-			(!is.na(x$NextState) & x$NextState == 'A' ))) == TRUE
-			
+				((x$State == 'OF') & (is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE' )))
+				|
+				((x$State == 'OF') & (!is.na(x$NextTimeSame) & x$NextTimeSame == 'TRUE') & (!is.na(x$NextState) & x$NextState != 'IN' ))) == TRUE
+				
 
 return(c(
 length(x$Visit1[!is.na(x$Visit1) & x$Visit1 == TRUE]),	# Visit1
@@ -1058,15 +1067,17 @@ combinedprovisioningALL_listperFilenameperSex1_out2 <- data.frame(rownames(do.ca
 
 nrow(combinedprovisioningALL_listperFilenameperSex1_out2)
 rownames(combinedprovisioningALL_listperFilenameperSex1_out2) <- NULL
-colnames(combinedprovisioningALL_listperFilenameperSex1_out2) <- c('Filename','MVisit1', 'MVisit2')
+colnames(combinedprovisioningALL_listperFilenameperSex1_out2) <- c('Filename','MVisit1','MVisit2')
 
 combinedprovisioningALL_listperFilenameperSex_out2 <- merge (x= combinedprovisioningALL_listperFilenameperSex0_out2, y = combinedprovisioningALL_listperFilenameperSex1_out2, all.x =TRUE, all.y = TRUE, by='Filename')
 combinedprovisioningALL_listperFilenameperSex_out2[is.na(combinedprovisioningALL_listperFilenameperSex_out2)] <- 0
 
+# write.table(combinedprovisioningALL_listperFilenameperSex_out2, file = "R_Compare_tblParentalCareNewVisitNbCalculation.xls", col.names=TRUE, sep='\t') # 20160331
+
 }
 
 head(combinedprovisioningALL_listperFilenameperSex_out2) # files with no visits by either sex have been removed...
-
+ 
 
 {# To calculate ShareTime
 
@@ -1201,7 +1212,7 @@ head(Compare_tblParentalCare)
 
 {## checking the largest mismatches
 
-## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCareNewVisitNbCalculation.xls", col.names=TRUE, sep='\t') # 20160217
+## write.table(Compare_tblParentalCare, file = "R_Compare_tblParentalCareNewVisitNbCalculation.xls", col.names=TRUE, sep='\t') # 20160217 20160323
 
 {# Andrews files with Malika's protocol
 
@@ -1467,7 +1478,7 @@ combinedprovisioningALL_FeedY_listperFilenameperSex0 <- split(combinedprovisioni
 combinedprovisioningALL_FeedY_listperFilenameperSex1 <- split(combinedprovisioningALL_FeedY[combinedprovisioningALL_FeedY$Sex == 1,], combinedprovisioningALL_FeedY$Filename[combinedprovisioningALL_FeedY$Sex == 1])
 x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2015\\VO0170.xlsx']]
 x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2013\\VM0540.xlsx']]
-
+x <- combinedprovisioningALL_FeedY_listperFilenameperSex0[['2013\\VM0339.xlsx']]
 	
 combinedprovisioningALL_FeedY_listperFilenameperSex_fun = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
@@ -1479,23 +1490,29 @@ x$PrevTime <-  c(NA, x$Tend[-nrow(x)])
 x$PrevTimeSame <-  x$Tstart == x$PrevTime
 
 x$NextState <- c(as.character(x$State[-1]),NA)
+x$PrevState <- c(NA,as.character(x$State[-nrow(x)]))
+
+x$TstartFeedVisit <- x$Tstart
+x$TendFeedVisit <- x$Tend
 
 for (i in 1: nrow(x))
 {
-if (!is.na(x$PrevTimeSame[i]) & x$PrevTimeSame[i] == 'TRUE')
-{x$TstartFeedVisit[i] <- x$Tstart[i-1]}
-else {x$TstartFeedVisit[i] <- x$Tstart[i]}
-
-if (!is.na(x$NextTimeSame[i]) & x$NextTimeSame[i] == 'TRUE')
-{x$TendFeedVisit[i] <- x$Tend[i+1]}
-else {x$TendFeedVisit[i] <- x$Tend[i]}
-
+if((x$State[i] == 'OF') & (!is.na(x$NextTimeSame[i]) & x$NextTimeSame[i] == 'TRUE') & (!is.na(x$NextState[i]) & x$NextState[i] == 'IN' )) # only merge OF followed by IN if Tend OF == Tstart IN, in Shinichi and mostly Malika's protocol 
+{
+x$TstartFeedVisit[i] <- x$Tstart[i]
+x$TendFeedVisit[i] <- x$Tend[i+1]
 }
-
+if((x$State[i] == 'IN') & (!is.na(x$PrevTimeSame[i]) & x$PrevTimeSame[i] == 'TRUE') & (!is.na(x$PrevState[i]) & x$PrevState[i] == 'OF' )) # only merge OF followed by IN if Tend OF == Tstart IN, in Shinichi and mostly Malika's protocol 
+{
+x$TstartFeedVisit[i] <- x$Tstart[i-1]
+x$TendFeedVisit[i] <- x$Tend[i]
+}
+}
 
 return(unique(x[,c('Filename','TstartFeedVisit','TendFeedVisit','Sex')]))
 
 }
+
 
 combinedprovisioningALL_FeedY_listperFilenameperSex0_out1 <- lapply(combinedprovisioningALL_FeedY_listperFilenameperSex0, FUN=combinedprovisioningALL_FeedY_listperFilenameperSex_fun)
 combinedprovisioningALL_FeedY_listperFilenameperSex0_out2 <- data.frame(do.call(rbind, combinedprovisioningALL_FeedY_listperFilenameperSex0_out1))
@@ -1509,7 +1526,7 @@ head(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 
 
 RawFeedingVisits <- rbind(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2,combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
-# write.table(RawFeedingVisits, file = "R_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324
+# write.table(RawFeedingVisits, file = "R_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324 20160331
 
 }
 
@@ -1542,15 +1559,18 @@ head(RawFeedingVisits_listperDVDRef_out2)
 
 }
 
-# compare Visit1 and NbFeedingVisit (should be equal)
+{# compare Visit1 and NbFeedingVisit (should be equal)
 MY_tblParentalCare2 <- merge(x=MY_tblParentalCare, y=RawFeedingVisits_listperDVDRef_out2, by='Filename')
 head(MY_tblParentalCare2)
 
 MY_tblParentalCare2$DiffMVisit1 <- MY_tblParentalCare2$MVisit1 - MY_tblParentalCare2$NbMVisit
 MY_tblParentalCare2$DiffFVisit1 <- MY_tblParentalCare2$FVisit1 - MY_tblParentalCare2$NbFVisit
 MY_tblParentalCare2[MY_tblParentalCare2$DiffFVisit1 != 0 | MY_tblParentalCare2$DiffMVisit1!= 0,]
-RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0540.xlsx',]
+RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0339.xlsx',] # OK
+}
 
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','MaxNbAlternation')], all.x=TRUE)
+RawFeedingVisits <- merge(x=RawFeedingVisits, y=MY_tblParentalCare,
 
 }
 }
