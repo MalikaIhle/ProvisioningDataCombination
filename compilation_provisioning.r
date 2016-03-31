@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 30/03/2016  
-#	 commit: realize time in decimal make my code wrong > I should sometimes not join visits to make one feeding visit
+#	 last modif : 31/03/2016  
+#	 commit: calculate effective time
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -66,6 +66,18 @@
 ## Mother Father Mum Dad Male Female mess up
 # for me M  always stands for Male, F for Female
 #'Mum' and 'Dad' are sometimes used
+
+## Time 0 1 2
+# time 0 = absent from the nest box
+# time 1 = time feeding (IN or OF)
+# time 2 = time around the nest box
+# time 02 = time not feeding = time not 1
+
+
+}
+
+{### forseen code breaks in the future
+# when metadata for excel files (Tape length, Observer, Protocol, and Notes) will be imported to tblXlsFiles rather than tblParentalCare
 }
 
 }
@@ -106,13 +118,14 @@ WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 
 # get the missing DVD Filenames (those in tblParentalCare but not in tblXlsFiles)
 missingDVDFilenames <- sqlQuery(conDB, "
-SELECT tblParentalCare.DVDRef, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename, tblDVDInfo.BroodRef, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Notes, tblParentalCare.EffectTime, tblParentalCare.Notes
+SELECT tblParentalCare.DVDRef, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename, tblDVDInfo.BroodRef, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Notes,tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Notes
 FROM tblDVDInfo INNER JOIN (tblParentalCare LEFT JOIN tblDVD_XlsFiles ON tblParentalCare.[DVDRef] = tblDVD_XlsFiles.[DVDRef]) ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
 WHERE (((tblParentalCare.TapeTime) Is Not Null) AND ((tblDVD_XlsFiles.DVDRef) Is Null) AND ((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=No));
 ")
 
 # get the rearing brood for all birds
-RearingBrood_allBirds <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, tblBirdID.Cohort, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
+RearingBrood_allBirds <- sqlQuery(conDB, "
+SELECT tblBirdID.BirdID, tblBirdID.Cohort, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
 FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
 WHERE (((tblBirdID.BroodRef) Is Not Null));
 ")
@@ -1412,7 +1425,8 @@ DurationScript # ~ 17 min
 
 {### MY_tblParentalCare
 
-{# replace Mtime Ftime (sum duration only of visits > 1 min) to sum duration of all feeding visits (including those < 1 min), whether OF or IN
+{# replace MTime FTime to MTime1 and FTime1 and add MTime2 and FTime2
+# time1: replace sum duration only of visits > 1 min to sum duration of all feeding visits (including those < 1 min), whether OF or IN
 MY_tblParentalCare <- MY_tblParentalCareforComparison[,c("DVDRef","MVisit1","FVisit1","MVisit2","FVisit2","ShareTime","Filename")]
 
 combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
@@ -1422,7 +1436,9 @@ x <- x[order(x$Tstart, -x$Tend),]
 
 return(c(
 sum(x$Duration[x$Sex==1 & x$FeedYN == 1 ]),  # MTime
-sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ])   # FTime
+sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ]),  # FTime
+sum(x$Duration[x$Sex==1 & x$FeedYN == 0 ]),  # MTime2
+sum(x$Duration[x$Sex==0 & x$FeedYN == 0 ])   # FTime2
 ))
 }
 
@@ -1431,10 +1447,11 @@ combinedprovisioningALL_listperFilename_out2b <- data.frame(rownames(do.call(rbi
 
 nrow(combinedprovisioningALL_listperFilename_out2b)	# 2112
 rownames(combinedprovisioningALL_listperFilename_out2b) <- NULL
-colnames(combinedprovisioningALL_listperFilename_out2b) <- c('Filename','MTime', 'FTime')
+colnames(combinedprovisioningALL_listperFilename_out2b) <- c('Filename','MTime', 'FTime','MTime2', 'FTime2')
 
 MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=combinedprovisioningALL_listperFilename_out2b,all.x=TRUE, by='Filename')
 nrow(MY_tblParentalCare[(MY_tblParentalCare$MTime == 0 | is.na(MY_tblParentalCare$MTime) ) & (MY_tblParentalCare$FTime == 0 | is.na(MY_tblParentalCare$FTime)),])
+
 
 }
 
@@ -1443,34 +1460,9 @@ nrow(MY_tblParentalCare[(MY_tblParentalCare$MTime == 0 | is.na(MY_tblParentalCar
 MY_tblParentalCare <- merge(x=MY_tblParentalCare, y= unique(combinedprovisioningALLforDB[,c('DVDRef', 'Protocol')]), all.x=TRUE, by='DVDRef')
 MY_tblParentalCare$MVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 MY_tblParentalCare$FVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
+MY_tblParentalCare$MTime2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
+MY_tblParentalCare$FTime2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 }
-
-{# add time attended and time unattended
-
-combinedprovisioningALL_FeedY_splitperFilename <- split(combinedprovisioningALL_FeedY, combinedprovisioningALL_FeedY$Filename)
-x <- combinedprovisioningALL_FeedY_splitperFilename[[1]]
-
-combinedprovisioningALL_FeedY_splitperFilename_fun = function(x)  {
-x <- x[order(x$Tstart, -x$Tend),]
-
-return(c(
-sum(x$Duration),  					# Tattended
-sum(x$Duration[x$Sex==0 & x$FeedYN == 1 & x$Duration > 1]),  					# Tunattended
-
-)
-
-
-}
-
-combinedprovisioningALL_FeedY_splitperFilename_out1 <- lapply(combinedprovisioningALL_FeedY_splitperFilename, FUN=combinedprovisioningALL_FeedY_splitperFilename_fun)
-combinedprovisioningALL_FeedY_splitperFilename_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_FeedY_splitperFilename_out1)),do.call(rbind, combinedprovisioningALL_FeedY_splitperFilename_out1))
-
-nrow(combinedprovisioningALL_FeedY_splitperFilename_out2)
-rownames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- NULL
-colnames(combinedprovisioningALL_FeedY_splitperFilename_out2) <- c('Filename','')
-}
-
-{# calculate alternation and provisioning rates per sex
 
 {# create RawFeedingVisit ('A' bouts removed, one succession OF-IN give the Tstart of OF and the Tend of IN - split per sex and recombine)
 
@@ -1526,11 +1518,13 @@ head(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 
 
 RawFeedingVisits <- rbind(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2,combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
+RawFeedingVisits <- merge(x=RawFeedingVisits, y=MY_tblParentalCare[,c('Filename','DVDRef')],by='Filename', all.x=TRUE)
+RawFeedingVisits <- RawFeedingVisits[order(RawFeedingVisits$DVDRef,RawFeedingVisits$Tstart, -RawFeedingVisits$Tend),]
 # write.table(RawFeedingVisits, file = "R_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324 20160331
 
 }
 
-{# calculate alternation and provisioning rate per file
+{# calculate alternation and NbVisits per file
 
 RawFeedingVisits_listperDVDRef <- split (RawFeedingVisits, RawFeedingVisits$Filename)
 x <- RawFeedingVisits_listperDVDRef[[3]]
@@ -1542,7 +1536,6 @@ x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 
 return(c(
 length(x$NextSexSame[x$NextSexSame == FALSE]),	#NbAlternation
-length(x$NextSexSame[!is.na(x$NextSexSame)]),	#MaxNbAlternation
 length(x$Sex[x$Sex == 1]),	#NbMVisit
 length(x$Sex[x$Sex == 0])	#NbFVisit
 ))
@@ -1554,12 +1547,12 @@ RawFeedingVisits_listperDVDRef_out2 <- data.frame(rownames(do.call(rbind,RawFeed
 
 nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visits)
 rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
-colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','MaxNbAlternation','NbMVisit','NbFVisit')
+colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbMVisit','NbFVisit')
 head(RawFeedingVisits_listperDVDRef_out2)
 
 }
 
-{# compare Visit1 and NbFeedingVisit (should be equal)
+{# compare Visit1 and NbFeedingVisit (is equal)
 MY_tblParentalCare2 <- merge(x=MY_tblParentalCare, y=RawFeedingVisits_listperDVDRef_out2, by='Filename')
 head(MY_tblParentalCare2)
 
@@ -1569,10 +1562,12 @@ MY_tblParentalCare2[MY_tblParentalCare2$DiffFVisit1 != 0 | MY_tblParentalCare2$D
 RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0339.xlsx',] # OK
 }
 
-MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','MaxNbAlternation')], all.x=TRUE)
-RawFeedingVisits <- merge(x=RawFeedingVisits, y=MY_tblParentalCare,
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation')], all.x=TRUE)
 
-}
+# calculate time around the nest box not feeding (NA for Issie's protocol)
+
+
+
 }
 
 tail(RawFeedingVisits,30)
@@ -1581,7 +1576,7 @@ head(MY_tblParentalCare)
 
 
 {### MY_tblDVDInfo
-MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef) & tblDVD_XlsFilesALLDBINFO$OffspringNo != 0,c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','EffectTime','Notes.1')]
+MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef),c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','TapeTime','EffectTime','Notes.1')]
 MY_tblDVDInfo <- rbind(MY_tblDVDInfo, missingDVDFilenames)
 
 {# re calculate chick age at DVDdate
@@ -1589,9 +1584,9 @@ MY_tblDVDInfo <- merge (x= MY_tblDVDInfo,
 						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
 						all.x=TRUE, by ='BroodRef')
 						
-colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','EffectTime','ParentalCareNotes','HatchingDate')
+colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','TapeTime','EffectTime','ParentalCareNotes','HatchingDate')
 
-MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$HatchingDate)+1 # chicks are aged 1 day at date of hatching
+MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$HatchingDate) # chicks are aged 0 day at date of hatching
 
 hist(MY_tblDVDInfo$DVDInfoAge)
 hist(MY_tblDVDInfo$ChickAge)
@@ -1614,7 +1609,7 @@ MY_tblDVDInfo <- merge(x= MY_tblDVDInfo,
 						
 
 table(MY_tblDVDInfo$Protocol[MY_tblDVDInfo$ChickAge>5]) # Issie 932  Shinichi  931  Malika 83
-table(MY_tblDVDInfo$Protocol) # Issie 934  Shinichi  1089  Malika 83
+table(MY_tblDVDInfo$Protocol) # Issie 934  Shinichi  1089  Malika 83 # include with Nb chick = 0
 
 
 }
@@ -1760,6 +1755,47 @@ MY_tblBroods <- MY_tblBroods_split_per_SocialMumID_out2[,-1]
 }
 
 head(MY_tblBroods)
+
+
+{### MY_tblParentalCare with summary of rates and durations (use of effective time from MY_tblDVDInfo)
+
+MY_tblParentalCare <- merge(x=MY_tblParentalCare,y= MY_tblDVDInfo[,c('DVDRef','TapeTime','EffectTime')], by='DVDRef', all.x=TRUE)
+
+{# recalculate EffectiveTime 
+head(combinedprovisioningALL)
+
+outTsartMin <- do.call(rbind, by(combinedprovisioningALL, combinedprovisioningALL$DVDRef, function(x) x[which.min(x$Tstart), c('DVDRef','Tstart')] ))
+MY_tblParentalCare <-  merge(x=MY_tblParentalCare,y= outTsartMin, by='DVDRef', all.x=TRUE)
+MY_tblParentalCare$EffectiveTime <- MY_tblParentalCare$TapeTime - MY_tblParentalCare$Tstart
+}
+
+{# check discrepency between EffectTime and EffectiveTime
+
+MY_tblParentalCare$DiffEffectTime <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$EffectTime,0)
+MY_tblParentalCare[(is.na(MY_tblParentalCare$DiffEffectTime) | MY_tblParentalCare$DiffEffectTime != 0) & !is.na(MY_tblParentalCare$DVDRef) & !is.na(MY_tblParentalCare$MVisit1),]
+}
+
+MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('DiffEffectTime','EffectTime', 'TapeTime','Tstart'))]
+
+{# add MFTime1, MFTime02, MFTime2, and provisioning rates
+
+MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime + MY_tblParentalCare$FTime - MY_tblParentalCare$ShareTime1
+MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$TotalTimeFeeding,1)
+MY_tblParentalCare$MFTime2 <- MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - MY_tblParentalCare$ShareTime2
+MY_tblParentalCare$MFTime2 <- MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - MY_tblParentalCare$ShareTime2
+
+
+}
+
+
+}
+
+head(MY_tblParentalCare)
+
+
+
+
+
 
 
 
