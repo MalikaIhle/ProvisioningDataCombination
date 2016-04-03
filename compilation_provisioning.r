@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 31/03/2016  
-#	 commit: calculate effective time
+#	 last modif : 03/04/2016  
+#	 commit: calculate Rates provisioning
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -1418,14 +1418,9 @@ head(MY_tblParentalCareforComparison)
 head(Compare_tblParentalCare)
 
 
-DurationScript <- Sys.time() - TimeStart
-DurationScript # ~ 17 min
-
-
-
 {### MY_tblParentalCare
 
-{# replace MTime FTime to MTime1 and FTime1 and add MTime2 and FTime2
+{# replace MTime FTime to MTime1 and FTime1 and add MTime2 and FTime2 
 # time1: replace sum duration only of visits > 1 min to sum duration of all feeding visits (including those < 1 min), whether OF or IN
 MY_tblParentalCare <- MY_tblParentalCareforComparison[,c("DVDRef","MVisit1","FVisit1","MVisit2","FVisit2","ShareTime","Filename")]
 
@@ -1435,8 +1430,8 @@ combinedprovisioningALL_listperFilename_fun2 = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
 
 return(c(
-sum(x$Duration[x$Sex==1 & x$FeedYN == 1 ]),  # MTime
-sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ]),  # FTime
+sum(x$Duration[x$Sex==1 & x$FeedYN == 1 ]),  # MTime1
+sum(x$Duration[x$Sex==0 & x$FeedYN == 1 ]),  # FTime1
 sum(x$Duration[x$Sex==1 & x$FeedYN == 0 ]),  # MTime2
 sum(x$Duration[x$Sex==0 & x$FeedYN == 0 ])   # FTime2
 ))
@@ -1447,10 +1442,10 @@ combinedprovisioningALL_listperFilename_out2b <- data.frame(rownames(do.call(rbi
 
 nrow(combinedprovisioningALL_listperFilename_out2b)	# 2112
 rownames(combinedprovisioningALL_listperFilename_out2b) <- NULL
-colnames(combinedprovisioningALL_listperFilename_out2b) <- c('Filename','MTime', 'FTime','MTime2', 'FTime2')
+colnames(combinedprovisioningALL_listperFilename_out2b) <- c('Filename','MTime1', 'FTime1','MTime2', 'FTime2')
 
 MY_tblParentalCare <- merge(x=MY_tblParentalCare,y=combinedprovisioningALL_listperFilename_out2b,all.x=TRUE, by='Filename')
-nrow(MY_tblParentalCare[(MY_tblParentalCare$MTime == 0 | is.na(MY_tblParentalCare$MTime) ) & (MY_tblParentalCare$FTime == 0 | is.na(MY_tblParentalCare$FTime)),])
+nrow(MY_tblParentalCare[(MY_tblParentalCare$MTime1 == 0 | is.na(MY_tblParentalCare$MTime1) ) & (MY_tblParentalCare$FTime1 == 0 | is.na(MY_tblParentalCare$FTime1)),])
 
 
 }
@@ -1463,6 +1458,110 @@ MY_tblParentalCare$FVisit2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 MY_tblParentalCare$MTime2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 MY_tblParentalCare$FTime2[MY_tblParentalCare$Protocol == 'Issie'] <- NA
 }
+
+{# replace ShareTime by ShareTime1 and add ShareTime12
+
+colnames(MY_tblParentalCare)[which(names(MY_tblParentalCare) == "ShareTime")] <- "ShareTime1"
+
+{# calculate sharetime12 for each visit (for both sexes separately) in the raw data
+
+combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
+	# x <- combinedprovisioningALL_listperFilename[['2014\\VN0585.xlsx']] # example where 1 male visit nested within female visit
+	# x <- combinedprovisioningALL_listperFilename[['2007\\70124.xlsx']]  # example where no male visit
+	# x <- combinedprovisioningALL_listperFilename[['2004\\40369.xlsx']]  # example where several nested visits
+	# x <- combinedprovisioningALL_listperFilename[['2004\\40034.xlsx']]  # example where one visit per sex
+	# x <- combinedprovisioningALL_listperFilename[['2005\\50208.xlsx']]  # example where length one vector is equal to second vector, and therefore data frame is created instead of list
+
+
+out5 <- list()
+
+for (j in 1:length(combinedprovisioningALL_listperFilename) )		{ 
+		x <-combinedprovisioningALL_listperFilename[[j]]
+		
+		# Modified from Lotte Schlicht
+		#1. find the times when males/females are present at the box
+		#1.a subset to each sex
+		x0 = subset(x, Sex == 0)
+		x1 = subset(x, Sex == 1)
+		
+		#1.b create vector of times present (the *10 and then /10 are the easiest way to construct thenths of minutes)
+			# remove the last tenth of second for each visits, unless the visit entry and exit has the same time
+			# write the output in a list in case only one visit or several visits of equal length of decimals (in those cases, mapply creates data.frame instead of lists!)
+		
+		sex0_presence = mapply(FUN = function(Tstart, Tend) {  if (Tstart==Tend) {return (Tstart)} 
+		if (Tstart!=Tend)	{return(list(((Tstart*10) : (Tend*10-1))/10))}}, Tstart = x0$Tstart, Tend = x0$Tend)
+			
+		sex1_presence = mapply(FUN = function(Tstart, Tend) {  if (Tstart==Tend) {return (Tstart*10)} 
+		if (Tstart!=Tend)	{return(list(((Tstart*10) : (Tend*10-1))/10))}}, Tstart = x1$Tstart, Tend = x1$Tend)
+
+		
+		#2. check for each list entry of each sex (= each row in the original table) how many of the numbers also occur for the other sex
+		# this gives you the number of tenths-of-minutes that both birds were visiting the box.
+		# for when just one visit per sex
+		
+		sex0 = lapply(sex0_presence, FUN = function(x1, x2) { 
+					return( length(which(x1 %in% x2)) ) # seem to take each list of sex0_prsence as x1 length(which(sex0_presence[[2]] %in% unlist(sex1_presence)))
+				}, 
+				x2 = unlist(sex1_presence)
+			)
+						
+		sex1 = lapply(sex1_presence, FUN = function(x1, x2) { 
+					return( length(which(x1 %in% x2)) ) 
+
+				}, 
+				x2 = unlist(sex0_presence)
+			)
+
+			
+		#4. attach to original data - in order to make sure that the order remains intact, add the columns to the sex-specific datasets and then rbind these together.
+		x0$ShareTime12 = unlist(sex0)
+		x1$ShareTime12 = unlist(sex1)
+		x = as.data.frame(rbind(x0, x1))
+
+		#5. devide by 10 to get the unit "minutes"
+		x$ShareTime12 = x$ShareTime12/10
+		
+		x <- x[order(x$Tstart, -x$Tend),]
+		out5[[j]] <- x
+		
+		#6. clean up
+		sex0_presence <- NULL
+		sex1_presence <- NULL
+		sex0 <- NULL
+		sex1 <- NULL
+		x0 <- NULL		
+		x1 <- NULL
+		x <- NULL
+}
+
+combinedprovisioningALL_withShareTime12 <- do.call(rbind, out5)
+}
+
+{# calculate sharetime12 for each file
+
+combinedprovisioningALL_listperFilename_withShare12 <- split(combinedprovisioningALL_withShareTime12,combinedprovisioningALL_withShareTime12$Filename)
+
+combinedprovisioningALL_listperFilename_withShare12_fun = function(x)  {
+		
+return(c(sum(x$ShareTime12, na.rm=T)/2))					# ShareTime12
+		# sum(x$ShareTime[x$Sex == 0], na.rm=T),		# FShareTime is the same
+		# sum(x$ShareTime[x$Sex == 1], na.rm=T)))		# MShareTime is the same
+}
+
+combinedprovisioningALL_listperFilename_withShare12_out1 <- lapply(combinedprovisioningALL_listperFilename_withShare12, FUN=combinedprovisioningALL_listperFilename_withShare12_fun)
+combinedprovisioningALL_listperFilename_withShare12_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilename_withShare12_out1)),do.call(rbind, combinedprovisioningALL_listperFilename_withShare12_out1))
+
+nrow(combinedprovisioningALL_listperFilename_withShare12_out2)	# 2102
+rownames(combinedprovisioningALL_listperFilename_withShare12_out2) <- NULL
+colnames(combinedprovisioningALL_listperFilename_withShare12_out2) <- c('Filename','ShareTime12')
+}
+
+head(combinedprovisioningALL_listperFilename_withShare12_out2) # files with no visits by either sex have been removed... 
+}
+
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =combinedprovisioningALL_listperFilename_withShare12_out2, all.x=TRUE, by='Filename')
+MY_tblParentalCare$ShareTime12[MY_tblParentalCare$Protocol == 'Issie'] <- NA
+
 
 {# create RawFeedingVisit ('A' bouts removed, one succession OF-IN give the Tstart of OF and the Tend of IN - split per sex and recombine)
 
@@ -1564,15 +1663,10 @@ RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0339.xlsx',] # OK
 
 MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation')], all.x=TRUE)
 
-# calculate time around the nest box not feeding (NA for Issie's protocol)
-
-
-
 }
 
 tail(RawFeedingVisits,30)
 head(MY_tblParentalCare)
-
 
 
 {### MY_tblDVDInfo
@@ -1779,10 +1873,18 @@ MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('D
 
 {# add MFTime1, MFTime02, MFTime2, and provisioning rates
 
-MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime + MY_tblParentalCare$FTime - MY_tblParentalCare$ShareTime1
-MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$TotalTimeFeeding,1)
-MY_tblParentalCare$MFTime2 <- MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - MY_tblParentalCare$ShareTime2
-MY_tblParentalCare$MFTime2 <- MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - MY_tblParentalCare$ShareTime2
+MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime1 + MY_tblParentalCare$FTime1 - MY_tblParentalCare$ShareTime1
+MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$MFTime1,1)
+MY_tblParentalCare$MFTime2 <- MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - (MY_tblParentalCare$ShareTime12 - MY_tblParentalCare$ShareTime1)
+
+MY_tblParentalCare$FVisit1RateH <- round(60*MY_tblParentalCare$FVisit1/MY_tblParentalCare$EffectiveTime,2)
+MY_tblParentalCare$MVisit1RateH <- round(60*MY_tblParentalCare$MVisit1/MY_tblParentalCare$EffectiveTime,2)
+MY_tblParentalCare$DiffVisit1Rate <- abs(round(MY_tblParentalCare$FVisit1RateH - MY_tblParentalCare$MVisit1RateH, 2))
+
+MY_tblParentalCare$FTime1RateH <- round(60*MY_tblParentalCare$FTime1/MY_tblParentalCare$EffectiveTime,2)
+MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParentalCare$EffectiveTime,2)
+MY_tblParentalCare$DiffTime1Rate <- abs(round(MY_tblParentalCare$FTime1RateH - MY_tblParentalCare$MTime1RateH, 2))
+
 
 
 }
@@ -1794,14 +1896,13 @@ head(MY_tblParentalCare)
 
 
 
+DurationScript <- Sys.time() - TimeStart
+DurationScript # ~ 20 min
 
 
 
 
 
-
-head(tblDVD_XlsFilesALLDBINFO)
-head(missingDVDFilenames)
 
 
 
