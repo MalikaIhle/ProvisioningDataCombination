@@ -101,6 +101,7 @@ conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRE
 # SqlFetch
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
 tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
+tblBirdID <- sqlFetch(conDB, "tblBirdID")
 tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
 tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
 tblBroods <- sqlFetch(conDB, "tblBroods")
@@ -137,6 +138,7 @@ close(conDB)
 }
 
 head(tblDVD_XlsFiles)
+head(tblBirdID)
 head(tblParentalCare)
 head(tblBroodEvents)
 head(tblBroods)
@@ -1627,6 +1629,7 @@ RawFeedingVisits <- RawFeedingVisits[order(RawFeedingVisits$DVDRef,RawFeedingVis
 
 RawFeedingVisits_listperDVDRef <- split (RawFeedingVisits, RawFeedingVisits$Filename)
 x <- RawFeedingVisits_listperDVDRef[[3]]
+x <- RawFeedingVisits_listperDVDRef[[76]]
 
 RawFeedingVisits_listperDVDRef_fun = function(x) {
 x <- x[order(x$Filename, x$Tstart, -x$Tend),]
@@ -1634,7 +1637,7 @@ x <- x[order(x$Filename, x$Tstart, -x$Tend),]
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 
 return(c(
-length(x$NextSexSame[x$NextSexSame == FALSE]),	#NbAlternation
+length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]),	#NbAlternation
 length(x$Sex[x$Sex == 1]),	#NbMVisit
 length(x$Sex[x$Sex == 0])	#NbFVisit
 ))
@@ -1770,14 +1773,17 @@ colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Source.y")] <- "LastLiveRec
 }
 
 {# add cohort and age of social parents
-MY_tblBroods <- merge(x=MY_tblBroods, y=RearingBrood_allBirds[,c('BirdID','Cohort')], all.x=TRUE, by.x='SocialDadID', by.y='BirdID')
-MY_tblBroods <- merge(x=MY_tblBroods, y=RearingBrood_allBirds[,c('BirdID','Cohort')], all.x=TRUE, by.x='SocialMumID', by.y='BirdID')
+MY_tblBroods <- merge(x=MY_tblBroods, y=tblBirdID[,c('BirdID','Cohort')], all.x=TRUE, by.x='SocialDadID', by.y='BirdID')
+MY_tblBroods <- merge(x=MY_tblBroods, y=tblBirdID[,c('BirdID','Cohort')], all.x=TRUE, by.x='SocialMumID', by.y='BirdID')
 colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Cohort.x")] <- "CohortDad"
 colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Cohort.y")] <- "CohortMum"
 
 MY_tblBroods$BreedingYear <- as.numeric(format(MY_tblBroods$HatchingDate,'%Y'))
 MY_tblBroods$DadAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortDad
 MY_tblBroods$MumAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortMum
+
+MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
+
 }
 
 {# add Male divorce
@@ -1846,6 +1852,10 @@ rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
 MY_tblBroods <- MY_tblBroods_split_per_SocialMumID_out2[,-1]
 }
 
+# add pairbond duration
+
+
+
 }
 
 head(MY_tblBroods)
@@ -1889,6 +1899,14 @@ MY_tblParentalCare$DiffTime1Rate <- abs(round(MY_tblParentalCare$FTime1RateH - M
 
 }
 
+# Alternation AlternationValue
+
+MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1),2)
+
+	# MY_tblParentalCare[is.na(MY_tblParentalCare$AlternationValue),]
+	# MY_tblParentalCare[MY_tblParentalCare$MVisit1 == 0 |MY_tblParentalCare$FVisit1 == 0,]
+	# MY_tblDVDInfo[MY_tblDVDInfo$DVDRef %in%  MY_tblParentalCare$DVDRef[is.na(MY_tblParentalCare$AlternationValue)],]
+
 
 }
 
@@ -1897,7 +1915,7 @@ head(MY_tblParentalCare)
 
 
 DurationScript <- Sys.time() - TimeStart
-DurationScript # ~ 20 min
+DurationScript # ~ 14 min
 
 
 
