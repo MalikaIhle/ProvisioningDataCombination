@@ -108,7 +108,9 @@ tblBroods <- sqlFetch(conDB, "tblBroods")
 tblAllCodes <- sqlFetch(conDB, "tblAllCodes")
 tblDVDInfo <- sqlFetch(conDB, "tblDVDInfo")
 
+# text files
 sys_LastSeenAlive <- read.table("sys_LastSeenAlive_20160314.txt", sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
+sunrise <- read.table("sunrise.txt", sep='\t', header=T)
 
 # select video made when provisioning chick (situation = 4 )			# this is the query that I used to select which excel files to be considered, but it appears that some files in 205 and all files in 2009 dont have an entry in tblXlsFiles...
 tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
@@ -147,6 +149,8 @@ head(tblDVDInfo)
 head(tblDVD_XlsFilesALLDBINFO)
 head(missingDVDFilenames)
 head(RearingBrood_allBirds)
+head(sys_LastSeenAlive)
+head(sunrise)
 
 
 {### extract provisioning raw data from excel files
@@ -1691,6 +1695,26 @@ hist(MY_tblDVDInfo$DVDInfoAge-MY_tblDVDInfo$ChickAge)
 
 }
 
+{# RelTime
+sunrise$month <- sprintf("%02d",sunrise$month)
+sunrise$day <- sprintf("%02d",sunrise$day)
+sunrise$Date <- paste(sunrise$year, sunrise$month, sep="-")
+sunrise$Date <- paste(sunrise$Date, sunrise$day, sep="-")
+sunrise$SunriseDate <- as.POSIXct(sunrise$Date)
+sunrise <- sunrise[,c('SunriseDate','Sunrise')]
+sunrise$Sunrise <- as.POSIXct(sunrise$Sunrise, format="%H:%M")# add today's date and unit of your current system (currently BST) to the time.
+
+MY_tblDVDInfo$DVDtime <- substr(as.character(MY_tblDVDInfo$DVDtime), 12, 16)
+MY_tblDVDInfo$DVDtime <- as.POSIXct(MY_tblDVDInfo$DVDtime, format="%H:%M") # add THE SAME today's date and unit of your current system (currently BST) to the time.
+
+MY_tblDVDInfo <- merge(x=MY_tblDVDInfo,y=sunrise, all.x=TRUE, by.x='DVDdate', by.y='SunriseDate')
+
+MY_tblDVDInfo$RelTimeMins <- as.numeric(difftime(MY_tblDVDInfo$DVDtime,MY_tblDVDInfo$Sunrise, units='mins'), units='mins')
+MY_tblDVDInfo$LogRelTimeMins <- log10(MY_tblDVDInfo$RelTimeMins+10)
+
+
+}
+
 {# check numbers of broods with certain conditions
 length(unique(MY_tblDVDInfo$BroodRef)) # 933 (20160314) 1014 (20160317) 1067 (20160323)
 length(unique(MY_tblDVDInfo$BroodRef[MY_tblDVDInfo$ChickAge>5])) # 891 (20160314) 972 (20160317) 1025 (20160323)
@@ -1710,6 +1734,7 @@ table(MY_tblDVDInfo$Protocol) # Issie 934  Shinichi  1089  Malika 83 # include w
 
 
 }
+
 }
 
 head(MY_tblDVDInfo)
@@ -1852,9 +1877,29 @@ rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
 MY_tblBroods <- MY_tblBroods_split_per_SocialMumID_out2[,-1]
 }
 
-# add pairbond duration
+{# add PairBroodNb
+MY_tblBroods$PairID <- paste(MY_tblBroods$SocialDadID,MY_tblBroods$SocialMumID, sep="" )
 
+MY_tblBroods_split_per_PairID <- split(MY_tblBroods, MY_tblBroods$PairID)
+x <- MY_tblBroods_split_per_PairID[[2]]
 
+MY_tblBroods_split_per_PairID_fun <- function(x){
+x <- x[order(x$HatchingDate),]
+
+x$PairBroodNb <- 1:nrow(x)
+
+return(x)
+}
+
+MY_tblBroods_split_per_PairID_out1 <- lapply(MY_tblBroods_split_per_PairID, FUN=MY_tblBroods_split_per_PairID_fun)
+MY_tblBroods_split_per_PairID_out2 <- data.frame(rownames(do.call(rbind,MY_tblBroods_split_per_PairID_out1)),do.call(rbind, MY_tblBroods_split_per_PairID_out1))
+
+nrow(MY_tblBroods_split_per_PairID_out2)	# 1019
+rownames(MY_tblBroods_split_per_PairID_out2) <- NULL
+
+MY_tblBroods <- MY_tblBroods_split_per_PairID_out2[,-1]
+
+}
 
 }
 
@@ -1881,7 +1926,7 @@ MY_tblParentalCare[(is.na(MY_tblParentalCare$DiffEffectTime) | MY_tblParentalCar
 
 MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('DiffEffectTime','EffectTime', 'TapeTime','Tstart'))]
 
-{# add MFTime1, MFTime02, MFTime2, and provisioning rates
+{# add MFTime1, MFTime02, MFTime2, provisioning rates, AlternationValue
 
 MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime1 + MY_tblParentalCare$FTime1 - MY_tblParentalCare$ShareTime1
 MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$MFTime1,1)
@@ -1895,17 +1940,10 @@ MY_tblParentalCare$FTime1RateH <- round(60*MY_tblParentalCare$FTime1/MY_tblParen
 MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParentalCare$EffectiveTime,2)
 MY_tblParentalCare$DiffTime1Rate <- abs(round(MY_tblParentalCare$FTime1RateH - MY_tblParentalCare$MTime1RateH, 2))
 
+MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1)
 
 
 }
-
-# Alternation AlternationValue
-
-MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1),2)
-
-	# MY_tblParentalCare[is.na(MY_tblParentalCare$AlternationValue),]
-	# MY_tblParentalCare[MY_tblParentalCare$MVisit1 == 0 |MY_tblParentalCare$FVisit1 == 0,]
-	# MY_tblDVDInfo[MY_tblDVDInfo$DVDRef %in%  MY_tblParentalCare$DVDRef[is.na(MY_tblParentalCare$AlternationValue)],]
 
 
 }
