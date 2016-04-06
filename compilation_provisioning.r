@@ -1750,6 +1750,9 @@ MY_tblBroods <- merge (x= MY_tblBroods,
 						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
 						all.x=TRUE, by ='BroodRef')
 colnames(MY_tblBroods)[which(names(MY_tblBroods) == "EventDate")] <- "HatchingDate"
+
+MY_tblBroods[is.na(MY_tblBroods$HatchingDate) ,] # 0 lines
+
 }
 
 {# add ringedYN to RearingBrood_allBirds
@@ -1954,6 +1957,48 @@ head(MY_tblParentalCare)
 
 DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
+
+
+birdmass <- read.table("BirdMass.txt", sep='\t', header=T)
+nrow(birdmass) # 2444 only age11 measurements
+birdmass <- birdmass[! birdmass$RearingBrood %in% c(40,116,818,1246,1382,1583), ]
+nrow(birdmass) # 2433 where chicks same brood are similar age even if cross fostered (i.e. same hatching data)
+birdmass <-  birdmass[birdmass$RearingBrood %in% MY_tblBroods$BroodRef , ]
+nrow(birdmass) # 2169 nestlings belonging to taped broods
+nrow(birdmass[is.na(birdmass$Mass),]) # an additional 6 birds without mass at age 11
+nrow(birdmass[is.na(birdmass$Tarsus),]) # an additional 27 birds without tarsus at age 11
+#birdmass <- birdmass[complete.cases(birdmass),]
+nrow(birdmass)
+nrow(MY_tblBroods[MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 825 broods where measurement werent taken on age11
+nrow(MY_tblBroods[!MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 194 broods where measurement werent taken on age11
+
+birdmass_splitperRearingBrood <- split(birdmass, birdmass$RearingBrood)
+birdmass_splitperRearingBrood[[1]]
+
+birdmass_splitperRearingBrood_fun <- function(x) {
+
+return(c(
+nrow(x), 	   #broodsizeage11
+round(mean(x$Mass),2),  # AvMass
+round(mean(x$Tarsus),2) # AvTarsus
+))
+
+}
+
+birdmass_splitperRearingBrood_out1 <- lapply(birdmass_splitperRearingBrood,birdmass_splitperRearingBrood_fun)
+birdmass_splitperRearingBrood_out2 <- data.frame(rownames(do.call(rbind,birdmass_splitperRearingBrood_out1)),do.call(rbind, birdmass_splitperRearingBrood_out1))
+
+nrow(birdmass_splitperRearingBrood_out2)	# 825
+rownames(birdmass_splitperRearingBrood_out2) <- NULL
+colnames(birdmass_splitperRearingBrood_out2) <- c('RearingBrood','BroodSize11','AvMass11','AvTarsus11')
+head(birdmass_splitperRearingBrood_out2)
+
+
+MY_tblBroods <- merge(x=MY_tblBroods, y=birdmass_splitperRearingBrood_out2, all.x =TRUE, by.x = 'BroodRef', by.y = 'RearingBrood' )
+head(MY_tblBroods)
+sunflowerplot(MY_tblBroods$NbRinged~ MY_tblBroods$BroodSize11)
+MY_tblBroods[MY_tblBroods$NbRinged- MY_tblBroods$BroodSize11 > 0 & !is.na(MY_tblBroods$BroodSize11),]
+
 
 
 
