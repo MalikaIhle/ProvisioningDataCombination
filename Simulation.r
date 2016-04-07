@@ -266,10 +266,42 @@ SimulatedSummary<-summarise(FinalSimData,
                             number_alternations= sum(diff(Sex)!=0),
                             alternation_rate= (number_alternations/(count-1)),
                             alternationpercent= (alternation_rate*100),
+                            MVisitRate = max(MaleVisitRate),## added this for bootstrapping per category - this allows removing lines with 0 ?
+                            FVisitRate = max(FemaleVisitRate),## added this for bootstrapping per category
+                            MFVisitRate = paste(max(MaleVisitRate),max(FemaleVisitRate), sep="-"), ## added this for bootstrapping per category
                             VisitRateDifference= abs(max(MaleVisitRate)-max(FemaleVisitRate))) ### this poss where prob arise 20:46//now works 20:56
 
 
-AltSim<-select(SimulatedSummary, OverallSimID, alternation_rate, alternationpercent, VisitRateDifference)
+
+## bootstraping = simple sample with replacement ?
+
+boot_per_ij_bootnb <- list()
+
+for (bootnb in 1:10) # increase to 10 0000
+{
+boot_per_ij <- list()
+i = rep(3:14, each = 12) # male visit rate
+j = rep((3:14), 12) # female visit rate
+
+for (k in 1:144) # 144 combination
+{ 
+boot_per_ij[[k]] <- SimulatedSummary[,c('alternation_rate', 'MVisitRate','FVisitRate','MFVisitRate' )]%>%
+  filter(MVisitRate==i[k] & FVisitRate==j[k])%>%
+  mutate(alternation_rate=sample(alternation_rate, replace=TRUE))
+}
+
+boot_per_ij_bootnb[[bootnb]] <- do.call(rbind, boot_per_ij)
+
+}
+
+ALLboot_per_ij_bootnb <- do.call(rbind, boot_per_ij_bootnb)
+
+
+
+
+
+
+AltSim<-select(SimulatedSummary, OverallSimID, alternation_rate, alternationpercent, MFVisitRate,VisitRateDifference)
 
 ### Make summary for each difference in rate
 SimByRateSum<-summarise(group_by(AltSim, VisitRateDifference),
