@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 03/04/2016  
-#	 commit: calculate Rates provisioning
+#	 last modif : 07/04/2016  
+#	 commit: look at range diff visit rates
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -1933,11 +1933,11 @@ MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('D
 
 MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime1 + MY_tblParentalCare$FTime1 - MY_tblParentalCare$ShareTime1
 MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$MFTime1,1)
-MY_tblParentalCare$MFTime2 <- MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - (MY_tblParentalCare$ShareTime12 - MY_tblParentalCare$ShareTime1)
+MY_tblParentalCare$MFTime2 <- round(MY_tblParentalCare$MTime2 + MY_tblParentalCare$FTime2 - (MY_tblParentalCare$ShareTime12 - MY_tblParentalCare$ShareTime1),2)
 
-MY_tblParentalCare$FVisit1RateH <- round(60*MY_tblParentalCare$FVisit1/MY_tblParentalCare$EffectiveTime,2)
-MY_tblParentalCare$MVisit1RateH <- round(60*MY_tblParentalCare$MVisit1/MY_tblParentalCare$EffectiveTime,2)
-MY_tblParentalCare$DiffVisit1Rate <- abs(round(MY_tblParentalCare$FVisit1RateH - MY_tblParentalCare$MVisit1RateH, 2))
+MY_tblParentalCare$FVisit1RateH <- round(60*MY_tblParentalCare$FVisit1/MY_tblParentalCare$EffectiveTime)
+MY_tblParentalCare$MVisit1RateH <- round(60*MY_tblParentalCare$MVisit1/MY_tblParentalCare$EffectiveTime)
+MY_tblParentalCare$DiffVisit1Rate <- abs(round(MY_tblParentalCare$FVisit1RateH - MY_tblParentalCare$MVisit1RateH))
 
 MY_tblParentalCare$FTime1RateH <- round(60*MY_tblParentalCare$FTime1/MY_tblParentalCare$EffectiveTime,2)
 MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParentalCare$EffectiveTime,2)
@@ -1959,6 +1959,17 @@ DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
 
 
+
+
+## TO DO
+# find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
+# select valid files (nest with chicks, nest with visits from both parents to have alternation possible ?)
+# simulation alternation (bootstrapping sinply sampling ith replcaement ??)
+# repeatbility alternation (considering more than two measures, randomise order of measurement, or use rptR package to fit mixed effect model ?)
+
+
+
+{# cheap version bird mass
 birdmass <- read.table("BirdMass.txt", sep='\t', header=T)
 nrow(birdmass) # 2444 only age11 measurements
 birdmass <- birdmass[! birdmass$RearingBrood %in% c(40,116,818,1246,1382,1583), ]
@@ -1998,14 +2009,10 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=birdmass_splitperRearingBrood_out2, all.
 head(MY_tblBroods)
 sunflowerplot(MY_tblBroods$NbRinged~ MY_tblBroods$BroodSize11)
 MY_tblBroods[MY_tblBroods$NbRinged- MY_tblBroods$BroodSize11 > 0 & !is.na(MY_tblBroods$BroodSize11),]
+}
 
 
-
-
-
-
-
-
+{# cheap version selection files
 
 # decision still to take:
 # remove when number of chicks = 0 (how to detect them ? first attempt in next big braket)
@@ -2176,5 +2183,55 @@ ORDER BY RearingBrood_allbirds.RearingBrood, AllRecordings.DVDdate;
 
 
 }
+
+}
+
+
+
+# cheap version simulation
+
+MY_tblParentalCare[MY_tblParentalCare$FVisit1RateH > 30 & !is.na(MY_tblParentalCare$FVisit1RateH),]
+MY_tblParentalCare[MY_tblParentalCare$MVisit1RateH > 30 & !is.na(MY_tblParentalCare$MVisit1RateH),]
+
+# calculation top 5% of feeding rates for each sex
+
+summary(MY_tblParentalCare$FVisit1RateH)
+summary(MY_tblParentalCare$MVisit1RateH)
+dev.new()
+par(mfrow=c(2,1)) 
+hist(MY_tblParentalCare$FVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
+hist(MY_tblParentalCare$MVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
+hist(MY_tblParentalCare$DiffVisit1Rate, xlim=c(0,50), ylim = c(0,600), breaks=50)
+
+quantile(MY_tblParentalCare$FVisit1RateH[!is.na(MY_tblParentalCare$FVisit1RateH)], c(0.05,0.95))
+quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)], c(0.05,0.95))
+quantile(MY_tblParentalCare$DiffVisit1Rate[!is.na(MY_tblParentalCare$DiffVisit1Rate)], c(0.05,0.95))
+
+# taking provisioning rates from 3 to 22
+
+# videos where female rate 3
+
+MY_tblParentalCare[MY_tblParentalCare$FVisit1RateH == 3 & !is.na(MY_tblParentalCare$FVisit1RateH),]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
