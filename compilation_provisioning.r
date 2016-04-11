@@ -2222,6 +2222,8 @@ MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterf
 FRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
 FRawInterfeeds322 <- FRawInterfeeds[FRawInterfeeds$FVisit1RateH >=3 & FRawInterfeeds$FVisit1RateH <=22,]
 }
+MRawInterfeeds322[MRawInterfeeds322$MVisit1RateH == 2,]
+head(RawInterfeeds)
 
 {# Randomise the interfeed intervals within individuals of the same sex that have the same visit rate
 FShuffledInterfeeds322 <- FRawInterfeeds322[-1] %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
@@ -2278,7 +2280,11 @@ SimData <- bind_rows(SimMale, SimFemale) # different from rbind as it binds two 
 SimData[is.na(SimData)] <- 0
 }
 
+head(SimData)
+
 {# create 400 dataframe of combine male visit * female visit rate
+# all individuals of one sex of one visit rate are reused for each combination involving this visit rate
+
 MiFj <- list()
 i = rep(3:22, each = 20) # male visit rate
 j = rep((3:22), 20) # female visit rate
@@ -2293,13 +2299,51 @@ arrange(SimID, CumInt)
 AllMiFj <- do.call(rbind, MiFj)
 }
 
-{# add running ID
+{# add running OverallSimID and select those with both sex, with the rigth number of intervals for a given provisioning rates
 AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1))) # shift all SimID from 1, get a running number changing at each mismatch between the original vector of SimID and the shifted one
+
+AllMiFj$Sex <- as.numeric(as.character(AllMiFj$Sex))
+
+AllMiFj_splitperOverallSimID <- split(AllMiFj, AllMiFj$OverallSimID)
+
+AllMiFj_splitperOverallSimID_fun <- function(x){
+return(c(
+length(x$Sex[x$Sex==0]), 
+length(x$Sex[x$Sex==1])
+))
 }
 
+AllMiFj_splitperOverallSimID_out1 <- lapply(AllMiFj_splitperOverallSimID,FUN= AllMiFj_splitperOverallSimID_fun )
+AllMiFj_splitperOverallSimID_out2 <- data.frame(rownames(do.call(rbind,AllMiFj_splitperOverallSimID_out1)),do.call(rbind, AllMiFj_splitperOverallSimID_out1))
+ 
+rownames(AllMiFj_splitperOverallSimID_out2 ) <- NULL
+colnames(AllMiFj_splitperOverallSimID_out2 ) <- c('OverallSimID','NbF', 'NbM')
+ 
+ merged <- merge(x=AllMiFj, y= AllMiFj_splitperOverallSimID_out2, all.x=TRUE, by='OverallSimID')
+head(merged) 
 
-AllMiFj <- group_by(AllMiFj, OverallSimID)
-AllMiFj$Sex <- as.numeric(as.character(AllMiFj$Sex))
+merged$Mratenbvisit <- merged$MVisit1RateH - merged$NbM + 1
+merged$Mratenbvisit[merged$MVisit1RateH ==0] <-0
+hist(merged$Mratenbvisit )
+
+length(unique(AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0]))
+ 
+ 
+ 
+AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% unique(AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0]) ,]
+ 
+AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1)))
+
+
+
+
+# write.table(AllMiFj, file = "AllMiFj2.xls", col.names=TRUE, sep='\t')
+}
+
+### which group is a vallid group ? > because select intervals without replcaement, different number of individuals for each provisioning raates,
+### certain combinations do not have the full amount of intervals for one or both sex
+## need to be removed. number of intervals expected is provisioning rate -1 
+
 
 SimulatedSummary <- summarise(AllMiFj,
                             MFVisit1 = n()+2, # what we have are interfeeds > if we want numbers of feeds add 2 ?
@@ -2325,10 +2369,10 @@ boot_per_ij_bootnb <- list()
 for (bootnb in 1:10) # increase to 10 0000
 {
 boot_per_ij <- list()
-i = rep(3:14, each = 12) # male visit rate
-j = rep((3:14), 12) # female visit rate
+i = rep(3:22, each = 20) # male visit rate
+j = rep((3:22), 20) # female visit rate
 
-for (k in 1:144) # 144 combination
+for (k in 1:400) # 400 combinations
 { 
 boot_per_ij[[k]] <- SimulatedSummary[,c('alternation_rate', 'MVisitRate','FVisitRate','MFVisitRate' )]%>%
   filter(MVisitRate==i[k] & FVisitRate==j[k])%>%

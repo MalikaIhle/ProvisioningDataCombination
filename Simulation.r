@@ -247,7 +247,7 @@ MiFj[[k]]<-SimulatedData%>%
 filter(MaleVisitRate==i[k] | FemaleVisitRate==j[k])%>%
 arrange(SimID, Interval) 
 }
-  
+
 
 MergedSimData<- do.call(rbind, MiFj)
 MergedSimData<-mutate(MergedSimData, OverallSimID=cumsum(SimID != c(".NOTHING.",head(SimID,-1))))
