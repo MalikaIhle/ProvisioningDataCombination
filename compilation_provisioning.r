@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Start : 21/12/2015
-#	 last modif : 07/04/2016  
-#	 commit: look at range diff visit rates
+#	 last modif : 12/04/2016  
+#	 commit: simulation Kat style
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -1971,6 +1971,7 @@ DurationScript # ~ 14 min
 head(RawFeedingVisits)
 head(MY_tblParentalCare)
 library(dplyr)
+library(ggplot2)
 
 {### simulation alternation - adapted from Andrews code
 
@@ -2091,32 +2092,14 @@ AllMiFj_splitperOverallSimID_out2 <- data.frame(rownames(do.call(rbind,AllMiFj_s
 rownames(AllMiFj_splitperOverallSimID_out2 ) <- NULL
 colnames(AllMiFj_splitperOverallSimID_out2 ) <- c('OverallSimID','NbF', 'NbM')
  
-ToSelect_MiFj <- merge(x=AllMiFj, y= AllMiFj_splitperOverallSimID_out2, all.x=TRUE, by='OverallSimID')
-
-# remove all OverSimID where number of interfeed interval not complete for one or both sexes
-ToSelect_MiFj<-mutate(ToSelect_MiFj, DiffMrateNbVisit = MVisit1RateH - NbM - 1) # should be zero > if not, incomplete
-ToSelect_MiFj<-mutate(ToSelect_MiFj, DiffFrateNbVisit = FVisit1RateH - NbF - 1) # should be zero > if not, incomplete
-ToSelect_MiFj$DiffFrateNbVisit[ToSelect_MiFj$FVisit1RateH ==0] <-0
-ToSelect_MiFj$DiffMrateNbVisit[ToSelect_MiFj$MVisit1RateH ==0] <-0
-
-AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% unique(ToSelect_MiFj$OverallSimID[ToSelect_MiFj$DiffFrateNbVisit != 0 | ToSelect_MiFj$DiffMrateNbVisit != 0]) ,]
-nrow(AllMiFj) # 1068946(=1075820-6874)
- 
 # remove all OverSimID where one sex not present
-length(unique(ToSelect_MiFj$OverallSimID[ToSelect_MiFj$NbF == 0 | ToSelect_MiFj$NbM == 0])) # 41704
-nrow(ToSelect_MiFj[ToSelect_MiFj$OverallSimID %in% unique(ToSelect_MiFj$OverallSimID[ToSelect_MiFj$NbF == 0 | ToSelect_MiFj$NbM == 0]),])# 297673
-head(ToSelect_MiFj[ToSelect_MiFj$NbF == 0 | ToSelect_MiFj$NbM == 0,],30)
-
-AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0,]
-
 AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0] ,]
-nrow(AllMiFj) # 772680
- 
+nrow(AllMiFj) # 778147
  
 # rename OverallSimID to have it continuous
 AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1)))
 
-# write.table(AllMiFj, file = "AllMiFj.xls", col.names=TRUE, sep='\t')
+# write.table(AllMiFj, file = "AllMiFj.xls", col.names=TRUE, sep='\t') # 20160412
 }
 
 head(AllMiFj)
@@ -2171,12 +2154,38 @@ Aboot <- merge(x=Aboot, y= unique(SimulatedSummaryKat[,c('MFVisitRate','VisitRat
 
 tail(Aboot,30)
 
-# 
+{# summary Aboot
+Aboot_perCombi <- group_by(Aboot, MFVisitRate)
+
+Summary_Aboot_perCombi <- summarise (Aboot_perCombi,
+					Amean = mean(A),
+					Alower = Amean - sd(A)/sqrt(n())*1.96,
+					Aupper = Amean + sd(A)/sqrt(n())*1.96)
+
+Aboot_perVisitRateDiff <- group_by(Aboot, VisitRateDifference)
+
+
+Summary_Aboot_perVisitRateDiff <- summarise (Aboot_perVisitRateDiff,
+					Amean = mean(A),
+					Alower = Amean - sd(A)/sqrt(n())*1.96,
+					Aupper = Amean + sd(A)/sqrt(n())*1.96)
+}
+
+Summary_Aboot_perVisitRateDiff
+
+# summary Aobserved
+head(MY_tblParentalCare)
 
 }
 
-
-
+simplot <- ggplot(Summary_Aboot_perVisitRateDiff, aes(x=VisitRateDifference, y=Amean))+
+  #geom_point()+
+  geom_line(size=0.75)+
+  geom_linerange(aes(x=VisitRateDifference, ymin=Alower, ymax=Aupper), col='red')+ # so small can't see them, but are on the plot
+  xlab("Visit rate difference")+
+  ylab("Mean alternation")+
+  ylim(0,100)+
+  theme_classic()
 
 
 
