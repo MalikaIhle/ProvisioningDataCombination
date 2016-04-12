@@ -1964,12 +1964,238 @@ DurationScript # ~ 14 min
 
 
 
+############################################ 
+# replication Bebbington & Hatchwell study #
+############################################
+
+head(RawFeedingVisits)
+head(MY_tblParentalCare)
+library(dplyr)
+
+{### simulation alternation - adapted from Andrews code
+
+{## calculation top 5% of feeding rates for each sex 
+
+summary(MY_tblParentalCare$FVisit1RateH)
+summary(MY_tblParentalCare$MVisit1RateH)
+dev.new()
+par(mfrow=c(2,1)) 
+hist(MY_tblParentalCare$FVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
+hist(MY_tblParentalCare$MVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
+hist(MY_tblParentalCare$DiffVisit1Rate, xlim=c(0,50), ylim = c(0,600), breaks=50)
+
+quantile(MY_tblParentalCare$FVisit1RateH[!is.na(MY_tblParentalCare$FVisit1RateH)], c(0.05,0.95))
+quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)], c(0.05,0.95))
+}
+
+{## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
+
+{# Create RawInterfeeds and split per sex and select provisioning rates from 3 to 22
+RawInterfeeds <- merge(x= RawFeedingVisits[,c('DVDRef','Sex','Interval')], y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , by='DVDRef', all.x=TRUE)
+
+MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
+MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
+FRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
+FRawInterfeeds322 <- FRawInterfeeds[FRawInterfeeds$FVisit1RateH >=3 & FRawInterfeeds$FVisit1RateH <=22,]
+}
+
+{# Randomise the interfeed intervals within individuals of the same sex that have the same visit rate
+FShuffledInterfeeds322 <- FRawInterfeeds322[-1] %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
+MShuffledInterfeeds322 <- MRawInterfeeds322[-1] %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval))
+}
+
+{# create one simulated df per sex per visit rate, with shuffled intervals associated to a SimID of length 'visit rate - 1'
+
+SimFemale <- list ()
+
+for (i in 3:22)
+{
+# one group of visit rate at a time
+SimFemale[[i]] <- filter(FShuffledInterfeeds322, FVisit1RateH == i)
+# add SimID to (visit rate - 1) visits
+SimFemale[[i]] <- mutate(SimFemale[[i]], SimID = rep(1:((nrow(SimFemale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimFemale[[i]])))
+# Shuffle the SimID
+SimFemale[[i]]<-mutate(SimFemale[[i]], SimID = sample(SimID)) # sample without replacement
+# sort (not needed but easier to look at output)
+SimFemale[[i]]<-arrange(SimFemale[[i]],SimID)
+# Calculate cumulative sum for each SimID
+SimFemale[[i]]<-SimFemale[[i]]%>%
+  group_by(SimID)%>%
+  mutate(CumInt = cumsum(Interval))
+
+}
+
+
+SimMale <- list ()
+
+for (i in 3:22)
+{
+# one group of visit rate at a time
+SimMale[[i]] <- filter(MShuffledInterfeeds322, MVisit1RateH == i)
+# add SimID to (visit rate - 1) visits
+SimMale[[i]] <- mutate(SimMale[[i]], SimID = rep(1:((nrow(SimMale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimMale[[i]])))
+# Shuffle the SimID
+SimMale[[i]]<-mutate(SimMale[[i]], SimID = sample(SimID)) # sample without replacement
+# sort
+SimMale[[i]]<-arrange(SimMale[[i]],SimID)
+# Calculate cumulative sum for each SimID
+SimMale[[i]]<-SimMale[[i]]%>%
+  group_by(SimID)%>%
+  mutate(CumInt = cumsum(Interval))
+
+}
+
+
+SimMale <- do.call(rbind,SimMale)
+SimFemale <- do.call(rbind,SimFemale)
+SimData <- bind_rows(SimMale, SimFemale) # different from rbind as it binds two df with different columns, adding NAs
+SimData[is.na(SimData)] <- 0
+}
+
+head(SimData)
+
+{# create MiFj: 400 dataframe of combine male visit * female visit rate
+# all individuals of one sex of one visit rate are reused for each combination involving this visit rate
+
+MiFj <- list()
+i = rep(3:22, each = 20) # male visit rate
+j = rep((3:22), 20) # female visit rate
+  
+for (k in 1:400) # 400 combination
+{ 
+MiFj[[k]]<-SimData%>%
+filter(MVisit1RateH==i[k] | FVisit1RateH==j[k])%>%
+arrange(SimID, CumInt) 
+}
+
+AllMiFj <- do.call(rbind, MiFj)
+nrow(AllMiFj) # 1075820
+}
+
+{# add running OverallSimID and select combinations with both sex, with the full number of intervals for a given provisioning rates
+AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1))) # shift all SimID from 1, get a running number changing at each mismatch between the original vector of SimID and the shifted one
+AllMiFj$Sex <- as.numeric(as.character(AllMiFj$Sex))
+
+AllMiFj_splitperOverallSimID <- split(AllMiFj, AllMiFj$OverallSimID)
+
+AllMiFj_splitperOverallSimID_fun <- function(x){
+return(c(
+length(x$Sex[x$Sex==0]), 
+length(x$Sex[x$Sex==1])
+))
+}
+
+AllMiFj_splitperOverallSimID_out1 <- lapply(AllMiFj_splitperOverallSimID,FUN= AllMiFj_splitperOverallSimID_fun )
+AllMiFj_splitperOverallSimID_out2 <- data.frame(rownames(do.call(rbind,AllMiFj_splitperOverallSimID_out1)),do.call(rbind, AllMiFj_splitperOverallSimID_out1))
+ 
+rownames(AllMiFj_splitperOverallSimID_out2 ) <- NULL
+colnames(AllMiFj_splitperOverallSimID_out2 ) <- c('OverallSimID','NbF', 'NbM')
+ 
+ToSelect_MiFj <- merge(x=AllMiFj, y= AllMiFj_splitperOverallSimID_out2, all.x=TRUE, by='OverallSimID')
+
+# remove all OverSimID where number of interfeed interval not complete for one or both sexes
+ToSelect_MiFj<-mutate(ToSelect_MiFj, DiffMrateNbVisit = MVisit1RateH - NbM - 1) # should be zero > if not, incomplete
+ToSelect_MiFj<-mutate(ToSelect_MiFj, DiffFrateNbVisit = FVisit1RateH - NbF - 1) # should be zero > if not, incomplete
+ToSelect_MiFj$DiffFrateNbVisit[ToSelect_MiFj$FVisit1RateH ==0] <-0
+ToSelect_MiFj$DiffMrateNbVisit[ToSelect_MiFj$MVisit1RateH ==0] <-0
+
+AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% unique(ToSelect_MiFj$OverallSimID[ToSelect_MiFj$DiffFrateNbVisit != 0 | ToSelect_MiFj$DiffMrateNbVisit != 0]) ,]
+nrow(AllMiFj) # 1068946(=1075820-6874)
+ 
+# remove all OverSimID where one sex not present
+length(unique(ToSelect_MiFj$OverallSimID[ToSelect_MiFj$NbF == 0 | ToSelect_MiFj$NbM == 0])) # 41704
+nrow(ToSelect_MiFj[ToSelect_MiFj$OverallSimID %in% unique(ToSelect_MiFj$OverallSimID[ToSelect_MiFj$NbF == 0 | ToSelect_MiFj$NbM == 0]),])# 297673
+head(ToSelect_MiFj[ToSelect_MiFj$NbF == 0 | ToSelect_MiFj$NbM == 0,],30)
+
+AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0,]
+
+AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0] ,]
+nrow(AllMiFj) # 772680
+ 
+ 
+# rename OverallSimID to have it continuous
+AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1)))
+
+# write.table(AllMiFj, file = "AllMiFj.xls", col.names=TRUE, sep='\t')
+}
+
+head(AllMiFj)
+
+{# calculate alternation for each combination of individuals with specific provisioning rates
+
+FinalMiFj <- group_by(AllMiFj,OverallSimID)
+
+SimulatedSummaryKat <- summarise(FinalMiFj,
+                            tt = n(), # what we have are interfeeds > if we want numbers of feeds add 2 ?							
+                            F = sum(diff(Sex)!=0),
+                            A = round((F/(tt-1))*100,2),# what we have are interfeeds > ?
+                            MVisitRate = max(MVisit1RateH),## added this for bootstrapping per category - this allows removing lines with 0 ?
+                            FVisitRate = max(FVisit1RateH),## added this for bootstrapping per category
+                            MFVisitRate = paste(max(MVisit1RateH),max(FVisit1RateH), sep="-"), ## added this for bootstrapping per category
+                            VisitRateDifference= abs(max(MVisit1RateH)-max(FVisit1RateH)))
+
+							
+tail(as.data.frame(SimulatedSummaryKat),60)				
+freqCombination <- arrange(count(SimulatedSummaryKat, MFVisitRate), n)
+nrow(freqCombination) # 400 combinations
+
+}
+
+}
+
+head(SimulatedSummaryKat)
+
+{## bootstraping as a simple sampling of A with replacement
+
+SimulatedSummaryKat_splitperMFVisiteRate <- split(SimulatedSummaryKat[,c('A','MFVisitRate' )], SimulatedSummaryKat$MFVisitRate)
+x <- SimulatedSummaryKat_splitperMFVisiteRate[[1]]
+
+SimulatedSummaryKat_splitperMFVisiteRate_fun <- function(x) {
+return(base::sample(x$A, size = 10000, replace=TRUE)) # sample with replacement, increase to 10 000
+}
+
+SimulatedSummaryKat_splitperMFVisiteRcate_out1 <- lapply(SimulatedSummaryKat_splitperMFVisiteRate,SimulatedSummaryKat_splitperMFVisiteRate_fun)
+SimulatedSummaryKat_splitperMFVisiteRcate_out2 <- do.call(rbind, SimulatedSummaryKat_splitperMFVisiteRcate_out1)
+
+Aboot_MFVisitRate <- data.frame(rep(rownames(SimulatedSummaryKat_splitperMFVisiteRcate_out2),each=10000)) #  increase to 10 000
+Aboot_A <- data.frame(unlist(SimulatedSummaryKat_splitperMFVisiteRcate_out1))
+
+Aboot <- cbind(Aboot_MFVisitRate,Aboot_A)
+rownames(Aboot) <- NULL
+colnames(Aboot) <- c('MFVisitRate', 'A')
+
+Aboot <- merge(x=Aboot, y= unique(SimulatedSummaryKat[,c('MFVisitRate','VisitRateDifference')]), all.x=TRUE, by='MFVisitRate')
+
+
+}
+
+tail(Aboot,30)
+
+# 
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## TO DO
 # find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
 # select valid files (nest with chicks, nest with visits from both parents to have alternation possible ?)
-# simulation alternation (bootstrapping sinply sampling ith replcaement ??)
-# repeatbility alternation (considering more than two measures, randomise order of measurement, or use rptR package to fit mixed effect model ?)
+# simulation alternation (bootstrapping simply sampling with replacement ??)
+# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model ?)
 
 
 
@@ -2189,212 +2415,4 @@ ORDER BY RearingBrood_allbirds.RearingBrood, AllRecordings.DVDdate;
 }
 
 }
-
-
-
-head(RawFeedingVisits)
-head(MY_tblParentalCare)
-library(dplyr)
-
-### simulation - adapted from Andrews code
-
-{## calculation top 5% of feeding rates for each sex 
-
-summary(MY_tblParentalCare$FVisit1RateH)
-summary(MY_tblParentalCare$MVisit1RateH)
-dev.new()
-par(mfrow=c(2,1)) 
-hist(MY_tblParentalCare$FVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
-hist(MY_tblParentalCare$MVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
-hist(MY_tblParentalCare$DiffVisit1Rate, xlim=c(0,50), ylim = c(0,600), breaks=50)
-
-quantile(MY_tblParentalCare$FVisit1RateH[!is.na(MY_tblParentalCare$FVisit1RateH)], c(0.05,0.95))
-quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)], c(0.05,0.95))
-}
-
-## 
-
-{# Create RawInterfeeds and split per sex and select provisioning rates from 3 to 22
-RawInterfeeds <- merge(x= RawFeedingVisits[,c('DVDRef','Sex','Interval')], y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , by='DVDRef', all.x=TRUE)
-
-MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
-MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
-FRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
-FRawInterfeeds322 <- FRawInterfeeds[FRawInterfeeds$FVisit1RateH >=3 & FRawInterfeeds$FVisit1RateH <=22,]
-}
-MRawInterfeeds322[MRawInterfeeds322$MVisit1RateH == 2,]
-head(RawInterfeeds)
-
-{# Randomise the interfeed intervals within individuals of the same sex that have the same visit rate
-FShuffledInterfeeds322 <- FRawInterfeeds322[-1] %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
-MShuffledInterfeeds322 <- MRawInterfeeds322[-1] %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval))
-}
-
-{# create one simulated df per sex per visit rate, with shuffled intervals associated to a SimID of length 'visit rate - 1'
-
-SimFemale <- list ()
-
-for (i in 3:22)
-{
-# one group of visit rate at a time
-SimFemale[[i]] <- filter(FShuffledInterfeeds322, FVisit1RateH == i)
-# add SimID to (visit rate - 1) visits
-SimFemale[[i]] <- mutate(SimFemale[[i]], SimID = rep(1:((nrow(SimFemale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimFemale[[i]])))
-# Shuffle the SimID
-SimFemale[[i]]<-mutate(SimFemale[[i]], SimID = sample(SimID)) # sample without replacement
-# sort
-SimFemale[[i]]<-arrange(SimFemale[[i]],SimID)
-# Calculate cumulative sum for each SimID
-SimFemale[[i]]<-SimFemale[[i]]%>%
-  group_by(SimID)%>%
-  mutate(CumInt = cumsum(Interval))
-
-}
-
-
-SimMale <- list ()
-
-for (i in 3:22)
-{
-# one group of visit rate at a time
-SimMale[[i]] <- filter(MShuffledInterfeeds322, MVisit1RateH == i)
-# add SimID to (visit rate - 1) visits
-SimMale[[i]] <- mutate(SimMale[[i]], SimID = rep(1:((nrow(SimMale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimMale[[i]])))
-# Shuffle the SimID
-SimMale[[i]]<-mutate(SimMale[[i]], SimID = sample(SimID)) # sample without replacement
-# sort
-SimMale[[i]]<-arrange(SimMale[[i]],SimID)
-# Calculate cumulative sum for each SimID
-SimMale[[i]]<-SimMale[[i]]%>%
-  group_by(SimID)%>%
-  mutate(CumInt = cumsum(Interval))
-
-}
-
-}
-
-{# Join together
-SimMale <- do.call(rbind,SimMale)
-SimFemale <- do.call(rbind,SimFemale)
-SimData <- bind_rows(SimMale, SimFemale) # different from rbind as it binds two df with different columns, adding NAs
-SimData[is.na(SimData)] <- 0
-}
-
-head(SimData)
-
-{# create 400 dataframe of combine male visit * female visit rate
-# all individuals of one sex of one visit rate are reused for each combination involving this visit rate
-
-MiFj <- list()
-i = rep(3:22, each = 20) # male visit rate
-j = rep((3:22), 20) # female visit rate
-  
-for (k in 1:400) # 400 combination
-{ 
-MiFj[[k]]<-SimData%>%
-filter(MVisit1RateH==i[k] | FVisit1RateH==j[k])%>%
-arrange(SimID, CumInt) 
-}
-
-AllMiFj <- do.call(rbind, MiFj)
-}
-
-{# add running OverallSimID and select those with both sex, with the rigth number of intervals for a given provisioning rates
-AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1))) # shift all SimID from 1, get a running number changing at each mismatch between the original vector of SimID and the shifted one
-
-AllMiFj$Sex <- as.numeric(as.character(AllMiFj$Sex))
-
-AllMiFj_splitperOverallSimID <- split(AllMiFj, AllMiFj$OverallSimID)
-
-AllMiFj_splitperOverallSimID_fun <- function(x){
-return(c(
-length(x$Sex[x$Sex==0]), 
-length(x$Sex[x$Sex==1])
-))
-}
-
-AllMiFj_splitperOverallSimID_out1 <- lapply(AllMiFj_splitperOverallSimID,FUN= AllMiFj_splitperOverallSimID_fun )
-AllMiFj_splitperOverallSimID_out2 <- data.frame(rownames(do.call(rbind,AllMiFj_splitperOverallSimID_out1)),do.call(rbind, AllMiFj_splitperOverallSimID_out1))
- 
-rownames(AllMiFj_splitperOverallSimID_out2 ) <- NULL
-colnames(AllMiFj_splitperOverallSimID_out2 ) <- c('OverallSimID','NbF', 'NbM')
- 
- merged <- merge(x=AllMiFj, y= AllMiFj_splitperOverallSimID_out2, all.x=TRUE, by='OverallSimID')
-head(merged) 
-
-merged$Mratenbvisit <- merged$MVisit1RateH - merged$NbM + 1
-merged$Mratenbvisit[merged$MVisit1RateH ==0] <-0
-hist(merged$Mratenbvisit )
-
-length(unique(AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0]))
- 
- 
- 
-AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% unique(AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0]) ,]
- 
-AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1)))
-
-
-
-
-# write.table(AllMiFj, file = "AllMiFj2.xls", col.names=TRUE, sep='\t')
-}
-
-### which group is a vallid group ? > because select intervals without replcaement, different number of individuals for each provisioning raates,
-### certain combinations do not have the full amount of intervals for one or both sex
-## need to be removed. number of intervals expected is provisioning rate -1 
-
-
-SimulatedSummary <- summarise(AllMiFj,
-                            MFVisit1 = n()+2, # what we have are interfeeds > if we want numbers of feeds add 2 ?
-							MFVisit1bis = sum(max(MVisit1RateH),max(FVisit1RateH)),
-                            MVisit1 = length(Sex[Sex==1])+1,# what we have are interfeeds > if we want numbers of feeds add 1 ?
-							MVisit1bis=max(MVisit1RateH),
-                            FVisit1 = length(Sex[Sex==0])+1,# what we have are interfeeds > if we want numbers of feeds add 1 ?
-							FVisit1bis=max(FVisit1RateH),							
-                            NbAlternation= sum(diff(Sex)!=0),
-                            AlternationValue= (NbAlternation/(MFVisit1-1)),# what we have are interfeeds > ?
-                            alternationpercent= (AlternationValue*100),
-                            MVisitRate = max(MVisit1RateH),## added this for bootstrapping per category - this allows removing lines with 0 ?
-                            FVisitRate = max(FVisit1RateH),## added this for bootstrapping per category
-                            MFVisitRate = paste(max(MVisit1RateH),max(FVisit1RateH), sep="-"), ## added this for bootstrapping per category
-                            VisitRateDifference= abs(max(MVisit1RateH)-max(FVisit1RateH))) ### this poss where prob arise 20:46//now works 20:56
-
-head(as.data.frame(SimulatedSummary),60)
-
-## bootstraping = simple sample with replacement ?
-
-boot_per_ij_bootnb <- list()
-
-for (bootnb in 1:10) # increase to 10 0000
-{
-boot_per_ij <- list()
-i = rep(3:22, each = 20) # male visit rate
-j = rep((3:22), 20) # female visit rate
-
-for (k in 1:400) # 400 combinations
-{ 
-boot_per_ij[[k]] <- SimulatedSummary[,c('alternation_rate', 'MVisitRate','FVisitRate','MFVisitRate' )]%>%
-  filter(MVisitRate==i[k] & FVisitRate==j[k])%>%
-  mutate(alternation_rate=sample(alternation_rate, replace=TRUE))
-}
-
-boot_per_ij_bootnb[[bootnb]] <- do.call(rbind, boot_per_ij)
-
-}
-
-ALLboot_per_ij_bootnb <- do.call(rbind, boot_per_ij_bootnb)
-
-
-
-head(SimData)
-head(RawInterfeeds)
-head(MRawInterfeeds)
-head(MRawInterfeeds322)
-tail(FRawInterfeeds)
-tail(FRawInterfeeds322)
-head(MShuffledInterfeeds322)
-
-
-
 
