@@ -1968,12 +1968,12 @@ DurationScript # ~ 14 min
 # replication Bebbington & Hatchwell study #
 ############################################
 
-head(RawFeedingVisits)
+head(RawFeedingVisits,32)
 head(MY_tblParentalCare)
 library(dplyr)
 library(ggplot2)
 
-{### simulation alternation - adapted from Andrews code
+{### simulation alternation
 
 {## calculation top 5% of feeding rates for each sex 
 
@@ -1983,7 +1983,6 @@ dev.new()
 par(mfrow=c(2,1)) 
 hist(MY_tblParentalCare$FVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
 hist(MY_tblParentalCare$MVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
-hist(MY_tblParentalCare$DiffVisit1Rate, xlim=c(0,50), ylim = c(0,600), breaks=50)
 
 quantile(MY_tblParentalCare$FVisit1RateH[!is.na(MY_tblParentalCare$FVisit1RateH)], c(0.05,0.95))
 quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)], c(0.05,0.95))
@@ -2109,7 +2108,7 @@ head(AllMiFj)
 FinalMiFj <- group_by(AllMiFj,OverallSimID)
 
 SimulatedSummaryKat <- summarise(FinalMiFj,
-                            tt = n(), # what we have are interfeeds > if we want numbers of feeds add 2 ?							
+                            tt = n(), # what we have here are interfeeds > if we want numbers of feeds add 2 ?							
                             F = sum(diff(Sex)!=0),
                             A = round((F/(tt-1))*100,2),# what we have are interfeeds > ?
                             MVisitRate = max(MVisit1RateH),## added this for bootstrapping per category - this allows removing lines with 0 ?
@@ -2155,15 +2154,8 @@ Aboot <- merge(x=Aboot, y= unique(SimulatedSummaryKat[,c('MFVisitRate','VisitRat
 tail(Aboot,30)
 
 {# summary Aboot
-Aboot_perCombi <- group_by(Aboot, MFVisitRate)
-
-Summary_Aboot_perCombi <- summarise (Aboot_perCombi,
-					Amean = mean(A),
-					Alower = Amean - sd(A)/sqrt(n())*1.96,
-					Aupper = Amean + sd(A)/sqrt(n())*1.96)
-
+# per visit rate difference like in the paper					
 Aboot_perVisitRateDiff <- group_by(Aboot, VisitRateDifference)
-
 
 Summary_Aboot_perVisitRateDiff <- summarise (Aboot_perVisitRateDiff,
 					Amean = mean(A),
@@ -2173,31 +2165,73 @@ Summary_Aboot_perVisitRateDiff <- summarise (Aboot_perVisitRateDiff,
 
 Summary_Aboot_perVisitRateDiff
 
-# summary Aobserved
-head(MY_tblParentalCare)
+{# summary Aobserved
+# per visit rate difference like in the paper
+MY_tblParentalCare_perVisitRateDiff <- group_by(MY_tblParentalCare_forA, DiffVisit1Rate)
+
+Summary_MY_tblParentalCare_perVisitRateDiff <- summarise (MY_tblParentalCare_perVisitRateDiff,
+					Amean = mean(AlternationValue),
+					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
+					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96)
+					
+Summary_MY_tblParentalCare_perVisitRateDiff20 <- Summary_MY_tblParentalCare_perVisitRateDiff[1:20,]
+Summary_MY_tblParentalCare_perVisitRateDiff20 <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff20,VisitRateDifference= DiffVisit1Rate)
 
 }
 
-simplot <- ggplot(Summary_Aboot_perVisitRateDiff, aes(x=VisitRateDifference, y=Amean))+
-  #geom_point()+
-  geom_line(size=0.75)+
-  geom_linerange(aes(x=VisitRateDifference, ymin=Alower, ymax=Aupper), col='red')+ # so small can't see them, but are on the plot
+Summary_MY_tblParentalCare_perVisitRateDiff20
+
+{# combine observed and expected and plot
+
+# per visit rate difference like in the paper
+Summary_MY_tblParentalCare_perVisitRateDiff20$Type <- "Observed"
+Summary_Aboot_perVisitRateDiff$Type <- "Expected"
+
+VisitRateDiff_Amean <- rbind(Summary_Aboot_perVisitRateDiff, Summary_MY_tblParentalCare_perVisitRateDiff20)
+
+Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
   xlab("Visit rate difference")+
   ylab("Mean alternation")+
-  ylim(0,100)+
+  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "Mean Observed"))+
+  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean$VisitRateDifference, n = 12)) +
+  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean$Amean, n = 9)) +  
   theme_classic()
+  
+}
+
+}
+
+dev.new()
+Fig1
+
+library(boot)
+
+xx <- 3:10
+xxMean <- function(xx, i) mean(xx[i])
+
+xxsample <- sample(xx,size = 10000000, replace = TRUE)
+mean(xxsample)
+
+boot_xx <- boot(xx, xxMean, R=10000000)
+boot.ci(boot_xx)
 
 
+#using the boot function
+#first need to turn the alternation column of zerodiff into a vector
+zero.diff <- zero.diff[,"alternation"]
 
+mean.zero <- function(zero.diff, i) mean(zero.diff[i])
+#now we can run the bootstrap for 10000 iterations
 
+boot.zero <- boot(zero.diff, mean.zero, R=10000)
+boot.zero
+hist(boot.zero$t)
 
-
-
-
-
-
-
-
+boot.ci(boot.zero)
+upper.zero <- quantile(boot.zero$t, 0.975)
 
 
 ## TO DO
