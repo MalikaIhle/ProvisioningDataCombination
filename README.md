@@ -1,8 +1,8 @@
-# Behavioural compatibility in Provisioning : DATA ANLYSES
+# Behavioural compatibility in Provisioning : DATA ANALYSES
 
 ## Alternation
 
-### Replication Bebbington & Hatchwell
+### Replication Bebbington & Hatchwell .R
 source compilation_provisioning to get the data in
 simulation of expectation when random alternation for given provisioning rates
 
@@ -15,7 +15,7 @@ simulation of expectation when random alternation for given provisioning rates
 
 
 
-## compilation_provisioning: extract raw data in excel files and Database and give list of errors in the original excel files
+## compilation_provisioning .R : extract raw data in excel files and Database and give list of errors in the original excel files
 
 give 'Tin' 'Tout' 'Sex' for all files
 
@@ -26,6 +26,7 @@ create variables: synchrony, duration dbl attended, duration unattended, duratio
 
 
 
+# ErrorChecking
 
 
 ## ProvisioningErrorCheck: to standardize file, correct chronology, fill in missing info
@@ -47,7 +48,7 @@ we standardized  all time when bird was 'IN' at begining (Tin = 0) and at the en
 
 the data is contained in the second sheet (create sheet1 otherwise)
 
-#### importantly: we corrected the raw data of each excel files but not their summary. This will be directl corrected in the DB
+#### importantly: we corrected the raw data of each excel files but not their summary. This will be directly corrected in the DB
 
 
 
@@ -72,7 +73,7 @@ all original xls files were converted to xlsx
 
 
 
-## R_ files > these are R_table_output
+## R_table_output
 
 ### R_Compare_tblParentalCare
 
@@ -84,6 +85,20 @@ this compare tblParentalCare from the database (which included typos and other m
 this compare the number of chicks calculated to be alive at time of recording, the number of chicks during a visit on the same day as the recording, and the number of chicks given in tblDVDInfo > nothing is matching, but:
 - tblDVDInfo number of chicks is correct for 2004 2005 (Shinichi checked the nest), but death dates are not (indicated as being on the last day seen alive, instead of the day found to be missing)
 - tblDVDInfo number of chicks is estimated after that (from previous nest check) but about correct...
+
+
+
+
+
+# R_input
+
+## .txt
+
+a few temporary txt files, resulting of temporary queries of teh DB, ultimately, everything will be called directly from the R code to the DB in compilation_provisioning.R
+
+
+
+# R_output
 
 
 ### R_RawFeedingVisits
