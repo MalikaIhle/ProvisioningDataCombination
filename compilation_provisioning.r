@@ -88,14 +88,25 @@ TimeStart <- Sys.time()
 
 
 {### packages, settings, working directories, connection to Access DB, sqlFetch and sqlQuery
+
+{# packages
 library(RODBC)
 # library(openxlsx) # package openxlsx will be needed later in the code (after detaching the conflicting xlsx nevertheless needed to get colors for old templates)
 # library(xlsx)	# package xlsx will be needed later in the code (after detaching the conflicting openxlsx nevertheless needed at first to be faster/not crashing)
 require(zoo)
+}
 
-options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
-
+{# input from excel files in dropbox
 pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
+}
+
+{# text files from input folder
+input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
+sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160314.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
+sunrise <- read.table(file= paste(input_folder,"sunrise.txt", sep="/"), sep='\t', header=T)
+}
+
+{# input from database
 
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
@@ -108,10 +119,6 @@ tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
 tblBroods <- sqlFetch(conDB, "tblBroods")
 tblAllCodes <- sqlFetch(conDB, "tblAllCodes")
 tblDVDInfo <- sqlFetch(conDB, "tblDVDInfo")
-
-# text files
-sys_LastSeenAlive <- read.table("sys_LastSeenAlive_20160314.txt", sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
-sunrise <- read.table("sunrise.txt", sep='\t', header=T)
 
 # select video made when provisioning chick (situation = 4 )			# this is the query that I used to select which excel files to be considered, but it appears that some files in 205 and all files in 2009 dont have an entry in tblXlsFiles...
 tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
@@ -134,9 +141,10 @@ FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.B
 WHERE (((tblBirdID.BroodRef) Is Not Null));
 ")
 
-
-
 close(conDB)
+}
+
+options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
 
 }
 

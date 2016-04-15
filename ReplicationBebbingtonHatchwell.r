@@ -9,24 +9,33 @@
 
 rm(list = ls(all = TRUE))
 
+{### Get data and packages
+## Data
 # source('COMPILATION_PROVISIONING.R')
 # or :
-MY_tblParentalCare <- read.table("R_MY_tblParentalCare.txt", sep='\t', header=T)
-MY_tblBrood <- read.table("R_MY_tblBrood.txt", sep='\t', header=T)
-MY_tblDVDInfo <- read.table("R_MY_tblDVDInfo.txt", sep='\t', header=T)
-RawFeedingVisits <- read.table("R_RawFeedingVisits.txt", sep='\t', header=T)
+output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+MY_tblParentalCare <- read.table(file= paste(output_folder,"R_MY_tblParentalCare.txt", sep="/"), sep='\t', header=T)
+MY_tblBroods <- read.table(file= paste(output_folder,"R_MY_tblBroods.txt", sep="/"), sep='\t', header=T)
+MY_tblDVDInfo <- read.table(file= paste(output_folder,"R_MY_tblDVDInfo.txt", sep="/"), sep='\t', header=T)
+RawFeedingVisits <- read.table(file= paste(output_folder,"R_RawFeedingVisits.txt", sep="/"), sep='\t', header=T)
+
+## packages
+library(dplyr)
+library(ggplot2)
+library(boot)
+
+}
+
+head(MY_tblBroods)
+head(MY_tblDVDInfo)
+head(RawFeedingVisits,32)
+head(MY_tblParentalCare)
 
 
 
 ############################################ 
 # replication Bebbington & Hatchwell study #
 ############################################
-
-head(RawFeedingVisits,32)
-head(MY_tblParentalCare)
-library(dplyr)
-library(ggplot2)
-library(boot)
 
 ### simulation alternation
 
@@ -245,7 +254,7 @@ Fig1
 
 
 
-# Description of Kat’ simulation described in the paper page 3 + supp figure:
+{### Description of Kat’ simulation described in the paper page 3 + supp figure and my point of view on it
  
 # Alternation score fore observed nest watches:
 # A = F/ (t-1)
@@ -279,7 +288,7 @@ Fig1
 
 # I don’t know how this impact Kat’s results, but I will now try to run simulations within files because I can better argue for it, and maybe compare both outputs to let her know.
 
-
+}
 
 
 
