@@ -78,7 +78,7 @@ this compare the number of chicks calculated to be alive at time of recording, t
 thi is all the raw data with only feeding visits (OF, IN or INorOF), where a succession OF-IN has been merged into one visit (run 20160324)
 
 
-### R_combinedprovisionningALLforDB
+### R_RawAllVisits_forDB
 
 this as all the raw data until time of code run (last: 20160323)
 this is the raw data I will do my analyses on, this is also what Ian Stevensson could import into the DB
