@@ -21,8 +21,9 @@ head(RawFeedingVisits,32)
 head(MY_tblParentalCare)
 library(dplyr)
 library(ggplot2)
+library(boot)
 
-{### simulation alternation
+### simulation alternation
 
 {## calculation top 5% of feeding rates for each sex 
 
@@ -176,45 +177,23 @@ nrow(freqCombination) # 400 combinations
 
 head(SimulatedSummaryKat)
 
-{## bootstraping as a simple sampling of A with replacement
+{## bootstrap A from SimulatedSummaryKat within each visit rate difference
 
-SimulatedSummaryKat_splitperMFVisiteRate <- split(SimulatedSummaryKat[,c('A','MFVisitRate' )], SimulatedSummaryKat$MFVisitRate)
-x <- SimulatedSummaryKat_splitperMFVisiteRate[[1]]
+samplemean <- function(x, d) {return(mean(x[d]))}
 
-SimulatedSummaryKat_splitperMFVisiteRate_fun <- function(x) {
-base::sample(x$A, replace=TRUE) # sample with replacement, size = original size
+Aboot <- data.frame(matrix(,data=NA, nrow=20, ncol=4))
+colnames(Aboot) <- c('VisitRateDifference','Amean','Alower','Aupper')
+Aboot$VisitRateDifference <- c(0:19)
 
-return()  increase to 10 000
+for (i in 1:20)
+{
+Aboot$Amean[i] <- boot.ci(boot(SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == i-1], samplemean, R=10000), type='norm')$t0
+Aboot$Alower[i] <- boot.ci(boot(SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == i-1], samplemean, R=10000), type='norm')$normal[2] 
+Aboot$Aupper[i] <- boot.ci(boot(SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == i-1], samplemean, R=10000), type='norm')$normal[3] 
+}
 }
 
-SimulatedSummaryKat_splitperMFVisiteRcate_out1 <- lapply(SimulatedSummaryKat_splitperMFVisiteRate,SimulatedSummaryKat_splitperMFVisiteRate_fun)
-SimulatedSummaryKat_splitperMFVisiteRcate_out2 <- do.call(rbind, SimulatedSummaryKat_splitperMFVisiteRcate_out1)
-
-Aboot_MFVisitRate <- data.frame(rep(rownames(SimulatedSummaryKat_splitperMFVisiteRcate_out2),each=10000)) #  increase to 10 000
-Aboot_A <- data.frame(unlist(SimulatedSummaryKat_splitperMFVisiteRcate_out1))
-
-Aboot <- cbind(Aboot_MFVisitRate,Aboot_A)
-rownames(Aboot) <- NULL
-colnames(Aboot) <- c('MFVisitRate', 'A')
-
-Aboot <- merge(x=Aboot, y= unique(SimulatedSummaryKat[,c('MFVisitRate','VisitRateDifference')]), all.x=TRUE, by='MFVisitRate')
-
-
-}
-
-tail(Aboot,30)
-
-{# summary Aboot
-# per visit rate difference like in the paper					
-Aboot_perVisitRateDiff <- group_by(Aboot, VisitRateDifference)
-
-Summary_Aboot_perVisitRateDiff <- summarise (Aboot_perVisitRateDiff,
-					Amean = mean(A),
-					Alower = Amean - sd(A)/sqrt(n())*1.96,
-					Aupper = Amean + sd(A)/sqrt(n())*1.96)
-}
-
-Summary_Aboot_perVisitRateDiff
+Aboot
 
 {# summary Aobserved
 # per visit rate difference like in the paper
@@ -237,9 +216,9 @@ Summary_MY_tblParentalCare_perVisitRateDiff20
 
 # per visit rate difference like in the paper
 Summary_MY_tblParentalCare_perVisitRateDiff20$Type <- "Observed"
-Summary_Aboot_perVisitRateDiff$Type <- "Expected"
+Aboot$Type <- "Expected"
 
-VisitRateDiff_Amean <- rbind(Summary_Aboot_perVisitRateDiff, Summary_MY_tblParentalCare_perVisitRateDiff20)
+VisitRateDiff_Amean <- rbind(Aboot, Summary_MY_tblParentalCare_perVisitRateDiff20)
 
 Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
   geom_point()+
@@ -254,41 +233,48 @@ Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, gro
   
 }
 
-}
+
 
 dev.new()
 Fig1
 
 
-xx <- SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == 0]
-xx <- SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == 12]
 
-xxMean <- function(xx, i) mean(xx[i])
-samplemean <- function(x, d) {
-  return(mean(x[d]))
-}
+# Description of Kat’ simulation described in the paper page 3 + supp figure:
+ 
+# Alternation score fore observed nest watches:
+# A = F/ (t-1)
+# with F the number of alternation and t the number of feeding visits
+# for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding visits is 17 (if one hour was watched).
 
-library(boot)
+# Simulation steps:
+# 1) select the provisioning rates for individuals of either sexes that are not too infrequent (remove the extreme low and high values of x or y)
+# 2) extract all interfeed intervals for all individuals of a same provisioning rate and of a same sex and randomize them
+# 3) (see supp fig) create all combinations of female and male with provisioning rate x and y by sampling without replacement x-1 female interfeed intervals and y-1 male interfeed intervals. Several simulated nest watches are possible per each provisioning rate combination, depending on the number of individuals with these provisioning rates that were observed . Simulated nest watches are created until one of the pool of interfeed intervals per each provisioning rate per sex is empty. Each pool of interfeed intervals, for instance the one for female with provisioning rate x, are reuse for each combination involving x.
+# 4) (see supp fig) the cumulative sum of interfeed interval are calculated for each sex separately, and then rows are merged and sorted 
+
+# 5) Alternation score for those simulated nest watch is then calculated with the formula:
+# A = F/ (t-1)
+# with F the number of alternation and t the number of feeding interval
+# for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding intervals is 15.
+
+# 6) within each combination of provisioning rate combination, 10000 bootstraps of alternation scores were ran (this is what the paper says, but in fact the code Kat sent shows that the bootstrapping was made at a latter stage, see below)
+# 7) All simulated alternation scores were pooled into groups of visit rate differences (absolute value of x minus y) [and the bootstrapping happened here in Kat’s code – but maybe it does not matter)
+# 8) All observed alternation scores were also pooled into groups of visit rate differences and compared to the simulated one leading to Fig. 1.
+
+# My point on view on this:
+# 1) their selection seems arbitrary, I suggest we remove the extreme 5% quantile.
+# 2) what about non-independence of some nest watch because of same MID or FID or PairID ? Is it ok because they will then be more represented in both observed and simulated nest watches ? But their individuality is anyway disrupted, for instance for a same provisioning rate, a bird can be consistently very regular or can be very irregular. I think this argues for randomizing within nest watch.
+# 3) what if we randomly select several large intervals and spill over the hour ? Also, in our case, we also calculated visit rate per hour although we typically record for 90 min, so we maybe have more variance in interfeed intervals to select from when picking ‘visit rate-1’ interfeed intervals.
+# 4) (see supp fig) intervals length are considered like the starting time of feeding visits, and like if the first visit of the male and the female were both at time zero. I think maybe it is better again to shuffle intervals within a file, keeping the firs time start of this file.
+# 5) the formula to calculate A is different for observed and simulated nest watches I believe, and the maximum A that can be obtained for a same combination of x and y is systematically lower for the simulated ones as soon as the provisioning rate difference (absolute value of x minus y) is larger than 1 (see excel file attached).
+# 8) and 1) 
+# for simulation : selection of individuals that have a provisioning rate not extreme, then pooled into visit rate differences, only with pairs whose individuals have non extreme provisioning rate.
+# in observed values: we take every individuals, every combinations, so for a same visit rate difference, individuals can have very extreme provisioning rates. I think observed combinations where one of the sex has an extreme value for provisioning rate should be remove for comparison with simulated data.
+
+# I don’t know how this impact Kat’s results, but I will now try to run simulations within files because I can better argue for it, and maybe compare both outputs to let her know.
 
 
 
-xxsample <- sample(xx,size = 10000, replace = TRUE)
-mean(xxsample)
-
-boot_xx <- boot(xx, samplemean, R=10000)
-boot_ci <- boot.ci(boot_xx, type='norm')
 
 
-#using the boot function
-#first need to turn the alternation column of zerodiff into a vector
-zero.diff <- zero.diff[,"alternation"]
-
-mean.zero <- function(zero.diff, i) mean(zero.diff[i])
-#now we can run the bootstrap for 10000 iterations
-
-boot.zero <- boot(zero.diff, mean.zero, R=10000)
-boot.zero
-hist(boot.zero$t)
-
-boot.ci(boot.zero)
-upper.zero <- quantile(boot.zero$t, 0.975)
