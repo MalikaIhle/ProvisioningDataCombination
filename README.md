@@ -3,19 +3,21 @@
 ## Alternation
 
 ### Replication Bebbington & Hatchwell .R
-source compilation_provisioning to get the data in
-simulation of expectation when random alternation for given provisioning rates
+
+source compilation_provisioning to get the data
+
+simulation of random alternation for given provisioning rates
 
 
 
 
 
 
-# ProvisioningDataCombination : DATA EXTRACTION
+# Compilation provisioning .R : DATA EXTRACTION
 
 
 
-## compilation_provisioning .R : extract raw data in excel files and Database and give list of errors in the original excel files
+## extract raw data in excel files and Database and give list of errors in the original excel files
 
 give 'Tin' 'Tout' 'Sex' for all files
 
