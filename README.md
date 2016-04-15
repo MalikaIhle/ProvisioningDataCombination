@@ -1,8 +1,21 @@
-# ProvisioningDataCombination
+# Behavioural compatibility in Provisioning : DATA ANLYSES
+
+## Alternation
+
+### Replication Bebbington & Hatchwell
+source compilation_provisioning to get the data in
+simulation of expectation when random alternation for given provisioning rates
 
 
 
-## compilation_provisioning: extract raw data and give list of errors in the original excel files
+
+
+
+# ProvisioningDataCombination : DATA EXTRACTION
+
+
+
+## compilation_provisioning: extract raw data in excel files and Database and give list of errors in the original excel files
 
 give 'Tin' 'Tout' 'Sex' for all files
 
