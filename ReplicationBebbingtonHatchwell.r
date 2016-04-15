@@ -10,6 +10,11 @@
 rm(list = ls(all = TRUE))
 
 # source('COMPILATION_PROVISIONING.R')
+# or :
+MY_tblParentalCare <- read.table("R_MY_tblParentalCare.txt", sep='\t', header=T)
+MY_tblBrood <- read.table("R_MY_tblBrood.txt", sep='\t', header=T)
+MY_tblDVDInfo <- read.table("R_MY_tblDVDInfo.txt", sep='\t', header=T)
+RawFeedingVisits <- read.table("R_RawFeedingVisits.txt", sep='\t', header=T)
 
 
 
