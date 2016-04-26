@@ -3,8 +3,8 @@
 #	 Compile provisioning data sparrows
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
-#	 last modif : 15/04/2016  
-#	 commit: save some output
+#	 last modif :25/04/2016  
+#	 commit: adjust code to new DB
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -48,7 +48,7 @@
 
 ## Nb Visit1 calculation:
 # if OF is followed by IN and if time end and start are similar > this is merged into one visit 
-# this is the procedure for Malika's protocol, but the code has been apllied to all files
+# this is the procedure for Malika's protocol, but the code has been applied to all files
 # since time in decimal can be similar despite the bird leaving for 6 second, this can lead to (very few) 'mistakes'
 # Nevertheless, in Shinishi's files, if a bird stay around the nest boxe for a few second before entering again, this was counted as two visits
 # it still is in this code, although this is arguable.
@@ -114,24 +114,25 @@ conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRE
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
 tblDVD_XlsFiles <- tblDVD_XlsFiles[with(tblDVD_XlsFiles, order(tblDVD_XlsFiles$Filename)),]
 tblBirdID <- sqlFetch(conDB, "tblBirdID")
-tblParentalCare <- sqlFetch(conDB, "tblParentalCare")
+tblParentalCare <- sqlFetch(conDB, "zzz_OldtblParentalCare")
 tblBroodEvents <- sqlFetch(conDB, "tblBroodEvents")
 tblBroods <- sqlFetch(conDB, "tblBroods")
 tblAllCodes <- sqlFetch(conDB, "tblAllCodes")
 tblDVDInfo <- sqlFetch(conDB, "tblDVDInfo")
+tblNestVisits <- sqlFetch(conDB, "tblNestVisits")
 
-# select video made when provisioning chick (situation = 4 )			# this is the query that I used to select which excel files to be considered, but it appears that some files in 205 and all files in 2009 dont have an entry in tblXlsFiles...
+# select video made when provisioning chick (situation = 4 )			# this is the query that I used to select which excel files to be considered, but it appears that some files in 2005 and all files in 2009 dont have an entry in tblXlsFiles...
 tblDVD_XlsFilesALLDBINFO <- sqlQuery(conDB, "
-SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Method, tblParentalCare.Observer, tblParentalCare.Notes, tblParentalCare.MTime, tblParentalCare.FTime, tblParentalCare.ShareTime, tblParentalCare.MVisit1, tblParentalCare.FVisit1, tblParentalCare.MVisit2, tblParentalCare.FVisit2, tblParentalCare.MBout, tblParentalCare.FBout
-FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN tblParentalCare ON tblDVD_XlsFiles.DVDRef = tblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = tblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
+SELECT tblDVD_XlsFiles.DVDRef, tblDVD_XlsFiles.Filename, tblDVDInfo.BroodRef, tblDVDInfo.Situation, tblDVDInfo.Deaths, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.Wrong, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Weather, tblDVDInfo.Wind, tblDVDInfo.Notes, tblDVDInfo.TapeLength, zzz_OldtblParentalCare.EffectTime, zzz_OldtblParentalCare.Method, tblDVDInfo.Observer, zzz_OldtblParentalCare.MTime, zzz_OldtblParentalCare.FTime, zzz_OldtblParentalCare.ShareTime, zzz_OldtblParentalCare.MVisit1, zzz_OldtblParentalCare.FVisit1, zzz_OldtblParentalCare.MVisit2, zzz_OldtblParentalCare.FVisit2, zzz_OldtblParentalCare.MBout, zzz_OldtblParentalCare.FBout
+FROM tblDVDInfo INNER JOIN (tblDVD_XlsFiles INNER JOIN zzz_OldtblParentalCare ON tblDVD_XlsFiles.DVDRef = zzz_OldtblParentalCare.DVDRef) ON (tblDVDInfo.DVDRef = zzz_OldtblParentalCare.DVDRef) AND (tblDVDInfo.DVDRef = tblDVD_XlsFiles.DVDRef)
 WHERE (((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=False));
 ")
 
-# get the missing DVD Filenames (those in tblParentalCare but not in tblXlsFiles)
+# get the missing DVD Filenames (those in zzz_OldtblParentalCare but not in tblXlsFiles)
 missingDVDFilenames <- sqlQuery(conDB, "
-SELECT tblParentalCare.DVDRef, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename, tblDVDInfo.BroodRef, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Notes,tblParentalCare.TapeTime, tblParentalCare.EffectTime, tblParentalCare.Notes
-FROM tblDVDInfo INNER JOIN (tblParentalCare LEFT JOIN tblDVD_XlsFiles ON tblParentalCare.[DVDRef] = tblDVD_XlsFiles.[DVDRef]) ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
-WHERE (((tblParentalCare.TapeTime) Is Not Null) AND ((tblDVD_XlsFiles.DVDRef) Is Null) AND ((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=No));
+SELECT zzz_OldtblParentalCare.DVDRef, Year([DVDdate]) & '\\' & [DVDNumber] & '.xlsx' AS Filename, tblDVDInfo.BroodRef, tblDVDInfo.OffspringNo, tblDVDInfo.Age, tblDVDInfo.DVDdate, tblDVDInfo.DVDtime, tblDVDInfo.Notes,tblDVDInfo.TapeLength, zzz_OldtblParentalCare.EffectTime
+FROM tblDVDInfo INNER JOIN (zzz_OldtblParentalCare LEFT JOIN tblDVD_XlsFiles ON zzz_OldtblParentalCare.[DVDRef] = tblDVD_XlsFiles.[DVDRef]) ON tblDVDInfo.DVDRef = zzz_OldtblParentalCare.DVDRef
+WHERE (((tblDVDInfo.TapeLength) Is Not Null) AND ((tblDVD_XlsFiles.DVDRef) Is Null) AND ((tblDVDInfo.Situation)=4) AND ((tblDVDInfo.Wrong)=No));
 ")
 
 # get the rearing brood for all birds
@@ -1690,7 +1691,7 @@ head(MY_tblParentalCare)
 
 
 {### MY_tblDVDInfo
-MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef),c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','TapeTime','EffectTime','Notes.1')]
+MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef),c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','TapeLength','EffectTime')]
 MY_tblDVDInfo <- rbind(MY_tblDVDInfo, missingDVDFilenames)
 
 {# re calculate chick age at DVDdate
@@ -1698,7 +1699,7 @@ MY_tblDVDInfo <- merge (x= MY_tblDVDInfo,
 						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
 						all.x=TRUE, by ='BroodRef')
 						
-colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','TapeTime','EffectTime','ParentalCareNotes','HatchingDate')
+colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','TapeLength','EffectTime','Notes','HatchingDate')
 
 MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$HatchingDate) # chicks are aged 0 day at date of hatching
 
@@ -1924,14 +1925,14 @@ head(MY_tblBroods)
 
 {### MY_tblParentalCare with summary of rates and durations (use of effective time from MY_tblDVDInfo)
 
-MY_tblParentalCare <- merge(x=MY_tblParentalCare,y= MY_tblDVDInfo[,c('DVDRef','TapeTime','EffectTime')], by='DVDRef', all.x=TRUE)
+MY_tblParentalCare <- merge(x=MY_tblParentalCare,y= MY_tblDVDInfo[,c('DVDRef','TapeLength','EffectTime')], by='DVDRef', all.x=TRUE)
 
 {# recalculate EffectiveTime 
 head(combinedprovisioningALL)
 
 outTsartMin <- do.call(rbind, by(combinedprovisioningALL, combinedprovisioningALL$DVDRef, function(x) x[which.min(x$Tstart), c('DVDRef','Tstart')] ))
 MY_tblParentalCare <-  merge(x=MY_tblParentalCare,y= outTsartMin, by='DVDRef', all.x=TRUE)
-MY_tblParentalCare$EffectiveTime <- MY_tblParentalCare$TapeTime - MY_tblParentalCare$Tstart
+MY_tblParentalCare$EffectiveTime <- MY_tblParentalCare$TapeLength - MY_tblParentalCare$Tstart
 }
 
 {# check discrepency between EffectTime and EffectiveTime
@@ -1940,7 +1941,7 @@ MY_tblParentalCare$DiffEffectTime <- round(MY_tblParentalCare$EffectiveTime - MY
 MY_tblParentalCare[(is.na(MY_tblParentalCare$DiffEffectTime) | MY_tblParentalCare$DiffEffectTime != 0) & !is.na(MY_tblParentalCare$DVDRef) & !is.na(MY_tblParentalCare$MVisit1),]
 }
 
-MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('DiffEffectTime','EffectTime', 'TapeTime','Tstart'))]
+MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('DiffEffectTime','EffectTime', 'TapeLength','Tstart'))]
 
 {# add MFTime1, MFTime02, MFTime2, provisioning rates, AlternationValue
 
@@ -1974,7 +1975,7 @@ DurationScript # ~ 14 min
 
 #write.table(MY_tblDVDInfo,file='R_MY_tblDVDInfo.xls',  col.names=TRUE, sep='\t') # 20160415
 #write.table(MY_tblBroods,file='R_MY_tblBroods.xls',  col.names=TRUE, sep='\t') # 20160415
-#write.table(MY_tblParentalCare,file='R_MY_tblParentalCare.xls',  col.names=TRUE, sep='\t') # 20160415
+#write.table(MY_tblParentalCare,file='R_MY_tblParentalCare.xls',  col.names=TRUE, sep='\t') # 20160415, identical with changes to call new DB, 20160425
 
 
 
