@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 15/04/2016  
+#	 last modif : 26/04/2016  
 #	 commit: simulation Kat style
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -17,7 +17,7 @@ output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/sta
 MY_tblParentalCare <- read.table(file= paste(output_folder,"R_MY_tblParentalCare.txt", sep="/"), sep='\t', header=T)
 MY_tblBroods <- read.table(file= paste(output_folder,"R_MY_tblBroods.txt", sep="/"), sep='\t', header=T)
 MY_tblDVDInfo <- read.table(file= paste(output_folder,"R_MY_tblDVDInfo.txt", sep="/"), sep='\t', header=T)
-RawFeedingVisits <- read.table(file= paste(output_folder,"R_RawFeedingVisits.txt", sep="/"), sep='\t', header=T)
+MY_RawFeedingVisits <- read.table(file= paste(output_folder,"R_MY_RawFeedingVisits.txt", sep="/"), sep='\t', header=T)
 
 ## packages
 library(dplyr)
@@ -28,7 +28,7 @@ library(boot)
 
 head(MY_tblBroods)
 head(MY_tblDVDInfo)
-head(RawFeedingVisits,32)
+head(MY_RawFeedingVisits,32)
 head(MY_tblParentalCare)
 
 
@@ -37,7 +37,44 @@ head(MY_tblParentalCare)
 # replication Bebbington & Hatchwell study #
 ############################################
 
-### simulation alternation
+{### simulation alternation with Kat's method
+
+{## Description of Kat’ simulation described in the paper page 3 + supp figure and my point of view on it
+ 
+# Alternation score fore observed nest watches:
+# A = F/ (t-1)
+# with F the number of alternation and t the number of feeding visits
+# for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding visits is 17 (if one hour was watched).
+
+# Simulation steps:
+# 1) select the provisioning rates for individuals of either sexes that are not too infrequent (remove the extreme low and high values of x or y)
+# 2) extract all interfeed intervals for all individuals of a same provisioning rate and of a same sex and randomize them
+# 3) (see supp fig) create all combinations of female and male with provisioning rate x and y by sampling without replacement x-1 female interfeed intervals and y-1 male interfeed intervals. Several simulated nest watches are possible per each provisioning rate combination, depending on the number of individuals with these provisioning rates that were observed . Simulated nest watches are created until one of the pool of interfeed intervals per each provisioning rate per sex is empty. Each pool of interfeed intervals, for instance the one for female with provisioning rate x, are reuse for each combination involving x.
+# 4) (see supp fig) the cumulative sum of interfeed interval are calculated for each sex separately, and then rows are merged and sorted 
+
+# 5) Alternation score for those simulated nest watch is then calculated with the formula:
+# A = F/ (t-1)
+# with F the number of alternation and t the number of feeding interval
+# for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding intervals is 15.
+
+# 6) within each combination of provisioning rate combination, 10000 bootstraps of alternation scores were ran (this is what the paper says, but in fact the code Kat sent shows that the bootstrapping was made at a latter stage, see below)
+# 7) All simulated alternation scores were pooled into groups of visit rate differences (absolute value of x minus y) [and the bootstrapping happened here in Kat’s code – but maybe it does not matter)
+# 8) All observed alternation scores were also pooled into groups of visit rate differences and compared to the simulated one leading to Fig. 1.
+
+# My point on view on this:
+# 1) their selection seems arbitrary, I suggest we remove the extreme 5% quantile if anything.
+# 2) what about non-independence of some nest watches because of same MID or FID or PairID ? Is it ok because they will then be more represented in both observed and simulated nest watches ? But their individuality is anyway disrupted, for instance for a same provisioning rate, a bird can be consistently very regular or can be very irregular. I think this argues for randomizing within nest watch.
+# 3) what if we randomly select several large intervals and spill over the hour ? Also, in our case, we also calculated visit rate per hour although we typically record for 90 min, so we maybe have more variance in interfeed intervals to select from when picking ‘visit rate-1’ interfeed intervals.
+# 4) (see supp fig) intervals length are considered like the starting time of feeding visits, and like if the first visit of the male and the female were both at time zero. I think maybe it is better again to shuffle intervals within a file, keeping the firs time start of this file.
+# 5) the formula to calculate A is different for observed and simulated nest watches I believe, and the maximum A that can be obtained for a same combination of x and y is systematically lower for the simulated ones as soon as the provisioning rate difference (absolute value of x minus y) is larger than 1 (see excel file attached).
+# 8) and 1) 
+# for simulation : selection of individuals that have a provisioning rate not extreme, then pooled into visit rate differences, only with pairs whose individuals have non extreme provisioning rate.
+# in observed values: we take every individuals, every combinations, so for a same visit rate difference, individuals can have very extreme provisioning rates. I think observed combinations where one of the sex has an extreme value for provisioning rate should be remove for comparison with simulated data.
+
+# I don’t know how this impact Kat’s results, but I will now try to run simulations within files because I can better argue for it, and maybe compare both outputs to let her know.
+
+}
+
 
 {## calculation top 5% of feeding rates for each sex 
 
@@ -55,7 +92,7 @@ quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)
 {## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
 
 {# Create RawInterfeeds and split per sex and select provisioning rates from 3 to 22
-RawInterfeeds <- merge(x= RawFeedingVisits[,c('DVDRef','Sex','Interval')], y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , by='DVDRef', all.x=TRUE)
+RawInterfeeds <- merge(x= MY_RawFeedingVisits[,c('DVDRef','Sex','Interval')], y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , by='DVDRef', all.x=TRUE)
 
 MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
 MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
@@ -247,48 +284,177 @@ Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, gro
   
 }
 
+}
 
-
-dev.new()
 Fig1
 
 
+### simulation alternation: shuffling intervals within files where both sex visit at least once
 
-{### Description of Kat’ simulation described in the paper page 3 + supp figure and my point of view on it
- 
-# Alternation score fore observed nest watches:
-# A = F/ (t-1)
-# with F the number of alternation and t the number of feeding visits
-# for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding visits is 17 (if one hour was watched).
+## I think it could be still interesting to remove extreme values of provisioning rate (not normal to have just one visit, or 50...)
+## I kept the time of the first visit of both male and female in each file, and randomized subsequent intervals
 
-# Simulation steps:
-# 1) select the provisioning rates for individuals of either sexes that are not too infrequent (remove the extreme low and high values of x or y)
-# 2) extract all interfeed intervals for all individuals of a same provisioning rate and of a same sex and randomize them
-# 3) (see supp fig) create all combinations of female and male with provisioning rate x and y by sampling without replacement x-1 female interfeed intervals and y-1 male interfeed intervals. Several simulated nest watches are possible per each provisioning rate combination, depending on the number of individuals with these provisioning rates that were observed . Simulated nest watches are created until one of the pool of interfeed intervals per each provisioning rate per sex is empty. Each pool of interfeed intervals, for instance the one for female with provisioning rate x, are reuse for each combination involving x.
-# 4) (see supp fig) the cumulative sum of interfeed interval are calculated for each sex separately, and then rows are merged and sorted 
+{# select video files with both sex visiting
+listDVDRefwithoutOneSex <- MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& !is.na(MY_tblParentalCare$DVDRef)]
+listDVDRefwithoutOneSex <- listDVDRefwithoutOneSex[!is.na(listDVDRefwithoutOneSex)]
+RawFeedingVisitsBothSexes <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% listDVDRefwithoutOneSex,c('DVDRef','TstartFeedVisit','Sex','Interval')]
+RawFeedingVisitsBothSexes$Sex <- as.numeric(RawFeedingVisitsBothSexes$Sex )
+}
 
-# 5) Alternation score for those simulated nest watch is then calculated with the formula:
-# A = F/ (t-1)
-# with F the number of alternation and t the number of feeding interval
-# for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding intervals is 15.
+{# creation of i simulated dataset (and calculation of i Asim) for each j file
 
-# 6) within each combination of provisioning rate combination, 10000 bootstraps of alternation scores were ran (this is what the paper says, but in fact the code Kat sent shows that the bootstrapping was made at a latter stage, see below)
-# 7) All simulated alternation scores were pooled into groups of visit rate differences (absolute value of x minus y) [and the bootstrapping happened here in Kat’s code – but maybe it does not matter)
-# 8) All observed alternation scores were also pooled into groups of visit rate differences and compared to the simulated one leading to Fig. 1.
+sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
+  
+out_Asim_j = list()
+out_Asim_i = list()
 
-# My point on view on this:
-# 1) their selection seems arbitrary, I suggest we remove the extreme 5% quantile.
-# 2) what about non-independence of some nest watch because of same MID or FID or PairID ? Is it ok because they will then be more represented in both observed and simulated nest watches ? But their individuality is anyway disrupted, for instance for a same provisioning rate, a bird can be consistently very regular or can be very irregular. I think this argues for randomizing within nest watch.
-# 3) what if we randomly select several large intervals and spill over the hour ? Also, in our case, we also calculated visit rate per hour although we typically record for 90 min, so we maybe have more variance in interfeed intervals to select from when picking ‘visit rate-1’ interfeed intervals.
-# 4) (see supp fig) intervals length are considered like the starting time of feeding visits, and like if the first visit of the male and the female were both at time zero. I think maybe it is better again to shuffle intervals within a file, keeping the firs time start of this file.
-# 5) the formula to calculate A is different for observed and simulated nest watches I believe, and the maximum A that can be obtained for a same combination of x and y is systematically lower for the simulated ones as soon as the provisioning rate difference (absolute value of x minus y) is larger than 1 (see excel file attached).
-# 8) and 1) 
-# for simulation : selection of individuals that have a provisioning rate not extreme, then pooled into visit rate differences, only with pairs whose individuals have non extreme provisioning rate.
-# in observed values: we take every individuals, every combinations, so for a same visit rate difference, individuals can have very extreme provisioning rates. I think observed combinations where one of the sex has an extreme value for provisioning rate should be remove for comparison with simulated data.
+for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
 
-# I don’t know how this impact Kat’s results, but I will now try to run simulations within files because I can better argue for it, and maybe compare both outputs to let her know.
+x <- split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[j]]
+
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[2]] # a normal file
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[1]] # only one male visit
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[13]] # only 2 female visits > screw up the function 'sample'
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[['935']] # no female visits > now removed
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[15]] # only one male and one female visit
+
+x <- x[order(x$TstartFeedVisit),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+
+for (i in 1:100) # to increase up to 1000
+{
+
+x0sim <- x0
+x1sim <- x1
+
+x0sim$Interval <- c(0, sample_vector(x0sim$Interval[-1]))
+x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
+
+x1sim$Interval <- c(0, sample_vector(x1sim$Interval[-1]))
+x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
+
+xsim <- rbind(x0sim,x1sim)
+xsim <- xsim[order(xsim$TstartFeedVisit),]
+
+Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
+
+out_Asim_i[i] <- Asim
+out_Asim_j[j] <- list(unlist(out_Asim_i))
+
+		# clean up
+		x0sim <- NULL
+		x1sim <- NULL
+		Asim <- NULL
+}
+
+		# clean up
+		x <- NULL
+		x0 <- NULL
+		x1 <- NULL
 
 }
 
+out_Asim <- do.call(rbind, out_Asim_j)
+
+}
+
+head(out_Asim)
+
+{# out A sim summary
+
+out_Asim_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Asim)
+out_Asim_df <- merge(x=out_Asim_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+
+out_Asim_df_perDiffVisit1Rate <- split(out_Asim_df,out_Asim_df$DiffVisit1Rate)
+
+x <-out_Asim_df_perDiffVisit1Rate[[31]]
+x <-out_Asim_df_perDiffVisit1Rate[[30]] # just one file
+
+out_Asim_df_perDiffVisit1Rate_fun <- function(x) {
+
+x <- x[,-1]
+x <- x[,-ncol(x)]
+x <- unlist(list(x))
+
+return(c(
+mean(x), # Amean
+mean(x) - sd(x)/sqrt(length(x))*1.96, # Alower
+mean(x) + sd(x)/sqrt(length(x))*1.96 # Aupper
+))
+}
+
+out_Asim_df_perDiffVisit1Rate_out1 <- lapply(out_Asim_df_perDiffVisit1Rate,out_Asim_df_perDiffVisit1Rate_fun)
+out_Asim_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asim_df_perDiffVisit1Rate_out1))
+
+nrow(out_Asim_df_perDiffVisit1Rate_out2)	# 33
+rownames(out_Asim_df_perDiffVisit1Rate_out2) <- NULL
+colnames(out_Asim_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper')
+
+}
+
+head(out_Asim_df_perDiffVisit1Rate_out2)
 
 
+{# summary Aobserved when both sexes visit
+
+MY_tblParentalCare_forA_bothSexes <- MY_tblParentalCare[! MY_tblParentalCare$DVDRef %in% listDVDRefwithoutOneSex,]
+MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare_forA_bothSexes, DiffVisit1Rate)
+
+Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- summarise (MY_tblParentalCare_perVisitRateDiff_bothSexes,
+					Amean = mean(AlternationValue),
+					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
+					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96)
+					
+Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes,VisitRateDifference= DiffVisit1Rate)
+
+}
+
+as.data.frame(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes)
+
+
+{# for the moment cut at 20 visit rate difference in both randomized and observed, and plot
+
+Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes$Type <- "Observed"
+out_Asim_df_perDiffVisit1Rate_out2$Type <- "Expected"
+
+
+VisitRateDiff_Amean_bis <- as.data.frame(rbind( Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes[1:20,],out_Asim_df_perDiffVisit1Rate_out2[1:20,] ))
+VisitRateDiff_Amean_bis$VisitRateDifference <- as.numeric(VisitRateDiff_Amean_bis$VisitRateDifference)
+
+
+
+Fig1bis <- ggplot(data=VisitRateDiff_Amean_bis, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+  xlab("Visit rate difference")+
+  ylab("Mean alternation")+
+  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "Mean Observed"))+
+  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_bis$VisitRateDifference, n = 12)) +
+  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_bis$Amean, n = 9)) +  
+  theme_classic()
+  
+}
+
+dev.new()
+Fig1bis
+
+
+  
+  
+  
+ MY_tblParentalCare_forA_bothSexes[MY_tblParentalCare_forA_bothSexes$DiffVisit1Rate == 30,]
+
+
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
