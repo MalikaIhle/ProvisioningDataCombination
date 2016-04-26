@@ -1639,7 +1639,7 @@ head(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 RawFeedingVisits <- rbind(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2,combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 RawFeedingVisits <- merge(x=RawFeedingVisits, y=MY_tblParentalCare[,c('Filename','DVDRef')],by='Filename', all.x=TRUE)
 RawFeedingVisits <- RawFeedingVisits[order(RawFeedingVisits$DVDRef,RawFeedingVisits$Tstart, -RawFeedingVisits$Tend),]
-# write.table(RawFeedingVisits, file = "R_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324 20160331
+# write.table(RawFeedingVisits, file = "R_MY_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324 20160331 20160426
 
 }
 
@@ -1976,6 +1976,7 @@ DurationScript # ~ 14 min
 #write.table(MY_tblDVDInfo,file='R_MY_tblDVDInfo.xls',  col.names=TRUE, sep='\t') # 20160415
 #write.table(MY_tblBroods,file='R_MY_tblBroods.xls',  col.names=TRUE, sep='\t') # 20160415
 #write.table(MY_tblParentalCare,file='R_MY_tblParentalCare.xls',  col.names=TRUE, sep='\t') # 20160415, identical with changes to call new DB, 20160425
+
 
 
 
