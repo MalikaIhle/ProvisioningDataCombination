@@ -323,7 +323,7 @@ x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
 
-for (i in 1:100) # to increase up to 1000
+for (i in 1:1000) # to increase up to 1000
 {
 
 x0sim <- x0
@@ -372,16 +372,18 @@ out_Asim_df_perDiffVisit1Rate <- split(out_Asim_df,out_Asim_df$DiffVisit1Rate)
 x <-out_Asim_df_perDiffVisit1Rate[[31]]
 x <-out_Asim_df_perDiffVisit1Rate[[30]] # just one file
 
+
 out_Asim_df_perDiffVisit1Rate_fun <- function(x) {
 
 x <- x[,-1]
 x <- x[,-ncol(x)]
-x <- unlist(list(x))
+v <- unlist(list(x))
 
 return(c(
-mean(x), # Amean
-mean(x) - sd(x)/sqrt(length(x))*1.96, # Alower
-mean(x) + sd(x)/sqrt(length(x))*1.96 # Aupper
+mean(v), # Amean
+mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower
+mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper
+nrow(x) # NbFiles
 ))
 }
 
@@ -390,7 +392,7 @@ out_Asim_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim
 
 nrow(out_Asim_df_perDiffVisit1Rate_out2)	# 33
 rownames(out_Asim_df_perDiffVisit1Rate_out2) <- NULL
-colnames(out_Asim_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper')
+colnames(out_Asim_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
 
 }
 
@@ -405,7 +407,8 @@ MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare_for
 Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- summarise (MY_tblParentalCare_perVisitRateDiff_bothSexes,
 					Amean = mean(AlternationValue),
 					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
-					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96)
+					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
+					NbFiles = n())
 					
 Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes,VisitRateDifference= DiffVisit1Rate)
 
@@ -420,7 +423,7 @@ Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes$Type <- "Observed"
 out_Asim_df_perDiffVisit1Rate_out2$Type <- "Expected"
 
 
-VisitRateDiff_Amean_bis <- as.data.frame(rbind( Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes[1:20,],out_Asim_df_perDiffVisit1Rate_out2[1:20,] ))
+VisitRateDiff_Amean_bis <- as.data.frame(rbind( Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes[1:21,],out_Asim_df_perDiffVisit1Rate_out2[1:21,] ))
 VisitRateDiff_Amean_bis$VisitRateDifference <- as.numeric(VisitRateDiff_Amean_bis$VisitRateDifference)
 
 
@@ -447,14 +450,19 @@ Fig1bis
   
  MY_tblParentalCare_forA_bothSexes[MY_tblParentalCare_forA_bothSexes$DiffVisit1Rate == 30,]
 
+ MY_tblParentalCare_forA_bothSexes[MY_tblParentalCare_forA_bothSexes$DiffVisit1Rate == 30,]
 
 
+hist(as.numeric(MY_tblParentalCare$FVisit1RateH))
+mean(MY_tblParentalCare$FVisit1RateH, na.rm=T)
+mean(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
+sd(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
+ mean(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)+2*sd(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
+max(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm= 
+ mean(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)-2*sd(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
+
  
  
- 
- 
- 
- 
- 
+ sunflowerplot(MY_tblDVDInfo$DVDInfoAge,MY_tblDVDInfo$ChickAge)
  
  
