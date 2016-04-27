@@ -1703,10 +1703,9 @@ colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','D
 
 MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$HatchingDate) # chicks are aged 0 day at date of hatching
 
-hist(MY_tblDVDInfo$DVDInfoAge)
-hist(MY_tblDVDInfo$ChickAge)
-hist(MY_tblDVDInfo$DVDInfoAge-MY_tblDVDInfo$ChickAge)
-
+sunflowerplot(MY_tblDVDInfo$DVDInfoAge,MY_tblDVDInfo$ChickAge)
+MY_tblDVDInfo[abs(MY_tblDVDInfo$DVDInfoAge - MY_tblDVDInfo$ChickAge) > 2,]
+ 
 }
 
 {# RelTime
@@ -1983,8 +1982,8 @@ DurationScript # ~ 14 min
 ## TO DO
 # find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
 # select valid files (nest with chicks, nest with visits from both parents to have alternation possible ?)
-# simulation alternation (bootstrapping simply sampling with replacement ??)
-# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model ?)
+# simulation alternation
+# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
 
 
 
