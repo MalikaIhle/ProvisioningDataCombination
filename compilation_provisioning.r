@@ -1985,11 +1985,9 @@ DurationScript # ~ 14 min
 
 
 
-## TO DO
-# find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
-# select valid files (nest with chicks, nest with visits from both parents to have alternation possible, nest with chick above 5 days old?)
-# simulation alternation
-# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
+
+
+
 
 
 
@@ -2036,7 +2034,7 @@ MY_tblBroods[MY_tblBroods$NbRinged- MY_tblBroods$BroodSize11 > 0 & !is.na(MY_tbl
 }
 
 
-{# cheap version selection files
+{# exploration for selection valid files > creates 'R_Compare_NbChicksDuringRecording.xlsx'
 
 # decision still to take:
 # remove when number of chicks = 0 (how to detect them ? first attempt in next big braket)

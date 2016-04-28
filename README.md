@@ -116,3 +116,36 @@ thi is all the raw data with only feeding visits (OF, IN or INorOF), where a suc
 this as all the raw data until time of code run (last: 20160323)
 this is the raw data I will do my analyses on, this is also what Ian Stevensson could import into the DB
 (historically, it first included files from 2004 to 2014, then 206 missing files from this period, then videos from 2015 from Andrew)
+
+
+## R_MY_tables 
+
+data, meta data, and summary of data I calculated
+
+
+### R_MY_DVDInfo
+
+only for analysed video
+
+
+### R_MY_tblBroods
+
+all broods where at least one social parent identified, even those not video taped
+
+
+### R_MY_RawFeedingVisits
+
+OF directly followed by IN are merged feeding visits
+Interval calculated
+
+
+### R_MY_tblParentalCare
+
+summary stats for all analyzed videos
+
+
+
+
+
+
+
