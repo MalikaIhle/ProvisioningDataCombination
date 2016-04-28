@@ -4,7 +4,7 @@
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
 #	 last modif :25/04/2016  
-#	 commit: adjust code to new DB
+#	 commit: correct R_output file + csv
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -956,11 +956,7 @@ combinedprovisioningALLforDB <- combinedprovisioningALL[,c('DVDRef','Tstart', 'T
 
 
 ## write.table(combinedprovisioningALLforDB, file = "R_RawAllVisits_forDB.xls", col.names=TRUE, sep='\t') # 20160322
-# after running the line above:
-# I save the xls file into a xlsx file
-# shift the headers one cell right
-# rename the first column 'order' 
-# > not elegant but write.xlsx from openxlsx isn't working for me
+
 }
 
 }
@@ -1640,7 +1636,6 @@ head(combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 RawFeedingVisits <- rbind(combinedprovisioningALL_FeedY_listperFilenameperSex0_out2,combinedprovisioningALL_FeedY_listperFilenameperSex1_out2)
 RawFeedingVisits <- merge(x=RawFeedingVisits, y=MY_tblParentalCare[,c('Filename','DVDRef')],by='Filename', all.x=TRUE)
 RawFeedingVisits <- RawFeedingVisits[order(RawFeedingVisits$DVDRef,RawFeedingVisits$Tstart, -RawFeedingVisits$Tend),]
-# write.table(RawFeedingVisits, file = "R_MY_RawFeedingVisits.xls", col.names=TRUE, sep='\t') # 20160324 20160331 20160426
 
 }
 
@@ -1980,9 +1975,12 @@ DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
 
 
-#write.table(MY_tblDVDInfo,file='R_MY_tblDVDInfo.xls',  col.names=TRUE, sep='\t') # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
-#write.table(MY_tblBroods,file='R_MY_tblBroods.xls',  col.names=TRUE, sep='\t') # 20160415, 20160428 (with all brood even not watched, even with one social parents NA)
-#write.table(MY_tblParentalCare,file='R_MY_tblParentalCare.xls',  col.names=TRUE, sep='\t') # 20160415, identical with changes to call new DB, 20160425
+# output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+
+ # write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/"), row.names = FALSE) # 20160324 20160331 20160426 
+ # write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
+ # write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) # 20160415, identical with changes to call new DB, 20160425
+ # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA)
 
 
 
