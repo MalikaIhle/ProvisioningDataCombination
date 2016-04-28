@@ -78,7 +78,7 @@
 }
 
 {### forseen code breaks in the future
-# when metadata for excel files (Tape length, Observer, Protocol, and Notes) will be imported to tblXlsFiles rather than tblParentalCare
+# when metadata for excel files (Tape length, Observer, Protocol, and Notes) will be imported to tblDVDInfo rather than tblParentalCare: SOLVED
 }
 
 }
@@ -1694,13 +1694,15 @@ head(MY_tblParentalCare)
 {### MY_tblDVDInfo
 MY_tblDVDInfo  <- tblDVD_XlsFilesALLDBINFO[tblDVD_XlsFilesALLDBINFO$DVDRef %in% unique(combinedprovisioningALLforDB$DVDRef),c('DVDRef','Filename','BroodRef','OffspringNo','Age','DVDdate','DVDtime','Notes','TapeLength','EffectTime')]
 MY_tblDVDInfo <- rbind(MY_tblDVDInfo, missingDVDFilenames)
+MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% MY_tblParentalCare$DVDRef,] # one DVD with with missing excel file but with initial summary in zzz_OldtblParentalCare
+MY_tblDVDInfo <- MY_tblDVDInfo[MY_tblDVDInfo$DVDRef %in% MY_tblParentalCare$DVDRef,]
 
 {# re calculate chick age at DVDdate
 MY_tblDVDInfo <- merge (x= MY_tblDVDInfo, 
 						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
 						all.x=TRUE, by ='BroodRef')
 						
-colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','TapeLength','EffectTime','Notes','HatchingDate')
+colnames(MY_tblDVDInfo) <- c('BroodRef', 'DVDRef','Filename','DVDInfoChickNb','DVDInfoAge','DVDdate','DVDtime','DVDInfoNotes','TapeLength','EffectTime','HatchingDate')
 
 MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$HatchingDate) # chicks are aged 0 day at date of hatching
 
@@ -1978,7 +1980,7 @@ DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
 
 
-#write.table(MY_tblDVDInfo,file='R_MY_tblDVDInfo.xls',  col.names=TRUE, sep='\t') # 20160415
+#write.table(MY_tblDVDInfo,file='R_MY_tblDVDInfo.xls',  col.names=TRUE, sep='\t') # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
 #write.table(MY_tblBroods,file='R_MY_tblBroods.xls',  col.names=TRUE, sep='\t') # 20160415, 20160428 (with all brood even not watched, even with one social parents NA)
 #write.table(MY_tblParentalCare,file='R_MY_tblParentalCare.xls',  col.names=TRUE, sep='\t') # 20160415, identical with changes to call new DB, 20160425
 

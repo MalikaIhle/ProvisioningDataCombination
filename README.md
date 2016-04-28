@@ -123,28 +123,26 @@ this is the raw data I will do my analyses on, this is also what Ian Stevensson 
 data, meta data, and summary of data I calculated
 
 
-### R_MY_DVDInfo
-
-only for analysed video
-
-
-### R_MY_tblBroods
-
-all broods where at least one social parent identified, even those not video taped
-
-
 ### R_MY_RawFeedingVisits
 
 OF directly followed by IN are merged feeding visits
 Interval calculated
 
 
+### R_MY_DVDInfo
+
+metada only for analysed video, i.e. with excelfile with raw data available, and with an entry in zzz_OldtblparentalCare
+
+
 ### R_MY_tblParentalCare
 
-summary stats for all analyzed videos
+summary stats for all analyzed videos, i.e. with excelfile with raw data available, and with an entry in zzz_OldtblparentalCare
 
 
 
+### R_MY_tblBroods
+
+all broods where at least one social parent identified, even those not videotaped
 
 
 
