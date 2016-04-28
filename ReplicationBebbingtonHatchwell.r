@@ -3,7 +3,7 @@
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
 #	 last modif : 26/04/2016  
-#	 commit: simulation Kat style
+#	 commit: simulation within file
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -30,6 +30,13 @@ head(MY_tblBroods)
 head(MY_tblDVDInfo)
 head(MY_RawFeedingVisits,32)
 head(MY_tblParentalCare)
+
+
+### select valid files
+nrow(MY_tblDVDInfo) #2103
+MY_tblDVDInfo <- MY_tblDVDInfo[MY_tblDVDInfo$DVDInfoChickNb >0,] # remove 6 where 0 chicks > 1025
+MY_tblDVDInfo <- MY_tblDVDInfo[MY_tblDVDInfo$ChickAge >5,] # remove 906 where still brodding (age <=5) > 1931
+
 
 
 
