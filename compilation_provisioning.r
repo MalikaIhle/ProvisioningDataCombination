@@ -1436,9 +1436,10 @@ head(Compare_tblParentalCare)
 
 {### MY_tblParentalCare
 
-{# replace MTime FTime to MTime1 and FTime1 and add MTime2 and FTime2 
-# time1: replace sum duration only of visits > 1 min to sum duration of all feeding visits (including those < 1 min), whether OF or IN
 MY_tblParentalCare <- MY_tblParentalCareforComparison[,c("DVDRef","MVisit1","FVisit1","MVisit2","FVisit2","ShareTime","Filename")]
+
+{# remove MTime FTime, create MTime1 and FTime1 and MTime2 and FTime2 
+# time1: replace sum duration only of visits > 1 min to sum duration of all feeding visits (including those < 1 min), whether OF or IN
 
 combinedprovisioningALL_listperFilename <- split(combinedprovisioningALL,combinedprovisioningALL$Filename)
 
@@ -1755,8 +1756,7 @@ head(MY_tblDVDInfo)
 
 {### MY_tblBroods								>> update txt files when pedigree updated !!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-MY_tblBroods <- tblBroods[tblBroods$BroodRef %in% MY_tblDVDInfo$BroodRef,]
-nrow(MY_tblBroods[MY_tblBroods$SocialDadCertain == 0 | MY_tblBroods$SocialMumCertain == 0,]) # 92 brood with at least one parents unknown or uncertain
+MY_tblBroods <- tblBroods 
 
 {# add hatching date from tblBroodEvent
 MY_tblBroods <- merge (x= MY_tblBroods, 
@@ -1847,7 +1847,7 @@ if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MDivorce[i]) & x$MDivorce[i] 
 if(nrow(x)==1)
 {x$MDivorceforEx <- NA}
 
-return(x)
+return(x[,c('BroodRef', 'MPrevNbRinged','MBroodNb','MPriorResidence','MPrevFemaleLastSeenAlive','MwithsameF','MDivorce','MDivorceforEx')])
 
 }
 
@@ -1857,7 +1857,7 @@ MY_tblBroods_split_per_SocialDadID_out2 <- data.frame(rownames(do.call(rbind,MY_
 nrow(MY_tblBroods_split_per_SocialDadID_out2)	# 975
 rownames(MY_tblBroods_split_per_SocialDadID_out2) <- NULL
 
-MY_tblBroods <- MY_tblBroods_split_per_SocialDadID_out2[,-1]
+MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialDadID_out2[,-1], by='BroodRef', all.x=TRUE)
 }
 
 {# add Female divorce
@@ -1880,7 +1880,8 @@ if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FDivorce[i]) & x$FDivorce[i] 
 if(nrow(x)==1)
 {x$FDivorceforEx <- NA}
 
-return(x)
+return(x[,c('BroodRef', 'FPrevNbRinged','FBroodNb','FPriorResidence','FPrevMaleLastSeenAlive','FwithsameM','FDivorce','FDivorceforEx')])
+
 
 }
 
@@ -1890,7 +1891,7 @@ MY_tblBroods_split_per_SocialMumID_out2 <- data.frame(rownames(do.call(rbind,MY_
 nrow(MY_tblBroods_split_per_SocialMumID_out2)	# 962
 rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
 
-MY_tblBroods <- MY_tblBroods_split_per_SocialMumID_out2[,-1]
+MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialMumID_out2[,-1], by='BroodRef', all.x=TRUE)
 }
 
 {# add PairBroodNb
@@ -1910,11 +1911,16 @@ return(x)
 MY_tblBroods_split_per_PairID_out1 <- lapply(MY_tblBroods_split_per_PairID, FUN=MY_tblBroods_split_per_PairID_fun)
 MY_tblBroods_split_per_PairID_out2 <- data.frame(rownames(do.call(rbind,MY_tblBroods_split_per_PairID_out1)),do.call(rbind, MY_tblBroods_split_per_PairID_out1))
 
-nrow(MY_tblBroods_split_per_PairID_out2)	# 1019
+nrow(MY_tblBroods_split_per_PairID_out2)	# 2014
 rownames(MY_tblBroods_split_per_PairID_out2) <- NULL
 
 MY_tblBroods <- MY_tblBroods_split_per_PairID_out2[,-1]
 
+}
+
+{# remove Broods where both social parents are NA
+MY_tblBroods <- MY_tblBroods[MY_tblBroods$PairID != 'NANA',]
+nrow(MY_tblBroods) # 1886
 }
 
 }
@@ -1973,7 +1979,7 @@ DurationScript # ~ 14 min
 
 
 #write.table(MY_tblDVDInfo,file='R_MY_tblDVDInfo.xls',  col.names=TRUE, sep='\t') # 20160415
-#write.table(MY_tblBroods,file='R_MY_tblBroods.xls',  col.names=TRUE, sep='\t') # 20160415
+#write.table(MY_tblBroods,file='R_MY_tblBroods.xls',  col.names=TRUE, sep='\t') # 20160415, 20160428 (with all brood even not watched, even with one social parents NA)
 #write.table(MY_tblParentalCare,file='R_MY_tblParentalCare.xls',  col.names=TRUE, sep='\t') # 20160415, identical with changes to call new DB, 20160425
 
 
@@ -1981,7 +1987,7 @@ DurationScript # ~ 14 min
 
 ## TO DO
 # find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
-# select valid files (nest with chicks, nest with visits from both parents to have alternation possible ?)
+# select valid files (nest with chicks, nest with visits from both parents to have alternation possible, nest with chick above 5 days old?)
 # simulation alternation
 # repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
 
