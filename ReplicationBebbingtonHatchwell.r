@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 26/04/2016  
-#	 commit: correct R_output file + csv
+#	 last modif : 29/04/2016  
+#	 commit: figure comparison randomization 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -67,31 +67,6 @@ range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 }
 
 
-max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
-hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
-
-
-### create MY_TABLE
-
-# merge summary of raw data (MY_tblParentalCare) into the meta data (MY_tblDVDInfo) into all broods monitored (MY_tblBroods)
-
-MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","AlternationValue")]
-MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","DVDdate","DVDtime")], by='DVDRef')
-MY_TABLE <- merge(x=MY_TABLE, 
-y=MY_tblBroods[,c("BroodRef","BreedingYear","SocialMumID","SocialDadID","Nb3","DadAge","MumAge","ParentsAge",
-"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
-"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb")], by='BroodRef')
-
-head(MY_TABLE)
-
-
-
-## TO DO
-# find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
-# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
-# take a decision for time of the day
-
-
 
 
 
@@ -120,14 +95,14 @@ head(MY_TABLE)
 # for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding intervals is 15.
 
 # 6) within each combination of provisioning rate combination, 10000 bootstraps of alternation scores were ran (this is what the paper says, but in fact the code Kat sent shows that the bootstrapping was made at a latter stage, see below)
-# 7) All simulated alternation scores were pooled into groups of visit rate differences (absolute value of x minus y) [and the bootstrapping happened here in Kat’s code – but maybe it does not matter)
+# 7) All simulated alternation scores were pooled into groups of visit rate differences (absolute value of x minus y) [and the bootstrapping happened here in Kat’s code – but maybe it does not matter]
 # 8) All observed alternation scores were also pooled into groups of visit rate differences and compared to the simulated one leading to Fig. 1.
 
 # My point on view on this:
-# 1) their selection seems arbitrary, I suggest we remove the extreme 5% quantile if anything.
+# 1) the selection seems arbitrary, if anything, I suggest we remove the extreme 5% quantile ?
 # 2) what about non-independence of some nest watches because of same MID or FID or PairID ? Is it ok because they will then be more represented in both observed and simulated nest watches ? But their individuality is anyway disrupted, for instance for a same provisioning rate, a bird can be consistently very regular or can be very irregular. I think this argues for randomizing within nest watch.
 # 3) what if we randomly select several large intervals and spill over the hour ? Also, in our case, we also calculated visit rate per hour although we typically record for 90 min, so we maybe have more variance in interfeed intervals to select from when picking ‘visit rate-1’ interfeed intervals.
-# 4) (see supp fig) intervals length are considered like the starting time of feeding visits, and like if the first visit of the male and the female were both at time zero. I think maybe it is better again to shuffle intervals within a file, keeping the firs time start of this file.
+# 4) (see supp fig) intervals length are considered like the starting time of feeding visits, and like if the first visit of the male and the female were both at time zero. I think maybe it is better again to shuffle intervals within a file, keeping the firs time start for each sex in this file.
 # 5) the formula to calculate A is different for observed and simulated nest watches I believe, and the maximum A that can be obtained for a same combination of x and y is systematically lower for the simulated ones as soon as the provisioning rate difference (absolute value of x minus y) is larger than 1 (see excel file attached).
 # 8) and 1) 
 # for simulation : selection of individuals that have a provisioning rate not extreme, then pooled into visit rate differences, only with pairs whose individuals have non extreme provisioning rate.
@@ -351,7 +326,7 @@ Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, gro
 Fig1
 
 
-### simulation alternation: shuffling intervals within files where both sex visit at least once
+{### simulation alternation: shuffling intervals within files where both sex visit at least once
 
 ## I think it could be still interesting to remove extreme values of provisioning rate (not normal to have just one visit, or 50...)
 ## I kept the time of the first visit of both male and female in each file, and randomized subsequent intervals
@@ -503,28 +478,72 @@ Fig1bis <- ggplot(data=VisitRateDiff_Amean_bis, aes(x=VisitRateDifference, y=Ame
   
 }
 
-dev.new()
+}
+
 Fig1bis
 
 
+{### comparison both method of randomization
+  
+VisitRateDiff_Amean$TypeSim <- c(rep('ExpectedKat',20),rep('ObservedKat',20))
+VisitRateDiff_Amean_bis$TypeSim <- c(rep('ObservedMalika',21),rep('ExpectedMalika',21))
+VisitRateDiff_Amean_for_comparison <- rbind(VisitRateDiff_Amean,VisitRateDiff_Amean_bis[,-5])
+VisitRateDiff_Amean_for_comparison <- VisitRateDiff_Amean_for_comparison[VisitRateDiff_Amean_for_comparison$TypeSim != 'ObservedKat',]
+
+Fig1comparison <- ggplot(data=VisitRateDiff_Amean_for_comparison, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("red", 'orange','grey'), labels=c("95% Expected Kat", "95% Expected Malika","95% Observed"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
+theme_classic()
+}  
+  
+Fig1comparison 
+
+
+
+
+
+
+
+  
+#############################  in progress 
+  
+ ## TO DO
+# find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
+# create 'MY_Table'
+# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
+# take a decision for time of the day
+
   
   
   
- MY_tblParentalCare_forA_bothSexes[MY_tblParentalCare_forA_bothSexes$DiffVisit1Rate == 30,]
+{### create MY_TABLE
 
- MY_tblParentalCare_forA_bothSexes[MY_tblParentalCare_forA_bothSexes$DiffVisit1Rate == 30,]
+# merge summary of raw data (MY_tblParentalCare) into the meta data (MY_tblDVDInfo) into all broods monitored (MY_tblBroods)
+
+MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","AlternationValue")]
+MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","DVDdate","DVDtime")], by='DVDRef')
+MY_TABLE <- merge(x=MY_TABLE, 
+y=MY_tblBroods[,c("BroodRef","BreedingYear","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
+"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
+"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb")], by='BroodRef')
+
+max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
+hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
 
 
-hist(as.numeric(MY_tblParentalCare$FVisit1RateH))
-mean(MY_tblParentalCare$FVisit1RateH, na.rm=T)
-mean(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
-sd(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
- mean(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)+2*sd(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
-max(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm= 
- mean(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)-2*sd(MY_tblParentalCare$FVisit1RateH[MY_tblParentalCare$FVisit1RateH != 0], na.rm=T)
+head(MY_TABLE)
+nrow(MY_TABLE) # 1777 DVD file
 
- 
- 
- sunflowerplot(MY_tblDVDInfo$DVDInfoAge,MY_tblDVDInfo$ChickAge)
- 
- 
+
+MY_tblDVDInfo$BroodRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef] # 2 broods corresponding to 2 DVDs have both parents NA
+length(unique(MY_TABLE$BroodRef[is.na(MY_TABLE$SocialMumID) | is.na(MY_TABLE$SocialDadID)])) # 39 brood with one parent NA
+nrow(MY_TABLE[is.na(MY_TABLE$SocialMumID) | is.na(MY_TABLE$SocialDadID),]) # corresponding to 67 files
+
+
+}
