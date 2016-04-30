@@ -331,12 +331,9 @@ Fig1
 ## I think it could be still interesting to remove extreme values of provisioning rate (not normal to have just one visit, or 50...)
 ## I kept the time of the first visit of both male and female in each file, and randomized subsequent intervals
 
-{# select video files with both sex visiting
-listDVDRefwithoutOneSex <- MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& !is.na(MY_tblParentalCare$DVDRef)]
-listDVDRefwithoutOneSex <- listDVDRefwithoutOneSex[!is.na(listDVDRefwithoutOneSex)]
-RawFeedingVisitsBothSexes <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% listDVDRefwithoutOneSex,c('DVDRef','TstartFeedVisit','Sex','Interval')]
+RawFeedingVisitsBothSexes <- MY_RawFeedingVisits[,c('DVDRef','TstartFeedVisit','Sex','Interval')]
 RawFeedingVisitsBothSexes$Sex <- as.numeric(RawFeedingVisitsBothSexes$Sex )
-}
+
 
 {# creation of i simulated dataset (and calculation of i Asim) for each j file
 
@@ -360,7 +357,7 @@ x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
 
-for (i in 1:1000) # to increase up to 1000
+for (i in 1:100) # to increase up to 1000
 {
 
 x0sim <- x0
@@ -438,8 +435,7 @@ head(out_Asim_df_perDiffVisit1Rate_out2)
 
 {# summary Aobserved when both sexes visit
 
-MY_tblParentalCare_forA_bothSexes <- MY_tblParentalCare[! MY_tblParentalCare$DVDRef %in% listDVDRefwithoutOneSex,]
-MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare_forA_bothSexes, DiffVisit1Rate)
+MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare, DiffVisit1Rate)
 
 Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- summarise (MY_tblParentalCare_perVisitRateDiff_bothSexes,
 					Amean = mean(AlternationValue),
