@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 29/04/2016  
+#	 last modif : 02/05/2016  
 #	 commit: figure comparison randomization 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -47,7 +47,8 @@ list_non_valid_DVDRef <-
 c(MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0],# 6 - where 0 chicks
 MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5],# 906 - where still brooding (age <=5)
 MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& !is.na(MY_tblParentalCare$DVDRef)], # 171 - one sex did not visit
-MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef]) # 2 - both parents unidentified
+MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 - both parents unidentified
+MY_tblParentalCare$DVDRef[is.na(MY_tblParentalCare$EffectiveTime)]) # 9 files with no visits at all
 
 list_non_valid_DVDRef <- list_non_valid_DVDRef[!is.na(list_non_valid_DVDRef)]
 
@@ -59,13 +60,12 @@ MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% l
 
 {### sample sizes
 
-nrow(MY_tblParentalCare) # 1777 DVD files
-length(unique(MY_tblDVDInfo$BroodRef)) # 962 broods videotaped at least once
+nrow(MY_tblParentalCare) # 1768 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
+length(unique(MY_tblDVDInfo$BroodRef)) # 958 broods videotaped at least once
 mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
 range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 
 }
-
 
 
 
@@ -129,7 +129,9 @@ quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)
 {## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
 
 {# Create RawInterfeeds and split per sex and select provisioning rates from 3 to 22
-RawInterfeeds <- merge(x= MY_RawFeedingVisits[,c('DVDRef','Sex','Interval')], y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , by='DVDRef', all.x=TRUE)
+RawInterfeeds <- merge(x= MY_RawFeedingVisits[,c('DVDRef','Sex','Interval')], 
+                       y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , 
+                       by='DVDRef', all.x=TRUE)
 
 MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
 MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
@@ -285,8 +287,7 @@ Aboot
 
 {# summary Aobserved
 # per visit rate difference like in the paper
-MY_tblParentalCare_forA <- MY_tblParentalCare[!is.na(MY_tblParentalCare$AlternationValue),]
-MY_tblParentalCare_perVisitRateDiff <- group_by(MY_tblParentalCare_forA, DiffVisit1Rate)
+MY_tblParentalCare_perVisitRateDiff <- group_by(MY_tblParentalCare, DiffVisit1Rate)
 
 Summary_MY_tblParentalCare_perVisitRateDiff <- summarise (MY_tblParentalCare_perVisitRateDiff,
 					Amean = mean(AlternationValue),
@@ -403,8 +404,8 @@ out_Asim_df <- merge(x=out_Asim_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit
 
 out_Asim_df_perDiffVisit1Rate <- split(out_Asim_df,out_Asim_df$DiffVisit1Rate)
 
-x <-out_Asim_df_perDiffVisit1Rate[[31]]
-x <-out_Asim_df_perDiffVisit1Rate[[30]] # just one file
+ # x <-out_Asim_df_perDiffVisit1Rate[[31]]
+ # x <-out_Asim_df_perDiffVisit1Rate[[30]] # just one file
 
 
 out_Asim_df_perDiffVisit1Rate_fun <- function(x) {
@@ -483,8 +484,8 @@ Fig1bis
   
 VisitRateDiff_Amean$TypeSim <- c(rep('ExpectedKat',20),rep('ObservedKat',20))
 VisitRateDiff_Amean_bis$TypeSim <- c(rep('ObservedMalika',21),rep('ExpectedMalika',21))
-VisitRateDiff_Amean_for_comparison <- rbind(VisitRateDiff_Amean,VisitRateDiff_Amean_bis[,-5])
-VisitRateDiff_Amean_for_comparison <- VisitRateDiff_Amean_for_comparison[VisitRateDiff_Amean_for_comparison$TypeSim != 'ObservedKat',]
+VisitRateDiff_Amean_for_comparison <- rbind(VisitRateDiff_Amean[VisitRateDiff_Amean$TypeSim != 'ObservedKat',],VisitRateDiff_Amean_bis[,-5])
+
 
 Fig1comparison <- ggplot(data=VisitRateDiff_Amean_for_comparison, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
 geom_point()+
