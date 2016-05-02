@@ -2002,7 +2002,7 @@ nrow(birdmass[is.na(birdmass$Mass),]) # an additional 6 birds without mass at ag
 nrow(birdmass[is.na(birdmass$Tarsus),]) # an additional 27 birds without tarsus at age 11
 #birdmass <- birdmass[complete.cases(birdmass),]
 nrow(birdmass)
-nrow(MY_tblBroods[MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 825 broods where measurement werent taken on age11
+nrow(MY_tblBroods[MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 825 broods where measurement were taken on age11
 nrow(MY_tblBroods[!MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 194 broods where measurement werent taken on age11
 
 birdmass_splitperRearingBrood <- split(birdmass, birdmass$RearingBrood)

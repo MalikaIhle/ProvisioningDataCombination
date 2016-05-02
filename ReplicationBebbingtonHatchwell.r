@@ -481,12 +481,21 @@ Fig1bis <- ggplot(data=VisitRateDiff_Amean_bis, aes(x=VisitRateDifference, y=Ame
   geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
   xlab("Visit rate difference")+
   ylab("Mean alternation")+
-  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "Mean Observed"))+
+  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
   scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_bis$VisitRateDifference, n = 12)) +
   scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_bis$Amean, n = 9)) +  
   theme_classic()
   
 }
+
+# 
+
+MY_tblParentalCare[MY_tblParentalCare$DiffVisit1Rate == 17,]
+MY_tblParentalCare[MY_tblParentalCare$DiffVisit1Rate == 16,]
+MY_RawFeedingVisits[MY_RawFeedingVisits$DVDRef == 2627,]
+
+head(MY_tblParentalCare)
+
 
 }
 
