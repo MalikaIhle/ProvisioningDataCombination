@@ -56,6 +56,7 @@ MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRe
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
 
+
 }
 
 {### sample sizes
@@ -67,6 +68,29 @@ range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 
 }
 
+
+{## ? keep te middle 90% of feeding rates for each sex ?
+
+summary(MY_tblParentalCare$FVisit1RateH)
+summary(MY_tblParentalCare$MVisit1RateH)
+dev.new()
+par(mfrow=c(2,1)) 
+hist(MY_tblParentalCare$FVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
+hist(MY_tblParentalCare$MVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
+
+quantile(MY_tblParentalCare$FVisit1RateH[!is.na(MY_tblParentalCare$FVisit1RateH)], c(0.05,0.95))
+quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)], c(0.05,0.95))
+
+# MY_tblParentalCare <- MY_tblParentalCare[MY_tblParentalCare$FVisit1RateH >=3 
+#                                          & MY_tblParentalCare$FVisit1RateH <= 22 &
+#                                            MY_tblParentalCare$MVisit1RateH >=3 
+#                                          & MY_tblParentalCare$MVisit1RateH <= 22,]
+# 
+# MY_RawFeedingVisits <- MY_RawFeedingVisits[ MY_RawFeedingVisits$DVDRef %in% unique(MY_tblParentalCare$DVDRef) ,]
+# MY_tblDVDInfo <- MY_tblDVDInfo[ MY_tblDVDInfo$DVDRef %in% unique(MY_tblParentalCare$DVDRef),]                                     
+
+nrow(MY_tblParentalCare) # 1499
+}
 
 
 
@@ -113,18 +137,7 @@ range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 }
 
 
-{## calculation top 5% of feeding rates for each sex 
 
-summary(MY_tblParentalCare$FVisit1RateH)
-summary(MY_tblParentalCare$MVisit1RateH)
-dev.new()
-par(mfrow=c(2,1)) 
-hist(MY_tblParentalCare$FVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
-hist(MY_tblParentalCare$MVisit1RateH, xlim=c(0,50), ylim = c(0,1000))
-
-quantile(MY_tblParentalCare$FVisit1RateH[!is.na(MY_tblParentalCare$FVisit1RateH)], c(0.05,0.95))
-quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)], c(0.05,0.95))
-}
 
 {## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
 
