@@ -2128,7 +2128,9 @@ MY_tblBroods <- MY_tblBroods_split_per_PairID_out2[,-1]
 
 {# add Chick Mass and Tarsus
 
-
+MY_tblBroods <- merge(x=MY_tblBroods, y=LastMassTarsusChick, all.x =TRUE, by.x = 'BroodRef', by.y = 'RearingBrood' )
+sunflowerplot(MY_tblBroods$NbRinged~ MY_tblBroods$nMass)
+MY_tblBroods[MY_tblBroods$NbRinged- MY_tblBroods$nMass > 1 & !is.na(MY_tblBroods$nMass),]
 
 }
 
@@ -2197,5 +2199,5 @@ DurationScript # ~ 14 min
  # write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/"), row.names = FALSE) # 20160324 20160331 20160426 
  # write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
  # write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) # 20160415, identical with changes to call new DB, 20160425
- # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA) # 20160503 updated lastseenalive
+ # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA) # 20160503 updated lastseenalive and added Mass
 

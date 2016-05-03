@@ -69,7 +69,7 @@ range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 }
 
 
-{## ? keep te middle 90% of feeding rates for each sex ?
+{## ? keep the middle 90% of feeding rates for each sex ?
 
 summary(MY_tblParentalCare$FVisit1RateH)
 summary(MY_tblParentalCare$MVisit1RateH)
@@ -328,7 +328,7 @@ Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, gro
   geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
   xlab("Visit rate difference")+
   ylab("Mean alternation")+
-  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "Mean Observed"))+
+  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
   scale_x_continuous(breaks = pretty(VisitRateDiff_Amean$VisitRateDifference, n = 12)) +
   scale_y_continuous(breaks = pretty(VisitRateDiff_Amean$Amean, n = 9)) +  
   theme_classic()
@@ -488,15 +488,6 @@ Fig1bis <- ggplot(data=VisitRateDiff_Amean_bis, aes(x=VisitRateDifference, y=Ame
   
 }
 
-# 
-
-MY_tblParentalCare[MY_tblParentalCare$DiffVisit1Rate == 17,]
-MY_tblParentalCare[MY_tblParentalCare$DiffVisit1Rate == 16,]
-MY_RawFeedingVisits[MY_RawFeedingVisits$DVDRef == 2627,]
-
-head(MY_tblParentalCare)
-
-
 }
 
 Fig1bis
@@ -538,8 +529,7 @@ Fig1comparison
 # repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
 # take a decision for time of the day
 
-  
-  
+
   
 {### create MY_TABLE
 
@@ -550,7 +540,7 @@ MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChi
 MY_TABLE <- merge(x=MY_TABLE, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
 "MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
-"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb")], by='BroodRef')
+"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
 
 max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
 hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
