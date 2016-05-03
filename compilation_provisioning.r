@@ -1,11 +1,11 @@
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Compile provisioning data sparrows
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
-#	 last modif :25/04/2016  
-#	 commit: correct R_output file + csv
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#	 last modif :03/05/2016
+#	 commit: add chick mass and tarsus per brood
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
 
@@ -102,7 +102,7 @@ pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video 
 
 {# text files from input folder
 input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
-sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160314.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
+sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 sunrise <- read.table(file= paste(input_folder,"sunrise.txt", sep="/"), sep='\t', header=T)
 }
 
@@ -142,6 +142,216 @@ FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.B
 WHERE (((tblBirdID.BroodRef) Is Not Null));
 ")
 
+# get AvMass and AvTarsus per brood d12 (see sql query 'LastMassTarsusChick')
+
+{LastMassTarsusChick <- sqlQuery(conDB, "
+SELECT usys_qRearingBrood.RearingBrood, 								
+Avg(tblMeasurements.Mass) AS AvgMass, 										
+Min(tblMeasurements.Mass) AS MinMass, 
+Max(tblMeasurements.Mass) AS MaxMass, 
+StDev(tblMeasurements.Mass) / Avg(tblMeasurements.Mass) AS CVMass,	
+Count(tblMeasurements.Mass) AS nMass, 	
+Avg(tblMeasurements.Tarsus) AS AvgTarsus, 
+Count(tblMeasurements.Tarsus) AS nTarsus, 	
+Count(tblMeasurements.Mass) - Count(tblMeasurements.Tarsus) AS nDiff,								
+Avg(usys_qRelativeChickMassClassesForCaptures.Age) AS AvgClassAge			
+
+FROM (((
+
+		(SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood
+		FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
+		WHERE (((tblBirdID.BroodRef) Is Not Null))) 
+		AS usys_qRearingBrood 
+
+
+INNER JOIN tblCaptures ON usys_qRearingBrood.BirdID = tblCaptures.BirdID) 
+
+INNER JOIN 
+
+		(SELECT tblCaptures.CaptureRef, 
+		14 AS MassClass, 
+		First(tblCaptures.CaptureDate-[HatchDate])+1 AS Age
+		
+		FROM (tblBirdID INNER JOIN tblCaptures ON tblBirdID.BirdID = tblCaptures.BirdID)
+		INNER JOIN 
+			
+			(
+			SELECT tblBirdID.BirdID, 
+			usys_qBroodEggDate.LayDate AS EggDate, 
+			usys_qBroodHatchDate.HatchDate, 
+			usys_qBroodEggDate.DateEstimated AS EggDateEst, 
+			IIf(usys_qBroodHatchDate.BroodRef Is Not Null,usys_qBroodHatchDate.DateEstimated,0) AS HatchDateEst
+
+			FROM ((tblBroods 
+			LEFT JOIN 
+
+					(SELECT tblBroods.BroodRef, 
+					IIf(usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+					IIf(usys_qBroodTrueEggDate.BroodRef,
+					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+					
+					FROM (
+						(SELECT tblBroodEvents.BroodRef, 
+						tblBroodEvents.EventDate AS LayDate, 
+						tblBroodEvents.DateEstimated
+						FROM tblBroodEvents
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=0))
+						) 
+						AS usys_qBroodTrueEggDate 
+						
+					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+					LEFT JOIN 
+						(SELECT tblBroodEvents.BroodRef, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						[EventDate]-[EggCount],
+						[Hatchdate]-14) AS LayDate, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						'EggCount','HatchDate') AS EstimateSource
+						
+						FROM tblBroodEvents 
+						LEFT JOIN 
+							(SELECT tblBroodEvents.BroodRef, 
+							tblBroodEvents.EventDate AS HatchDate, 
+							tblBroodEvents.DateEstimated
+							FROM tblBroodEvents
+							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+							AND ((tblBroodEvents.EventNumber)=1))
+							) 
+							AS usys_qBroodHatchDatesFromTable 
+						
+						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+						
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=4) 
+						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+						OR (((tblBroodEvents.EventNumber)=4) 
+						AND ((tblBroodEvents.EggCount) Is Not Null))
+						
+						) 
+						AS usys_qBroodEggDateFromFirstSeen 
+						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+						
+					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+					
+					) 
+					AS usys_qBroodEggDate
+			 
+			ON tblBroods.BroodRef = usys_qBroodEggDate.BroodRef) 
+			
+			LEFT JOIN 
+				(
+				SELECT usys_qBroodsWithHatchlings.BroodRef, 
+				IIf(usys_qBroodHatchDatesFromTable.HatchDate Is Not Null,
+				usys_qBroodHatchDatesFromTable.HatchDate,
+				usys_qBroodEggDate.LayDate+14) AS HatchDate, 
+				usys_qBroodHatchDatesFromTable.HatchDate Is Null Or usys_qBroodHatchDatesFromTable.DateEstimated AS DateEstimated
+				FROM (
+					(SELECT DISTINCT tblBirdID.BroodRef, 
+					Count(*) AS NoHatchlings
+					FROM tblBirdID
+					WHERE (((tblBirdID.LastStage)>1) AND ((tblBirdID.BroodRef) Is Not Null))
+					GROUP BY tblBirdID.BroodRef
+					) 
+					AS usys_qBroodsWithHatchlings 
+					
+				LEFT JOIN 
+					(SELECT tblBroodEvents.BroodRef, 
+					tblBroodEvents.EventDate AS HatchDate, 
+					tblBroodEvents.DateEstimated
+					FROM tblBroodEvents
+					WHERE (((tblBroodEvents.EventDate) Is Not Null) AND ((tblBroodEvents.EventNumber)=1))
+					) 
+					AS usys_qBroodHatchDatesFromTable 
+					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef) 
+					
+				LEFT JOIN 
+					(SELECT tblBroods.BroodRef, 
+					IIf(usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+					IIf(usys_qBroodTrueEggDate.BroodRef,
+					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+					
+					FROM (
+						(SELECT tblBroodEvents.BroodRef, 
+						tblBroodEvents.EventDate AS LayDate, 
+						tblBroodEvents.DateEstimated
+						FROM tblBroodEvents
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=0))
+						) 
+						AS usys_qBroodTrueEggDate 
+						
+					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+					LEFT JOIN 
+						(SELECT tblBroodEvents.BroodRef, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						[EventDate]-[EggCount],
+						[Hatchdate]-14) AS LayDate, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						'EggCount','HatchDate') AS EstimateSource
+						
+						FROM tblBroodEvents 
+						LEFT JOIN 
+							(SELECT tblBroodEvents.BroodRef, 
+							tblBroodEvents.EventDate AS HatchDate, 
+							tblBroodEvents.DateEstimated
+							FROM tblBroodEvents
+							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+							AND ((tblBroodEvents.EventNumber)=1))
+							) 
+							AS usys_qBroodHatchDatesFromTable 
+						
+						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+						
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=4) 
+						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+						OR (((tblBroodEvents.EventNumber)=4) 
+						AND ((tblBroodEvents.EggCount) Is Not Null))
+						
+						) 
+						AS usys_qBroodEggDateFromFirstSeen 
+						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+						
+					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+					
+					) AS usys_qBroodEggDate 
+					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodEggDate.BroodRef
+					
+				) 
+				AS usys_qBroodHatchDate 
+
+			ON tblBroods.BroodRef = usys_qBroodHatchDate.BroodRef) 
+			INNER JOIN tblBirdID ON tblBroods.BroodRef = tblBirdID.BroodRef
+			WHERE (((tblBirdID.BroodRef) Is Not Null))
+
+			)
+			AS usys_qBirdEggHatchDates 
+			ON tblCaptures.BirdID = usys_qBirdEggHatchDates.BirdID
+		
+		WHERE (((([tblCaptures].[CaptureDate]-[HatchDate])+1)<=14) 
+		AND ((tblCaptures.Stage)<3)
+		AND (((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[Capturedate])))
+		GROUP BY tblCaptures.CaptureRef
+		HAVING (((First(tblCaptures.CaptureDate-[HatchDate])+1)=11 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=12 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=13 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=14))
+		)
+ 		AS usys_qRelativeChickMassClassesForCaptures 
+		ON tblCaptures.CaptureRef = usys_qRelativeChickMassClassesForCaptures.CaptureRef)
+ 
+INNER JOIN tblMeasurements ON tblCaptures.CaptureRef = tblMeasurements.CaptureRef)
+
+WHERE ((usys_qRearingBrood.RearingBrood) Is Not Null)
+GROUP BY usys_qRearingBrood.RearingBrood, usys_qRelativeChickMassClassesForCaptures.MassClass
+HAVING (((Count(tblMeasurements.Mass))>0));
+")}
+
 close(conDB)
 }
 
@@ -161,6 +371,7 @@ head(missingDVDFilenames)
 head(RearingBrood_allBirds)
 head(sys_LastSeenAlive)
 head(sunrise)
+head(LastMassTarsusChick)
 
 
 {### extract provisioning raw data from excel files
@@ -1915,6 +2126,12 @@ MY_tblBroods <- MY_tblBroods_split_per_PairID_out2[,-1]
 
 }
 
+{# add Chick Mass and Tarsus
+
+
+
+}
+
 {# remove Broods where both social parents are NA
 MY_tblBroods <- MY_tblBroods[MY_tblBroods$PairID != 'NANA',]
 nrow(MY_tblBroods) # 1886
@@ -1980,231 +2197,5 @@ DurationScript # ~ 14 min
  # write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/"), row.names = FALSE) # 20160324 20160331 20160426 
  # write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
  # write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) # 20160415, identical with changes to call new DB, 20160425
- # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA)
-
-
-
-
-
-
-
-
-
-
-{# cheap version bird mass
-birdmass <- read.table("BirdMass.txt", sep='\t', header=T)
-nrow(birdmass) # 2444 only age11 measurements
-birdmass <- birdmass[! birdmass$RearingBrood %in% c(40,116,818,1246,1382,1583), ]
-nrow(birdmass) # 2433 where chicks same brood are similar age even if cross fostered (i.e. same hatching data)
-birdmass <-  birdmass[birdmass$RearingBrood %in% MY_tblBroods$BroodRef , ]
-nrow(birdmass) # 2169 nestlings belonging to taped broods
-nrow(birdmass[is.na(birdmass$Mass),]) # an additional 6 birds without mass at age 11
-nrow(birdmass[is.na(birdmass$Tarsus),]) # an additional 27 birds without tarsus at age 11
-#birdmass <- birdmass[complete.cases(birdmass),]
-nrow(birdmass)
-nrow(MY_tblBroods[MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 825 broods where measurement were taken on age11
-nrow(MY_tblBroods[!MY_tblBroods$BroodRef %in% birdmass$RearingBrood,]) # 194 broods where measurement werent taken on age11
-
-birdmass_splitperRearingBrood <- split(birdmass, birdmass$RearingBrood)
-birdmass_splitperRearingBrood[[1]]
-
-birdmass_splitperRearingBrood_fun <- function(x) {
-
-return(c(
-nrow(x), 	   #broodsizeage11
-round(mean(x$Mass),2),  # AvMass
-round(mean(x$Tarsus),2) # AvTarsus
-))
-
-}
-
-birdmass_splitperRearingBrood_out1 <- lapply(birdmass_splitperRearingBrood,birdmass_splitperRearingBrood_fun)
-birdmass_splitperRearingBrood_out2 <- data.frame(rownames(do.call(rbind,birdmass_splitperRearingBrood_out1)),do.call(rbind, birdmass_splitperRearingBrood_out1))
-
-nrow(birdmass_splitperRearingBrood_out2)	# 825
-rownames(birdmass_splitperRearingBrood_out2) <- NULL
-colnames(birdmass_splitperRearingBrood_out2) <- c('RearingBrood','BroodSize11','AvMass11','AvTarsus11')
-head(birdmass_splitperRearingBrood_out2)
-
-
-MY_tblBroods <- merge(x=MY_tblBroods, y=birdmass_splitperRearingBrood_out2, all.x =TRUE, by.x = 'BroodRef', by.y = 'RearingBrood' )
-head(MY_tblBroods)
-sunflowerplot(MY_tblBroods$NbRinged~ MY_tblBroods$BroodSize11)
-MY_tblBroods[MY_tblBroods$NbRinged- MY_tblBroods$BroodSize11 > 0 & !is.na(MY_tblBroods$BroodSize11),]
-}
-
-
-{# exploration for selection valid files > creates 'R_Compare_NbChicksDuringRecording.xlsx'
-
-# decision still to take:
-# remove when number of chicks = 0 (how to detect them ? first attempt in next big braket)
-# remove when age < 6 (when brooding) or separate stages into early and late ? ('only' lose 160 files > 1946 files left)
-
-{### refine which files are valid for analysis and figure out the number of chicks in the nest at time of recording
-# situation 4 = with chicks
-# if during next visit (on the day of recording or within a few days after), nunmber of chicks = 0, maybe nest was already empty... ? 
-# exclude recording where one or the two bird did not visit AND where the next nest check indicates 0 chicks ??
-# what if in DVDInfo, DeathYN=Yes ?? how did they know ?
-# calculate nb of chicks in nest at time of recording (DVDInfo nb of chicks, Nb of chicks alive in rearing brood, nb of offsrping at visit when visit on same day)
-
-
-combinedprovisioningALL$Filename
-MY_tblParentalCare
-
-
-{## get back to querying the DB
-
-head(tblBroods)
-head(tblBroodEvents)
-
-MY_LARGE_tblParentalCare <- merge(x=MY_tblParentalCare, y=tblDVD_XlsFilesALLDBINFO[,c('DVDRef','BroodRef','OffspringNo', 'DVDdate')], all.x=TRUE, by='DVDRef')
-colnames(MY_LARGE_tblParentalCare)[which(names(MY_LARGE_tblParentalCare) == "OffspringNo")] <- "DVDInfoChickNb"
-MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=tblBroods, all.x=TRUE, by='BroodRef')
-
-{# Nb of hatched, FL, and chicks alive per DVDdate from tblBirdID, per rearing broods
-
-head(RearingBrood_allBirds)
-
-MY_LONG_tblParentalCare_withAllBirds <- merge(x=MY_LARGE_tblParentalCare, y=RearingBrood_allBirds, by.x='BroodRef', by.y='RearingBrood', all.x=TRUE)
-head(MY_LONG_tblParentalCare_withAllBirds, 20)
-
-
-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename <- split(MY_LONG_tblParentalCare_withAllBirds, MY_LONG_tblParentalCare_withAllBirds$Filename)
-x <-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[[6]]
-x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2011\\VK0062.xlsx']]
-x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2005\\50166.xlsx']]
-x <- MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename[['2004\\40077.xlsx']]
-
-
-
-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_fun <- function(x) {
-return(c(
-length(x$BirdID[x$LastStage>1]),  				# NbHatched
-length(x$BirdID[x$LastStage==3]), 				# NbFL
-length(x$BirdID[(is.na(x$DeathDate) | x$DeathDate > x$DVDdate) & x$LastStage > 1]), # NbAliveAtDVDDate
-length(x$BirdID[!is.na(x$DeathDat) & x$DeathDate == x$DVDdate & x$LastStage > 1]), # NbDeadAtDVDDate
-length(x$BirdID[!is.na(x$DeathDat) &x$DeathDate == x$DVDdate & x$LastStage > 1 & !is.na(x$DeathStatus) & x$DeathStatus == 3]), # NbDeadAtDVDDatebyAccident
-length(x$BirdID[is.na(x$DeathDate) & x$DeathStatus > 0]), # NbDeadAtUnknownDate
-length(x$BirdID[is.na(x$DeathDate) & is.na(x$DeathStatus) & x$LastStage!=3]) # NbNestlingNotKilled
-))
-}
-
-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out1 <- lapply(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename, FUN=MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_fun)
-MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2 <- data.frame(rownames(do.call(rbind,MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out1)),do.call(rbind, MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out1))
-
-nrow(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2)	# 1940
-rownames(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2) <- NULL
-colnames(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2) <- c('Filename','NbHatched', 'NbFL','NbAliveAtDVDDate','NbDeadAtDVDDate','NbDeadAtDVDDatebyAccident','NbDeadAtUnknownDate','NbNestlingNotKilled')
-
-head(MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2)
-
-MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=MY_LONG_tblParentalCare_withAllBirds_split_per_BroodFilename_out2, all.x=TRUE, by='Filename')
-}
-
-head(MY_LARGE_tblParentalCare)
-
-{# add nb of chicks during the previous and next visit from tblBroodEvent
-
-head(tblBroodEvents)
-
-MY_VERY_LONG_tblParentalCare_withAllBroodEvents <- merge(x=MY_LARGE_tblParentalCare, y=tblBroodEvents, by='BroodRef', all.x=TRUE)
-head(MY_VERY_LONG_tblParentalCare_withAllBroodEvents, 20)
-
-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename <- split(MY_VERY_LONG_tblParentalCare_withAllBroodEvents, MY_VERY_LONG_tblParentalCare_withAllBroodEvents$Filename)
-x <-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename[[8]]
-x <-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename[[5]]
-
-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_fun <- function(x) {
-
-if (is.infinite(suppressWarnings(min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE))) | is.na(suppressWarnings(min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE)))) # if no next visit
-{
-return(c(
-as.character(max(x$EventDate[x$EventDate <= unique(x$DVDdate)], na.rm=TRUE)), # PrevEventDate
-NA, # NextEventDate
-unique(x$OffspringNest[!is.na(x$EventDate) & x$EventDate == max(x$EventDate[x$EventDate <= unique(x$DVDdate)], na.rm=TRUE)]), # PrevEventNbChicks # added unique because of duplicated of visits on tbleBroodEvents...
-NA # NextEventNbChicks
-))
-}
-
-if (!is.infinite(min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE)) & !is.na(min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE))) # if there is a dated next visit
-{
-return(c(
-as.character(max(x$EventDate[x$EventDate <= x$DVDdate], na.rm=TRUE)), # PrevEventDate
-as.character(min(x$EventDate[x$EventDate >= x$DVDdate], na.rm=TRUE)), # NextEventDate
-unique(x$OffspringNest[!is.na(x$EventDate) & x$EventDate == max(x$EventDate[x$EventDate <= unique(x$DVDdate)], na.rm=TRUE)]), # PrevEventNbChicks  
-unique(x$OffspringNest[!is.na(x$EventDate) & x$EventDate == min(x$EventDate[x$EventDate >= unique(x$DVDdate)], na.rm=TRUE)])  # NextEventNbChicks
-))
-}
-
-}
-
-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1 <- lapply(MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename, FUN=MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_fun)
-
-cond_MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1 <- sapply(MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1, function(x) length(x) > 4)
-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1[cond_MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1] # should be empty list (wasn't empty when remove unique x$OffsrpingNest in function)
-
-MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out2 <- data.frame(rownames(do.call(rbind,MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1)),do.call(rbind, MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out1))
-
-nrow(MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out2)	# 1804
-rownames(MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out2) <- NULL
-colnames(MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out2) <- c('Filename','PrevEventDate', 'NextEventDate','PrevEventNbChicks','NextEventNbChicks')
-
-head(MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out2,50)
-
-MY_LARGE_tblParentalCare <- merge(x=MY_LARGE_tblParentalCare, y=MY_VERY_LONG_tblParentalCare_withAllBroodEvents_split_per_Filename_out2, all.x=TRUE, by='Filename')
-}
-
-head(MY_LARGE_tblParentalCare)
-
-MY_LARGE_tblParentalCare$DelayPrevEventRec <- difftime(MY_LARGE_tblParentalCare$DVDdate, MY_LARGE_tblParentalCare$PrevEventDate, units='days')
-MY_LARGE_tblParentalCare$DelayNextEventRec <- difftime(MY_LARGE_tblParentalCare$NextEventDate, MY_LARGE_tblParentalCare$DVDdate, units='days')
-
-MY_LARGE_tblParentalCare$DiffNbChickDVDInfoNbAliveatDVDdate <- MY_LARGE_tblParentalCare$DVDInfoChickNb - MY_LARGE_tblParentalCare$NbAliveAtDVDDate
-MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit <- NA
-MY_LARGE_tblParentalCare$PrevEventNbChicks <- as.numeric(as.character(MY_LARGE_tblParentalCare$PrevEventNbChicks))
-MY_LARGE_tblParentalCare$NextEventNbChicks <- as.numeric(as.character(MY_LARGE_tblParentalCare$NextEventNbChicks))
-MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] <- MY_LARGE_tblParentalCare$DVDInfoChickNb[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] - 
-																									  MY_LARGE_tblParentalCare$PrevEventNbChicks[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ]
-MY_LARGE_tblParentalCare$DiffNbAliveatDVDdateVisit[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] <- MY_LARGE_tblParentalCare$NbAliveAtDVDDate[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ] - 
-																									  MY_LARGE_tblParentalCare$PrevEventNbChicks[MY_LARGE_tblParentalCare$DelayPrevEventRec == 0 ]
-
-																									  
-head(MY_LARGE_tblParentalCare)
-
-head(MY_LARGE_tblParentalCare[MY_LARGE_tblParentalCare$DiffNbChickDVDInfoNbAliveatDVDdate != 0 | !is.na(MY_LARGE_tblParentalCare$DiffNbChickDVDInfoVisit),])
-## write.table(MY_LARGE_tblParentalCare, file = "R_Compare_NbChicksDuringRecording.xls", col.names=TRUE, sep='\t')
-
-MY_LARGE_tblParentalCare[MY_LARGE_tblParentalCare$NbHatched - MY_LARGE_tblParentalCare$DVDInfoChickNb <0,]
-
-}
-
-
-
-PotentialFailedNest_Recordings_DeathYes <- sqlQuery(conDB, "
-SELECT tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes
-FROM (tblBroods INNER JOIN tblDVDInfo ON tblBroods.BroodRef = tblDVDInfo.BroodRef) INNER JOIN tblParentalCare ON tblDVDInfo.DVDRef = tblParentalCare.DVDRef
-GROUP BY tblParentalCare.DVDRef, tblDVDInfo.DVDNumber, tblDVDInfo.DVDdate, tblParentalCare.MTime, tblParentalCare.FTime, tblDVDInfo.Deaths, tblParentalCare.Notes, tblDVDInfo.Situation
-HAVING (((tblDVDInfo.Deaths)=Yes) AND ((tblDVDInfo.Situation)=4));
-")
-
-
-
-
-BroodTaped = sqlQuery (conDB, "SELECT RearingBrood_allbirds.RearingBrood, AllRecordings.BroodName, AllRecordings.DVDdate, AllRecordings.DVDNumber, Abs(Sum([LastStage]>1)) AS Nbhatched, Abs(Sum([LastStage]=3)) AS NbFL, tblDVDInfo.OffspringNo AS DVDInfoNbChicks
-FROM ((AllRecordings LEFT JOIN RearingBrood_allbirds ON AllRecordings.BroodRef = RearingBrood_allbirds.RearingBrood) INNER JOIN tblDVDInfo ON AllRecordings.DVDRef = tblDVDInfo.DVDRef) LEFT JOIN tblBroodEvents ON AllRecordings.BroodRef = tblBroodEvents.BroodRef
-GROUP BY RearingBrood_allbirds.RearingBrood, AllRecordings.BroodName, AllRecordings.DVDdate, AllRecordings.DVDNumber, tblDVDInfo.OffspringNo
-ORDER BY RearingBrood_allbirds.RearingBrood, AllRecordings.DVDdate;
-")
-
-
-
-
-
-
-
-
-
-}
-
-}
+ # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA) # 20160503 updated lastseenalive
 
