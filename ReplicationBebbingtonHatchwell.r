@@ -2,10 +2,17 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 02/05/2016  
-#	 commit: figure comparison randomization 
+#	 last modif : 03/05/2016  
+#	 commit: add chick mass 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+{### remarks
+# LastSeenAlive information needs to be updated manually when DB updated
+# MY_tblBrood$Nb3 is the number of post fledgling
+# MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
+# 2 broods corresponding to 2 DVDs have both parents NA > removed
+# 39 brood with one parent NA, corresponding to 66 files
+}
 
 rm(list = ls(all = TRUE))
 
@@ -13,7 +20,7 @@ rm(list = ls(all = TRUE))
 library(dplyr)
 library(ggplot2)
 library(boot)
-
+library(lme4)
 }
 
 
@@ -23,25 +30,15 @@ library(boot)
 # or :
 
 output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
-MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"))
-MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/"))
-MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"))
-MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/"))
+
+MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
+MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
+MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
+MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/")) # OF directly followed by IN are merged feeding visits ; will be used for simulation
 
 }
 
-head(MY_tblBroods) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
-head(MY_tblDVDInfo) # metadata for all analysed videos
-head(MY_tblParentalCare) # summary stats for all analyzed videos
-head(MY_RawFeedingVisits,32) # OF directly followed by IN are merged feeding visits ; will be used for simulation
-
 {### select valid video files for studying behavioural compatibility in chick provisioning
-
-nrow(MY_tblBroods) # 1886
-nrow(MY_tblDVDInfo) # 2112
-nrow(MY_tblParentalCare) # 2112
-nrow(MY_RawFeedingVisits) # 61940
-
 
 list_non_valid_DVDRef <- 
 c(MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0],# 6 - where 0 chicks
@@ -56,9 +53,6 @@ MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRe
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
 
-
-}
-
 {### sample sizes
 
 nrow(MY_tblParentalCare) # 1768 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
@@ -68,6 +62,38 @@ range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 
 }
 
+}
+
+head(MY_tblBroods) 
+head(MY_tblDVDInfo) 
+head(MY_tblParentalCare)
+head(MY_RawFeedingVisits)
+
+  
+{### create MY_TABLE
+
+MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","AlternationValue")]
+MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","DVDdate","DVDtime")], by='DVDRef')
+MY_TABLE <- merge(x=MY_TABLE, 
+y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDate","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
+"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
+"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
+
+MY_TABLE <- MY_TABLE[!is.na(MY_TABLE$SocialMumID) & !is.na(MY_TABLE$SocialDadID),] # where both parents known
+
+nrow(MY_TABLE) # 1702 files
+length(unique(MY_TABLE$BroodRef)) # 919 broods
+
+}
+
+head(MY_TABLE)
+
+
+############################################ 
+# replication Bebbington & Hatchwell study #
+############################################
+
+{#### Simulation
 
 {## ? keep the middle 90% of feeding rates for each sex ?
 
@@ -92,11 +118,6 @@ quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)
 nrow(MY_tblParentalCare) # 1499
 }
 
-
-
-############################################ 
-# replication Bebbington & Hatchwell study #
-############################################
 
 {### simulation alternation with Kat's method
 
@@ -514,6 +535,9 @@ theme_classic()
   
 Fig1comparison 
 
+}
+
+#### Predictors of alternation
 
 
 
@@ -523,36 +547,11 @@ Fig1comparison
   
 #############################  in progress 
   
- ## TO DO
-# find mass (mean and small chick) and tarsus (consider difference of age, whether to include all brood or a standardized subsets)
-# create 'MY_Table'
+## TO DO
 # repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
 # take a decision for time of the day
-
-
-  
-{### create MY_TABLE
-
-# merge summary of raw data (MY_tblParentalCare) into the meta data (MY_tblDVDInfo) into all broods monitored (MY_tblBroods)
-
-MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","AlternationValue")]
-MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","DVDdate","DVDtime")], by='DVDRef')
-MY_TABLE <- merge(x=MY_TABLE, 
-y=MY_tblBroods[,c("BroodRef","BreedingYear","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
-"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
-"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
 
 max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
 hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
 
 
-head(MY_TABLE)
-nrow(MY_TABLE) # 1777 DVD file
-
-
-MY_tblDVDInfo$BroodRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef] # 2 broods corresponding to 2 DVDs have both parents NA
-length(unique(MY_TABLE$BroodRef[is.na(MY_TABLE$SocialMumID) | is.na(MY_TABLE$SocialDadID)])) # 39 brood with one parent NA
-nrow(MY_TABLE[is.na(MY_TABLE$SocialMumID) | is.na(MY_TABLE$SocialDadID),]) # corresponding to 67 files
-
-
-}
