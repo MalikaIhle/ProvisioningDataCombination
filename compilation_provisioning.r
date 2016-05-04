@@ -3,8 +3,8 @@
 #	 Compile provisioning data sparrows
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
-#	 last modif :03/05/2016
-#	 commit: add chick mass and tarsus per brood
+#	 last modif :04/05/2016
+#	 commit: add dummy variables to MY_tables
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -352,6 +352,89 @@ GROUP BY usys_qRearingBrood.RearingBrood, usys_qRelativeChickMassClassesForCaptu
 HAVING (((Count(tblMeasurements.Mass))>0));
 ")}
 
+# get the hatching date for each brood
+
+{usys_qBroodHatchDate <- sqlQuery(conDB, "
+SELECT usys_qBroodsWithHatchlings.BroodRef, 
+IIf(usys_qBroodHatchDatesFromTable.HatchDate Is Not Null,
+usys_qBroodHatchDatesFromTable.HatchDate,
+usys_qBroodEggDate.LayDate+14) AS HatchDate, 
+usys_qBroodHatchDatesFromTable.HatchDate Is Null Or usys_qBroodHatchDatesFromTable.DateEstimated AS DateEstimated
+FROM (
+(SELECT DISTINCT tblBirdID.BroodRef, 
+Count(*) AS NoHatchlings
+FROM tblBirdID
+WHERE (((tblBirdID.LastStage)>1) AND ((tblBirdID.BroodRef) Is Not Null))
+GROUP BY tblBirdID.BroodRef
+) 
+AS usys_qBroodsWithHatchlings 
+
+LEFT JOIN 
+(SELECT tblBroodEvents.BroodRef, 
+tblBroodEvents.EventDate AS HatchDate, 
+tblBroodEvents.DateEstimated
+FROM tblBroodEvents
+WHERE (((tblBroodEvents.EventDate) Is Not Null) AND ((tblBroodEvents.EventNumber)=1))
+) 
+AS usys_qBroodHatchDatesFromTable 
+ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef) 
+
+LEFT JOIN 
+(SELECT tblBroods.BroodRef, 
+IIf(usys_qBroodTrueEggDate.LayDate,
+usys_qBroodTrueEggDate.LayDate,
+usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+IIf(usys_qBroodTrueEggDate.BroodRef,
+usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+
+FROM (
+	(SELECT tblBroodEvents.BroodRef, 
+	tblBroodEvents.EventDate AS LayDate, 
+	tblBroodEvents.DateEstimated
+	FROM tblBroodEvents
+	WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+	AND ((tblBroodEvents.EventNumber)=0))
+	) 
+	AS usys_qBroodTrueEggDate 
+	
+RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+LEFT JOIN 
+	(SELECT tblBroodEvents.BroodRef, 
+	IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+	[EventDate]-[EggCount],
+	[Hatchdate]-14) AS LayDate, 
+	IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+	'EggCount','HatchDate') AS EstimateSource
+	
+	FROM tblBroodEvents 
+	LEFT JOIN 
+		(SELECT tblBroodEvents.BroodRef, 
+		tblBroodEvents.EventDate AS HatchDate, 
+		tblBroodEvents.DateEstimated
+		FROM tblBroodEvents
+		WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+		AND ((tblBroodEvents.EventNumber)=1))
+		) 
+		AS usys_qBroodHatchDatesFromTable 
+	
+	ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+	
+	WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+	AND ((tblBroodEvents.EventNumber)=4) 
+	AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+	OR (((tblBroodEvents.EventNumber)=4) 
+	AND ((tblBroodEvents.EggCount) Is Not Null))
+	
+	) 
+	AS usys_qBroodEggDateFromFirstSeen 
+	ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+	
+WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+
+) AS usys_qBroodEggDate 
+ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodEggDate.BroodRef;
+")}
+
 close(conDB)
 }
 
@@ -372,7 +455,7 @@ head(RearingBrood_allBirds)
 head(sys_LastSeenAlive)
 head(sunrise)
 head(LastMassTarsusChick)
-
+head(usys_qBroodHatchDate)
 
 {### extract provisioning raw data from excel files
 
@@ -1914,6 +1997,9 @@ MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$Hatch
 
 sunflowerplot(MY_tblDVDInfo$DVDInfoAge,MY_tblDVDInfo$ChickAge)
 MY_tblDVDInfo[abs(MY_tblDVDInfo$DVDInfoAge - MY_tblDVDInfo$ChickAge) > 2,]
+
+MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge <10 ] <- 'Age06'
+MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge >=10 ] <- 'Age10'
  
 }
 
@@ -1933,7 +2019,7 @@ MY_tblDVDInfo <- merge(x=MY_tblDVDInfo,y=sunrise, all.x=TRUE, by.x='DVDdate', by
 
 MY_tblDVDInfo$RelTimeMins <- as.numeric(difftime(MY_tblDVDInfo$DVDtime,MY_tblDVDInfo$Sunrise, units='mins'), units='mins')
 MY_tblDVDInfo$LogRelTimeMins <- log10(MY_tblDVDInfo$RelTimeMins+10)
-
+MY_tblDVDInfo$RelTimeHrs <- round(MY_tblDVDInfo$RelTimeMins/60,2)
 
 }
 
@@ -1966,13 +2052,17 @@ head(MY_tblDVDInfo)
 
 MY_tblBroods <- tblBroods 
 
-{# add hatching date from tblBroodEvent
+{# add hatching date from usys_qBroodHatchDate
 MY_tblBroods <- merge (x= MY_tblBroods, 
-						y= tblBroodEvents[tblBroodEvents$EventNumber == 1, c('BroodRef', 'EventDate')],
+						y= usys_qBroodHatchDate[, c('BroodRef', 'HatchDate')],
 						all.x=TRUE, by ='BroodRef')
-colnames(MY_tblBroods)[which(names(MY_tblBroods) == "EventDate")] <- "HatchingDate"
+colnames(MY_tblBroods)[which(names(MY_tblBroods) == "HatchDate")] <- "HatchingDate"
 
 MY_tblBroods[is.na(MY_tblBroods$HatchingDate) ,] # 0 lines
+MY_tblBroods$BreedingYear <- as.numeric(format(MY_tblBroods$HatchingDate,'%Y'))
+MY_tblBroods$HatchingDayAfter0401 <- NA
+MY_tblBroods$HatchingDayAfter0401[!is.na(MY_tblBroods$HatchingDate)] <- as.numeric(strftime(as.POSIXct(MY_tblBroods$HatchingDate[!is.na(MY_tblBroods$HatchingDate)]), format = "%j"))- as.numeric(strftime(as.POSIXct(paste(MY_tblBroods$BreedingYear[!is.na(MY_tblBroods$HatchingDate)], "-04-02", sep="")), format = "%j"))
+
 
 }
 
@@ -2027,12 +2117,11 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=tblBirdID[,c('BirdID','Cohort')], all.x=
 colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Cohort.x")] <- "CohortDad"
 colnames(MY_tblBroods)[which(names(MY_tblBroods) == "Cohort.y")] <- "CohortMum"
 
-MY_tblBroods$BreedingYear <- as.numeric(format(MY_tblBroods$HatchingDate,'%Y'))
 MY_tblBroods$DadAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortDad
 MY_tblBroods$MumAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortMum
 
 MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
-
+MY_tblBroods$PairIDYear <- paste(MY_tblBroods$PairID, MY_tblBroods$BreedingYear, sep="")
 }
 
 {# add Male divorce
@@ -2173,6 +2262,7 @@ MY_tblParentalCare$MFTime2 <- round(MY_tblParentalCare$MTime2 + MY_tblParentalCa
 MY_tblParentalCare$FVisit1RateH <- round(60*MY_tblParentalCare$FVisit1/MY_tblParentalCare$EffectiveTime)
 MY_tblParentalCare$MVisit1RateH <- round(60*MY_tblParentalCare$MVisit1/MY_tblParentalCare$EffectiveTime)
 MY_tblParentalCare$DiffVisit1Rate <- abs(round(MY_tblParentalCare$FVisit1RateH - MY_tblParentalCare$MVisit1RateH))
+MY_tblParentalCare$MFVisit1RateH <- MY_tblParentalCare$FVisit1RateH + MY_tblParentalCare$MVisit1RateH
 
 MY_tblParentalCare$FTime1RateH <- round(60*MY_tblParentalCare$FTime1/MY_tblParentalCare$EffectiveTime,2)
 MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParentalCare$EffectiveTime,2)
@@ -2197,7 +2287,7 @@ DurationScript # ~ 14 min
 # output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
 
  # write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/"), row.names = FALSE) # 20160324 20160331 20160426 
- # write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
- # write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) # 20160415, identical with changes to call new DB, 20160425
- # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA) # 20160503 updated lastseenalive and added Mass
+ # write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data, 20160504 with new dummy variables
+ # write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) # 20160415, identical with changes to call new DB, 20160425, 20160504 with new dummy variables
+ # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA) # 20160503 updated lastseenalive and added Mass, 20160504 with new dummy variables and reextract hatching date
 

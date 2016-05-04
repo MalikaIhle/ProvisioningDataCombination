@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 03/05/2016  
-#	 commit: add chick mass 
+#	 last modif : 04/05/2016  
+#	 commit: create MY_TABLE 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -12,6 +12,7 @@
 # MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
 # 2 broods corresponding to 2 DVDs have both parents NA > removed
 # 39 brood with one parent NA, corresponding to 66 files
+# if tblDVDinfois updated > the date associated to DVDtime and to Sunrise will change
 }
 
 rm(list = ls(all = TRUE))
@@ -57,8 +58,8 @@ MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% l
 
 nrow(MY_tblParentalCare) # 1768 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
 length(unique(MY_tblDVDInfo$BroodRef)) # 958 broods videotaped at least once
-mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
 range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
+mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
 
 }
 
@@ -71,16 +72,17 @@ head(MY_RawFeedingVisits)
 
   
 {### create MY_TABLE
+# one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
+# as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","AlternationValue")]
-MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","DVDdate","DVDtime")], by='DVDRef')
+MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue")]
+MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE <- merge(x=MY_TABLE, 
-y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDate","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
+y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
 "MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
-"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
+"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
 
 MY_TABLE <- MY_TABLE[!is.na(MY_TABLE$SocialMumID) & !is.na(MY_TABLE$SocialDadID),] # where both parents known
-
 nrow(MY_TABLE) # 1702 files
 length(unique(MY_TABLE$BroodRef)) # 919 broods
 
@@ -93,7 +95,7 @@ head(MY_TABLE)
 # replication Bebbington & Hatchwell study #
 ############################################
 
-{#### Simulation
+{#### Simulation random alternation vs observed alternation
 
 {## ? keep the middle 90% of feeding rates for each sex ?
 
@@ -392,7 +394,7 @@ x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
 
-for (i in 1:100) # to increase up to 1000
+for (i in 1:10) # to increase up to 1000
 {
 
 x0sim <- x0
@@ -537,21 +539,127 @@ Fig1comparison
 
 }
 
-#### Predictors of alternation
+Fig1comparison
+
+{# add MeanAsim and Adev for each DVD file to MY_TABLE
+
+MY_TABLE <- merge(y=data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef),MeanAsim = rowMeans(out_Asim)), 
+				  x= MY_TABLE, by='DVDRef', all.x =TRUE)
+
+MY_TABLE$Adev <- MY_TABLE$MeanAsim - MY_TABLE$AlternationValue
+
+}
+
+head(MY_TABLE)
+
+
+
+{#### Predictors of alternation
+is.numeric(MY_TABLE$BreedingYear)
+is.numeric(MY_TABLE$HatchingDayAfter0401)
+is.numeric(MY_TABLE$ParentsAge)
+is.numeric(MY_TABLE$PairBroodNb)
+is.numeric(MY_TABLE$DVDInfoChickNb)
+is.numeric(MY_TABLE$ChickAge)
+is.numeric(MY_TABLE$DiffVisit1Rate)
+is.numeric(MY_TABLE$RelTimeHrs) 
+summary(MY_TABLE$RelTimeHrs) # 6 NA's
+
+modA <- lmer(AlternationValue ~ scale(ParentsAge, scale=FALSE) + 
+								scale(HatchingDayAfter0401, scale=FALSE) + 
+								scale(PairBroodNb, scale=FALSE) + 
+								scale(DVDInfoChickNb, scale=FALSE) + 
+								ChickAgeCat +
+								DiffVisit1Rate +  
+								scale(RelTimeHrs, scale=FALSE) +
+								(1|BroodRef) + (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
+								data = MY_TABLE)
+}
+
+summary(modA)
+
+
+{# create MY_TABLE_perBrood
+
+MY_TABLE_perBrood <- split(MY_TABLE,MY_TABLE$BroodRef)
+
+MY_TABLE_perBrood_fun = function(x)  {
+
+return(c(
+mean(x$MFVisit1RateH), # TotalProRate
+mean(x$AlternationValue), #MeanA
+mean(x$MeanAsim) - mean(x$AlternationValue) # Adev
+))
+}
+
+MY_TABLE_perBrood_out1 <- lapply(MY_TABLE_perBrood, FUN=MY_TABLE_perBrood_fun)
+MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_out1)),do.call(rbind, MY_TABLE_perBrood_out1))
+
+nrow(MY_TABLE_perBrood_out2)	# 919
+rownames(MY_TABLE_perBrood_out2) <- NULL
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev')
+
+MY_TABLE_perBrood <- merge(x=MY_TABLE[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear" )],
+							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
+}
+
+head(MY_TABLE_perBrood)
+
+
+
+{#### fitness correlate of alternation
+
+{## total provisioning rate
+# did not do like in Kat&Ben where they took the mean per nest for total provisioning rate and for Adev, and Broodsize at day 11
+
+modFitnessAsProRate <- lmer(TotalProRate ~ NbRinged +
+											Adev +
+											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
+											data = MY_TABLE_perBrood)
+}
+
+summary(modFitnessAsProRate)
+
+{## mean chick mass
+
+modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
+										MeanA +
+										AvgTarsus +
+										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
+										data = MY_TABLE_perBrood)
+
+}
+
+summary(modFitnessAsChickMass)
+
+}
 
 
 
 
 
 
-  
+
+
+
+
 #############################  in progress 
   
 ## TO DO
 # repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
 # take a decision for time of the day
 
-max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
-hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
 
+par(mfrow=c(3,1)) 
+hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
+hist((MY_tblDVDInfo$RelTimeMins), 20)
+hist((MY_tblDVDInfo$LogRelTimeMins), 10)
+hist((MY_TABLE$RelTimeHrs), 20)
+max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
+
+#MY_TABLE$DVDtime2 <- substr(MY_TABLE$DVDtime, 12, 16)
+#MY_TABLE$NumTime <- as.numeric(MY_TABLE$DVDtime)
+#MY_TABLE[,c('DVDtime','NumTime')][with(MY_TABLE[,c('DVDtime','NumTime')],order(MY_TABLE$NumTime)),]
+#MY_TABLE$NumTimeposixct <- as.numeric(as.POSIXct(MY_TABLE$DVDtime))
+#MY_TABLE[,c('DVDtime','NumTime','NumTimeposixct')][with(MY_TABLE[,c('DVDtime','NumTime')],order(MY_TABLE$NumTimeposixct)),]
 
