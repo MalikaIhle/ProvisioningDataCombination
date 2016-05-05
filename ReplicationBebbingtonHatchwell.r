@@ -54,6 +54,31 @@ MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRe
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
 
+{# fill in manually the data where Julia deleted it
+MY_tblBroods[MY_tblBroods$BroodRef == 1152,] 
+MY_tblBroods$HatchingDate <- as.character(MY_tblBroods$HatchingDate)
+MY_tblBroods$HatchingDate[MY_tblBroods$BroodRef == 1152] <- "2010-05-18" # couldn't add it because it is a new factor level...
+MY_tblBroods$BreedingYear[MY_tblBroods$BroodRef == 1152] <- 2010
+MY_tblBroods$HatchingDayAfter0401[MY_tblBroods$BroodRef == 1152] <- 47
+MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 1152] <- 1
+MY_tblBroods$Nb3[MY_tblBroods$BroodRef == 1152] <- 1
+MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 1152] <- 1
+MY_tblBroods$DadAge[MY_tblBroods$BroodRef == 1152] <- 1
+MY_tblBroods$MumAge[MY_tblBroods$BroodRef == 1152] <- 1
+MY_tblBroods$ParentsAge[MY_tblBroods$BroodRef == 1152] <- 1
+MY_tblBroods$PairIDYear <- as.character(MY_tblBroods$PairIDYear )
+MY_tblBroods$PairIDYear[MY_tblBroods$BroodRef == 1152] <- "4573475420010" # couldn't add it because it is a new factor level...
+MY_tblBroods$PairIDYear <- as.factor(MY_tblBroods$PairIDYear)
+MY_tblBroods$AvgMass[MY_tblBroods$BroodRef == 1152] <- 23.3
+MY_tblBroods$MinMass[MY_tblBroods$BroodRef == 1152] <- 23.3
+MY_tblBroods$AvgTarsus[MY_tblBroods$BroodRef == 1152] <- 17.3
+
+MY_tblBroods[MY_tblBroods$BroodRef == 457,] 
+MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 457] <- 1
+
+
+}
+
 {### sample sizes
 
 nrow(MY_tblParentalCare) # 1768 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
@@ -559,29 +584,38 @@ is.numeric(MY_TABLE$BreedingYear)
 is.numeric(MY_TABLE$HatchingDayAfter0401)
 is.numeric(MY_TABLE$ParentsAge)
 is.numeric(MY_TABLE$PairBroodNb)
+cor.test(MY_TABLE$ParentsAge,MY_TABLE$PairBroodNb) # cor = 0.63, p < 0.0001 !
 is.numeric(MY_TABLE$DVDInfoChickNb)
-is.numeric(MY_TABLE$ChickAge)
+is.numeric(MY_TABLE$ChickAge) 
 is.numeric(MY_TABLE$DiffVisit1Rate)
-is.numeric(MY_TABLE$RelTimeHrs) 
+is.numeric(MY_TABLE$RelTimeHrs) # number of hours after sunrise for that day
 summary(MY_TABLE$RelTimeHrs) # 6 NA's
 
-modA <- lmer(AlternationValue ~ scale(ParentsAge, scale=FALSE) + 
-								scale(HatchingDayAfter0401, scale=FALSE) + 
-								scale(PairBroodNb, scale=FALSE) + 
-								scale(DVDInfoChickNb, scale=FALSE) + 
-								ChickAgeCat +
+modA <- lmer(AlternationValue ~ # scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+								scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+								scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+								scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+								ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
 								DiffVisit1Rate +  
-								scale(RelTimeHrs, scale=FALSE) +
-								(1|BroodRef) + (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
-								data = MY_TABLE)
+								scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+								(1|BroodRef) + 
+								(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+								# + (1|PairIDYear) # explain 0% of the variance
+								, data = MY_TABLE)
+								
+# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
 }
 
 summary(modA)
 
 
 {# create MY_TABLE_perBrood
+MY_TABLE[is.na(MY_TABLE$MFVisit1RateH),]
+summary(MY_TABLE$MFVisit1RateH)
 
 MY_TABLE_perBrood <- split(MY_TABLE,MY_TABLE$BroodRef)
+MY_TABLE_perBrood[[1]]
 
 MY_TABLE_perBrood_fun = function(x)  {
 
@@ -599,7 +633,7 @@ nrow(MY_TABLE_perBrood_out2)	# 919
 rownames(MY_TABLE_perBrood_out2) <- NULL
 colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev')
 
-MY_TABLE_perBrood <- merge(x=MY_TABLE[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear" )],
+MY_TABLE_perBrood <- merge(x=unique(MY_TABLE[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
 							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
 }
 
@@ -610,27 +644,39 @@ head(MY_TABLE_perBrood)
 {#### fitness correlate of alternation
 
 {## total provisioning rate
-# did not do like in Kat&Ben where they took the mean per nest for total provisioning rate and for Adev, and Broodsize at day 11
+# like in Kat&Ben's paper: the mean per nest for total provisioning rate and for Adev, and have Broodsize at day 11
 
-modFitnessAsProRate <- lmer(TotalProRate ~ NbRinged +
+modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged +
 											Adev +
-											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
-											data = MY_TABLE_perBrood)
+											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+											# + (1|PairIDYear) # explain 0% of the variance
+											, data = MY_TABLE_perBrood)
+											
+# Number of obs: 919, groups:  PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
 }
 
 summary(modFitnessAsProRate)
 
 {## mean chick mass
+nrow(MY_TABLE_perBrood[ MY_TABLE_perBrood$NbRinged == 0 ,]) # 45 broods with no ringed chicks
+nrow(MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,]) # 20 broods where ringed chicks but no mass nor tarsus: for some reasons were ringed not at the rigth age for comparable measurements)
+MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,] # 2 broods with ringed with mass but not tarsus
 
 modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
-										MeanA +
+										MeanA + # Kat&Ben's paper: I assume they used again the average of alternation per nest 
 										AvgTarsus +
 										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
 										data = MY_TABLE_perBrood)
-
+										
+# Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
 }
 
 summary(modFitnessAsChickMass)
+
+# Parent survival
+
+
 
 }
 
