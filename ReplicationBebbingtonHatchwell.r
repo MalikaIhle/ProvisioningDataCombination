@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 04/05/2016  
-#	 commit: create MY_TABLE 
+#	 last modif : 05/05/2016  
+#	 commit: modProRate + modAvgMass 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -22,6 +22,7 @@ library(dplyr)
 library(ggplot2)
 library(boot)
 library(lme4)
+library(rptR)
 }
 
 
@@ -114,6 +115,9 @@ length(unique(MY_TABLE$BroodRef)) # 919 broods
 }
 
 head(MY_TABLE)
+
+
+
 
 
 ############################################ 
@@ -610,6 +614,11 @@ modA <- lmer(AlternationValue ~ # scale(ParentsAge, scale=FALSE) + # this is str
 summary(modA)
 
 
+### repeatability of alternation
+
+
+
+
 {# create MY_TABLE_perBrood
 MY_TABLE[is.na(MY_TABLE$MFVisit1RateH),]
 summary(MY_TABLE$MFVisit1RateH)
@@ -687,14 +696,139 @@ summary(modFitnessAsChickMass)
 
 
 
+#########################################
+# replication Nagagawa et al 2007 study #
+#########################################
+
+{# get provisioning rate for both sex piled up
+FemaleProRate <- MY_TABLE[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
+							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
+MaleProRate <- MY_TABLE[,c("MVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
+							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
+
+FemaleProRate$Sex <- 0
+MaleProRate$Sex <- 1					
+colnames(FemaleProRate)[which(names(FemaleProRate) == "FVisit1RateH")] <- "Visit1RateH"						
+colnames(MaleProRate)[which(names(MaleProRate) == "MVisit1RateH")] <- "Visit1RateH"	
+colnames(FemaleProRate)[which(names(FemaleProRate) == "SocialMumID")] <- "BirdID"		
+colnames(MaleProRate)[which(names(MaleProRate) == "SocialDadID")] <- "BirdID"		
+colnames(FemaleProRate)[which(names(FemaleProRate) == "SocialDadID")] <- "SocialPartnerID"		
+colnames(MaleProRate)[which(names(MaleProRate) == "SocialMumID")] <- "SocialPartnerID"	
+
+head(FemaleProRate)
+head(MaleProRate)
+
+BirdProRate <- rbind(FemaleProRate,MaleProRate)	
+}
+
+head(BirdProRate)
+
+{### repeatbility of provisioning rate
+# Shinichi does repeatability of provisioning rate on visit/chick/hour
 
 
-#############################  in progress 
+
+modProRateRpt <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ (1|SocialPartnerID) + (1|BreedingYear) 
+									 + (1|PairID)
+									, data = BirdProRate)
+									
+summary(modProRateRpt)
+
+
+modProRateRptwithoutBirdID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									#(1|BirdID)+ 
+									(1|SocialPartnerID) + (1|BreedingYear) 
+									# + (1|PairID)
+									, data = BirdProRate)
+
+summary(modProRateRptwithoutBirdID)
+anova(modProRateRpt,modProRateRptwithoutBirdID) # ***
+
+
+
+
+modProRateRptwithoutSocialPartnerID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									#(1|SocialPartnerID) + 
+									(1|BreedingYear) 
+									# + (1|PairID)
+									, data = BirdProRate)
+
+summary(modProRateRptwithoutSocialPartnerID)
+anova(modProRateRpt,modProRateRptwithoutSocialPartnerID) # ***
+
+
+modProRateRptwithoutPairID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + 
+									(1|BreedingYear) 
+									#+ (1|PairID)
+									, data = BirdProRate)
+
+summary(modProRateRptwithoutPairID)
+anova(modProRateRpt,modProRateRptwithoutPairID) # NS
+}
+
+
+
+
+
+
+
+
+
+{#############################  TO DO + ISSUES
   
-## TO DO
-# repeatability alternation (considering more than two measures, randomise order of measurements, or use rptR package to fit mixed effect model)
-# take a decision for time of the day
+## repeatability of provisioning rate:
+# bootstrap instead of ML (though clear answer)
+# get rpt package to work (under construction)
+# do analyses on provisioning rate per chick like shinichi
+# boxcox transfo to approach normality ?
 
+
+## repeatability alternation 
+# considering more than two measures and use rptR package to fit mixed effect model (not working)
+# or randomise order of measurements with 2 measures
+
+
+## take a decision for time of the day
+# check if the effect is linear to keep a continuous variable
+
+
+## predictor of alternation
+# solve the issue of correlation between parent age and PairBroodNb
+
+
+## fitness model
+# are models on average values good ? 
+# should it be wiegthed ?
+# or should the error been kept forward and how ?
+# get table ready for parental survival
+
+## sealed bid by male
+# how can female adjust ? if purely alternate but for a low male provisioning > low fitness !
+
+
+}#############################
+
+{#############################  MESS
 
 par(mfrow=c(3,1)) 
 hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
@@ -709,3 +843,4 @@ max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
 #MY_TABLE$NumTimeposixct <- as.numeric(as.POSIXct(MY_TABLE$DVDtime))
 #MY_TABLE[,c('DVDtime','NumTime','NumTimeposixct')][with(MY_TABLE[,c('DVDtime','NumTime')],order(MY_TABLE$NumTimeposixct)),]
 
+}#############################
