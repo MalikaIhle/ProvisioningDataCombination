@@ -2121,7 +2121,7 @@ MY_tblBroods$DadAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortDad
 MY_tblBroods$MumAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortMum
 
 MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
-MY_tblBroods$PairIDYear <- paste(MY_tblBroods$PairID, MY_tblBroods$BreedingYear, sep="")
+
 }
 
 {# add Male divorce
@@ -2193,7 +2193,7 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialMumID_out2[
 
 {# add PairBroodNb
 MY_tblBroods$PairID <- paste(MY_tblBroods$SocialDadID,MY_tblBroods$SocialMumID, sep="" )
-
+MY_tblBroods$PairIDYear <- paste(MY_tblBroods$PairID, MY_tblBroods$BreedingYear, sep="")
 MY_tblBroods_split_per_PairID <- split(MY_tblBroods, MY_tblBroods$PairID)
 x <- MY_tblBroods_split_per_PairID[[2]]
 
