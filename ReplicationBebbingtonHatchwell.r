@@ -13,6 +13,8 @@
 # 2 broods corresponding to 2 DVDs have both parents NA > removed
 # 39 brood with one parent NA, corresponding to 66 files
 # if tblDVDinfois updated > the date associated to DVDtime and to Sunrise will change
+# MY_TABLE has one line per file
+# MY_TABLE_perBrood has one line per brood, averaging the summary accross files
 }
 
 rm(list = ls(all = TRUE))
@@ -37,6 +39,13 @@ MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", s
 MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
 MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/")) # OF directly followed by IN are merged feeding visits ; will be used for simulation
+
+
+input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
+
+sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
+sys_LastSeenAlive$LastYearAlive <- substr(sys_LastSeenAlive$LastLiveRecord, 7,10)
+
 
 }
 
@@ -102,7 +111,7 @@ head(MY_RawFeedingVisits)
 # as broods were watched several time, the brood info appears in duplicate
 
 MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue")]
-MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
+MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE <- merge(x=MY_TABLE, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
 "MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
@@ -589,9 +598,12 @@ head(MY_TABLE)
 
 is.numeric(MY_TABLE$BreedingYear)
 is.numeric(MY_TABLE$HatchingDayAfter0401)
+is.numeric(MY_TABLE$DiffVisit1Rate)
+
 is.numeric(MY_TABLE$DVDInfoChickNb)
 is.numeric(MY_TABLE$ChickAge) 
-is.numeric(MY_TABLE$DiffVisit1Rate)
+cor.test(MY_TABLE$ChickAge,MY_TABLE$DVDInfoChickNb) # cor = -0.08, p<0.001 
+
 
 is.numeric(MY_TABLE$ParentsAge)
 is.numeric(MY_TABLE$PairBroodNb)
@@ -604,6 +616,24 @@ scatter.smooth(MY_TABLE$AlternationValue,MY_TABLE$RelTimeHrs)# linear ? >linear 
 shapiro.test(MY_TABLE$AlternationValue) # normal ok
 
 }
+
+# modA
+
+
+modA <- lmer(AlternationValue ~  
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	, data = MY_TABLE)
+
+summary(modA)
 
 {# modA_ParentAge
 
@@ -623,17 +653,26 @@ modA_ParentAge <- lmer(AlternationValue ~
 summary(modA_ParentAge) # Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
 
 {# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modA_ParentAge), resid(modA_ParentAge))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modA_ParentAge))
+qqline(resid(modA_ParentAge))
+qqnorm(unlist(ranef(modA_ParentAge))) 
+qqline(unlist(ranef(modA_ParentAge)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modA_ParentAge))),fitted(modA_ParentAge)) 
+
+# Mean of ranefs: should be zero
 mean(unlist(ranef(modA_ParentAge)$BroodRef))
 mean(unlist(ranef(modA_ParentAge)$SocialMumID))
 mean(unlist(ranef(modA_ParentAge)$SocialDadID))
 mean(unlist(ranef(modA_ParentAge)$PairID))
 mean(unlist(ranef(modA_ParentAge)$BreedingYear))
-
-# qqplots residuals and ranef
-qqnorm(resid(modA_ParentAge))
-qqline(resid(modA_ParentAge))
-qqnorm(unlist(ranef(modA_ParentAge))) # not quite normal ?
-qqline(unlist(ranef(modA_ParentAge)))
 
 # residuals vs fitted
 scatter.smooth(fitted(modA_ParentAge), resid(modA_ParentAge))	
@@ -653,14 +692,13 @@ abline(h=0, lty=2)
 scatter.smooth(MY_TABLE$RelTimeHrs[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
 abline(h=0, lty=2)		
 
-
-# data vs. fitted ?
+# dependent variable vs fitted
 d <- MY_TABLE[!is.na(MY_TABLE$RelTimeHrs),]
 d$fitted <- fitted(modA_ParentAge)
 scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
-# data and fitted against all predictors
+# fitted vs all predictors
 scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ParentsAge")
 scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
 boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
@@ -690,11 +728,10 @@ modA_PairBroodNb <- lmer(AlternationValue ~  # scale(ParentsAge, scale=FALSE) + 
 summary(modA_PairBroodNb)# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
 
 {# model assumptions checking
-mean(unlist(ranef(modA_PairBroodNb)$BroodRef))
-mean(unlist(ranef(modA_PairBroodNb)$SocialMumID))
-mean(unlist(ranef(modA_PairBroodNb)$SocialDadID))
-mean(unlist(ranef(modA_PairBroodNb)$PairID))
-mean(unlist(ranef(modA_PairBroodNb)$BreedingYear))
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modA_PairBroodNb), resid(modA_PairBroodNb))	
+abline(h=0, lty=2)
 
 # qqplots residuals and ranef
 qqnorm(resid(modA_PairBroodNb))
@@ -702,9 +739,15 @@ qqline(resid(modA_PairBroodNb))
 qqnorm(unlist(ranef(modA_PairBroodNb))) # not quite normal ?
 qqline(unlist(ranef(modA_PairBroodNb)))
 
-# residuals vs fitted
-scatter.smooth(fitted(modA_PairBroodNb), resid(modA_PairBroodNb))	
-abline(h=0, lty=2)
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modA_PairBroodNb))),fitted(modA_PairBroodNb)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modA_PairBroodNb)$BroodRef))
+mean(unlist(ranef(modA_PairBroodNb)$SocialMumID))
+mean(unlist(ranef(modA_PairBroodNb)$SocialDadID))
+mean(unlist(ranef(modA_PairBroodNb)$PairID))
+mean(unlist(ranef(modA_PairBroodNb)$BreedingYear))
 
 # residuals vs predictors
 scatter.smooth(MY_TABLE$PairBroodNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
@@ -720,14 +763,13 @@ abline(h=0, lty=2)
 scatter.smooth(MY_TABLE$RelTimeHrs[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
 abline(h=0, lty=2)		
 
-
-# data vs. fitted ?
+# dependent variable vs fitted
 d <- MY_TABLE[!is.na(MY_TABLE$RelTimeHrs),]
 d$fitted <- fitted(modA_PairBroodNb)
 scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
-# data and fitted against all predictors
+# fitted vs all predictors
 scatter.smooth(d$PairBroodNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="PairBroodNb")
 scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
 boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
@@ -783,6 +825,69 @@ MY_TABLE_perBrood <- merge(x=unique(MY_TABLE[,c("NbRinged","AvgMass","AvgTarsus"
 head(MY_TABLE_perBrood)
 
 
+{## create MY_TABLE_Survival_perBirdYear
+
+{# get both sex piled up
+MY_TABLE_Survival <- merge(x=MY_TABLE[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear")],
+						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
+						  by.x="SocialMumID", by.y="BirdID",
+						  all.x=TRUE)
+MY_TABLE_Survival <- merge(x=MY_TABLE_Survival, 
+						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
+						  by.x="SocialDadID", by.y="BirdID",
+						  all.x=TRUE)
+
+MY_TABLE_Survival$FAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.x) > MY_TABLE_Survival$BreedingYear
+MY_TABLE_Survival$MAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.y) > MY_TABLE_Survival$BreedingYear
+
+
+MY_TABLE_Female_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialMumID","MumAge","PairID","BreedingYear","FAliveNextYear")]
+MY_TABLE_Male_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialDadID","DadAge","PairID","BreedingYear","MAliveNextYear")]
+MY_TABLE_Female_Survival$Sex <- 0
+MY_TABLE_Male_Survival$Sex <- 1	
+				
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "MumAge")] <- "Age"						
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "DadAge")] <- "Age"	
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "SocialMumID")] <- "BirdID"		
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "SocialDadID")] <- "BirdID"		
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FAliveNextYear")] <- "AliveNextYear"		
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MAliveNextYear")] <- "AliveNextYear"	
+
+head(MY_TABLE_Female_Survival)
+head(MY_TABLE_Male_Survival)
+
+MY_TABLE_Survival_perBird <- rbind(MY_TABLE_Female_Survival,MY_TABLE_Male_Survival)	
+MY_TABLE_Survival_perBird$BirdIDYear <- paste(MY_TABLE_Survival_perBird$BirdID, MY_TABLE_Survival_perBird$BreedingYear, sep="")
+}
+
+head(MY_TABLE_Survival_perBird)
+
+{# get mean Alternation per year per BirdID
+
+MY_TABLE_Survival_perBirdYear <- split(MY_TABLE_Survival_perBird,MY_TABLE_Survival_perBird$BirdIDYear)
+MY_TABLE_Survival_perBirdYear[[1]]
+
+MY_TABLE_Survival_perBirdYear_fun = function(x)  {
+return(mean(x$AlternationValue) #MeanAYear
+)
+}
+
+MY_TABLE_Survival_perBirdYear_out1 <- lapply(MY_TABLE_Survival_perBirdYear, FUN=MY_TABLE_Survival_perBirdYear_fun)
+MY_TABLE_Survival_perBirdYear_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_Survival_perBirdYear_out1)),do.call(rbind, MY_TABLE_Survival_perBirdYear_out1))
+
+nrow(MY_TABLE_Survival_perBirdYear_out2)	# 999
+rownames(MY_TABLE_Survival_perBirdYear_out2) <- NULL
+colnames(MY_TABLE_Survival_perBirdYear_out2) <- c('BirdIDYear','MeanAYear')
+
+
+MY_TABLE_Survival_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
+							y=MY_TABLE_Survival_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
+}
+
+}
+
+head(MY_TABLE_Survival_perBirdYear)
+
 
 {#### fitness correlate of alternation
 
@@ -797,21 +902,28 @@ modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged +
 											
 summary(modFitnessAsProRate) # Number of obs: 919, groups:  PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
 
+
+
 {# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modFitnessAsProRate), resid(modFitnessAsProRate))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modFitnessAsProRate))
+qqline(resid(modFitnessAsProRate))
+qqnorm(unlist(ranef(modFitnessAsProRate)))
+qqline(unlist(ranef(modFitnessAsProRate)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modFitnessAsProRate))),fitted(modFitnessAsProRate)) 
+
+# Mean of ranefs: should be zero
 mean(unlist(ranef(modFitnessAsProRate)$SocialMumID))
 mean(unlist(ranef(modFitnessAsProRate)$SocialDadID))
 mean(unlist(ranef(modFitnessAsProRate)$PairID))
 mean(unlist(ranef(modFitnessAsProRate)$BreedingYear))
-
-# qqplots residuals and ranef
-qqnorm(resid(modFitnessAsProRate))
-qqline(resid(modFitnessAsProRate))
-qqnorm(unlist(ranef(modFitnessAsProRate))) # not quite normal ?
-qqline(unlist(ranef(modFitnessAsProRate)))
-
-# residuals vs fitted
-scatter.smooth(fitted(modFitnessAsProRate), resid(modFitnessAsProRate))	
-abline(h=0, lty=2)
 
 # residuals vs predictors
 scatter.smooth(MY_TABLE_perBrood$NbRinged, resid(modFitnessAsProRate))
@@ -819,15 +931,15 @@ abline(h=0, lty=2)
 scatter.smooth(MY_TABLE_perBrood$Adev, resid(modFitnessAsProRate))
 abline(h=0, lty=2)
 
-# data vs. fitted ?
+# dependent variable vs fitted
 d <- MY_TABLE_perBrood
 d$fitted <- fitted(modFitnessAsProRate)
 scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
-# data and fitted against all predictors
-scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="PairBroodNb")
-scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+# fitted vs all predictors
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="Adev")
 
 }
 
@@ -851,20 +963,25 @@ modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
 summary(modFitnessAsChickMass) # Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
 
 {# model assumptions checking
-mean(unlist(ranef(modFitnessAsChickMass)$SocialMumID))
-mean(unlist(ranef(modFitnessAsChickMass)$SocialDadID))
-mean(unlist(ranef(modFitnessAsChickMass)$PairID))
-mean(unlist(ranef(modFitnessAsChickMass)$BreedingYear))
 
-# qqplots residuals and ranef
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modFitnessAsChickMass), resid(modFitnessAsChickMass))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
 qqnorm(resid(modFitnessAsChickMass))
 qqline(resid(modFitnessAsChickMass))
 qqnorm(unlist(ranef(modFitnessAsChickMass))) # not quite normal ?
 qqline(unlist(ranef(modFitnessAsChickMass)))
 
-# residuals vs fitted
-scatter.smooth(fitted(modFitnessAsChickMass), resid(modFitnessAsChickMass))	
-abline(h=0, lty=2)
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modFitnessAsChickMass))),fitted(modFitnessAsChickMass)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modFitnessAsChickMass)$SocialMumID))
+mean(unlist(ranef(modFitnessAsChickMass)$SocialDadID))
+mean(unlist(ranef(modFitnessAsChickMass)$PairID))
+mean(unlist(ranef(modFitnessAsChickMass)$BreedingYear))
 
 # residuals vs predictors
 d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MeanA) & !is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass),]
@@ -875,27 +992,108 @@ abline(h=0, lty=2)
 scatter.smooth(d$AvgTarsus, resid(modFitnessAsChickMass))
 abline(h=0, lty=2)
 
-# data vs. fitted ?
+# dependent variable vs fitted
 d$fitted <- fitted(modFitnessAsChickMass)
 scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
-# data and fitted against all predictors
-scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="PairBroodNb")
-scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+# fitted vs all predictors
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="NbRinged")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="Adev")
 
 }
 
 }
 
-# Parent survival
+{# Parent survival
 
+summary(MY_TABLE_Survival_perBirdYear$AliveNextYear)
+scatter.smooth(MY_TABLE_Survival_perBirdYear$MeanAYear, MY_TABLE_Survival_perBirdYear$Age)
+modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
+									(1|BirdID) +
+									#(1|PairID) + 
+									(1|BreedingYear)
+									, data = MY_TABLE_Survival_perBirdYear, family = "binomial" )
+									
+summary(modSurvival) # Number of obs: 1110, groups:  BirdID, 578; BreedingYear, 12
+
+{# model assumptions checking >> residuals not normal !!!!!!
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modFitnessAsChickMass), resid(modFitnessAsChickMass))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modSurvival))# not quite normal !
+qqline(resid(modSurvival))
+
+{# get our qqplot within others:
+N <- length(resid(modSurvival))
+sigma <- summary(modSurvival)$sigma
+par(mfrow=c(3,3))  
+rnum<-sample(1:9, 1)
+for(i in 1:(rnum-1)){
+  x<-rnorm(N, 0, sigma)
+  qqnorm(x, main=i)
+  qqline(x)
+  }
+qqnorm(resid(modSurvival), main=rnum)
+qqline(resid(modSurvival))
+for(i in (rnum+1):9){
+  x<-rnorm(N, 0, sigma)
+  qqnorm(x, main=i)
+  qqline(x)
+  }
+  }
+# can we see our plot ? solution is:
+rnum
+
+qqnorm(unlist(ranef(modSurvival))) 
+qqline(unlist(ranef(modSurvival)))
+
+
+# check for overdispersion
+modSurvival_withOverdispersionAccounted <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
+									(1|BirdID) +
+									(1|BreedingYear)+
+									(1|BirdIDYear) # overdispersion parameter
+									, data = MY_TABLE_Survival_perBirdYear, family = "binomial" )
+summary(modSurvival_withOverdispersionAccounted)
+anova(modSurvival, modSurvival_withOverdispersionAccounted) # p = 0.38
+
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modSurvival)$BirdID))
+mean(unlist(ranef(modSurvival)$BreedingYear))
+
+# residuals vs predictors
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MeanA) & !is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass),]
+scatter.smooth(d$NbRinged, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+scatter.smooth(d$MeanA, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+scatter.smooth(d$AvgTarsus, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+
+# dependent variable vs fitted
+d$fitted <- fitted(modFitnessAsChickMass)
+scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="NbRinged")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="Adev")
+
+}
+
+
+}
 
 }
 
 summary(modFitnessAsProRate)
 summary(modFitnessAsChickMass)
-
+summary(modSurvival)
 
 
 
@@ -938,7 +1136,7 @@ modProRateRpt <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) +
 									scale(RelTimeHrs, scale=FALSE) + 
 									(1|BroodRef) + 
 									(1|BirdID)+ (1|SocialPartnerID) + (1|BreedingYear) 
-									 + (1|PairID)
+									# + (1|PairID)
 									, data = BirdProRate)
 									
 summary(modProRateRpt)
@@ -1001,30 +1199,35 @@ anova(modProRateRpt,modProRateRptwithoutPairID) # NS
 {#############################  TO DO + ISSUES
   
 ## repeatability of provisioning rate:
-# bootstrap instead of ML (though clear answer)
+# bootstrap instead of ML (though clear answer?)
 # get rpt package to work (under construction)
-# do analyses on provisioning rate per chick like shinichi
+# do analyses on provisioning rate per chick like shinichi ?
 # boxcox transfo to approach normality ?
+# do analysis per sex separately or add sex to the model with both sexes piled up ?
 
 
 ## repeatability alternation 
 # considering more than two measures and use rptR package to fit mixed effect model (not working)
 # or randomise order of measurements with 2 measures
 
-
 ## take a decision for time of the day
 # check if the effect is linear to keep a continuous variable
 
-
 ## predictor of alternation
 # solve the issue of correlation between parent age and PairBroodNb
-
+# solve the issue of correlation between ChickNb and ChickAge
 
 ## fitness model
 # are models on average values good ? 
 # should it be weigthed ?
 # or should the error been kept forward and how ?
+
 # get table ready for parental survival
+# do model for sexes separately ?
+# include sex in a model with data of both sexes piled up ?
+# average Alternation value per year or have one line per file and birdIS ect as random factor ?
+# survival analysis !! if dead one year, cannot be alive next year ! 
+# temporal autocorrelation to take into account !
 
 ## sealed bid by male
 # how can female adjust ? if purely alternate but for a low male provisioning > low fitness !
