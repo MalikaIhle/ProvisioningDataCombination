@@ -584,34 +584,168 @@ head(MY_TABLE)
 
 
 {#### Predictors of alternation
+
+{# check dependent and explanatory variables
+
 is.numeric(MY_TABLE$BreedingYear)
 is.numeric(MY_TABLE$HatchingDayAfter0401)
-is.numeric(MY_TABLE$ParentsAge)
-is.numeric(MY_TABLE$PairBroodNb)
-cor.test(MY_TABLE$ParentsAge,MY_TABLE$PairBroodNb) # cor = 0.63, p < 0.0001 !
 is.numeric(MY_TABLE$DVDInfoChickNb)
 is.numeric(MY_TABLE$ChickAge) 
 is.numeric(MY_TABLE$DiffVisit1Rate)
-is.numeric(MY_TABLE$RelTimeHrs) # number of hours after sunrise for that day
-summary(MY_TABLE$RelTimeHrs) # 6 NA's
 
-modA <- lmer(AlternationValue ~ # scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-								scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-								scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-								scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-								ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-								DiffVisit1Rate +  
-								scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-								(1|BroodRef) + 
-								(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-								# + (1|PairIDYear) # explain 0% of the variance
-								, data = MY_TABLE)
-								
-# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+is.numeric(MY_TABLE$ParentsAge)
+is.numeric(MY_TABLE$PairBroodNb)
+cor.test(MY_TABLE$ParentsAge,MY_TABLE$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable
+
+is.numeric(MY_TABLE$RelTimeHrs) # number of hours after sunrise for that day
+summary(MY_TABLE$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_Table from those RelTimeHrs NAs
+scatter.smooth(MY_TABLE$AlternationValue,MY_TABLE$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
+
+shapiro.test(MY_TABLE$AlternationValue) # normal ok
 
 }
 
-summary(modA)
+{# modA_ParentAge
+
+modA_ParentAge <- lmer(AlternationValue ~  
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	#scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	, data = MY_TABLE)
+
+summary(modA_ParentAge) # Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
+{# model assumptions checking
+mean(unlist(ranef(modA_ParentAge)$BroodRef))
+mean(unlist(ranef(modA_ParentAge)$SocialMumID))
+mean(unlist(ranef(modA_ParentAge)$SocialDadID))
+mean(unlist(ranef(modA_ParentAge)$PairID))
+mean(unlist(ranef(modA_ParentAge)$BreedingYear))
+
+# qqplots residuals and ranef
+qqnorm(resid(modA_ParentAge))
+qqline(resid(modA_ParentAge))
+qqnorm(unlist(ranef(modA_ParentAge))) # not quite normal ?
+qqline(unlist(ranef(modA_ParentAge)))
+
+# residuals vs fitted
+scatter.smooth(fitted(modA_ParentAge), resid(modA_ParentAge))	
+abline(h=0, lty=2)
+
+# residuals vs predictors
+scatter.smooth(MY_TABLE$ParentsAge[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE$HatchingDayAfter0401[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE$DVDInfoChickNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+abline(h=0, lty=2)	
+plot(MY_TABLE$ChickAgeCat[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+abline(h=0, lty=2)	
+scatter.smooth(MY_TABLE$DiffVisit1Rate[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge)) # one influencal data point
+abline(h=0, lty=2)	
+scatter.smooth(MY_TABLE$RelTimeHrs[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+abline(h=0, lty=2)		
+
+
+# data vs. fitted ?
+d <- MY_TABLE[!is.na(MY_TABLE$RelTimeHrs),]
+d$fitted <- fitted(modA_ParentAge)
+scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# data and fitted against all predictors
+scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ParentsAge")
+scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
+scatter.smooth(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
+scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")
+
+}
+
+}
+
+{# modA_PairBroodNb
+
+modA_PairBroodNb <- lmer(AlternationValue ~  # scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+											scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+											scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+											scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+											ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+											DiffVisit1Rate +  
+											scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+											(1|BroodRef) + 
+											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+											# + (1|PairIDYear) # explain 0% of the variance
+											, data = MY_TABLE)
+								
+
+summary(modA_PairBroodNb)# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
+{# model assumptions checking
+mean(unlist(ranef(modA_PairBroodNb)$BroodRef))
+mean(unlist(ranef(modA_PairBroodNb)$SocialMumID))
+mean(unlist(ranef(modA_PairBroodNb)$SocialDadID))
+mean(unlist(ranef(modA_PairBroodNb)$PairID))
+mean(unlist(ranef(modA_PairBroodNb)$BreedingYear))
+
+# qqplots residuals and ranef
+qqnorm(resid(modA_PairBroodNb))
+qqline(resid(modA_PairBroodNb))
+qqnorm(unlist(ranef(modA_PairBroodNb))) # not quite normal ?
+qqline(unlist(ranef(modA_PairBroodNb)))
+
+# residuals vs fitted
+scatter.smooth(fitted(modA_PairBroodNb), resid(modA_PairBroodNb))	
+abline(h=0, lty=2)
+
+# residuals vs predictors
+scatter.smooth(MY_TABLE$PairBroodNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE$HatchingDayAfter0401[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE$DVDInfoChickNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+abline(h=0, lty=2)	
+plot(MY_TABLE$ChickAgeCat[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+abline(h=0, lty=2)	
+scatter.smooth(MY_TABLE$DiffVisit1Rate[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb)) # one influencal data point
+abline(h=0, lty=2)	
+scatter.smooth(MY_TABLE$RelTimeHrs[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+abline(h=0, lty=2)		
+
+
+# data vs. fitted ?
+d <- MY_TABLE[!is.na(MY_TABLE$RelTimeHrs),]
+d$fitted <- fitted(modA_PairBroodNb)
+scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# data and fitted against all predictors
+scatter.smooth(d$PairBroodNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="PairBroodNb")
+scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
+scatter.smooth(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
+scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")
+
+}
+
+}
+
+}
+
+summary(modA_ParentAge)$coefficients
+summary(modA_PairBroodNb)$coefficients
+print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
+print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
+
 
 
 ### repeatability of alternation
@@ -661,16 +795,52 @@ modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged +
 											# + (1|PairIDYear) # explain 0% of the variance
 											, data = MY_TABLE_perBrood)
 											
-# Number of obs: 919, groups:  PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+summary(modFitnessAsProRate) # Number of obs: 919, groups:  PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
+{# model assumptions checking
+mean(unlist(ranef(modFitnessAsProRate)$SocialMumID))
+mean(unlist(ranef(modFitnessAsProRate)$SocialDadID))
+mean(unlist(ranef(modFitnessAsProRate)$PairID))
+mean(unlist(ranef(modFitnessAsProRate)$BreedingYear))
+
+# qqplots residuals and ranef
+qqnorm(resid(modFitnessAsProRate))
+qqline(resid(modFitnessAsProRate))
+qqnorm(unlist(ranef(modFitnessAsProRate))) # not quite normal ?
+qqline(unlist(ranef(modFitnessAsProRate)))
+
+# residuals vs fitted
+scatter.smooth(fitted(modFitnessAsProRate), resid(modFitnessAsProRate))	
+abline(h=0, lty=2)
+
+# residuals vs predictors
+scatter.smooth(MY_TABLE_perBrood$NbRinged, resid(modFitnessAsProRate))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE_perBrood$Adev, resid(modFitnessAsProRate))
+abline(h=0, lty=2)
+
+# data vs. fitted ?
+d <- MY_TABLE_perBrood
+d$fitted <- fitted(modFitnessAsProRate)
+scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# data and fitted against all predictors
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="PairBroodNb")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
 
 }
 
-summary(modFitnessAsProRate)
+
+}
 
 {## mean chick mass
+
+{# check dependent and explanatory variables
 nrow(MY_TABLE_perBrood[ MY_TABLE_perBrood$NbRinged == 0 ,]) # 45 broods with no ringed chicks
 nrow(MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,]) # 20 broods where ringed chicks but no mass nor tarsus: for some reasons were ringed not at the rigth age for comparable measurements)
 MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,] # 2 broods with ringed with mass but not tarsus
+}
 
 modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
 										MeanA + # Kat&Ben's paper: I assume they used again the average of alternation per nest 
@@ -678,19 +848,53 @@ modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
 										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
 										data = MY_TABLE_perBrood)
 										
-# Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
+summary(modFitnessAsChickMass) # Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
+
+{# model assumptions checking
+mean(unlist(ranef(modFitnessAsChickMass)$SocialMumID))
+mean(unlist(ranef(modFitnessAsChickMass)$SocialDadID))
+mean(unlist(ranef(modFitnessAsChickMass)$PairID))
+mean(unlist(ranef(modFitnessAsChickMass)$BreedingYear))
+
+# qqplots residuals and ranef
+qqnorm(resid(modFitnessAsChickMass))
+qqline(resid(modFitnessAsChickMass))
+qqnorm(unlist(ranef(modFitnessAsChickMass))) # not quite normal ?
+qqline(unlist(ranef(modFitnessAsChickMass)))
+
+# residuals vs fitted
+scatter.smooth(fitted(modFitnessAsChickMass), resid(modFitnessAsChickMass))	
+abline(h=0, lty=2)
+
+# residuals vs predictors
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MeanA) & !is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass),]
+scatter.smooth(d$NbRinged, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+scatter.smooth(d$MeanA, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+scatter.smooth(d$AvgTarsus, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+
+# data vs. fitted ?
+d$fitted <- fitted(modFitnessAsChickMass)
+scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# data and fitted against all predictors
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="PairBroodNb")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+
 }
 
-summary(modFitnessAsChickMass)
+}
 
 # Parent survival
 
 
-
 }
 
-
-
+summary(modFitnessAsProRate)
+summary(modFitnessAsChickMass)
 
 
 
@@ -818,7 +1022,7 @@ anova(modProRateRpt,modProRateRptwithoutPairID) # NS
 
 ## fitness model
 # are models on average values good ? 
-# should it be wiegthed ?
+# should it be weigthed ?
 # or should the error been kept forward and how ?
 # get table ready for parental survival
 
