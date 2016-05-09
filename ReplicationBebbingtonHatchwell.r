@@ -13,7 +13,7 @@
 # 2 broods corresponding to 2 DVDs have both parents NA > removed
 # 39 brood with one parent NA, corresponding to 66 files
 # if tblDVDinfois updated > the date associated to DVDtime and to Sunrise will change
-# MY_TABLE has one line per file
+# MY_TABLE_perDVD has one line per file
 # MY_TABLE_perBrood has one line per brood, averaging the summary accross files
 }
 
@@ -25,6 +25,8 @@ library(ggplot2)
 library(boot)
 library(lme4)
 library(rptR)
+
+options(warn=-1)
 }
 
 
@@ -38,7 +40,7 @@ output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/sta
 MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
 MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
-MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.xlsx", sep="/")) # OF directly followed by IN are merged feeding visits ; will be used for simulation
+MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged feeding visits ; will be used for simulation
 
 
 input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
@@ -106,27 +108,6 @@ head(MY_tblParentalCare)
 head(MY_RawFeedingVisits)
 
   
-{### create MY_TABLE
-# one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
-# as broods were watched several time, the brood info appears in duplicate
-
-MY_TABLE <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue")]
-MY_TABLE <- merge(x=MY_TABLE, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
-MY_TABLE <- merge(x=MY_TABLE, 
-y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
-"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
-"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
-
-MY_TABLE <- MY_TABLE[!is.na(MY_TABLE$SocialMumID) & !is.na(MY_TABLE$SocialDadID),] # where both parents known
-nrow(MY_TABLE) # 1702 files
-length(unique(MY_TABLE$BroodRef)) # 919 broods
-
-}
-
-head(MY_TABLE)
-
-
-
 
 
 ############################################ 
@@ -579,41 +560,66 @@ Fig1comparison
 
 Fig1comparison
 
-{# add MeanAsim and Adev for each DVD file to MY_TABLE
 
-MY_TABLE <- merge(y=data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef),MeanAsim = rowMeans(out_Asim)), 
-				  x= MY_TABLE, by='DVDRef', all.x =TRUE)
 
-MY_TABLE$Adev <- MY_TABLE$MeanAsim - MY_TABLE$AlternationValue
+
+
+{### create MY_TABLE_perDVD
+# one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
+# as broods were watched several time, the brood info appears in duplicate
+
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue")]
+MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
+MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
+y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
+"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
+"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
+
+
+MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(MY_TABLE_perDVD$SocialDadID),] # where both parents known
+nrow(MY_TABLE_perDVD) # 1702 files
+length(unique(MY_TABLE_perDVD$BroodRef)) # 919 broods
+
+
+{# add MeanAsim and Adev
+
+MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef),MeanAsim = rowMeans(out_Asim)), 
+				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
+
+MY_TABLE_perDVD$Adev <- MY_TABLE_perDVD$MeanAsim - MY_TABLE_perDVD$AlternationValue
 
 }
 
-head(MY_TABLE)
+}
 
+head(MY_TABLE_perDVD)
 
 
 {#### Predictors of alternation
 
 {# check dependent and explanatory variables
 
-is.numeric(MY_TABLE$BreedingYear)
-is.numeric(MY_TABLE$HatchingDayAfter0401)
-is.numeric(MY_TABLE$DiffVisit1Rate)
+is.numeric(MY_TABLE_perDVD$BreedingYear)
+is.numeric(MY_TABLE_perDVD$HatchingDayAfter0401)
+is.numeric(MY_TABLE_perDVD$DiffVisit1Rate)
 
-is.numeric(MY_TABLE$DVDInfoChickNb)
-is.numeric(MY_TABLE$ChickAge) 
-cor.test(MY_TABLE$ChickAge,MY_TABLE$DVDInfoChickNb) # cor = -0.08, p<0.001 
+is.numeric(MY_TABLE_perDVD$DVDInfoChickNb)
+is.numeric(MY_TABLE_perDVD$ChickAge) 
+cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.08, p<0.001 
+cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged) # cor = 0.06, p=0.01 
 
 
-is.numeric(MY_TABLE$ParentsAge)
-is.numeric(MY_TABLE$PairBroodNb)
-cor.test(MY_TABLE$ParentsAge,MY_TABLE$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable
 
-is.numeric(MY_TABLE$RelTimeHrs) # number of hours after sunrise for that day
-summary(MY_TABLE$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_Table from those RelTimeHrs NAs
-scatter.smooth(MY_TABLE$AlternationValue,MY_TABLE$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
 
-shapiro.test(MY_TABLE$AlternationValue) # normal ok
+is.numeric(MY_TABLE_perDVD$ParentsAge)
+is.numeric(MY_TABLE_perDVD$PairBroodNb)
+cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable
+
+is.numeric(MY_TABLE_perDVD$RelTimeHrs) # number of hours after sunrise for that day
+summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
+scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
+
+shapiro.test(MY_TABLE_perDVD$AlternationValue) # normal ok
 
 }
 
@@ -631,7 +637,7 @@ modA <- lmer(AlternationValue ~
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE)
+	, data = MY_TABLE_perDVD)
 
 summary(modA)
 
@@ -648,7 +654,7 @@ modA_ParentAge <- lmer(AlternationValue ~
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE)
+	, data = MY_TABLE_perDVD)
 
 summary(modA_ParentAge) # Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
 
@@ -679,21 +685,21 @@ scatter.smooth(fitted(modA_ParentAge), resid(modA_ParentAge))
 abline(h=0, lty=2)
 
 # residuals vs predictors
-scatter.smooth(MY_TABLE$ParentsAge[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+scatter.smooth(MY_TABLE_perDVD$ParentsAge[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_ParentAge))
 abline(h=0, lty=2)
-scatter.smooth(MY_TABLE$HatchingDayAfter0401[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+scatter.smooth(MY_TABLE_perDVD$HatchingDayAfter0401[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_ParentAge))
 abline(h=0, lty=2)
-scatter.smooth(MY_TABLE$DVDInfoChickNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+scatter.smooth(MY_TABLE_perDVD$DVDInfoChickNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_ParentAge))
 abline(h=0, lty=2)	
-plot(MY_TABLE$ChickAgeCat[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+plot(MY_TABLE_perDVD$ChickAgeCat[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_ParentAge))
 abline(h=0, lty=2)	
-scatter.smooth(MY_TABLE$DiffVisit1Rate[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge)) # one influencal data point
+scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_ParentAge)) # one influencal data point
 abline(h=0, lty=2)	
-scatter.smooth(MY_TABLE$RelTimeHrs[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_ParentAge))
+scatter.smooth(MY_TABLE_perDVD$RelTimeHrs[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_ParentAge))
 abline(h=0, lty=2)		
 
 # dependent variable vs fitted
-d <- MY_TABLE[!is.na(MY_TABLE$RelTimeHrs),]
+d <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
 d$fitted <- fitted(modA_ParentAge)
 scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
 abline(0,1)	
@@ -722,7 +728,7 @@ modA_PairBroodNb <- lmer(AlternationValue ~  # scale(ParentsAge, scale=FALSE) + 
 											(1|BroodRef) + 
 											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 											# + (1|PairIDYear) # explain 0% of the variance
-											, data = MY_TABLE)
+											, data = MY_TABLE_perDVD)
 								
 
 summary(modA_PairBroodNb)# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
@@ -750,21 +756,21 @@ mean(unlist(ranef(modA_PairBroodNb)$PairID))
 mean(unlist(ranef(modA_PairBroodNb)$BreedingYear))
 
 # residuals vs predictors
-scatter.smooth(MY_TABLE$PairBroodNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+scatter.smooth(MY_TABLE_perDVD$PairBroodNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_PairBroodNb))
 abline(h=0, lty=2)
-scatter.smooth(MY_TABLE$HatchingDayAfter0401[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+scatter.smooth(MY_TABLE_perDVD$HatchingDayAfter0401[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_PairBroodNb))
 abline(h=0, lty=2)
-scatter.smooth(MY_TABLE$DVDInfoChickNb[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+scatter.smooth(MY_TABLE_perDVD$DVDInfoChickNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_PairBroodNb))
 abline(h=0, lty=2)	
-plot(MY_TABLE$ChickAgeCat[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+plot(MY_TABLE_perDVD$ChickAgeCat[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_PairBroodNb))
 abline(h=0, lty=2)	
-scatter.smooth(MY_TABLE$DiffVisit1Rate[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb)) # one influencal data point
+scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_PairBroodNb)) # one influencal data point
 abline(h=0, lty=2)	
-scatter.smooth(MY_TABLE$RelTimeHrs[!is.na(MY_TABLE$RelTimeHrs)], resid(modA_PairBroodNb))
+scatter.smooth(MY_TABLE_perDVD$RelTimeHrs[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA_PairBroodNb))
 abline(h=0, lty=2)		
 
 # dependent variable vs fitted
-d <- MY_TABLE[!is.na(MY_TABLE$RelTimeHrs),]
+d <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
 d$fitted <- fitted(modA_PairBroodNb)
 scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
 abline(0,1)	
@@ -781,25 +787,41 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 
 }
 
+modA_NbRinged <- lmer(AlternationValue ~ scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+											scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+											scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+											scale(NbRinged, scale=FALSE) + # like in Kat&Ben's paper: use brood size d11
+											ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+											DiffVisit1Rate +  
+											scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+											(1|BroodRef) + 
+											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+											# + (1|PairIDYear) # explain 0% of the variance
+											, data = MY_TABLE_perDVD)
+								
+
+summary(modA_NbRinged)# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
+
+
 }
 
 summary(modA_ParentAge)$coefficients
 summary(modA_PairBroodNb)$coefficients
 print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
 print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
+summary(modA)$coefficients
+summary(modA_NbRinged)$coefficients
 
-
-
-### repeatability of alternation
 
 
 
 
 {# create MY_TABLE_perBrood
-MY_TABLE[is.na(MY_TABLE$MFVisit1RateH),]
-summary(MY_TABLE$MFVisit1RateH)
+MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
+summary(MY_TABLE_perDVD$MFVisit1RateH)
 
-MY_TABLE_perBrood <- split(MY_TABLE,MY_TABLE$BroodRef)
+MY_TABLE_perBrood <- split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
 MY_TABLE_perBrood[[1]]
 
 MY_TABLE_perBrood_fun = function(x)  {
@@ -818,17 +840,16 @@ nrow(MY_TABLE_perBrood_out2)	# 919
 rownames(MY_TABLE_perBrood_out2) <- NULL
 colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev')
 
-MY_TABLE_perBrood <- merge(x=unique(MY_TABLE[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
+MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
 							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
 }
 
 head(MY_TABLE_perBrood)
 
-
-{## create MY_TABLE_Survival_perBirdYear
+{## create MY_TABLE_perBirdYear
 
 {# get both sex piled up
-MY_TABLE_Survival <- merge(x=MY_TABLE[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear")],
+MY_TABLE_Survival <- merge(x=MY_TABLE_perDVD[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear")],
 						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
 						  by.x="SocialMumID", by.y="BirdID",
 						  all.x=TRUE)
@@ -864,29 +885,29 @@ head(MY_TABLE_Survival_perBird)
 
 {# get mean Alternation per year per BirdID
 
-MY_TABLE_Survival_perBirdYear <- split(MY_TABLE_Survival_perBird,MY_TABLE_Survival_perBird$BirdIDYear)
-MY_TABLE_Survival_perBirdYear[[1]]
+MY_TABLE_perBirdYear <- split(MY_TABLE_Survival_perBird,MY_TABLE_Survival_perBird$BirdIDYear)
+MY_TABLE_perBirdYear[[1]]
 
-MY_TABLE_Survival_perBirdYear_fun = function(x)  {
+MY_TABLE_perBirdYear_fun = function(x)  {
 return(mean(x$AlternationValue) #MeanAYear
 )
 }
 
-MY_TABLE_Survival_perBirdYear_out1 <- lapply(MY_TABLE_Survival_perBirdYear, FUN=MY_TABLE_Survival_perBirdYear_fun)
-MY_TABLE_Survival_perBirdYear_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_Survival_perBirdYear_out1)),do.call(rbind, MY_TABLE_Survival_perBirdYear_out1))
+MY_TABLE_perBirdYear_out1 <- lapply(MY_TABLE_perBirdYear, FUN=MY_TABLE_perBirdYear_fun)
+MY_TABLE_perBirdYear_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBirdYear_out1)),do.call(rbind, MY_TABLE_perBirdYear_out1))
 
-nrow(MY_TABLE_Survival_perBirdYear_out2)	# 999
-rownames(MY_TABLE_Survival_perBirdYear_out2) <- NULL
-colnames(MY_TABLE_Survival_perBirdYear_out2) <- c('BirdIDYear','MeanAYear')
+nrow(MY_TABLE_perBirdYear_out2)	# 999
+rownames(MY_TABLE_perBirdYear_out2) <- NULL
+colnames(MY_TABLE_perBirdYear_out2) <- c('BirdIDYear','MeanAYear')
 
 
-MY_TABLE_Survival_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
-							y=MY_TABLE_Survival_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
+MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
+							y=MY_TABLE_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
 }
 
 }
 
-head(MY_TABLE_Survival_perBirdYear)
+head(MY_TABLE_perBirdYear)
 
 
 {#### fitness correlate of alternation
@@ -1007,13 +1028,13 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 
 {# Parent survival
 
-summary(MY_TABLE_Survival_perBirdYear$AliveNextYear)
-scatter.smooth(MY_TABLE_Survival_perBirdYear$MeanAYear, MY_TABLE_Survival_perBirdYear$Age)
+summary(MY_TABLE_perBirdYear$AliveNextYear)
+scatter.smooth(MY_TABLE_perBirdYear$MeanAYear, MY_TABLE_perBirdYear$Age)
 modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
 									(1|BirdID) +
 									#(1|PairID) + 
 									(1|BreedingYear)
-									, data = MY_TABLE_Survival_perBirdYear, family = "binomial" )
+									, data = MY_TABLE_perBirdYear, family = "binomial" )
 									
 summary(modSurvival) # Number of obs: 1110, groups:  BirdID, 578; BreedingYear, 12
 
@@ -1057,7 +1078,7 @@ modSurvival_withOverdispersionAccounted <- glmer(AliveNextYear ~ MeanAYear + Sex
 									(1|BirdID) +
 									(1|BreedingYear)+
 									(1|BirdIDYear) # overdispersion parameter
-									, data = MY_TABLE_Survival_perBirdYear, family = "binomial" )
+									, data = MY_TABLE_perBirdYear, family = "binomial" )
 summary(modSurvival_withOverdispersionAccounted)
 anova(modSurvival, modSurvival_withOverdispersionAccounted) # p = 0.38
 
@@ -1103,9 +1124,9 @@ summary(modSurvival)
 #########################################
 
 {# get provisioning rate for both sex piled up
-FemaleProRate <- MY_TABLE[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
+FemaleProRate <- MY_TABLE_perDVD[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
 							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
-MaleProRate <- MY_TABLE[,c("MVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
+MaleProRate <- MY_TABLE_perDVD[,c("MVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
 							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
 
 FemaleProRate$Sex <- 0
@@ -1194,8 +1215,6 @@ anova(modProRateRpt,modProRateRptwithoutPairID) # NS
 
 
 
-
-
 {#############################  TO DO + ISSUES
   
 ## repeatability of provisioning rate:
@@ -1233,6 +1252,11 @@ anova(modProRateRpt,modProRateRptwithoutPairID) # NS
 # how can female adjust ? if purely alternate but for a low male provisioning > low fitness !
 
 
+# integrate Schlicht at al 2016 analyses
+# calculate p and check in our data like Johnstone did in his reply
+
+
+
 }#############################
 
 {#############################  MESS
@@ -1241,13 +1265,13 @@ par(mfrow=c(3,1))
 hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
 hist((MY_tblDVDInfo$RelTimeMins), 20)
 hist((MY_tblDVDInfo$LogRelTimeMins), 10)
-hist((MY_TABLE$RelTimeHrs), 20)
+hist((MY_TABLE_perDVD$RelTimeHrs), 20)
 max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
 
-#MY_TABLE$DVDtime2 <- substr(MY_TABLE$DVDtime, 12, 16)
-#MY_TABLE$NumTime <- as.numeric(MY_TABLE$DVDtime)
-#MY_TABLE[,c('DVDtime','NumTime')][with(MY_TABLE[,c('DVDtime','NumTime')],order(MY_TABLE$NumTime)),]
-#MY_TABLE$NumTimeposixct <- as.numeric(as.POSIXct(MY_TABLE$DVDtime))
-#MY_TABLE[,c('DVDtime','NumTime','NumTimeposixct')][with(MY_TABLE[,c('DVDtime','NumTime')],order(MY_TABLE$NumTimeposixct)),]
+#MY_TABLE_perDVD$DVDtime2 <- substr(MY_TABLE_perDVD$DVDtime, 12, 16)
+#MY_TABLE_perDVD$NumTime <- as.numeric(MY_TABLE_perDVD$DVDtime)
+#MY_TABLE_perDVD[,c('DVDtime','NumTime')][with(MY_TABLE_perDVD[,c('DVDtime','NumTime')],order(MY_TABLE_perDVD$NumTime)),]
+#MY_TABLE_perDVD$NumTimeposixct <- as.numeric(as.POSIXct(MY_TABLE_perDVD$DVDtime))
+#MY_TABLE_perDVD[,c('DVDtime','NumTime','NumTimeposixct')][with(MY_TABLE_perDVD[,c('DVDtime','NumTime')],order(MY_TABLE_perDVD$NumTimeposixct)),]
 
 }#############################
