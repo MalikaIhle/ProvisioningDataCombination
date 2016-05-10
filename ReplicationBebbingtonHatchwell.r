@@ -623,8 +623,7 @@ shapiro.test(MY_TABLE_perDVD$AlternationValue) # normal ok
 
 }
 
-# modA
-
+{# modA
 
 modA <- lmer(AlternationValue ~  
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
@@ -639,7 +638,66 @@ modA <- lmer(AlternationValue ~
 	# + (1|PairIDYear) # explain 0% of the variance
 	, data = MY_TABLE_perDVD)
 
-summary(modA)
+summary(modA) # Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modA), resid(modA))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modA))
+qqline(resid(modA))
+qqnorm(unlist(ranef(modA))) 
+qqline(unlist(ranef(modA)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modA))),fitted(modA)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modA)$BroodRef))
+mean(unlist(ranef(modA)$SocialMumID))
+mean(unlist(ranef(modA)$SocialDadID))
+mean(unlist(ranef(modA)$PairID))
+mean(unlist(ranef(modA)$BreedingYear))
+
+# residuals vs predictors
+scatter.smooth(MY_TABLE_perDVD$ParentsAge[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE_perDVD$HatchingDayAfter0401[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE_perDVD$DVDInfoChickNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)	
+plot(MY_TABLE_perDVD$ChickAgeCat[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)	
+scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA)) # one influencal data point
+abline(h=0, lty=2)	
+
+	# MY_TABLE_perDVD[MY_TABLE_perDVD$DiffVisit1Rate > 40,] # DVDRef == 2337
+	# scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs) & MY_TABLE_perDVD$DVDRef != 2337], resid(modA)) # when modA made witghout this datapoint
+	# abline(h=0, lty=2)	
+
+scatter.smooth(MY_TABLE_perDVD$RelTimeHrs[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)		
+
+# dependent variable vs fitted
+d <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+d$fitted <- fitted(modA)
+scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ParentsAge")
+scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
+scatter.smooth(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
+scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")
+
+}
+
+}
 
 {# modA_ParentAge
 
@@ -787,6 +845,8 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 
 }
 
+{# modA_NbRinged
+
 modA_NbRinged <- lmer(AlternationValue ~ scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 											scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
 											scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
@@ -801,18 +861,20 @@ modA_NbRinged <- lmer(AlternationValue ~ scale(ParentsAge, scale=FALSE) + # this
 								
 
 summary(modA_NbRinged)# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
-
+}
 
 
 }
 
+
+summary(modA)$coefficients
+summary(modA_NbRinged)$coefficients
+print(VarCorr(modA),comp=c("Variance","Std.Dev."))
+print(VarCorr(modA_NbRinged),comp=c("Variance","Std.Dev."))
 summary(modA_ParentAge)$coefficients
 summary(modA_PairBroodNb)$coefficients
 print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
 print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
-summary(modA)$coefficients
-summary(modA_NbRinged)$coefficients
-
 
 
 
@@ -938,7 +1000,8 @@ qqnorm(unlist(ranef(modFitnessAsProRate)))
 qqline(unlist(ranef(modFitnessAsProRate)))
 
 # homogeneity of variance
-scatter.smooth(sqrt(abs(resid(modFitnessAsProRate))),fitted(modFitnessAsProRate)) 
+scatter.smooth(sqrt(abs(resid(modFitnessAsProRate))),fitted(modFitnessAsProRate)) # quite not !
+	# tried when removing the 5% quantile extreme of provisioning rate, model estimates quite similar, random effect all much much lower
 
 # Mean of ranefs: should be zero
 mean(unlist(ranef(modFitnessAsProRate)$SocialMumID))
@@ -960,7 +1023,7 @@ abline(0,1)
 
 # fitted vs all predictors
 scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
-scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="Adev")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="Adev") # polynomial ?
 
 }
 
@@ -1028,8 +1091,13 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 
 {# Parent survival
 
+{# check dependent and explanatory variables
 summary(MY_TABLE_perBirdYear$AliveNextYear)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear, MY_TABLE_perBirdYear$Age)
+scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 1])
+
+}
+
 modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
 									(1|BirdID) +
 									#(1|PairID) + 
@@ -1037,6 +1105,36 @@ modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
 									, data = MY_TABLE_perBirdYear, family = "binomial" )
 									
 summary(modSurvival) # Number of obs: 1110, groups:  BirdID, 578; BreedingYear, 12
+
+
+modSurvivalMale <- glmer(AliveNextYear ~ MeanAYear + Age +
+									(1|BirdID) +
+									#(1|PairID) + 
+									(1|BreedingYear)
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 1,], family = "binomial" )
+									
+summary(modSurvivalMale) # !! Model failed to converge !! Number of obs: 555, groups:  BirdID, 283; BreedingYear, 12
+
+
+modSurvivalFemale <- glmer(AliveNextYear ~ MeanAYear + Age +
+									(1|BirdID) +
+									#(1|PairID) + 
+									(1|BreedingYear)
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 0,], family = "binomial" )
+									
+summary(modSurvivalFemale) # Number of obs: 555, groups:  BirdID, 295; BreedingYear, 12
+
+
+modSurvival_SexAgeInteraction <- glmer(AliveNextYear ~ MeanAYear + Sex*Age +
+									(1|BirdID) +
+									#(1|PairID) + 
+									(1|BreedingYear)
+									, data = MY_TABLE_perBirdYear, family = "binomial" )
+									
+summary(modSurvival_SexAgeInteraction) # Number of obs: 1110, groups:  BirdID, 578; BreedingYear, 12
+
+
+
 
 {# model assumptions checking >> residuals not normal !!!!!!
 
@@ -1050,7 +1148,7 @@ qqline(resid(modSurvival))
 
 {# get our qqplot within others:
 N <- length(resid(modSurvival))
-sigma <- summary(modSurvival)$sigma
+sigma <- summary(modSurvival)$sigma # Extract the estimated standard deviation of the errors
 par(mfrow=c(3,3))  
 rnum<-sample(1:9, 1)
 for(i in 1:(rnum-1)){
@@ -1142,44 +1240,99 @@ head(FemaleProRate)
 head(MaleProRate)
 
 BirdProRate <- rbind(FemaleProRate,MaleProRate)	
+
+
+# calculate Feeding visit rate per hour per chick
+BirdProRate$Visit1RateHChick <- round(BirdProRate$Visit1RateH / BirdProRate$DVDInfoChickNb,2)
+
+BirdProRate <- BirdProRate[!is.na(BirdProRate$RelTimeHrs),]
+
 }
 
 head(BirdProRate)
 
+
 {### repeatbility of provisioning rate
 # Shinichi does repeatability of provisioning rate on visit/chick/hour
 
-
-
-modProRateRpt <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+modProRateRpt <- lmer(Visit1RateH ~ Sex +
+									scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
 									(1|BroodRef) + 
 									(1|BirdID)+ (1|SocialPartnerID) + (1|BreedingYear) 
-									# + (1|PairID)
-									, data = BirdProRate)
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE)
 									
 summary(modProRateRpt)
 
 
-modProRateRptwithoutBirdID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+{modProRateRptwithoutBirdID <- lmer(Visit1RateH ~ Sex + 
+												scale(HatchingDayAfter0401, scale=FALSE) + 
+												scale(DVDInfoChickNb, scale=FALSE) + 
+												ChickAgeCat + 
+												scale(RelTimeHrs, scale=FALSE) + 
+												(1|BroodRef) + 
+												#(1|BirdID)+ 
+												(1|SocialPartnerID) + (1|BreedingYear) 
+												 + (1|PairID)
+												, data = BirdProRate, REML=FALSE)
+
+summary(modProRateRptwithoutBirdID)
+#anova(modProRateRpt,modProRateRptwithoutBirdID) # ***
+
+# use parametric bootstrap to simulate the distribution of the likelihood ratio test statistics given the null hypothesis
+lrt.obs <- anova(modProRateRpt, modProRateRptwithoutBirdID)$Chisq[2] # save the observed likelihood ratio test statistic
+n.sim <- 10  # use 1000 for a real data analysis
+lrt.sim <- numeric(n.sim)
+for(i in 1:n.sim){
+  BirdProRate$ysim <- unlist(simulate(modProRateRptwithoutBirdID)) # simulate new observations from the null-model
+  
+  modnull <- lmer(ysim ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
 									(1|BroodRef) + 
 									#(1|BirdID)+ 
 									(1|SocialPartnerID) + (1|BreedingYear) 
-									# + (1|PairID)
-									, data = BirdProRate)
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE) # fit the null-model
+									
+  modalt <- lmer(ysim ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + (1|BreedingYear) 
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE)  # fit the alternative model
+  
+  
+  lrt.sim[i] <- anova(modnull, modalt)$Chisq[2] # save the likelihood ratio test statistic
+  #print(head(BirdProRate)) 
+  BirdProRate$ysim <- NULL
 
-summary(modProRateRptwithoutBirdID)
-anova(modProRateRpt,modProRateRptwithoutBirdID) # ***
+  }
+  
+# compare to a Chisquare distribution with df=1
+xx <- seq(0, 40, by=0.02)
+xy <- dchisq(xx, df=1)
+hist(lrt.sim, xlim=c(0, max(c(lrt.sim, lrt.obs))),breaks= 20,col="blue", xlab="likelihood ratio test statistic", ylab="density", cex.lab=1.5, cex.axis=1.2, freq=FALSE)
+abline(v=lrt.obs, col="orange", lwd=3)
+box()
+lines(xx, xy, lwd=2, col="violet")
 
+# obtain the p-value (proportion of lrt.sim that are higher than lrt.obs)
+(sum(lrt.sim>=lrt.obs)+1)/(n.sim+1)  # the observed likelihood ratio has to be considered as part of the distribution
+# sim 1000 > p-value  = 0.000999001
+# sim 50 >  p-value = 0.01960784 ??
+# sim 10 > p-value = 0.09090909
 
+}
 
-
-modProRateRptwithoutSocialPartnerID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+{modProRateRptwithoutSocialPartnerID <- lmer(Visit1RateH ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
@@ -1187,14 +1340,59 @@ modProRateRptwithoutSocialPartnerID <- lmer(Visit1RateH ~ scale(HatchingDayAfter
 									(1|BirdID)+ 
 									#(1|SocialPartnerID) + 
 									(1|BreedingYear) 
-									# + (1|PairID)
-									, data = BirdProRate)
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE)
 
 summary(modProRateRptwithoutSocialPartnerID)
-anova(modProRateRpt,modProRateRptwithoutSocialPartnerID) # ***
+#anova(modProRateRpt,modProRateRptwithoutSocialPartnerID) # ***
 
+# use parametric bootstrap to simulate the distribution of the likelihood ratio test statistics given the null hypothesis
+lrt.obs2 <- anova(modProRateRpt, modProRateRptwithoutSocialPartnerID)$Chisq[2] # save the observed likelihood ratio test statistic
+n.sim2 <- 10  # use 1000 for a real data analysis
+lrt.sim2 <- numeric(n.sim2)
+for(i in 1:n.sim2){
+  BirdProRate$ysim2 <- unlist(simulate(modProRateRptwithoutSocialPartnerID)) # simulate new observations from the null-model
+  
+  modnull2 <- lmer(ysim2 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									#(1|SocialPartnerID) + 
+									(1|BreedingYear) 
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE) # fit the null-model
+									
+  modalt2 <- lmer(ysim2 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + (1|BreedingYear) 
+									#+ (1|PairID)
+									, data = BirdProRate, REML=FALSE)  # fit the alternative model
+  
+  
+  lrt.sim2[i] <- anova(modnull2, modalt2)$Chisq[2] # save the likelihood ratio test statistic
+  }
+  
+# compare to a Chisquare distribution with df=1
+xx <- seq(0, 40, by=0.02)
+xy <- dchisq(xx, df=1)
+hist(lrt.sim2, xlim=c(0, max(c(lrt.sim2, lrt.obs2))),breaks= 20,col="blue", xlab="likelihood ratio test statistic", ylab="density", cex.lab=1.5, cex.axis=1.2, freq=FALSE)
+abline(v=lrt.obs2, col="orange", lwd=3)
+box()
+lines(xx, xy, lwd=2, col="violet")
 
-modProRateRptwithoutPairID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+# obtain the p-value (proportion of lrt.sim that are higher than lrt.obs)
+(sum(lrt.sim2>=lrt.obs2)+1)/(n.sim2+1)  # the observed likelihood ratio has to be considered as part of the distribution
+# sim 50 >  p-value = 0.01960784 ?? same number as above ??
+# sim 10 > p-value = 
+}
+
+{modProRateRptwithoutPairID <- lmer(Visit1RateH ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
@@ -1203,12 +1401,126 @@ modProRateRptwithoutPairID <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, sca
 									(1|SocialPartnerID) + 
 									(1|BreedingYear) 
 									#+ (1|PairID)
-									, data = BirdProRate)
+									, data = BirdProRate, REML=FALSE)
 
 summary(modProRateRptwithoutPairID)
-anova(modProRateRpt,modProRateRptwithoutPairID) # NS
+#anova(modProRateRpt,modProRateRptwithoutPairID) # NS
+
+# use parametric bootstrap to simulate the distribution of the likelihood ratio test statistics given the null hypothesis
+lrt.obs3 <- anova(modProRateRpt, modProRateRptwithoutPairID)$Chisq[2] # save the observed likelihood ratio test statistic
+n.sim3 <- 50  # use 1000 for a real data analysis
+lrt.sim3 <- numeric(n.sim3)
+for(i in 1:n.sim3){
+  BirdProRate$ysim3 <- unlist(simulate(modProRateRptwithoutPairID, seed =1)) # simulate new observations from the null-model
+  
+  modnull3 <- lmer(ysim3 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + 
+									(1|BreedingYear) 
+									# + (1|PairID)
+									, data = BirdProRate, REML=FALSE) # fit the null-model
+									
+  modalt3 <- lmer(ysim3 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + (1|BreedingYear) 
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE)  # fit the alternative model
+  
+  
+  lrt.sim3[i] <- anova(modnull3, modalt3)$Chisq[2] # save the likelihood ratio test statistic
+  }
+  
+# compare to a Chisquare distribution with df=1
+xx <- seq(0, 40, by=0.02)
+xy <- dchisq(xx, df=1)
+hist(lrt.sim3, xlim=c(0, max(c(lrt.sim3, lrt.obs3))),breaks= 20,col="blue", xlab="likelihood ratio test statistic", ylab="density", cex.lab=1.5, cex.axis=1.2, freq=FALSE)
+abline(v=lrt.obs3, col="orange", lwd=3)
+box()
+lines(xx, xy, lwd=2, col="violet")
+
+# obtain the p-value (proportion of lrt.sim that are higher than lrt.obs)
+(sum(lrt.sim3>=lrt.obs3)+1)/(n.sim3+1)  # the observed likelihood ratio has to be considered as part of the distribution
+# sim 10 > p value = 1
+# sim 50 > p value = 1
+
 }
 
+{modProRateRptwithoutBreedingYear <- lmer(Visit1RateH ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + 
+									#(1|BreedingYear) 
+									(1|PairID)
+									, data = BirdProRate, REML=FALSE)
+
+summary(modProRateRptwithoutBreedingYear)
+#anova(modProRateRpt,modProRateRptwithoutBreedingYear) # ***
+
+# use parametric bootstrap to simulate the distribution of the likelihood ratio test statistics given the null hypothesis
+lrt.obs4 <- anova(modProRateRpt, modProRateRptwithoutBreedingYear)$Chisq[2] # save the observed likelihood ratio test statistic
+n.sim4 <- 50  # use 1000 for a real data analysis
+lrt.sim4 <- numeric(n.sim4)
+for(i in 1:n.sim4){
+  BirdProRate$ysim4 <- unlist(simulate(modProRateRptwithoutPairID, seed =1)) # simulate new observations from the null-model
+  
+  modnull4 <- lmer(ysim4 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + 
+									#(1|BreedingYear) 
+									 (1|PairID)
+									, data = BirdProRate, REML=FALSE) # fit the null-model
+									
+  modalt4 <- lmer(ysim4 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) + (1|BreedingYear) 
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE)  # fit the alternative model
+  
+  
+  lrt.sim4[i] <- anova(modnull4, modalt4)$Chisq[2] # save the likelihood ratio test statistic
+  }
+  
+# compare to a Chisquare distribution with df=1
+xx <- seq(0, 40, by=0.02)
+xy <- dchisq(xx, df=1)
+hist(lrt.sim4, xlim=c(0, max(c(lrt.sim4, lrt.obs4))),breaks= 20,col="blue", xlab="likelihood ratio test statistic", ylab="density", cex.lab=1.5, cex.axis=1.2, freq=FALSE)
+abline(v=lrt.obs4, col="orange", lwd=3)
+box()
+lines(xx, xy, lwd=2, col="violet")
+
+# obtain the p-value (proportion of lrt.sim that are higher than lrt.obs)
+(sum(lrt.sim4>=lrt.obs4)+1)/(n.sim4+1)  # the observed likelihood ratio has to be considered as part of the distribution
+# sim 50 > p value = 1
+
+}
+
+
+}
+
+
+
+
+
+### repeatbility of provisioning rate per chick like Shinichi did
 
 
 
@@ -1218,7 +1530,7 @@ anova(modProRateRpt,modProRateRptwithoutPairID) # NS
 {#############################  TO DO + ISSUES
   
 ## repeatability of provisioning rate:
-# bootstrap instead of ML (though clear answer?)
+# bootstrap instead of LRT >> not working ?????????????????????????
 # get rpt package to work (under construction)
 # do analyses on provisioning rate per chick like shinichi ?
 # boxcox transfo to approach normality ?
@@ -1244,7 +1556,7 @@ anova(modProRateRpt,modProRateRptwithoutPairID) # NS
 # get table ready for parental survival
 # do model for sexes separately ?
 # include sex in a model with data of both sexes piled up ?
-# average Alternation value per year or have one line per file and birdIS ect as random factor ?
+# average Alternation value per year or have one line per file and birdID ect as random factor ?
 # survival analysis !! if dead one year, cannot be alive next year ! 
 # temporal autocorrelation to take into account !
 
