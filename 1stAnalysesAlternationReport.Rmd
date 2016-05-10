@@ -1,0 +1,361 @@
+---
+title: "1st analyses Alternation"
+author: "Malika Ihle"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r, echo=FALSE, results="hide", message=FALSE, warnings=FALSE}
+source('ReplicationBebbingtonHatchwell.r')
+library('pander')
+panderOptions('table.alignment.default', 'left')
+panderOptions('table.split.table', 100)
+panderOptions('table.continues', "")
+```
+
+
+# Simulation 
+
+Here is the description of Kat’ simulation described in the paper page 3 + supp figure and below my point of view on each point.
+ 
+Alternation score fore observed nest watches:  
+A = F/ (t-1)  
+with F the number of alternation and t the number of feeding visits  
+for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding visits is 17 (if one hour was watched).  
+ 
+ 
+Simulation steps:  
+
+1) select the provisioning rates for individuals of either sexes that are not too infrequent (remove the extreme low and high values of x or y)  
+2) extract all interfeed intervals for all individuals of a same provisioning rate and of a same sex and randomize them  
+3) (see supp fig) create all combinations of female and male with provisioning rate x and y by sampling without replacement x-1 female interfeed intervals and y-1 male interfeed intervals. Several simulated nest watches are possible per each provisioning rate combination, depending on the number of individuals with these provisioning rates that were observed. Simulated nest watches are created until one of the pool of interfeed intervals per each provisioning rate per sex is empty. Each pool of interfeed intervals, for instance the one for female with provisioning rate x, are reuse for each combination involving x.  
+4) (see supp fig) the cumulative sum of interfeed interval are calculated for each sex separately, and then rows are merged and sorted   
+5) Alternation score for those simulated nest watch is then calculated with the formula:  
+A = F/ (t-1)  
+with F the number of alternation and t the number of feeding interval  
+for a female provisioning rate x = 7 and a male provisioning rate y = 10, the number of feeding intervals is 15.  
+6) within each combination of provisioning rate combination, 10000 bootstraps of alternation scores were ran (this is what the paper says, but in fact I think the code Kat sent shows that the bootstrapping was made at a latter stage, see below)  
+7) All simulated alternation scores were pooled into groups of visit rate differences (absolute value of x minus y) [and the bootstrapping happened here in Kat’s code – but maybe it does not matter]  
+8) All observed alternation scores were also pooled into groups of visit rate differences and compared to the simulated one leading to Fig. 1.  
+ 
+ 
+ 
+My point on view on this:  
+ 
+* 1 --> the selection seems rather arbitrary, if anything, I suggest we remove the extreme 5% quantile ?  
+* 2 --> what about non-independence of some nest watches because of same MID or FID or PairID ? Is it ok because they will then be more represented in both observed and simulated nest watches ? But their individuality is anyway disrupted, for instance for a same provisioning rate, a bird can be consistently very regular or can be very irregular. I think this argues for randomizing within nest watch.  
+* 3 --> what if we randomly select several large intervals and spill over the hour ? I think this also argues for randomizing within file. Also, in our case, we also calculated visit rate per hour although we typically record for 90 min, so we maybe have more variance in interfeed intervals to select from when picking ‘visit rate-1’ interfeed intervals.  
+* 4 --> (see supp fig) intervals length are considered like the starting time of feeding visits, and like if the first visit of the male and the female were both at time zero. I think maybe it is better again to shuffle intervals within a file, keeping the firs time start for each sex in this file.  
+* 5 --> the formula to calculate A is different for observed and simulated nest watches I believe, and the maximum A that can be obtained for a same combination of x and y is systematically lower for the simulated ones as soon as the provisioning rate difference (absolute value of x minus y) is larger than 1 (see excel file attached).  
+* 8 and 1  -->  for simulation : selection of individuals that have a provisioning rate not extreme, then pooled into visit rate differences, only with pairs whose individuals have non extreme provisioning rates.  
+in observed values: we take every individual, every combination, so for a same visit rate difference, individuals can have very extreme provisioning rates. I think observed combinations where one of the sex has an extreme value for provisioning rate should be remove for comparison with simulated data.  
+ 
+ 
+ 
+ 
+ 
+ 
+So what I have done so far:  
+ 
+a) I kept the time of the first visit of each sex, and then randomized their interval (within sex) for that nest watch.
+
+b) I create 1000 simulated nest watches per observed nest watch, then calculated the alternation score for each:  
+A = F/ (t-1)  
+with F the number of alternation and t the number of feeding visits 
+
+c) I pooled all A values that belonged to files with a same provisioning rate difference; e.g. if 10 original files had a provisioning rate difference of 5, I pulled 10 observed A values, and 10*1000 randomized A values for that category of provisioning rate difference.
+
+d) I calculated the mean + ci of A values to be compared per categories of provisioning rate difference.  
+
+
+```{r, echo=FALSE}
+Fig1comparison
+```
+
+
+
+# Alternation predictors
+
+_Bebbington & Hatchwell 2015_
+
+To investigate potential predictors of alternation at a nest, we used
+a mixed model including mean **breeder age (in years)**, **hatch date
+(to nearest day)**, **duration of the pair-bond (in years)**, **brood size
+(number of chicks on day 11 of the nestling period)**, and **nestling
+age (days since hatching)** as fixed effects. We also included the **difference
+between the respective provisioning rates** of the male and
+female because the difference between their provisioning rates
+should have a strong negative effect on alternation (see above). The
+**start time of the nest watch (to nearest minute)** was included to
+control for potential differences in provisioning behavior across the
+day, and we used **nest identity** as a random variable to account for
+repeated measures across nests
+
+_Sparrow data_
+
+Fixed effects potential adjustement
+
+**HatchingDayAfter0401**: Nb of days after the 1st of April of that breeding year when the clutch hatched  
+
+**PairBroodNb**: duration of the pair bond in term of number of brood they had together (while long-tailed tit have just one brood a year)  
+
+**ChickAgeCat**: Age6 or Age10 rather than continuous because field protocol > measure d7 and d11, when it is in between it is because they "miss"  
+
+**DVDInfoChickNb**: a rather ok estimate of the number of chicks in the nest on the day of recording (rather than the brood size at day 11)
+
+**RelTimeHrs**: number of hours after sunrise for that day
+
+
+
+## MY_TABLE_perDVD: Metadata & summary raw data for each file
+one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
+as broods were watched several time, the brood info appears in duplicate
+
+```{r, echo=FALSE}
+pander(head(MY_TABLE_perDVD), style = 'rmarkdown')
+```
+
+**FVisit1RateH**: Female Feeding Visit Rate per Hour
+
+**AlternationValue**: A = F/ (t-1)  
+with F the number of alternation and t the number of feeding visits
+
+**MBroodNb**: Male brood Number
+
+**AvgMass**: average mass of chicks in that brood when ringed
+
+**MeanAsim**: mean of the 1000 simulated Alternation value when randomization of interfeed intervals within this file
+
+**ADev**: MeanAsim - AlternationValue
+
+
+## colinearity between predictors
+
+* **Chick Age and Nb of chicks**
+
+   ~ brood size on the day of recording
+
+```{r,echo=FALSE}
+cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$DVDInfoChickNb)$estimate
+cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$DVDInfoChickNb)$p.value
+```
+
+   brood size as used by Kat & Ben
+
+```{r,echo=FALSE}
+cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged)$estimate
+cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged)$p.value
+```
+
+\textcolor{red}{is it solved by having Chick age as a category ? Age6: 6-9, Age10: 10-13}  
+
+```{r,echo=FALSE}
+hist(MY_TABLE_perDVD$ChickAge)
+```
+
+
+* **Parent Age and Pairbond duration in Nb of Brood together**
+
+```{r,echo=FALSE }
+cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb)$estimate
+cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb)$p.value
+```
+
+\textcolor{red}{I will have a model with both, and then one or the other}  
+
+
+## dealing with time of the day
+
+```{r, echo=FALSE}
+scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)
+```
+
+\textcolor{red}{linear enough to keep it as it is ?}
+
+
+
+
+## full model with NbRinged: like Kat & Ben
+
+```{r, echo=FALSE}
+summary(modA_NbRinged)
+```
+
+## \textcolor{green}{full model with DVDInfoChickNb: ParentAge is very negative, PairBroodNb is positive}
+
+```{r, echo=FALSE}
+summary(modA)
+```
+
+\textcolor{red}{model seem stable enough despite correlation between PairBroodNb and ParentAge ?}
+
+## full model with DVDInfoChickNb, ParentAge but not PairBroodNb: ParentAge is less negative
+
+```{r, echo=FALSE}
+summary(modA_ParentAge)
+```
+
+
+## full model with DVDInfoChickNb, PairBroodNb but not ParentAge: PairBroodNb become negative
+
+```{r, echo=FALSE}
+summary(modA_ParentAge)
+```
+
+
+
+## Model assumption checking for \textcolor{green}{full model with DVDInfoChickNb}
+
+residuals vs predictors: homogeneity of variance ?
+
+```{r, echo=FALSE}
+scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)	
+```
+
+\textcolor{red}{remove extreme provisioning rate ?}
+if remove 5% extreme quantile, does not change this model qualitatively.
+
+
+
+# Fitness correlate of alternation
+
+_Bebbington & Hatchwell 2015_
+
+To explore the fitness correlates of parental alternation, we used
+a set of linear models to test the relationship between alternation
+(mean across watches at a given nest) and  
+
+1) **Mean total provisioning rate**: this was modeled as a Gaussian
+response, with **brood size** included as a covariate to control for
+potential variation in provisioning rate with the number of chicks.
+Because alternation is expected to increase with provisioning rate
+by chance as the interfeed intervals become smaller (see above and
+Johnstone et al. 2014), we modeled **alternation as deviation from
+that expected by chance**, to account for the random influence of
+provisioning rate. Deviation scores were calculated by subtracting
+the mean expected alternation from the mean observed alternation
+across all watches at each nest.  
+2) **Mean chick mass**: this was modeled as a Gaussian response, including **alternation**, **brood size**,
+and **mean tarsus length** as covariates, the latter of which controlled
+for structural body size variation.   
+3) **Parental survival**: expressed as
+survival of parents to the year following observations of provisioning
+behavior. We modeled survival as a binary response in a mixed
+model including **alternation** as a predictor and **year as a random
+effect** to account for survival differences between years. Dispersal
+out of the study area occurs in an individual’s first winter and
+thereafter the probability of resighting is almost 100% in our study
+population (McGowan et al. 2003), so we could reliably measure
+survival from resighting data. We did not account for **adult age**
+effects in the survival model because there is no discernible effect of
+age on survival in the study population (Meade et al. 2010).   
+4) Nest fate: nests were categorized as either “depredated” or “fledged,”
+and nest fate was modeled as a binary response variable  
+
+* 1 & 2 --> I assume this is analyzed at the brood level ?
+* 1 --> how could they calculate deviation from expected alternation for each file since they calculated alternation for provisioning rate difference categories, or at best, per combination of provisioning rates ?
+* 2 --> with the mean of alternation per brood ?
+* 3 --> for us, at the bird-year level, i.e. with alternation average accross all broods of the bird for that year ? with 'Sex' added to the model or analyses done once for male once for female ? 
+
+
+
+## MY_TABLE_perBrood: Metadata & summary of 'summary raw data for each file' per brood
+one line is a brood, averages were calculated for **total provisioning rate**, **AlternationValue**, **Adev**
+
+```{r, echo=FALSE}
+pander(head(MY_TABLE_perBrood), style = 'rmarkdown')
+```
+
+
+## MY_TABLE_perBirdYear
+one line is a bird (column 'Sex' added), average of **AlternationValue** per Year for that bird was calculated.
+
+```{r, echo=FALSE}
+panderOptions('table.split.table', 110)
+pander(head(MY_TABLE_perBirdYear), style = 'rmarkdown')
+```
+
+
+## 1) Total Provisioning rate
+
+```{r, echo=FALSE}
+summary(modFitnessAsProRate)
+```
+
+
+### model assumptions
+
+\textcolor{red}{Homogeneity of variance ?}
+
+```{r, echo=FALSE}
+scatter.smooth(sqrt(abs(resid(modFitnessAsProRate))),fitted(modFitnessAsProRate))
+```
+
+\textcolor{red}{when removing the 5perc quantile of provisioning rate, model estimates quite similar, but random effect all much much lower}
+
+## 2) Average chick mass
+
+```{r, echo=FALSE}
+summary(modFitnessAsChickMass)
+```
+
+
+## 3) Parent survival
+
+* both sex at once, with covariate Sex
+
+```{r, echo=FALSE}
+summary(modSurvival)
+```
+
+\textcolor{red}{what about temporal autocorrelation, i.e. if dead one year, cannot be alive the following year?}
+
+
+* male alone
+
+\textcolor{red}{does not converge: BirdID skyrock, all covariate ultra significant}
+
+* female alone
+
+```{r, echo=FALSE}
+summary(modSurvivalFemale)
+```
+
+
+* interaction Sex-Age
+
+```{r, echo=FALSE}
+summary(modSurvival_SexAgeInteraction)
+```
+
+
+### model assumptions on model with both sex at once and covariate Sex
+
+\textcolor{red}{residuals normally distributed ?}
+
+can we see our plot ? 
+
+```{r, echo=FALSE, fig.height=8, fig.width=7}
+{# get our qqplot within others:
+N <- length(resid(modSurvival))
+sigma <- summary(modSurvival)$sigma # Extract the estimated standard deviation of the errors
+par(mfrow=c(3,3))  
+rnum<-sample(1:9, 1)
+for(i in 1:(rnum-1)){
+  x<-rnorm(N, 0, sigma)
+  qqnorm(x, main=i)
+  qqline(x)
+  }
+qqnorm(resid(modSurvival), main=rnum)
+qqline(resid(modSurvival))
+for(i in (rnum+1):9){
+  x<-rnorm(N, 0, sigma)
+  qqnorm(x, main=i)
+  qqline(x)
+  }
+}
+```
+
+solution is: `r rnum`
+
