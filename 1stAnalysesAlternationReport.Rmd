@@ -68,8 +68,10 @@ c) I pooled all A values that belonged to files with a same provisioning rate di
 d) I calculated the mean + ci of A values to be compared per categories of provisioning rate difference.  
 
 
+## \textcolor{blue}{sounds good. think of a formula of alternation that would be independent of the difference in provisioning rate ?}
+
 ```{r, echo=FALSE}
-Fig1comparison
+Fig1comparison_withMax
 ```
 
 
@@ -95,7 +97,7 @@ _Sparrow data_
 
 Fixed effects potential adjustement
 
-**HatchingDayAfter0401**: Nb of days after the 1st of April of that breeding year when the clutch hatched  
+**HatchingDayAfter0401**: Nb of days after the 1st of April of that breeding year when the clutch hatched  \textcolor{blue}{what's the hypothesis ?}
 
 **PairBroodNb**: duration of the pair bond in term of number of brood they had together (while long-tailed tit have just one brood a year)  
 
@@ -103,9 +105,9 @@ Fixed effects potential adjustement
 
 **DVDInfoChickNb**: a rather ok estimate of the number of chicks in the nest on the day of recording (rather than the brood size at day 11)
 
-**RelTimeHrs**: number of hours after sunrise for that day
+**RelTimeHrs**: number of hours after sunrise for that day \textcolor{blue}{what's the hypothesis ?}
 
-
+## \textcolor{blue}{sounds alright}
 
 ## MY_TABLE_perDVD: Metadata & summary raw data for each file
 one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
@@ -147,7 +149,8 @@ cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged)$estimate
 cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged)$p.value
 ```
 
-\textcolor{red}{is it solved by having Chick age as a category ? Age6: 6-9, Age10: 10-13}  
+\textcolor{red}{is it solved by having Chick age as a category ? Age6: 6-9, Age10: 10-13}    
+\textcolor{blue}{likely not, but do one model per each category of age would remove this correlation }  
 
 ```{r,echo=FALSE}
 hist(MY_TABLE_perDVD$ChickAge)
@@ -162,6 +165,7 @@ cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb)$p.value
 ```
 
 \textcolor{red}{I will have a model with both, and then one or the other}  
+\textcolor{blue}{Joel: maybe use brood size at hatching ? not sure or Broodsize at d11 like Kat and Ben, but maybe it is the consequence of Alternation..}
 
 
 ## dealing with time of the day
@@ -171,6 +175,7 @@ scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)
 ```
 
 \textcolor{red}{linear enough to keep it as it is ?}
+\textcolor{blue}{maybe alrigth}
 
 
 
@@ -188,6 +193,8 @@ summary(modA)
 ```
 
 \textcolor{red}{model seem stable enough despite correlation between PairBroodNb and ParentAge ?}
+\textcolor{blue}{is it less of an issue if effects of opposite sign ? ask Mirre/Shinichi}
+\textcolor{blue}{repeatability of BirdID, SocialPartnerID, PairID: female more repeatable over partners than the pair alternation is repeatable ??  variance/regularity in interfeed interval affects the ability for the partenr to adjust}
 
 ## full model with DVDInfoChickNb, ParentAge but not PairBroodNb: ParentAge is less negative
 
@@ -264,8 +271,11 @@ and nest fate was modeled as a binary response variable
 one line is a brood, averages were calculated for **total provisioning rate**, **AlternationValue**, **Adev**
 
 ```{r, echo=FALSE}
+panderOptions('table.split.table', 118)
 pander(head(MY_TABLE_perBrood), style = 'rmarkdown')
 ```
+
+\textcolor{blue}{what the average number of brood per individual ? with teh same partner / the average number of switch ? the average number of breeding season ?}
 
 
 ## MY_TABLE_perBirdYear
@@ -278,6 +288,8 @@ pander(head(MY_TABLE_perBirdYear), style = 'rmarkdown')
 
 
 ## 1) Total Provisioning rate
+
+* Like in _Kat & Ben_
 
 ```{r, echo=FALSE}
 summary(modFitnessAsProRate)
@@ -293,6 +305,27 @@ scatter.smooth(sqrt(abs(resid(modFitnessAsProRate))),fitted(modFitnessAsProRate)
 ```
 
 \textcolor{red}{when removing the 5perc quantile of provisioning rate, model estimates quite similar, but random effect all much much lower}
+
+
+* exploring polynomial term
+
+```{r, echo=FALSE}
+scatter.smooth(MY_TABLE_perBrood$Adev,MY_TABLE_perBrood$TotalProRate)
+summary(modFitnessAsProRate_poly)
+```
+
+this graph and model results (fixed effects) are similar if the 5perc extreme quantiles are removed.
+(but the SocialDadID percentage of variance explained drops)
+
+
+**ADev**: MeanAsim - AlternationValue  
+when Adev is negative: birds alternate more than expected by chance.  
+
+If provisioning rate difference decrease (assortative pairing for quality (provisioning rate), or environement around the nest box identical for both partners looking for food, etc), alternation exepected by chance will increase necessarily (due to the formula). 
+In this model, the question is: does alternating more than expected by chance, considering the birds differences in provisining rate, favor a greater provisioning rate ? this is achieved by taking the deviation of the observed alternation compared to the random one expected by chance.  
+but how much can you deviate from the random alternation expected by chance ? the maximum alternation possible is limited by the difference in provisioning rate but also by the lowest provisioning rate of the combination.
+
+
 
 ## 2) Average chick mass
 
@@ -337,11 +370,10 @@ summary(modSurvival_SexAgeInteraction)
 can we see our plot ? 
 
 ```{r, echo=FALSE, fig.height=8, fig.width=7}
-{# get our qqplot within others:
 N <- length(resid(modSurvival))
-sigma <- summary(modSurvival)$sigma # Extract the estimated standard deviation of the errors
+sigma <- summary(modSurvival)$sigma
 par(mfrow=c(3,3))  
-rnum<-sample(1:9, 1)
+rnum<-7
 for(i in 1:(rnum-1)){
   x<-rnorm(N, 0, sigma)
   qqnorm(x, main=i)
@@ -354,8 +386,75 @@ for(i in (rnum+1):9){
   qqnorm(x, main=i)
   qqline(x)
   }
-}
 ```
 
 solution is: `r rnum`
+
+
+
+# repeatability of provisioning rate
+
+* piling up both sex, adding column 'Sex'
+
+```{r, echo=FALSE}
+pander(head(BirdProRate), style = 'rmarkdown')
+```
+
+keeping the same variables as for Alternation predictors model
+
+```{r, echo=FALSE}
+summary(modProRateRpt)
+```
+
+
+rptR package of Holger and Shinichi is under construction  
+use own parametric bootstrapping and RLRT package:  
+all significant but PairID  
+
+
+* if use provisioning rate per chick like Shinichi
+
+only the sign of the brood size effect gets reversed.
+
+
+* is one model per sex
+
+
+```{r, echo=FALSE}
+summary(modProRateRpt_Male)
+```
+
+percentage of variance explained by MID is `r  VarianceRandomEffectsMale$vcov[VarianceRandomEffectsMale$grp=='BirdID'] / sum(VarianceRandomEffectsMale$vcov) *100`
+
+
+```{r, echo=FALSE}
+summary(modProRateRpt_Female)
+```
+
+
+percentage of variance explained by FID is `r  VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='BirdID'] / sum(VarianceRandomEffectsFemale$vcov) *100`
+
+
+
+** \textcolor{red}{is this how I can compare the repeatability in provisioning rate for each sex  ??}
+
+
+
+# Does alternation implies conditional cooperation ?
+
+_Schlicht et al 2016_ Comment on Johnstone et al 2014 + Reply from Johnstone.
+
+**p-score**: expected proportion of cases in which a shorter inter-visit interval
+appears after a longer one (considering all pairs of inter-visit intervals
+for a given individual).  
+the introduction
+of one simple and biologically reasonable process (tendency to
+increase or decrease return rates over a relatively short time period,
+e.g., due to changing weather conditions, presence of a predator
+close to the nest, temporal changes in food availability) can substantially
+bias return rates towards a pattern that resembles conditional
+cooperation.
+
+
+\textcolor{blue}{Joel: check for temporal autocorrelation simply with the previous interfeed interval?  Terry: randomization within 30 minutes windows ? overall correlation ? ask Emmi if she is conviced by Johnstone reply}
 

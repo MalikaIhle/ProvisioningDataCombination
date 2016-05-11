@@ -20,11 +20,12 @@
 rm(list = ls(all = TRUE))
 
 {### packages
-library(dplyr)
+library(dplyr) # for some part of the extraction of the data written by Andrew for the simulation 
 library(ggplot2)
-library(boot)
+library(boot) # for simulation
 library(lme4)
-library(rptR)
+# library(rptR) under construction
+library(RLRsim) # for testing significance randome effect in repeatability part
 
 options(warn=-1)
 }
@@ -413,7 +414,7 @@ x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
 
-for (i in 1:10) # to increase up to 1000
+for (i in 1:100) # to increase up to 1000
 {
 
 x0sim <- x0
@@ -590,9 +591,54 @@ MY_TABLE_perDVD$Adev <- MY_TABLE_perDVD$MeanAsim - MY_TABLE_perDVD$AlternationVa
 
 }
 
+
+# add Max A possible considering both birds provisioning rate
+MY_TABLE_perDVD$AMax <- NA
+
+for (i in 1:nrow(MY_TABLE_perDVD))
+{
+if((MY_TABLE_perDVD$FVisit1RateH[i] - MY_TABLE_perDVD$MVisit1RateH[i])==0)
+{
+MY_TABLE_perDVD$AMax[i] <- 
+round((((min(MY_TABLE_perDVD$FVisit1RateH[i],MY_TABLE_perDVD$MVisit1RateH[i]))*2-1) / (MY_TABLE_perDVD$FVisit1RateH[i] + MY_TABLE_perDVD$MVisit1RateH[i] -1))*100,2) }
+
+else{
+MY_TABLE_perDVD$AMax[i] <- 
+round((((min(MY_TABLE_perDVD$FVisit1RateH[i],MY_TABLE_perDVD$MVisit1RateH[i]))*2) / (MY_TABLE_perDVD$FVisit1RateH[i] + MY_TABLE_perDVD$MVisit1RateH[i] -1))*100,2) 
+}
+}
+
 }
 
 head(MY_TABLE_perDVD)
+
+
+{# add AMax to Figure 1
+
+MY_TABLE_perDVD_perVisitRateDiff <- group_by(MY_TABLE_perDVD, DiffVisit1Rate)
+Summary_MY_TABLE_perDVD_perVisitRateDiff <- summarise (MY_TABLE_perDVD_perVisitRateDiff, AMaxmean = mean(AMax))
+
+Summary_MY_TABLE_perDVD_perVisitRateDiff <- cbind(as.data.frame(Summary_MY_TABLE_perDVD_perVisitRateDiff), rep("ZMaximum Alternation", nrow(Summary_MY_TABLE_perDVD_perVisitRateDiff)))
+colnames(Summary_MY_TABLE_perDVD_perVisitRateDiff) <- c("VisitRateDifference","Amean","TypeSim")
+
+VisitRateDiff_Amean_for_comparison_withAMax <- bind_rows(VisitRateDiff_Amean_for_comparison,as.data.frame(Summary_MY_TABLE_perDVD_perVisitRateDiff[1:21,]) )
+as.data.frame(VisitRateDiff_Amean_for_comparison_withAMax)
+
+Fig1comparison_withMax <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("red", 'orange','grey', "black"), labels=c("95% Expected Kat", "95% Expected Malika","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax$Amean, n = 9)) +  
+theme_classic()
+
+
+}
+
+Fig1comparison_withMax
 
 
 {#### Predictors of alternation
@@ -618,6 +664,9 @@ cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p
 is.numeric(MY_TABLE_perDVD$RelTimeHrs) # number of hours after sunrise for that day
 summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
 scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
+scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$AlternationValue)# linear ? >linear enough to keep it as it is ?
+
+
 
 shapiro.test(MY_TABLE_perDVD$AlternationValue) # normal ok
 
@@ -891,7 +940,8 @@ MY_TABLE_perBrood_fun = function(x)  {
 return(c(
 mean(x$MFVisit1RateH), # TotalProRate
 mean(x$AlternationValue), #MeanA
-mean(x$MeanAsim) - mean(x$AlternationValue) # Adev
+mean(x$MeanAsim) - mean(x$AlternationValue), # Adev
+mean(x$DiffVisit1Rate) # MeanDiffVisit1Rate
 ))
 }
 
@@ -900,7 +950,7 @@ MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_ou
 
 nrow(MY_TABLE_perBrood_out2)	# 919
 rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev')
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev','MeanDiffVisit1Rate')
 
 MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
 							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
@@ -972,19 +1022,22 @@ MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "A
 head(MY_TABLE_perBirdYear)
 
 
+
+
+
+
 {#### fitness correlate of alternation
 
 {## total provisioning rate
 # like in Kat&Ben's paper: the mean per nest for total provisioning rate and for Adev, and have Broodsize at day 11
 
 modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged +
-											Adev +
+											poly(Adev,1) +
 											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 											# + (1|PairIDYear) # explain 0% of the variance
 											, data = MY_TABLE_perBrood)
 											
 summary(modFitnessAsProRate) # Number of obs: 919, groups:  PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
-
 
 
 {# model assumptions checking
@@ -1026,6 +1079,17 @@ scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="Tot
 scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="Adev") # polynomial ?
 
 }
+
+
+modFitnessAsProRate_poly <- lmer(TotalProRate ~  NbRinged +
+											poly(Adev,2) +
+											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+											# + (1|PairIDYear) # explain 0% of the variance
+											, data = MY_TABLE_perBrood)
+											
+summary(modFitnessAsProRate_poly) # Number of obs: 919, groups:  PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+
+scatter.smooth(MY_TABLE_perBrood$TotalProRate~MY_TABLE_perBrood$Adev)
 
 
 }
@@ -1253,7 +1317,8 @@ head(BirdProRate)
 
 
 {### repeatbility of provisioning rate
-# Shinichi does repeatability of provisioning rate on visit/chick/hour
+
+{## with Franzi's code
 
 modProRateRpt <- lmer(Visit1RateH ~ Sex +
 									scale(HatchingDayAfter0401, scale=FALSE) + 
@@ -1261,7 +1326,9 @@ modProRateRpt <- lmer(Visit1RateH ~ Sex +
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
 									(1|BroodRef) + 
-									(1|BirdID)+ (1|SocialPartnerID) + (1|BreedingYear) 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) +
+									(1|BreedingYear) 
 									 + (1|PairID)
 									, data = BirdProRate, REML=FALSE)
 									
@@ -1332,7 +1399,8 @@ lines(xx, xy, lwd=2, col="violet")
 
 }
 
-{modProRateRptwithoutSocialPartnerID <- lmer(Visit1RateH ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+{modProRateRptwithoutSocialPartnerID <- lmer(Visit1RateH ~ Sex + 
+									scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
@@ -1371,12 +1439,14 @@ for(i in 1:n.sim2){
 									(1|BroodRef) + 
 									(1|BirdID)+ 
 									(1|SocialPartnerID) + (1|BreedingYear) 
-									#+ (1|PairID)
+									+ (1|PairID)
 									, data = BirdProRate, REML=FALSE)  # fit the alternative model
   
   
   lrt.sim2[i] <- anova(modnull2, modalt2)$Chisq[2] # save the likelihood ratio test statistic
-  }
+  BirdProRate$ysim2 <- NULL
+ 
+ }
   
 # compare to a Chisquare distribution with df=1
 xx <- seq(0, 40, by=0.02)
@@ -1389,10 +1459,11 @@ lines(xx, xy, lwd=2, col="violet")
 # obtain the p-value (proportion of lrt.sim that are higher than lrt.obs)
 (sum(lrt.sim2>=lrt.obs2)+1)/(n.sim2+1)  # the observed likelihood ratio has to be considered as part of the distribution
 # sim 50 >  p-value = 0.01960784 ?? same number as above ??
-# sim 10 > p-value = 
+# sim 10 > p-value = 0.09090909 ?? same number as above ??
 }
 
-{modProRateRptwithoutPairID <- lmer(Visit1RateH ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+{modProRateRptwithoutPairID <- lmer(Visit1RateH ~ Sex + 
+									scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
@@ -1408,7 +1479,7 @@ summary(modProRateRptwithoutPairID)
 
 # use parametric bootstrap to simulate the distribution of the likelihood ratio test statistics given the null hypothesis
 lrt.obs3 <- anova(modProRateRpt, modProRateRptwithoutPairID)$Chisq[2] # save the observed likelihood ratio test statistic
-n.sim3 <- 50  # use 1000 for a real data analysis
+n.sim3 <- 10  # use 1000 for a real data analysis
 lrt.sim3 <- numeric(n.sim3)
 for(i in 1:n.sim3){
   BirdProRate$ysim3 <- unlist(simulate(modProRateRptwithoutPairID, seed =1)) # simulate new observations from the null-model
@@ -1436,7 +1507,9 @@ for(i in 1:n.sim3){
   
   
   lrt.sim3[i] <- anova(modnull3, modalt3)$Chisq[2] # save the likelihood ratio test statistic
-  }
+  BirdProRate$ysim3 <- NULL
+ 
+ }
   
 # compare to a Chisquare distribution with df=1
 xx <- seq(0, 40, by=0.02)
@@ -1453,7 +1526,8 @@ lines(xx, xy, lwd=2, col="violet")
 
 }
 
-{modProRateRptwithoutBreedingYear <- lmer(Visit1RateH ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
+{modProRateRptwithoutBreedingYear <- lmer(Visit1RateH ~ Sex + 
+									scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
 									scale(RelTimeHrs, scale=FALSE) + 
@@ -1472,7 +1546,7 @@ lrt.obs4 <- anova(modProRateRpt, modProRateRptwithoutBreedingYear)$Chisq[2] # sa
 n.sim4 <- 50  # use 1000 for a real data analysis
 lrt.sim4 <- numeric(n.sim4)
 for(i in 1:n.sim4){
-  BirdProRate$ysim4 <- unlist(simulate(modProRateRptwithoutPairID, seed =1)) # simulate new observations from the null-model
+  BirdProRate$ysim4 <- unlist(simulate(modProRateRptwithoutPairID)) # simulate new observations from the null-model
   
   modnull4 <- lmer(ysim4 ~ Sex + scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
@@ -1497,6 +1571,8 @@ for(i in 1:n.sim4){
   
   
   lrt.sim4[i] <- anova(modnull4, modalt4)$Chisq[2] # save the likelihood ratio test statistic
+    BirdProRate$ysim4 <- NULL
+
   }
   
 # compare to a Chisquare distribution with df=1
@@ -1509,18 +1585,215 @@ lines(xx, xy, lwd=2, col="violet")
 
 # obtain the p-value (proportion of lrt.sim that are higher than lrt.obs)
 (sum(lrt.sim4>=lrt.obs4)+1)/(n.sim4+1)  # the observed likelihood ratio has to be considered as part of the distribution
-# sim 50 > p value = 1
+# sim 10 > p value = 0.5454545
+# sim 50 > p value = 0.4117647
+# sim 100 > p value = 0.4158416
+# sim 1000 > p value = 0.4185814
+}
+
+}
+
+{## with RLRT package
+
+{# BirdID ***
+
+m <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BirdID)
+						, data = BirdProRate)
+
+mA <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BroodRef) + 
+						(1|BirdID)+ (1|SocialPartnerID) + (1|BreedingYear) 
+						 + (1|PairID)
+						, data = BirdProRate)					
+						
+m0 <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BroodRef) + 
+						#(1|BirdID)+ 
+						(1|SocialPartnerID) + (1|BreedingYear) 
+						 + (1|PairID)
+						, data = BirdProRate)	 	
+
+exactRLRT(m, mA , m0, nsim = 5000)		# RLRT = 41.839, p-value < 2.2e-16				
+exactRLRT(m, mA , m0, nsim = 10)		# RLRT = 41.839, p-value < 2.2e-16	
+
+}
+
+{# PairID NS
+m_PairID <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|PairID)
+						, data = BirdProRate)
+					
+						
+m0_PairID <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BroodRef) + 
+						(1|BirdID)+ 
+						(1|SocialPartnerID) + (1|BreedingYear) 
+						 #+ (1|PairID)
+						, data = BirdProRate)	 	
+
+exactRLRT(m_PairID, mA , m0_PairID, nsim = 5000)		#RLRT = 0, p-value = 1
+	
+}	
+
+{# SocialPartnerID ***
+m_SocialPartnerID <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|SocialPartnerID)
+						, data = BirdProRate)
+					
+						
+m0_SocialPartnerID <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BroodRef) + 
+						(1|BirdID)+ 
+						#(1|SocialPartnerID) + 
+						(1|BreedingYear) 
+						 + (1|PairID)
+						, data = BirdProRate)	 	
+
+exactRLRT(m_SocialPartnerID, mA , m0_SocialPartnerID, nsim = 5000)		#RLRT = 27.802, p-value < 2.2e-16
+
+	
+}	
+
+{# BreedingYear ***
+m_BreedingYear <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BreedingYear)
+						, data = BirdProRate)
+					
+						
+m0_BreedingYear <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BroodRef) + 
+						(1|BirdID)+ 
+						(1|SocialPartnerID) 
+						#(1|BreedingYear) 
+						 + (1|PairID)
+						, data = BirdProRate)	 	
+
+exactRLRT(m_BreedingYear, mA , m0_BreedingYear, nsim = 5000)		#RLRT = 15.707, p-value < 2.2e-16
+
+	
+}	
+
+{# BroodRef ***
+m_BroodRef <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						(1|BroodRef)
+						, data = BirdProRate)
+					
+						
+m0_BroodRef <- lmer(Visit1RateH ~ Sex +
+						scale(HatchingDayAfter0401, scale=FALSE) + 
+						scale(DVDInfoChickNb, scale=FALSE) + 
+						ChickAgeCat + 
+						scale(RelTimeHrs, scale=FALSE) + 
+						#(1|BroodRef) + 
+						(1|BirdID)+ 
+						(1|SocialPartnerID) +
+						(1|BreedingYear) 
+						 + (1|PairID)
+						, data = BirdProRate)	 	
+
+exactRLRT(m_BroodRef, mA , m0_BroodRef, nsim = 5000)		#RLRT = 28.183, p-value < 2.2e-16
+
+	
+}	
+
+}
 
 }
 
 
+modProRateRpt_Male <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+										scale(DVDInfoChickNb, scale=FALSE) + 
+										ChickAgeCat + 
+										scale(RelTimeHrs, scale=FALSE) + 
+										(1|BroodRef) + 
+										(1|BirdID)+ 
+										(1|SocialPartnerID) +
+										(1|BreedingYear) 
+										 + (1|PairID)
+										, data = BirdProRate[BirdProRate$Sex == 1,], REML=FALSE)
+										
+summary(modProRateRpt_Male)
+
+VarianceRandomEffectsMale <- as.data.frame(VarCorr(modProRateRpt_Male),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
+VarianceRandomEffectsMale$vcov[VarianceRandomEffectsMale$grp=='BirdID'] / sum(VarianceRandomEffectsMale$vcov) *100 # variance explained by MID
+
+
+
+modProRateRpt_Female <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
+										scale(DVDInfoChickNb, scale=FALSE) + 
+										ChickAgeCat + 
+										scale(RelTimeHrs, scale=FALSE) + 
+										(1|BroodRef) + 
+										(1|BirdID)+ 
+										(1|SocialPartnerID) +
+										(1|BreedingYear) 
+										 + (1|PairID)
+										, data = BirdProRate[BirdProRate$Sex == 0,], REML=FALSE)
+										
+summary(modProRateRpt_Female)
+VarianceRandomEffectsFemale <- as.data.frame(VarCorr(modProRateRpt_Female),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
+VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='BirdID'] / sum(VarianceRandomEffectsFemale$vcov) *100 # variance explained by FID
+
+
+
+{### repeatbility of provisioning rate per chick like Shinichi did
+
+modProRateRpt_perChick <- lmer(Visit1RateHChick ~ Sex +
+									scale(HatchingDayAfter0401, scale=FALSE) + 
+									scale(DVDInfoChickNb, scale=FALSE) + 
+									ChickAgeCat + 
+									scale(RelTimeHrs, scale=FALSE) + 
+									(1|BroodRef) + 
+									(1|BirdID)+ 
+									(1|SocialPartnerID) +
+									(1|BreedingYear) 
+									 + (1|PairID)
+									, data = BirdProRate, REML=FALSE)
+									
+summary(modProRateRpt_perChick)
+
 }
-
-
-
-
-
-### repeatbility of provisioning rate per chick like Shinichi did
 
 
 
