@@ -101,6 +101,26 @@ mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
 
 }
 
+{# the typical sparrow
+
+cor.test(MY_tblBroods$ParentsAge,MY_tblBroods$PairBroodNb) # cor = 0.54, p < 0.0001 
+scatter.smooth(jitter(MY_tblBroods$ParentsAge,3), jitter(MY_tblBroods$PairBroodNb,3))# 
+summary(MY_tblBroods$MBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+summary(MY_tblBroods$FBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+summary(MY_tblBroods$PairBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+
+summary(MY_tblBroods$ParentsAge[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+table((MY_tblBroods$PairIDYear[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)]))
+
+
+# female divorce more than male, in majority for the Exes ??? polyandrous females ?
+summary(MY_tblBroods$FDivorce)
+summary(MY_tblBroods$FDivorceforEx)
+summary(MY_tblBroods$MDivorce)
+summary(MY_tblBroods$MDivorceforEx)
+
+}
+
 }
 
 head(MY_tblBroods) 
@@ -660,6 +680,8 @@ cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged) # cor = 0.06, p=0.01
 is.numeric(MY_TABLE_perDVD$ParentsAge)
 is.numeric(MY_TABLE_perDVD$PairBroodNb)
 cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable
+scatter.smooth(jitter(MY_TABLE_perDVD$ParentsAge,3), jitter(MY_TABLE_perDVD$PairBroodNb,3))# 
+
 
 is.numeric(MY_TABLE_perDVD$RelTimeHrs) # number of hours after sunrise for that day
 summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
@@ -913,6 +935,150 @@ summary(modA_NbRinged)# Number of obs: 1696, groups:  BroodRef, 916; PairID, 453
 }
 
 
+{# modA_Age6
+
+# take the youngest age of duplicates 6 and 6+
+dat6 <- MY_TABLE_perDVD[MY_TABLE_perDVD$ChickAgeCat == "Age06",]
+dat6 <- dat6[ order(dat6$ChickAge), ] 
+dat6 <- dat6[!duplicated(dat6[,c('BroodRef')]),]
+nrow(dat6)
+length(dat6$BroodRef)
+
+modA_Age6 <- lmer(AlternationValue ~  
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + 
+	scale(PairBroodNb, scale=FALSE) + 
+	scale(DVDInfoChickNb, scale=FALSE) + 
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+	, data = dat6)
+
+summary(modA_Age6) # Number of obs: 874, groups:  PairID, 443; SocialMumID, 292; SocialDadID, 281; BreedingYear, 12
+
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modA_Age6), resid(modA_Age6))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modA_Age6))
+qqline(resid(modA_Age6))
+qqnorm(unlist(ranef(modA_Age6))) 
+qqline(unlist(ranef(modA_Age6)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modA_Age6))),fitted(modA_Age6)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modA_Age6)$SocialMumID))
+mean(unlist(ranef(modA_Age6)$SocialDadID))
+mean(unlist(ranef(modA_Age6)$PairID))
+mean(unlist(ranef(modA_Age6)$BreedingYear))
+
+# residuals vs predictors
+scatter.smooth(dat6$ParentsAge[!is.na(dat6$RelTimeHrs)], resid(modA_Age6))
+abline(h=0, lty=2)
+scatter.smooth(dat6$HatchingDayAfter0401[!is.na(dat6$RelTimeHrs)], resid(modA_Age6))
+abline(h=0, lty=2)
+scatter.smooth(dat6$DVDInfoChickNb[!is.na(dat6$RelTimeHrs)], resid(modA_Age6))
+abline(h=0, lty=2)	
+scatter.smooth(dat6$DiffVisit1Rate[!is.na(dat6$RelTimeHrs)], resid(modA_Age6)) # one influencal data point
+abline(h=0, lty=2)	
+scatter.smooth(dat6$RelTimeHrs[!is.na(dat6$RelTimeHrs)], resid(modA_Age6))
+abline(h=0, lty=2)		
+
+# dependent variable vs fitted
+d <- dat6[!is.na(dat6$RelTimeHrs),]
+d$fitted <- fitted(modA_Age6)
+scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ParentsAge")
+scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+scatter.smooth(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
+scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")
+
+}
+
+}
+
+{# modA_Age10
+
+# take the youngest age of duplicates 10 and 10+
+dat10 <- MY_TABLE_perDVD[MY_TABLE_perDVD$ChickAgeCat == "Age10",]
+dat10 <- dat10[ order(dat10$ChickAge), ] 
+dat10 <- dat10[!duplicated(dat10[,c('BroodRef')]),]
+nrow(dat10)
+
+modA_Age10 <- lmer(AlternationValue ~  
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + 
+	scale(PairBroodNb, scale=FALSE) + 
+	scale(DVDInfoChickNb, scale=FALSE) + 
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + 
+	(1|SocialMumID)+ (1|SocialDadID) 
+	#+ (1|PairID) #explained 0% of variance
+	#+ (1|BreedingYear) #explained 0% of variance
+	, data = dat10)
+
+summary(modA_Age10) #Number of obs: 758, groups:  PairID, 398; SocialMumID, 278; SocialDadID, 264; BreedingYear, 12
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modA_Age10), resid(modA_Age10))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modA_Age10))
+qqline(resid(modA_Age10))
+qqnorm(unlist(ranef(modA_Age10))) 
+qqline(unlist(ranef(modA_Age10)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modA_Age10))),fitted(modA_Age10)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modA_Age10)$SocialMumID))
+mean(unlist(ranef(modA_Age10)$SocialDadID))
+mean(unlist(ranef(modA_Age10)$PairID))
+mean(unlist(ranef(modA_Age10)$BreedingYear))
+
+# residuals vs predictors
+scatter.smooth(dat10$ParentsAge[!is.na(dat10$RelTimeHrs)], resid(modA_Age10))
+abline(h=0, lty=2)
+scatter.smooth(dat10$HatchingDayAfter0401[!is.na(dat10$RelTimeHrs)], resid(modA_Age10))
+abline(h=0, lty=2)
+scatter.smooth(dat10$DVDInfoChickNb[!is.na(dat10$RelTimeHrs)], resid(modA_Age10))
+abline(h=0, lty=2)	
+scatter.smooth(dat10$DiffVisit1Rate[!is.na(dat10$RelTimeHrs)], resid(modA_Age10)) # one influencal data point
+abline(h=0, lty=2)	
+scatter.smooth(dat10$RelTimeHrs[!is.na(dat10$RelTimeHrs)], resid(modA_Age10))
+abline(h=0, lty=2)		
+
+# dependent variable vs fitted
+d <- dat10[!is.na(dat10$RelTimeHrs),]
+d$fitted <- fitted(modA_Age10)
+scatter.smooth(d$fitted, jitter(d$AlternationValue, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ParentsAge")
+scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
+scatter.smooth(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
+scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")
+
+}
+
+}
+
 }
 
 
@@ -1029,7 +1195,11 @@ head(MY_TABLE_perBirdYear)
 {#### fitness correlate of alternation
 
 {## total provisioning rate
-# like in Kat&Ben's paper: the mean per nest for total provisioning rate and for Adev, and have Broodsize at day 11
+
+# check dependent and explanatory variables
+
+hist(MY_TABLE_perBrood$TotalProRate)
+summary(MY_TABLE_perBrood$TotalProRate)
 
 modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged +
 											poly(Adev,1) +
@@ -1159,6 +1329,7 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 summary(MY_TABLE_perBirdYear$AliveNextYear)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear, MY_TABLE_perBirdYear$Age)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 1])
+
 
 }
 

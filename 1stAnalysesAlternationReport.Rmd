@@ -150,7 +150,7 @@ cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged)$p.value
 ```
 
 \textcolor{red}{is it solved by having Chick age as a category ? Age6: 6-9, Age10: 10-13}    
-\textcolor{blue}{likely not, but do one model per each category of age would remove this correlation }  
+\textcolor{blue}{likely not, but do one model per each category of age would remove this correlation - see below}  
 
 ```{r,echo=FALSE}
 hist(MY_TABLE_perDVD$ChickAge)
@@ -194,7 +194,7 @@ summary(modA)
 
 \textcolor{red}{model seem stable enough despite correlation between PairBroodNb and ParentAge ?}
 \textcolor{blue}{is it less of an issue if effects of opposite sign ? ask Mirre/Shinichi}
-\textcolor{blue}{repeatability of BirdID, SocialPartnerID, PairID: female more repeatable over partners than the pair alternation is repeatable ??  variance/regularity in interfeed interval affects the ability for the partenr to adjust}
+\textcolor{blue}{repeatability of BirdID, SocialPartnerID, PairID: female more repeatable over partners than the pair alternation is repeatable ??  variance/regularity in interfeed interval affects the ability for the partner to adjust}
 
 ## full model with DVDInfoChickNb, ParentAge but not PairBroodNb: ParentAge is less negative
 
@@ -210,8 +210,23 @@ summary(modA_ParentAge)
 ```
 
 
+## \textcolor{blue}{model Age6} with DVDInfoChickNb with both PairBroodNb and ParentAge
 
-## Model assumption checking for \textcolor{green}{full model with DVDInfoChickNb}
+```{r, echo=FALSE}
+summary(modA_Age6)
+```
+
+PairID has the explain the most variance, second most is MumID
+
+## \textcolor{blue}{model Age10} with DVDInfoChickNb with both PairBroodNb and ParentAge
+
+```{r, echo=FALSE}
+summary(modA_Age10)
+```
+
+PairID explain absolutely no variance, the most variance is explained by MumID
+
+## Model assumption checking for \textcolor{green}{full model with DVDInfoChickNb (both ages)}
 
 residuals vs predictors: homogeneity of variance ?
 
@@ -275,11 +290,27 @@ panderOptions('table.split.table', 118)
 pander(head(MY_TABLE_perBrood), style = 'rmarkdown')
 ```
 
-\textcolor{blue}{what the average number of brood per individual ? with teh same partner / the average number of switch ? the average number of breeding season ?}
-
 
 ## MY_TABLE_perBirdYear
 one line is a bird (column 'Sex' added), average of **AlternationValue** per Year for that bird was calculated.
+
+
+\textcolor{blue}{number of broods per males:}
+```{r, echo=FALSE}
+summary(MY_tblBroods$MBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+```
+
+\textcolor{blue}{number of broods per females:}
+```{r, echo=FALSE}
+summary(MY_tblBroods$FBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+```
+
+\textcolor{blue}{number of broods with the same partner:}
+```{r, echo=FALSE}
+summary(MY_tblBroods$PairBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
+```
+
+
 
 ```{r, echo=FALSE}
 panderOptions('table.split.table', 110)
@@ -393,6 +424,45 @@ solution is: `r rnum`
 
 
 # repeatability of provisioning rate
+
+_Nakagawa et al 2007_
+
+provisioning data were not always
+normally distributed. Therefore, prior to statistical tests,
+appropriate transformations were identified and applied
+using the Box–Cox transformation to achieve normality.  
+
+* how ?? boxcox() only work for lm not lmer !
+
+The within-year and between-year repeatabilities
+(2004 and 2005) for feeding visits (visits/chick h) were calculated using a
+procedure using within- and between-variance components
+in a linear mixed effects model (LMM) with the
+restricted maximum-likelihood method (REML, nlme
+package in R; Pinheiro & Bates, 2000) with bird identity
+as a grouping random factor in the model.
+both male and female feeding visits per
+chick also tended to decline with increasing brood size
+(Nakagawa et al., 2007a), so these effects were controlled
+for.  
+Statistical significance
+of repeatability was estimated from a likelihood
+ratio test comparing deviances between an LMM without
+a grouping random factor (i.e. individual identity) and
+an LMM with this factor. The use of the parametric bootstrap
+for likelihood ratios, rather than the chi-squared
+distribution, is recommended because likelihood ratios
+obtained in LMM often do not follow chi-squared
+distributions and the bootstrap approach provides more
+accurate approximation of P values (Faraway, 2006).
+Therefore, we used parametric bootstraps to create the
+distributions of likelihood ratios (5000 times) and the
+observed likelihood ratios are compared against these
+distributions to obtain P values  
+
+* is this what the rptR package is supposed to be doign autocatically ?
+
+
 
 * piling up both sex, adding column 'Sex'
 
