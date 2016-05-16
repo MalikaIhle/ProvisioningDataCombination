@@ -1255,8 +1255,6 @@ if (combinedprovisioningALL$Filename[i] %in% missingDVDFilenames$Filename)
 combinedprovisioningALLforDB <- combinedprovisioningALL[,c('DVDRef','Tstart', 'Tend','State', 'Sex', 'Protocol')]
 
 
-## write.table(combinedprovisioningALLforDB, file = "R_RawAllVisits_forDB.xls", col.names=TRUE, sep='\t') # 20160322
-
 }
 
 }
@@ -2300,6 +2298,11 @@ DurationScript # ~ 14 min
 
 
 ## output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+
+## write.csv(combinedprovisioningALLforDB, file = paste(output_folder,"R_RawAllVisits_forDB.csv", sep="/"), row.names = FALSE) 
+# 20160322
+# 20160516 because was deleted
+
 
 ## write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/"), row.names = FALSE) 
  # 20160324 20160331 20160426 
