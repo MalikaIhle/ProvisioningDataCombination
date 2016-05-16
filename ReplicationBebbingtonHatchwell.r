@@ -111,17 +111,12 @@ summary(MY_tblBroods$FBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBr
 summary(MY_tblBroods$PairBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
 
 summary(MY_tblBroods$ParentsAge[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
-table((MY_tblBroods$PairIDYear[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)]))
-
 
 # female divorce more than male, in majority for the Exes ??? polyandrous females ?
 summary(MY_tblBroods$FDivorce)
 summary(MY_tblBroods$FDivorceforEx)
 summary(MY_tblBroods$MDivorce)
 summary(MY_tblBroods$MDivorceforEx)
-
-
-
 
 
 }
@@ -133,7 +128,7 @@ head(MY_tblDVDInfo)
 head(MY_tblParentalCare)
 head(MY_RawFeedingVisits)
 
-  
+
 
 
 ############################################ 
@@ -162,7 +157,7 @@ quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)
 # MY_RawFeedingVisits <- MY_RawFeedingVisits[ MY_RawFeedingVisits$DVDRef %in% unique(MY_tblParentalCare$DVDRef) ,]
 # MY_tblDVDInfo <- MY_tblDVDInfo[ MY_tblDVDInfo$DVDRef %in% unique(MY_tblParentalCare$DVDRef),]                                     
 
-nrow(MY_tblParentalCare) # 1499
+nrow(MY_tblParentalCare) # 1499 if remove quantiles
 }
 
 
@@ -590,7 +585,7 @@ Fig1comparison
 
 
 
-{### create MY_TABLE_perDVD
+{### create MY_TABLE_perDVD: where both parents known
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
@@ -617,7 +612,7 @@ MY_TABLE_perDVD$Adev <- MY_TABLE_perDVD$MeanAsim - MY_TABLE_perDVD$AlternationVa
 }
 
 
-# add Max A possible considering both birds provisioning rate
+{# add Max A possible considering both birds provisioning rate
 MY_TABLE_perDVD$AMax <- NA
 
 for (i in 1:nrow(MY_TABLE_perDVD))
@@ -632,10 +627,6 @@ MY_TABLE_perDVD$AMax[i] <-
 round((((min(MY_TABLE_perDVD$FVisit1RateH[i],MY_TABLE_perDVD$MVisit1RateH[i]))*2) / (MY_TABLE_perDVD$FVisit1RateH[i] + MY_TABLE_perDVD$MVisit1RateH[i] -1))*100,2) 
 }
 }
-
-}
-
-head(MY_TABLE_perDVD)
 
 
 {# add AMax to Figure 1
@@ -667,7 +658,11 @@ Fig1comparison_withMax
 
 
 
+}
 
+}
+
+head(MY_TABLE_perDVD)
 
 
 {#### Predictors of alternation
@@ -1103,7 +1098,7 @@ print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
 
 
 
-{# create MY_TABLE_perBrood
+{### create MY_TABLE_perBrood
 MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
 summary(MY_TABLE_perDVD$MFVisit1RateH)
 
@@ -1133,7 +1128,7 @@ MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("NbRinged","AvgMass","Avg
 
 head(MY_TABLE_perBrood)
 
-{## create MY_TABLE_perBirdYear
+{### create MY_TABLE_perBirdYear
 
 {# get both sex piled up
 MY_TABLE_Survival <- merge(x=MY_TABLE_perDVD[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear")],
@@ -1485,7 +1480,7 @@ summary(modSurvival)
 # replication Nagagawa et al 2007 study #
 #########################################
 
-{# get provisioning rate for both sex piled up
+{### get provisioning rate for both sex piled up
 FemaleProRate <- MY_TABLE_perDVD[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
 							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
 MaleProRate <- MY_TABLE_perDVD[,c("MVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
@@ -1516,7 +1511,7 @@ BirdProRate <- BirdProRate[!is.na(BirdProRate$RelTimeHrs),]
 head(BirdProRate)
 
 
-{### repeatbility of provisioning rate
+{#### repeatbility of provisioning rate
 
 {## with Franzi's code
 
@@ -1941,7 +1936,7 @@ exactRLRT(m_BroodRef, mA , m0_BroodRef, nsim = 5000)		#RLRT = 28.183, p-value < 
 
 }
 
-{### repeatbility of provisioning rate per sex
+{#### repeatbility of provisioning rate per sex
 modProRateRpt_Male <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
 										scale(DVDInfoChickNb, scale=FALSE) + 
 										ChickAgeCat + 
@@ -1976,7 +1971,7 @@ VarianceRandomEffectsFemale <- as.data.frame(VarCorr(modProRateRpt_Female),comp=
 VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='BirdID'] / sum(VarianceRandomEffectsFemale$vcov) *100 # variance explained by FID
 }
 
-{### repeatbility of provisioning rate per chick like Shinichi did
+{#### repeatbility of provisioning rate per chick like Shinichi did
 
 modProRateRpt_perChick <- lmer(Visit1RateHChick ~ Sex +
 									scale(HatchingDayAfter0401, scale=FALSE) + 
@@ -2026,6 +2021,10 @@ summary(modProRateRpt_perChick)
 # should it be weigthed ?
 # or should the error been kept forward and how ?
 
+## total provisioning rate
+# transform dependent variable to have normal residual ?
+# box cox transformation like Shnichi ? but how with mixed effect models ??
+
 ## chick mass model
 # add genetic parents ?
 # test both body condition (dev mass on tarsus or have tarsus in model) and body size per se ??
@@ -2048,24 +2047,11 @@ summary(modProRateRpt_perChick)
 
 # integrate Schlicht at al 2016 analyses
 # calculate p and check in our data like Johnstone did in his reply
+# check for temporal autocorrelation simply with the previous interfeed interval? 
+# randomization within 30 minutes windows ? 
+# overall correlation ? 
+# ask Emmi if she is conviced by Johnstone reply
 
 
-
-}#############################
-
-{#############################  MESS
-
-par(mfrow=c(3,1)) 
-hist(as.POSIXct(MY_tblDVDInfo$DVDtime), 10)
-hist((MY_tblDVDInfo$RelTimeMins), 20)
-hist((MY_tblDVDInfo$LogRelTimeMins), 10)
-hist((MY_TABLE_perDVD$RelTimeHrs), 20)
-max(as.POSIXct(MY_tblDVDInfo$DVDtime), na.rm=T)
-
-#MY_TABLE_perDVD$DVDtime2 <- substr(MY_TABLE_perDVD$DVDtime, 12, 16)
-#MY_TABLE_perDVD$NumTime <- as.numeric(MY_TABLE_perDVD$DVDtime)
-#MY_TABLE_perDVD[,c('DVDtime','NumTime')][with(MY_TABLE_perDVD[,c('DVDtime','NumTime')],order(MY_TABLE_perDVD$NumTime)),]
-#MY_TABLE_perDVD$NumTimeposixct <- as.numeric(as.POSIXct(MY_TABLE_perDVD$DVDtime))
-#MY_TABLE_perDVD[,c('DVDtime','NumTime','NumTimeposixct')][with(MY_TABLE_perDVD[,c('DVDtime','NumTime')],order(MY_TABLE_perDVD$NumTimeposixct)),]
 
 }#############################
