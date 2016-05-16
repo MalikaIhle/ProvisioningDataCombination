@@ -106,11 +106,6 @@ ultimately, everything will be called directly from the DB with the code compila
 # R_output
 
 
-### R_RawFeedingVisits
-
-thi is all the raw data with only feeding visits (OF, IN or INorOF), where a succession OF-IN has been merged into one visit (run 20160324)
-
-
 ### R_RawAllVisits_forDB
 
 this as all the raw data until time of code run (last: 20160323)
@@ -125,7 +120,7 @@ data, meta data, and summary of data I calculated
 
 ### R_MY_RawFeedingVisits
 
-OF directly followed by IN are merged feeding visits
+OF directly followed by IN are merged feeding visits  
 Interval calculated
 
 
