@@ -2299,10 +2299,28 @@ DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
 
 
-# output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+## output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
 
- # write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/"), row.names = FALSE) # 20160324 20160331 20160426 
- # write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data, 20160504 with new dummy variables
- # write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) # 20160415, identical with changes to call new DB, 20160425, 20160504 with new dummy variables
- # write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) # 20160415, 20160428 (with all brood even not watched, even with one social parents NA) # 20160503 updated lastseenalive and added Mass, 20160504 with new dummy variables and reextract hatching date, 20160509 reextract BreedingYear and BroodNb by BroodName
+## write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/"), row.names = FALSE) 
+ # 20160324 20160331 20160426 
+ 
+## write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) 
+ # 20160415
+ # 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
+ # 20160504 with new dummy variables
+ # 20160516 save the 2112 lines (had saved the selection of 1768 lines last time...)
+ 
+## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
+ # 20160415
+ # 20160425 identical with changes to call new DB
+ # 20160504 with new dummy variables
+ 
+## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
+ # 20160415
+ # 20160428 (with all brood even not watched, even with one social parents NA) 
+ # 20160503 updated lastseenalive and added Mass
+ # 20160504 with new dummy variables and reextract hatching date
+ # 20160509 reextract BreedingYear and BroodNb by BroodName
 
+
+ 
