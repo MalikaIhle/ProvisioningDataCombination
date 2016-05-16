@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 05/05/2016  
-#	 commit: modProRate + modAvgMass 
+#	 last modif : 16/05/2016  
+#	 commit: annotations 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -12,7 +12,7 @@
 # MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
 # 2 broods corresponding to 2 DVDs have both parents NA > removed
 # 39 brood with one parent NA, corresponding to 66 files
-# if tblDVDinfois updated > the date associated to DVDtime and to Sunrise will change
+# if tblDVDinfos updated > the date associated to DVDtime and to Sunrise will change
 # MY_TABLE_perDVD has one line per file
 # MY_TABLE_perBrood has one line per brood, averaging the summary accross files
 }
@@ -27,7 +27,8 @@ library(lme4)
 # library(rptR) under construction
 library(RLRsim) # for testing significance randome effect in repeatability part
 
-options(warn=-1)
+options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
+# options(warn=-1) # for Rmarkdown not to print the warnings
 }
 
 
@@ -118,6 +119,10 @@ summary(MY_tblBroods$FDivorce)
 summary(MY_tblBroods$FDivorceforEx)
 summary(MY_tblBroods$MDivorce)
 summary(MY_tblBroods$MDivorceforEx)
+
+
+
+
 
 }
 
@@ -661,6 +666,10 @@ theme_classic()
 Fig1comparison_withMax
 
 
+
+
+
+
 {#### Predictors of alternation
 
 {# check dependent and explanatory variables
@@ -1013,6 +1022,7 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 dat10 <- MY_TABLE_perDVD[MY_TABLE_perDVD$ChickAgeCat == "Age10",]
 dat10 <- dat10[ order(dat10$ChickAge), ] 
 dat10 <- dat10[!duplicated(dat10[,c('BroodRef')]),]
+dat10 <- dat10[!is.na(dat10$RelTimeHrs),]
 nrow(dat10)
 
 modA_Age10 <- lmer(AlternationValue ~  
@@ -1080,7 +1090,6 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 }
 
 }
-
 
 summary(modA)$coefficients
 summary(modA_NbRinged)$coefficients
@@ -1183,10 +1192,30 @@ MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "A
 							y=MY_TABLE_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
 }
 
+
+
+FemaleSurvival <- list()
+MaleSurvival <- list()
+survivalperyear <- as.data.frame(table(MY_TABLE_perBirdYear$AliveNextYear, MY_TABLE_perBirdYear$BreedingYear, MY_TABLE_perBirdYear$Sex))
+for (i in 2004:2015)
+{FemaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) 
+ MaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 1 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) }
+Survival <- as.data.frame(cbind(2004:2015,do.call(rbind,FemaleSurvival),do.call(rbind,MaleSurvival)))
+colnames(Survival) <- c("Year", "FSurvival","MSurvival")
+Survival$AvgSurvival <- round((Survival$FSurvival+Survival$MSurvival)*100/2,2)
+mean(Survival$AvgSurvival) # 57.05417
+
+ggplot(Survival, aes(x=Year, y=AvgSurvival))+
+  geom_point()+
+  geom_line()+
+  geom_hline(yintercept=mean(Survival$AvgSurvival), size= 1, linetype= "dashed", colour="indianred")+
+  ylim(0,100)+
+  theme_classic()
+
+
 }
 
 head(MY_TABLE_perBirdYear)
-
 
 
 
@@ -1201,7 +1230,7 @@ head(MY_TABLE_perBirdYear)
 hist(MY_TABLE_perBrood$TotalProRate)
 summary(MY_TABLE_perBrood$TotalProRate)
 
-modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged +
+modFitnessAsProRate <- lmer(TotalProRate ~  NbRinged + 
 											poly(Adev,1) +
 											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 											# + (1|PairIDYear) # explain 0% of the variance
@@ -1272,7 +1301,7 @@ nrow(MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRi
 MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,] # 2 broods with ringed with mass but not tarsus
 }
 
-modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
+modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged + 
 										MeanA + # Kat&Ben's paper: I assume they used again the average of alternation per nest 
 										AvgTarsus +
 										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
@@ -1912,7 +1941,7 @@ exactRLRT(m_BroodRef, mA , m0_BroodRef, nsim = 5000)		#RLRT = 28.183, p-value < 
 
 }
 
-
+{### repeatbility of provisioning rate per sex
 modProRateRpt_Male <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
 										scale(DVDInfoChickNb, scale=FALSE) + 
 										ChickAgeCat + 
@@ -1945,8 +1974,7 @@ modProRateRpt_Female <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FAL
 summary(modProRateRpt_Female)
 VarianceRandomEffectsFemale <- as.data.frame(VarCorr(modProRateRpt_Female),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
 VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='BirdID'] / sum(VarianceRandomEffectsFemale$vcov) *100 # variance explained by FID
-
-
+}
 
 {### repeatbility of provisioning rate per chick like Shinichi did
 
@@ -1974,7 +2002,7 @@ summary(modProRateRpt_perChick)
 {#############################  TO DO + ISSUES
   
 ## repeatability of provisioning rate:
-# bootstrap instead of LRT >> not working ?????????????????????????
+# bootstrap instead of LRT >> correct ?
 # get rpt package to work (under construction)
 # do analyses on provisioning rate per chick like shinichi ?
 # boxcox transfo to approach normality ?
@@ -1984,6 +2012,7 @@ summary(modProRateRpt_perChick)
 ## repeatability alternation 
 # considering more than two measures and use rptR package to fit mixed effect model (not working)
 # or randomise order of measurements with 2 measures
+# or analyse the random effects in model alternation
 
 ## take a decision for time of the day
 # check if the effect is linear to keep a continuous variable
@@ -1997,12 +2026,21 @@ summary(modProRateRpt_perChick)
 # should it be weigthed ?
 # or should the error been kept forward and how ?
 
-# get table ready for parental survival
+## chick mass model
+# add genetic parents ?
+# test both body condition (dev mass on tarsus or have tarsus in model) and body size per se ??
+# shouldn't we check whether provisioning rate increase body condition ?
+# what if regularity (low variance in interfeed interval) increase body condition ?
+
+
+## survival model
 # do model for sexes separately ?
 # include sex in a model with data of both sexes piled up ?
 # average Alternation value per year or have one line per file and birdID ect as random factor ?
 # survival analysis !! if dead one year, cannot be alive next year ! 
 # temporal autocorrelation to take into account !
+# have Adev instead of Mean A ?
+# include polynomial term ? (high alternation > runaway investement > cost. select for an optimal alternation ?)
 
 ## sealed bid by male
 # how can female adjust ? if purely alternate but for a low male provisioning > low fitness !

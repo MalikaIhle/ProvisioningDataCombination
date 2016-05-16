@@ -142,7 +142,7 @@ FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.B
 WHERE (((tblBirdID.BroodRef) Is Not Null));
 ")
 
-# get AvMass and AvTarsus per brood d12 (see sql query 'LastMassTarsusChick')
+# get AvMass and AvTarsus per brood d12 (see annotated sql query 'LastMassTarsusChick')
 
 {LastMassTarsusChick <- sqlQuery(conDB, "
 SELECT usys_qRearingBrood.RearingBrood, 								
@@ -1265,7 +1265,7 @@ head(combinedprovisioningALLforDB)
 head(combinedprovisioningALL)
 
 
-{### recreate tblParentalCare to check for discrepancies - some variables also used for 'MY_tblParentalCare'
+{### recreate tblParentalCare to check for discrepancies with DB - some variables also used for 'MY_tblParentalCare'
 
 {## forseen discrepancies:
 # minor changes we've made in chronology (MTime, FTime) and in color (#visits1 and 2, MTime, FTime) but normally not so much from changes in letters 'G', 'O', 'S'
