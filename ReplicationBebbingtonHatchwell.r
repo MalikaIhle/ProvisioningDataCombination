@@ -64,25 +64,219 @@ pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/
 
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
-RearingBrood_allBirds <- sqlQuery(conDB, "
-SELECT tblBirdID.BirdID, tblBirdID.Cohort, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood, tblBirdID.DeathDate, tblBirdID.LastStage, tblBirdID.DeathStatus
-FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
-WHERE (((tblBirdID.BroodRef) Is Not Null));
-")
+# MassTarsusRearinBrood_allChicks (see annotated sql query 'LastMassTarsusChick')
 
-MassTarsus_allBirds <-  sqlQuery(conDB, "
+{MassTarsusRearinBrood_allChicks <-  sqlQuery(conDB, "
+SELECT tblCaptures.BirdID AS ChickID, 
+usys_qRearingBrood.RearingBrood,
+ Avg(tblMeasurements.Mass) AS AvgOfMass, 
+ Avg(tblMeasurements.Tarsus) AS AvgOfTarsus, 
+ Avg(usys_qRelativeChickMassClassesForCaptures.Age) AS AvgOfAge, 
+ Count(usys_qRearingBrood.BirdID) AS nMeasures
+ 
+FROM tblBirdID INNER JOIN 
+((
+	(SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood
+	FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
+	WHERE (((tblBirdID.BroodRef) Is Not Null))) 
+	AS usys_qRearingBrood 
+
+INNER JOIN (
+	(SELECT tblCaptures.CaptureRef, 
+	14 AS MassClass, 
+	First(tblCaptures.CaptureDate-[HatchDate])+1 AS Age
+
+	FROM (tblBirdID INNER JOIN tblCaptures ON tblBirdID.BirdID = tblCaptures.BirdID)
+	
+	INNER JOIN 
+	 
+		(
+			SELECT tblBirdID.BirdID, 
+			usys_qBroodEggDate.LayDate AS EggDate, 
+			usys_qBroodHatchDate.HatchDate, 
+			usys_qBroodEggDate.DateEstimated AS EggDateEst, 
+			IIf(usys_qBroodHatchDate.BroodRef Is Not Null,usys_qBroodHatchDate.DateEstimated,0) AS HatchDateEst
+
+			FROM ((tblBroods 
+			LEFT JOIN 
+
+					(SELECT tblBroods.BroodRef, 
+					IIf(usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+					IIf(usys_qBroodTrueEggDate.BroodRef,
+					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+					
+					FROM (
+						(SELECT tblBroodEvents.BroodRef, 
+						tblBroodEvents.EventDate AS LayDate, 
+						tblBroodEvents.DateEstimated
+						FROM tblBroodEvents
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=0))
+						) 
+						AS usys_qBroodTrueEggDate 
+						
+					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+					LEFT JOIN 
+						(SELECT tblBroodEvents.BroodRef, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						[EventDate]-[EggCount],
+						[Hatchdate]-14) AS LayDate, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						'EggCount','HatchDate') AS EstimateSource
+						
+						FROM tblBroodEvents 
+						LEFT JOIN 
+							(SELECT tblBroodEvents.BroodRef, 
+							tblBroodEvents.EventDate AS HatchDate, 
+							tblBroodEvents.DateEstimated
+							FROM tblBroodEvents
+							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+							AND ((tblBroodEvents.EventNumber)=1))
+							) 
+							AS usys_qBroodHatchDatesFromTable 
+						
+						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+						
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=4) 
+						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+						OR (((tblBroodEvents.EventNumber)=4) 
+						AND ((tblBroodEvents.EggCount) Is Not Null))
+						
+						) 
+						AS usys_qBroodEggDateFromFirstSeen 
+						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+						
+					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+					
+					) 
+					AS usys_qBroodEggDate
+			 
+			ON tblBroods.BroodRef = usys_qBroodEggDate.BroodRef) 
+			
+			LEFT JOIN 
+				(
+				SELECT usys_qBroodsWithHatchlings.BroodRef, 
+				IIf(usys_qBroodHatchDatesFromTable.HatchDate Is Not Null,
+				usys_qBroodHatchDatesFromTable.HatchDate,
+				usys_qBroodEggDate.LayDate+14) AS HatchDate, 
+				usys_qBroodHatchDatesFromTable.HatchDate Is Null Or usys_qBroodHatchDatesFromTable.DateEstimated AS DateEstimated
+				FROM (
+					(SELECT DISTINCT tblBirdID.BroodRef, 
+					Count(*) AS NoHatchlings
+					FROM tblBirdID
+					WHERE (((tblBirdID.LastStage)>1) AND ((tblBirdID.BroodRef) Is Not Null))
+					GROUP BY tblBirdID.BroodRef
+					) 
+					AS usys_qBroodsWithHatchlings 
+					
+				LEFT JOIN 
+					(SELECT tblBroodEvents.BroodRef, 
+					tblBroodEvents.EventDate AS HatchDate, 
+					tblBroodEvents.DateEstimated
+					FROM tblBroodEvents
+					WHERE (((tblBroodEvents.EventDate) Is Not Null) AND ((tblBroodEvents.EventNumber)=1))
+					) 
+					AS usys_qBroodHatchDatesFromTable 
+					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef) 
+					
+				LEFT JOIN 
+					(SELECT tblBroods.BroodRef, 
+					IIf(usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+					IIf(usys_qBroodTrueEggDate.BroodRef,
+					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+					
+					FROM (
+						(SELECT tblBroodEvents.BroodRef, 
+						tblBroodEvents.EventDate AS LayDate, 
+						tblBroodEvents.DateEstimated
+						FROM tblBroodEvents
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=0))
+						) 
+						AS usys_qBroodTrueEggDate 
+						
+					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+					LEFT JOIN 
+						(SELECT tblBroodEvents.BroodRef, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						[EventDate]-[EggCount],
+						[Hatchdate]-14) AS LayDate, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						'EggCount','HatchDate') AS EstimateSource
+						
+						FROM tblBroodEvents 
+						LEFT JOIN 
+							(SELECT tblBroodEvents.BroodRef, 
+							tblBroodEvents.EventDate AS HatchDate, 
+							tblBroodEvents.DateEstimated
+							FROM tblBroodEvents
+							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+							AND ((tblBroodEvents.EventNumber)=1))
+							) 
+							AS usys_qBroodHatchDatesFromTable 
+						
+						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+						
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=4) 
+						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+						OR (((tblBroodEvents.EventNumber)=4) 
+						AND ((tblBroodEvents.EggCount) Is Not Null))
+						
+						) 
+						AS usys_qBroodEggDateFromFirstSeen 
+						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+						
+					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+					
+					) AS usys_qBroodEggDate 
+					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodEggDate.BroodRef
+					
+				) 
+				AS usys_qBroodHatchDate 
+
+			ON tblBroods.BroodRef = usys_qBroodHatchDate.BroodRef) 
+			INNER JOIN tblBirdID ON tblBroods.BroodRef = tblBirdID.BroodRef
+			WHERE (((tblBirdID.BroodRef) Is Not Null))
+
+			)
+		AS usys_qBirdEggHatchDates ON tblCaptures.BirdID = usys_qBirdEggHatchDates.BirdID
+
+		WHERE (((([tblCaptures].[CaptureDate]-[HatchDate])+1)<=14) 
+		AND ((tblCaptures.Stage)<3)
+		AND (((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[Capturedate])))
+		GROUP BY tblCaptures.CaptureRef
+		HAVING (((First(tblCaptures.CaptureDate-[HatchDate])+1)=11 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=12 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=13 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=14))
+	) AS usys_qRelativeChickMassClassesForCaptures 
+
+INNER JOIN tblCaptures ON usys_qRelativeChickMassClassesForCaptures.CaptureRef = tblCaptures.CaptureRef) ON usys_qRearingBrood.BirdID = tblCaptures.BirdID) 
+
+
+INNER JOIN tblMeasurements ON tblCaptures.CaptureRef = tblMeasurements.CaptureRef) ON tblBirdID.BirdID = tblCaptures.BirdID
+
+WHERE (((usys_qRelativeChickMassClassesForCaptures.MassClass)=14) AND ((usys_qRearingBrood.RearingBrood) Is Not Null) AND ((tblMeasurements.Mass)>0) AND ((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[CaptureDate]))
+GROUP BY tblCaptures.BirdID, usys_qRearingBrood.RearingBrood, tblCaptures.CaptureDate;
 
 ")
+}
+
+tblChicks <- merge(x=MassTarsusRearinBrood_allChicks, y= pedigree[,c("id","dam","sire")], all.x=TRUE, by.x="ChickID", by.y = "id")
 
 close(conDB)
-}
 
-{# join RearingBrood_allBirds and pedigree inot tblChicks
-tblChicks <- merge(x=RearingBrood_allBirds[,c("BirdID", "RearingBrood")], y= pedigree[,c("id","dam","sire")], all.x=TRUE, by.x="BirdID", by.y = "id")
 
 }
 
 }
+
 
 {### select valid video files for studying behavioural compatibility in chick provisioning
 
@@ -99,7 +293,7 @@ MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRe
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
 
-MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] # apparently all chicks have been recorded
+MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
 
 {# fill in manually the data where Julia deleted it
@@ -1231,6 +1425,9 @@ head(MY_TABLE_perBrood)
 {### create MY_TABLE_perChick
 
 MY_TABLE_perChick <- merge(x= MY_tblChicks , y=MY_TABLE_perBrood, by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
+
+MY_TABLE_perChick$GenPairID <- paste(MY_TABLE_perChick$sire, MY_TABLE_perChick$dam, sep="")
+
 }
 
 head(MY_TABLE_perChick)
@@ -1512,18 +1709,38 @@ modFitnessAsResChickMass <- lmer(ResMassTarsus ~ NbRinged +
 summary(modFitnessAsResChickMass) # Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
 # identical results as model above
 
-
-
-# model on chick unit
-
-modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged + 
+{# model on MY_TABLE_perChick
+	# here 'AvgOf' are averages within a ChickID when measured twice in the right time windows (age 11 to 14)
+	
+modFitnessAsChickMasslikeabove <- lmer(AvgOfMass ~ NbRinged + 
 										MeanA + 
-										AvgTarsus +
+										AvgOfTarsus +
 										(1|RearingBrood)+
-										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
-										data = MY_TABLE_perBrood)
+										(1|SocialMumID)+ 
+										(1|SocialDadID) +
+										(1|PairID) + (1|BreedingYear) 
+										#+ (1|dam) + (1|sire) + (1|GenPairID)
+										,data = MY_TABLE_perChick)
+
+summary(modFitnessAsChickMasslikeabove)	
 
 
+modFitnessAsChickMasswithGenParents <- lmer(AvgOfMass ~ NbRinged + 
+										MeanA + 
+										AvgOfTarsus +
+										(1|RearingBrood)+
+										(1|SocialMumID)+ (1|SocialDadID) + 
+										(1|PairID) + (1|BreedingYear) 
+										+ (1|dam) + (1|sire) + (1|GenPairID)
+										, data = MY_TABLE_perChick)
+
+summary(modFitnessAsChickMasswithGenParents)
+
+print(VarCorr(modFitnessAsChickMass),comp=c("Variance","Std.Dev."))
+print(VarCorr(modFitnessAsChickMasswithGenParents),comp=c("Variance","Std.Dev."))
+summary(modFitnessAsChickMass)$coefficients
+summary(modFitnessAsChickMasswithGenParents)$coefficients
+}
 
 }
 
@@ -1533,6 +1750,8 @@ modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
 summary(MY_TABLE_perBirdYear$AliveNextYear)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear, MY_TABLE_perBirdYear$Age)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 1])
+table( MY_TABLE_perBirdYear$AliveNextYear[MY_TABLE_perBirdYear$Sex == 0])
+table( MY_TABLE_perBirdYear$AliveNextYear[MY_TABLE_perBirdYear$Sex == 1])
 
 
 }
@@ -1562,7 +1781,6 @@ modSurvivalFemale <- glmer(AliveNextYear ~ MeanAYear + Age +
 									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 0,], family = "binomial" )
 									
 summary(modSurvivalFemale) # Number of obs: 555, groups:  BirdID, 295; BreedingYear, 12
-
 
 modSurvival_SexAgeInteraction <- glmer(AliveNextYear ~ MeanAYear + Sex*Age +
 									(1|BirdID) +
@@ -2177,7 +2395,7 @@ summary(modProRateRpt_perChick)
 {#############################  TO DO + ISSUES
   
 ## repeatability of provisioning rate:
-# bootstrap instead of LRT >> correct ?
+# bootstrap instead of LRT - DONE >> correct ?
 # get rpt package to work (under construction)
 # do analyses on provisioning rate per chick like shinichi ?
 # boxcox transfo to approach normality ?
@@ -2187,26 +2405,26 @@ summary(modProRateRpt_perChick)
 ## repeatability alternation 
 # considering more than two measures and use rptR package to fit mixed effect model (not working)
 # or randomise order of measurements with 2 measures
-# or analyse the random effects in model alternation
+# or analyse the random effects in model alternation <<<<<<
 
 ## take a decision for time of the day
-# check if the effect is linear to keep a continuous variable
+# check if the effect is linear to keep a continuous variable - DONE
 
 ## predictor of alternation
-# solve the issue of correlation between parent age and PairBroodNb
-# solve the issue of correlation between ChickNb and ChickAge
+# solve the issue of correlation between parent age and PairBroodNb 
+# solve the issue of correlation between ChickNb and ChickAge - DONE
 
 ## fitness model
 # are models on average values good ? 
 # should it be weigthed ?
-# or should the error been kept forward and how ?
+# or should the error been kept forward by just adding another random effect ?
 
 ## total provisioning rate
 # transform dependent variable to have normal residual ?
-# box cox transformation like Shnichi ? but how with mixed effect models ??
+# box cox transformation like Shinichi ? but how with mixed effect models ??
 
 ## chick mass model
-# add genetic parents ?
+# add genetic parents ? - DONE
 # test both body condition (dev mass on tarsus or have tarsus in model) and body size per se ??
 # shouldn't we check whether provisioning rate increase body condition ?
 # what if regularity (low variance in interfeed interval) increase body condition ?
