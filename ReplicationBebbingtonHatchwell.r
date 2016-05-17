@@ -1368,6 +1368,26 @@ print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
 print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
 
 
+{#### repatability of Alternation 
+
+VarianceRandomEffectsAlternation <- as.data.frame(VarCorr(modA),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
+
+VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='SocialDadID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by MID
+VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='SocialMumID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by FID
+VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='PairID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by PairID
+VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='BroodRef'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by BroodRef
+
+# correlation of provisioning rate accross two randomly picked nestwatches (among those that have 2 or 3 nest watches) within a brood - like Kat & Ben
+	# this does not take into account the pseudoreplication of pairs having several broods together
+	# nor that individual have several broods with different partner
+	# nor that this happen in different years
+	
+MY_TABLE_perDVD_onlyduplicates <-  MY_TABLE_perDVD[! MY_TABLE_perDVD$BroodRef %in% !duplicated(MY_TABLE_perDVD$BroodRef),c("BroodRef","AlternationValue")]
+
+(xu <- x[!duplicated(x)])
+
+}
+
 
 
 {### create MY_TABLE_perBrood
@@ -1492,16 +1512,18 @@ MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "A
 							y=MY_TABLE_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
 }
 
-
-
+{# descriptive stats on survival per year
 FemaleSurvival <- list()
 MaleSurvival <- list()
 survivalperyear <- as.data.frame(table(MY_TABLE_perBirdYear$AliveNextYear, MY_TABLE_perBirdYear$BreedingYear, MY_TABLE_perBirdYear$Sex))
-for (i in 2004:2015)
-{FemaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) 
- MaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 1 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) }
+
+for (i in 2004:2015){
+FemaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) 
+MaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 1 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) }
+
 Survival <- as.data.frame(cbind(2004:2015,do.call(rbind,FemaleSurvival),do.call(rbind,MaleSurvival)))
 colnames(Survival) <- c("Year", "FSurvival","MSurvival")
+
 Survival$AvgSurvival <- round((Survival$FSurvival+Survival$MSurvival)*100/2,2)
 mean(Survival$AvgSurvival) # 57.05417
 
@@ -1511,7 +1533,7 @@ ggplot(Survival, aes(x=Year, y=AvgSurvival))+
   geom_hline(yintercept=mean(Survival$AvgSurvival), size= 1, linetype= "dashed", colour="indianred")+
   ylim(0,100)+
   theme_classic()
-
+}
 
 }
 
@@ -1746,10 +1768,14 @@ summary(modFitnessAsChickMasswithGenParents)$coefficients
 
 {# Parent survival
 
+# because we don't know for all birds if they survived until 2016:
+MY_TABLE_perBirdYear <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear != 2015,]
+
 {# check dependent and explanatory variables
 summary(MY_TABLE_perBirdYear$AliveNextYear)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear, MY_TABLE_perBirdYear$Age)
 scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 1])
+scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 0])
 table( MY_TABLE_perBirdYear$AliveNextYear[MY_TABLE_perBirdYear$Sex == 0])
 table( MY_TABLE_perBirdYear$AliveNextYear[MY_TABLE_perBirdYear$Sex == 1])
 
@@ -1762,8 +1788,8 @@ modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
 									(1|BreedingYear)
 									, data = MY_TABLE_perBirdYear, family = "binomial" )
 									
-summary(modSurvival) # Number of obs: 1110, groups:  BirdID, 578; BreedingYear, 12
-
+summary(modSurvival) # Number of obs: 1026, groups:  BirdID, 551; BreedingYear, 11
+# male survive longer than females
 
 modSurvivalMale <- glmer(AliveNextYear ~ MeanAYear + Age +
 									(1|BirdID) +
@@ -1771,8 +1797,8 @@ modSurvivalMale <- glmer(AliveNextYear ~ MeanAYear + Age +
 									(1|BreedingYear)
 									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 1,], family = "binomial" )
 									
-summary(modSurvivalMale) # !! Model failed to converge !! Number of obs: 555, groups:  BirdID, 283; BreedingYear, 12
-
+summary(modSurvivalMale) # Number of obs: 513, groups:  BirdID, 271; BreedingYear, 11
+# birdID explains a lot of variance because male survive longer than females > issue  mentionned by Mirre ?
 
 modSurvivalFemale <- glmer(AliveNextYear ~ MeanAYear + Age +
 									(1|BirdID) +
@@ -1780,7 +1806,9 @@ modSurvivalFemale <- glmer(AliveNextYear ~ MeanAYear + Age +
 									(1|BreedingYear)
 									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 0,], family = "binomial" )
 									
-summary(modSurvivalFemale) # Number of obs: 555, groups:  BirdID, 295; BreedingYear, 12
+summary(modSurvivalFemale) # Number of obs: 513, groups:  BirdID, 280; BreedingYear, 11
+# birdID do not explains a lot of variance
+
 
 modSurvival_SexAgeInteraction <- glmer(AliveNextYear ~ MeanAYear + Sex*Age +
 									(1|BirdID) +
@@ -1788,7 +1816,8 @@ modSurvival_SexAgeInteraction <- glmer(AliveNextYear ~ MeanAYear + Sex*Age +
 									(1|BreedingYear)
 									, data = MY_TABLE_perBirdYear, family = "binomial" )
 									
-summary(modSurvival_SexAgeInteraction) # Number of obs: 1110, groups:  BirdID, 578; BreedingYear, 12
+summary(modSurvival_SexAgeInteraction) #Number of obs: 1026, groups:  BirdID, 551; BreedingYear, 11
+
 
 
 
@@ -1909,7 +1938,7 @@ BirdProRate <- BirdProRate[!is.na(BirdProRate$RelTimeHrs),]
 head(BirdProRate)
 
 
-{#### repeatbility of provisioning rate
+{# repeatbility of provisioning rate
 
 {## with Franzi's code
 
@@ -2334,7 +2363,7 @@ exactRLRT(m_BroodRef, mA , m0_BroodRef, nsim = 5000)		#RLRT = 28.183, p-value < 
 
 }
 
-{#### repeatbility of provisioning rate per sex
+{# repeatbility of provisioning rate per sex
 modProRateRpt_Male <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
 										scale(DVDInfoChickNb, scale=FALSE) + 
 										ChickAgeCat + 
@@ -2369,7 +2398,7 @@ VarianceRandomEffectsFemale <- as.data.frame(VarCorr(modProRateRpt_Female),comp=
 VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='BirdID'] / sum(VarianceRandomEffectsFemale$vcov) *100 # variance explained by FID
 }
 
-{#### repeatbility of provisioning rate per chick like Shinichi did
+{# repeatbility of provisioning rate per chick like Shinichi did
 
 modProRateRpt_perChick <- lmer(Visit1RateHChick ~ Sex +
 									scale(HatchingDayAfter0401, scale=FALSE) + 
@@ -2387,6 +2416,7 @@ summary(modProRateRpt_perChick)
 
 }
 
+# correlation of provisioning rate accross two randomly picked nestwatches (among those that have 2 or 3 nest watches) within a brood
 
 
 
