@@ -28,6 +28,7 @@ library(boot) # for simulation
 library(lme4)
 # library(rptR) under construction
 library(RLRsim) # for testing significance randome effect in repeatability part
+library(MCMCglmm)
 
 options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
 # options(warn=-1) # for Rmarkdown not to print the warnings
@@ -286,6 +287,28 @@ MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5],# 906 - where still brooding 
 MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& !is.na(MY_tblParentalCare$DVDRef)], # 171 - one sex did not visit
 MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 - both parents unidentified
 MY_tblParentalCare$DVDRef[is.na(MY_tblParentalCare$EffectiveTime)]) # 9 files with no visits at all
+
+
+# Cleasby et al 2011 + Cleasby et al 2013
+# 188 chicks from 54 broods received supplemental food 
+# 240 chicks from 71 broods did not receive any food supplements
+
+# Cleasby et al 2011
+# growth curve only for individuals that successfully fledged:
+# 127 chicks from 50 broods which received extra food
+# 134 chicks from 53 broods which did not 
+ 
+# Cleasby et al 2013
+# Excluded brood will full mortality (at what stage?), left with:
+# 49 fed broods (less than the number of broods with fledgling above !)
+# 59 control broods (more than the number of broods with fledgling above !)
+
+# querying the DB:
+# 131 chicks from 38 broods were fed (among which 1 chick (3622) has no natal brood because Julia deleted it)
+# 142 chicks from 41 broods were control (among which 2 chicks (3953 and 3954) have no natal brood because Julia deleted it - 1 brood (969) therefore does not appear)
+
+
+ 
 
 list_non_valid_DVDRef <- list_non_valid_DVDRef[!is.na(list_non_valid_DVDRef)]
 
@@ -1377,14 +1400,87 @@ VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='Soc
 VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='PairID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by PairID
 VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='BroodRef'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by BroodRef
 
-# correlation of provisioning rate accross two randomly picked nestwatches (among those that have 2 or 3 nest watches) within a brood - like Kat & Ben
+{# correlation of provisioning rate accross two randomly picked nestwatches (among those that have 2 or 3 nest watches) within a brood - like Kat & Ben
 	# this does not take into account the pseudoreplication of pairs having several broods together
 	# nor that individual have several broods with different partner
 	# nor that this happen in different years
 	
-MY_TABLE_perDVD_onlyduplicates <-  MY_TABLE_perDVD[! MY_TABLE_perDVD$BroodRef %in% !duplicated(MY_TABLE_perDVD$BroodRef),c("BroodRef","AlternationValue")]
+MY_TABLE_perDVD_perBroodRef <-  split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
 
-(xu <- x[!duplicated(x)])
+# x <- MY_TABLE_perDVD_perBroodRef[['1398']]
+
+MY_TABLE_perDVD_perBroodRef_fun <- function(x){
+
+if(nrow(x)>1)
+{
+A <-sample(x$AlternationValue,2)
+}
+
+return(A)
+
+}
+
+MY_TABLE_perDVD_perBroodRef_out1 <- lapply(MY_TABLE_perDVD_perBroodRef, FUN=MY_TABLE_perDVD_perBroodRef_fun)
+MY_TABLE_perDVD_perBroodRef_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perDVD_perBroodRef_out1)),do.call(rbind, MY_TABLE_perDVD_perBroodRef_out1))
+
+nrow(MY_TABLE_perDVD_perBroodRef_out2)	# 919
+rownames(MY_TABLE_perDVD_perBroodRef_out2) <- NULL
+colnames(MY_TABLE_perDVD_perBroodRef_out2) <- c('BroodRef','Ay','Ax')
+
+scatter.smooth(MY_TABLE_perDVD_perBroodRef_out2$Ay~ MY_TABLE_perDVD_perBroodRef_out2$Ax)
+abline(0,1)
+cor.test(MY_TABLE_perDVD_perBroodRef_out2$Ay, MY_TABLE_perDVD_perBroodRef_out2$Ax)
+}
+
+{# repeatability using MCMCglmm
+
+MY_TABLE_perDVD_wihoutNA <-MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+
+# http://www.wildanimalmodels.org/tiki-index.php?page=repeated%20measures
+# here we are just using weak priors where the 
+# phenotypic variation is split among the various
+# factors:
+p.var<-var(MY_TABLE_perDVD_wihoutNA$AlternationValue,na.rm=TRUE)
+
+prior_modA_MCMCglmm<-list(G=list(
+					  G1=list(V=matrix(p.var/6),n=1),
+                      G2=list(V=matrix(p.var/6),n=1),
+                      G3=list(V=matrix(p.var/6),n=1),
+                      G4=list(V=matrix(p.var/6),n=1),
+					  G5=list(V=matrix(p.var/6),n=1)),
+                      R=list(V=matrix(p.var/6),n=1))
+
+modA_MCMCglmm <- MCMCglmm(AlternationValue~1+ParentsAge+HatchingDayAfter0401+PairBroodNb+DVDInfoChickNb+ChickAgeCat+DiffVisit1Rate+RelTimeHrs,
+												random = ~BroodRef+SocialMumID+SocialDadID+PairID+BreedingYear,
+												data=MY_TABLE_perDVD_wihoutNA,
+												prior = prior_modA_MCMCglmm)
+
+summary(modA_MCMCglmm)
+posterior.mode(modA_MCMCglmm$VCV)											
+												
+VP_Alternation <-  modA_MCMCglmm$VCV[,"BroodRef"]+ modA_MCMCglmm$VCV[,"SocialMumID"]+ modA_MCMCglmm$VCV[,"SocialDadID"]+ modA_MCMCglmm$VCV[,"PairID"]+ modA_MCMCglmm$VCV[,"BreedingYear"]+modA_MCMCglmm$VCV[,"units"]
+
+R_Alternation_BroodRef <- modA_MCMCglmm$VCV[,"BroodRef"]/VP_Alternation
+posterior.mode(R_Alternation_BroodRef)
+HPDinterval(R_Alternation_BroodRef)
+
+R_Alternation_SocialMumID <- modA_MCMCglmm$VCV[,"SocialMumID"]/VP_Alternation
+posterior.mode(R_Alternation_SocialMumID)
+HPDinterval(R_Alternation_SocialMumID)
+
+R_Alternation_SocialDadID <- modA_MCMCglmm$VCV[,"SocialDadID"]/VP_Alternation
+posterior.mode(R_Alternation_SocialDadID)
+HPDinterval(R_Alternation_SocialDadID)
+
+R_Alternation_PairID <- modA_MCMCglmm$VCV[,"PairID"]/VP_Alternation
+posterior.mode(R_Alternation_PairID)
+HPDinterval(R_Alternation_PairID)
+
+R_Alternation_BreedingYear <- modA_MCMCglmm$VCV[,"BreedingYear"]/VP_Alternation
+posterior.mode(R_Alternation_BreedingYear)
+HPDinterval(R_Alternation_BreedingYear)
+
+}
 
 }
 
@@ -2416,8 +2512,147 @@ summary(modProRateRpt_perChick)
 
 }
 
-# correlation of provisioning rate accross two randomly picked nestwatches (among those that have 2 or 3 nest watches) within a brood
+{# repeatability of provisioning rate using MCMCglmm
 
+{# both sexes
+
+p.var_modProRateRpt<-var(BirdProRate$Visit1RateH,na.rm=TRUE)
+
+prior_modProRateRpt_MCMCglmm<-list(G=list(
+					  G1=list(V=matrix(p.var_modProRateRpt/6),n=1),
+                      G2=list(V=matrix(p.var_modProRateRpt/6),n=1),
+                      G3=list(V=matrix(p.var_modProRateRpt/6),n=1),
+                      G4=list(V=matrix(p.var_modProRateRpt/6),n=1),
+					  G5=list(V=matrix(p.var_modProRateRpt/6),n=1)),
+                      R=list(V=matrix(p.var_modProRateRpt/6),n=1))
+					  
+modProRateRpt_MCMCglmm <- MCMCglmm(Visit1RateH ~
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										RelTimeHrs ,
+									random= ~
+										BroodRef + 
+										BirdID+ 
+										SocialPartnerID +
+										BreedingYear +
+										PairID
+										, data = BirdProRate
+										, prior = prior_modProRateRpt_MCMCglmm)
+									
+summary(modProRateRpt_MCMCglmm)
+posterior.mode(modProRateRpt_MCMCglmm$VCV)											
+												
+											
+VP_ProRate <-  modProRateRpt_MCMCglmm$VCV[,"BroodRef"]+ modProRateRpt_MCMCglmm$VCV[,"BirdID"]+ modProRateRpt_MCMCglmm$VCV[,"SocialPartnerID"]+ modProRateRpt_MCMCglmm$VCV[,"PairID"]+ modProRateRpt_MCMCglmm$VCV[,"BreedingYear"]+modProRateRpt_MCMCglmm$VCV[,"units"]
+
+R_Alternation_BroodRef <- modProRateRpt_MCMCglmm$VCV[,"BroodRef"]/VP_ProRate
+posterior.mode(R_Alternation_BroodRef)
+HPDinterval(R_Alternation_BroodRef)
+
+R_Alternation_BirdID <- modProRateRpt_MCMCglmm$VCV[,"BirdID"]/VP_ProRate
+posterior.mode(R_Alternation_BirdID)
+HPDinterval(R_Alternation_BirdID)
+
+R_Alternation_SocialPartnerID <- modProRateRpt_MCMCglmm$VCV[,"SocialPartnerID"]/VP_ProRate
+posterior.mode(R_Alternation_SocialPartnerID)
+HPDinterval(R_Alternation_SocialPartnerID)
+
+R_Alternation_PairID <- modProRateRpt_MCMCglmm$VCV[,"PairID"]/VP_ProRate
+posterior.mode(R_Alternation_PairID)
+HPDinterval(R_Alternation_PairID)
+
+R_Alternation_BreedingYear <- modProRateRpt_MCMCglmm$VCV[,"BreedingYear"]/VP_ProRate
+posterior.mode(R_Alternation_BreedingYear)
+HPDinterval(R_Alternation_BreedingYear)
+
+}
+
+{# separating the sexes
+
+{# Male
+modProRateRpt_MCMCglmm_Male <- MCMCglmm(Visit1RateH ~
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										RelTimeHrs ,
+									random= ~
+										BroodRef + 
+										BirdID+ 
+										SocialPartnerID +
+										BreedingYear +
+										PairID
+										, data = BirdProRate[BirdProRate$Sex == 1,]
+										, prior = prior_modProRateRpt_MCMCglmm)
+									
+summary(modProRateRpt_MCMCglmm_Male)
+posterior.mode(modProRateRpt_MCMCglmm_Male$VCV)		
+VP_ProRate_Male <-  modProRateRpt_MCMCglmm_Male$VCV[,"BroodRef"]+ modProRateRpt_MCMCglmm_Male$VCV[,"BirdID"]+ modProRateRpt_MCMCglmm_Male$VCV[,"SocialPartnerID"]+ modProRateRpt_MCMCglmm_Male$VCV[,"PairID"]+ modProRateRpt_MCMCglmm_Male$VCV[,"BreedingYear"]+modProRateRpt_MCMCglmm_Male$VCV[,"units"]
+
+R_Alternation_BroodRef_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BroodRef"]/VP_ProRate
+posterior.mode(R_Alternation_BroodRef_Male)
+HPDinterval(R_Alternation_BroodRef_Male)
+
+R_Alternation_BirdID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BirdID"]/VP_ProRate
+posterior.mode(R_Alternation_BirdID_Male)
+HPDinterval(R_Alternation_BirdID_Male)
+
+R_Alternation_SocialPartnerID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"SocialPartnerID"]/VP_ProRate
+posterior.mode(R_Alternation_SocialPartnerID_Male)
+HPDinterval(R_Alternation_SocialPartnerID_Male)
+
+R_Alternation_PairID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"PairID"]/VP_ProRate
+posterior.mode(R_Alternation_PairID_Male)
+HPDinterval(R_Alternation_PairID_Male)
+
+R_Alternation_BreedingYear_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BreedingYear"]/VP_ProRate
+posterior.mode(R_Alternation_BreedingYear_Male)
+HPDinterval(R_Alternation_BreedingYear_Male)									
+}
+
+{# Female
+modProRateRpt_MCMCglmm_Female <- MCMCglmm(Visit1RateH ~
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										RelTimeHrs ,
+									random= ~
+										BroodRef + 
+										BirdID+ 
+										SocialPartnerID +
+										BreedingYear +
+										PairID
+										, data = BirdProRate[BirdProRate$Sex == 0,]
+										, prior = prior_modProRateRpt_MCMCglmm)
+									
+summary(modProRateRpt_MCMCglmm_Female)
+posterior.mode(modProRateRpt_MCMCglmm_Female$VCV)		
+VP_ProRate_Female <-  modProRateRpt_MCMCglmm_Female$VCV[,"BroodRef"]+ modProRateRpt_MCMCglmm_Female$VCV[,"BirdID"]+ modProRateRpt_MCMCglmm_Female$VCV[,"SocialPartnerID"]+ modProRateRpt_MCMCglmm_Female$VCV[,"PairID"]+ modProRateRpt_MCMCglmm_Female$VCV[,"BreedingYear"]+modProRateRpt_MCMCglmm_Female$VCV[,"units"]
+
+R_Alternation_BroodRef_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BroodRef"]/VP_ProRate
+posterior.mode(R_Alternation_BroodRef_Female)
+HPDinterval(R_Alternation_BroodRef_Female)
+
+R_Alternation_BirdID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BirdID"]/VP_ProRate
+posterior.mode(R_Alternation_BirdID_Female)
+HPDinterval(R_Alternation_BirdID_Female)
+
+R_Alternation_SocialPartnerID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"SocialPartnerID"]/VP_ProRate
+posterior.mode(R_Alternation_SocialPartnerID_Female)
+HPDinterval(R_Alternation_SocialPartnerID_Female)
+
+R_Alternation_PairID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"PairID"]/VP_ProRate
+posterior.mode(R_Alternation_PairID_Female)
+HPDinterval(R_Alternation_PairID_Female)
+
+R_Alternation_BreedingYear_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BreedingYear"]/VP_ProRate
+posterior.mode(R_Alternation_BreedingYear_Female)
+HPDinterval(R_Alternation_BreedingYear_Female)
+}
+
+}
+
+}
 
 
 
