@@ -282,12 +282,15 @@ close(conDB)
 {### select valid video files for studying behavioural compatibility in chick provisioning
 
 list_non_valid_DVDRef <- 
-c(MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0],# 6 - where 0 chicks
-MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5],# 906 - where still brooding (age <=5)
-MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& !is.na(MY_tblParentalCare$DVDRef)], # 171 - one sex did not visit
-MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 - both parents unidentified
-MY_tblParentalCare$DVDRef[is.na(MY_tblParentalCare$EffectiveTime)]) # 9 files with no visits at all
+c(
+MY_tblParentalCare$DVDRef[!(MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 10 files with no visits at all + 2 files with no feeding visits at all
+MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)],# 6 - where 0 chicks
+MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5 & MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef) ],# 171 - where still brooding (age <=5) and with chicks and with feeding visit
+MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& MY_tblDVDInfo$DVDInfoChickNb > 0 & MY_tblDVDInfo$ChickAge >5  & (MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 153 - one sex did not visit for feeding despite having chicks above age 5
+MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef]# 2 DVD where both parents unidentified
+)
 
+length(list_non_valid_DVDRef) # 344 = length(unique(list_non_valid_DVDRef)) # 344
 
 # Cleasby et al 2011 + Cleasby et al 2013
 # 188 chicks from 54 broods received supplemental food 
@@ -309,8 +312,6 @@ MY_tblParentalCare$DVDRef[is.na(MY_tblParentalCare$EffectiveTime)]) # 9 files wi
 
 
  
-
-list_non_valid_DVDRef <- list_non_valid_DVDRef[!is.na(list_non_valid_DVDRef)]
 
 MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
@@ -345,11 +346,11 @@ MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 457] <- 1
 }
 
 {### sample sizes
-
 nrow(MY_tblParentalCare) # 1768 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
 length(unique(MY_tblDVDInfo$BroodRef)) # 958 broods videotaped at least once
 range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
+
 
 }
 
@@ -847,6 +848,8 @@ y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID"
 "MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
 "FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
 
+length(unique(MY_TABLE_perDVD$BroodRef[is.na(MY_TABLE_perDVD$SocialMum) | is.na(MY_TABLE_perDVD$SocialDadID)])) # 39 broods - 66 files one parent unknown
+
 
 MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(MY_TABLE_perDVD$SocialDadID),] # where both parents known
 nrow(MY_TABLE_perDVD) # 1702 files
@@ -914,7 +917,7 @@ Fig1comparison_withMax
 }
 
 head(MY_TABLE_perDVD)
-
+MY_TABLE_perDVD[MY_TABLE_perDVD$BroodRef == 1152,] 
 
 {#### Predictors of alternation
 
@@ -1653,11 +1656,13 @@ boxcox(lm(TotalProRate ~  NbRinged + poly(Adev,1), data = MY_TABLE_perBrood))
 hist(MY_TABLE_perBrood$TotalProRate^0.45)
 shapiro.test(MY_TABLE_perBrood$TotalProRate^0.45) 
 
+summary(MY_TABLE_perBrood$NbRinged)
+
 }
 
 modFitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + 
-											poly(Adev,1) +
-											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+											poly(Adev,1) 
+											+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 											# + (1|PairIDYear) # explain 0% of the variance
 											, data = MY_TABLE_perBrood)
 											
@@ -1800,7 +1805,7 @@ mean(unlist(ranef(modFitnessAsChickMass)$BreedingYear))
 
 # residuals vs predictors
 d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MeanA) & !is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass),]
-scatter.smooth(d$NbRinged, resid(modFitnessAsChickMass))
+plot(d$NbRinged, resid(modFitnessAsChickMass))
 abline(h=0, lty=2)
 scatter.smooth(d$MeanA, resid(modFitnessAsChickMass))
 abline(h=0, lty=2)
@@ -1813,8 +1818,8 @@ scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
 # fitted vs all predictors
-scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="NbRinged")
-scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="Adev")
+plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="NbRinged")
+scatter.smooth(d$MeanA,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="MeanA")
 
 }
 
@@ -1862,7 +1867,54 @@ summary(modFitnessAsChickMasswithGenParents)$coefficients
 
 }
 
-{# Parent survival
+{## number of chicks ringed
+
+hist(MY_TABLE_perBrood$NbRinged)
+
+
+modFitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanA, scale=FALSE) +
+										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
+										
+summary(modFitnessAsNbRinged) # Model is nearly unidentifiable
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modFitnessAsNbRinged), resid(modFitnessAsNbRinged))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modFitnessAsNbRinged))
+qqline(resid(modFitnessAsNbRinged))
+qqnorm(unlist(ranef(modFitnessAsNbRinged))) 
+qqline(unlist(ranef(modFitnessAsNbRinged)))
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modFitnessAsNbRinged)$SocialMumID))
+mean(unlist(ranef(modFitnessAsNbRinged)$SocialDadID))
+mean(unlist(ranef(modFitnessAsNbRinged)$PairID))
+mean(unlist(ranef(modFitnessAsNbRinged)$BreedingYear))
+
+# residuals vs predictors
+d <- MY_TABLE_perBrood
+scatter.smooth(d$MeanA, resid(modFitnessAsNbRinged))
+abline(h=0, lty=2)
+
+
+# dependent variable vs fitted
+d$fitted <- fitted(modFitnessAsNbRinged)
+scatter.smooth(d$fitted, jitter(d$NbRinged, 0.05),ylim=c(0, 10))
+abline(0,1)	
+
+# fitted vs all predictors
+scatter.smooth(d$MeanA,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanA")
+
+}
+
+}
+
+{## Parent survival
 
 # because we don't know for all birds if they survived until 2016:
 MY_TABLE_perBirdYear <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear != 2015,]
@@ -1988,6 +2040,53 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 }
 
 
+{# survival anaylsis per year
+
+modSurvival2004 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2004,], family = "binomial" )
+summary(modSurvival2004)
+
+modSurvival2005 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2005,], family = "binomial" )
+summary(modSurvival2005)
+
+modSurvival2006 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2006,], family = "binomial" )
+summary(modSurvival2006)
+
+modSurvival2007 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2007,], family = "binomial" )
+summary(modSurvival2007)
+
+modSurvival2008 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2008,], family = "binomial" )
+summary(modSurvival2008)
+
+modSurvival2009 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2009,], family = "binomial" )
+summary(modSurvival2009)
+
+modSurvival2010 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2010,], family = "binomial" )
+summary(modSurvival2010)
+
+modSurvival2011 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2011,], family = "binomial" )
+summary(modSurvival2011)
+
+modSurvival2012 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2012,], family = "binomial" )
+summary(modSurvival2012)
+
+modSurvival2013 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2013,], family = "binomial" )
+summary(modSurvival2013)
+
+modSurvival2014 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2014,], family = "binomial" )
+summary(modSurvival2014)
+}
+
 }
 
 }
@@ -1997,7 +2096,7 @@ summary(modFitnessAsChickMass)
 summary(modSurvival)
 
 
-
+unique(MY_TABLE_perBirdYear$BreedingYear)
 
 #########################################
 # replication Nagagawa et al 2007 study #

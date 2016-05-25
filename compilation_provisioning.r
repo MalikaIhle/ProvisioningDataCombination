@@ -2291,7 +2291,8 @@ MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(M
 
 head(MY_tblParentalCare)
 
-
+nrow(MY_tblParentalCare)
+summary(MY_tblParentalCare$EffectiveTime)
 
 DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
@@ -2313,10 +2314,11 @@ DurationScript # ~ 14 min
  # 20160504 with new dummy variables
  # 20160516 save the 2112 lines (had saved the selection of 1768 lines last time...)
  
-## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
+## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare2.csv", sep="/"), row.names = FALSE) 
  # 20160415
  # 20160425 identical with changes to call new DB
  # 20160504 with new dummy variables
+ # 20160525 for some unknown reasons 344 files had NS for EffectiveTime instead of 10 files...
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
