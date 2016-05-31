@@ -1947,9 +1947,11 @@ RawFeedingVisits_listperDVDRef_fun = function(x) {
 x <- x[order(x$Filename, x$Tstart, -x$Tend),]
 
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+x$NextTstartwithin1minTend <-  c(x$TstartFeedVisit[-1],NA) <= x$TendFeedVisit +1 &  c(x$TstartFeedVisit[-1],NA) >= x$TendFeedVisit
 
 return(c(
 length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]),	#NbAlternation
+length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) & x$NextTstartwithin1minTend == TRUE & !is.na(x$NextTstartwithin1minTend)] ),	#NbSynchronousVisits
 length(x$Sex[x$Sex == 1]),	#NbMVisit
 length(x$Sex[x$Sex == 0])	#NbFVisit
 ))
@@ -2134,6 +2136,7 @@ MY_tblBroods$DadAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortDad
 MY_tblBroods$MumAge <- MY_tblBroods$BreedingYear - MY_tblBroods$CohortMum
 
 MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
+
 
 }
 
