@@ -830,12 +830,12 @@ y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID"
 "MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
 "FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
 
-length(unique(MY_TABLE_perDVD$BroodRef[is.na(MY_TABLE_perDVD$SocialMum) | is.na(MY_TABLE_perDVD$SocialDadID)])) # 39 broods - 66 files one parent unknown
+length(unique(MY_TABLE_perDVD$BroodRef[is.na(MY_TABLE_perDVD$SocialMum) | is.na(MY_TABLE_perDVD$SocialDadID)])) # 38 broods - 63 files one parent unknown
 
 
 MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(MY_TABLE_perDVD$SocialDadID),] # where both parents known
-nrow(MY_TABLE_perDVD) # 1702 files
-length(unique(MY_TABLE_perDVD$BroodRef)) # 919 broods
+nrow(MY_TABLE_perDVD) # 1599 files
+length(unique(MY_TABLE_perDVD$BroodRef)) # 872 broods
 
 
 {# add MeanAsim and Adev
@@ -896,10 +896,25 @@ Fig1comparison_withMax
 
 }
 
+
+{# add meanAge and DeltaAge for testing within and between individual effect of age
+
+MY_TABLE_perDVD <- MY_TABLE_perDVD %>%
+  group_by(SocialDadID)%>%
+  mutate(meanDadAge = mean(DadAge), DeltaDadAge = DadAge-mean(DadAge),FirstDadReproAge = min(DadAge), LastDadReproAge = max(DadAge))
+  
+MY_TABLE_perDVD <- MY_TABLE_perDVD %>%
+  group_by(SocialMumID)%>%
+  mutate(meanMumAge = mean(MumAge), DeltaMumAge = MumAge-mean(MumAge),FirstMumReproAge = min(MumAge), LastMumReproAge = max(MumAge))
+
+  
+MY_TABLE_perDVD <- as.data.frame(MY_TABLE_perDVD) 
+}
+
 }
 
 head(MY_TABLE_perDVD)
-MY_TABLE_perDVD[MY_TABLE_perDVD$BroodRef == 1152,] 
+
 
 {#### Predictors of alternation
 
@@ -1359,6 +1374,37 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 
 }
 
+
+# modA_withinIndAgeEffect
+
+modA_withinIndAgeEffect <- lmer(AlternationValue^1.6~  
+
+	scale(meanMumAge, scale=FALSE) + 
+	#scale(DeltaMumAge, scale=FALSE) +
+	scale(meanDadAge, scale=FALSE) + 
+	#scale(DeltaDadAge, scale=FALSE) +
+MumAge +
+DadAge	+
+	#scale(LastMumReproAge, scale=FALSE) +
+	#scale(LastDadReproAge, scale=FALSE) +
+	#scale(FirstMumReproAge, scale=FALSE) +
+	#scale(FirstDadReproAge, scale=FALSE) +
+
+	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	, data = MY_TABLE_perDVD)
+
+summary(modA_withinIndAgeEffect)
+# removing all Age covariate > hatching date become NS
+
+
 }
 
 summary(modA)
@@ -1498,6 +1544,7 @@ colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev',
 MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
 							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
 							
+
 							
 {# calculate residual mass on tarsus
 
@@ -1591,6 +1638,16 @@ colnames(MY_TABLE_perBirdYear_out2) <- c('BirdIDYear','MeanAYear')
 
 MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
 							y=MY_TABLE_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
+							
+							
+tspag = ggplot(MY_TABLE_perBirdYear, aes(x=Age, y=MeanAYear)) + 
+  geom_line() + guides(colour=FALSE) + xlab("Bird's Age") +
+  ylab("Mean Altnernation Value") + scale_x_continuous(breaks=1:9)
+spag = tspag + aes(colour = factor(BirdID))
+spag
+spag + facet_wrap(~ Sex)
+sspag = spag + stat_summary(fun.y=mean, colour="black", geom="line", size = 2)
+sspag + facet_wrap(~ Sex)
 }
 
 {# descriptive stats on survival per year
