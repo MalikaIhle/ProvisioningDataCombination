@@ -3,7 +3,7 @@
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
 #	 last modif : 16/05/2016  
-#	 commit: annotations 
+#	 commit: remove broods fed by Ian Cleasby 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -58,6 +58,8 @@ sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_2016
 sys_LastSeenAlive$LastYearAlive <- substr(sys_LastSeenAlive$LastLiveRecord, 7,10)
 
 pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
+
+FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 
 }
 
@@ -287,31 +289,11 @@ MY_tblParentalCare$DVDRef[!(MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$D
 MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)],# 6 - where 0 chicks
 MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5 & MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef) ],# 171 - where still brooding (age <=5) and with chicks and with feeding visit
 MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& MY_tblDVDInfo$DVDInfoChickNb > 0 & MY_tblDVDInfo$ChickAge >5  & (MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 153 - one sex did not visit for feeding despite having chicks above age 5
-MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef]# 2 DVD where both parents unidentified
+MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 DVD where both parents unidentified
+MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% unlist(FedBroods)] # 106 extra files for 48 broods (the 49th: 980 already excluded as only female visited) fed by Ian 
 )
 
-length(list_non_valid_DVDRef) # 344 = length(unique(list_non_valid_DVDRef)) # 344
-
-# Cleasby et al 2011 + Cleasby et al 2013
-# 188 chicks from 54 broods received supplemental food 
-# 240 chicks from 71 broods did not receive any food supplements
-
-# Cleasby et al 2011
-# growth curve only for individuals that successfully fledged:
-# 127 chicks from 50 broods which received extra food
-# 134 chicks from 53 broods which did not 
- 
-# Cleasby et al 2013
-# Excluded brood will full mortality (at what stage?), left with:
-# 49 fed broods (less than the number of broods with fledgling above !)
-# 59 control broods (more than the number of broods with fledgling above !)
-
-# querying the DB:
-# 131 chicks from 38 broods were fed (among which 1 chick (3622) has no natal brood because Julia deleted it)
-# 142 chicks from 41 broods were control (among which 2 chicks (3953 and 3954) have no natal brood because Julia deleted it - 1 brood (969) therefore does not appear)
-
-
- 
+length(unique(list_non_valid_DVDRef)) # 450
 
 MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
@@ -346,8 +328,8 @@ MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 457] <- 1
 }
 
 {### sample sizes
-nrow(MY_tblParentalCare) # 1768 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
-length(unique(MY_tblDVDInfo$BroodRef)) # 958 broods videotaped at least once
+nrow(MY_tblParentalCare) # 1662 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
+length(unique(MY_tblDVDInfo$BroodRef)) # 910 broods videotaped at least once
 range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
 mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
 
@@ -1939,7 +1921,7 @@ modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
 summary(modSurvival) # Number of obs: 1026, groups:  BirdID, 551; BreedingYear, 11
 # male survive longer than females
 
-modSurvivalMale <- glmer(AliveNextYear ~ MeanAYear + Age +
+modSurvivalMale <- glmer(AliveNextYear ~ scale(MeanAYear, scale=FALSE) + Age +
 									(1|BirdID) +
 									#(1|PairID) + 
 									(1|BreedingYear)
