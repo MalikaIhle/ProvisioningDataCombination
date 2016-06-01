@@ -1937,21 +1937,35 @@ RawFeedingVisits <- RawFeedingVisits[order(RawFeedingVisits$DVDRef,RawFeedingVis
 
 }
 
-{# calculate alternation and NbVisits per file
+{# calculate alternation, synchrony, and NbVisits per file
+summary(RawFeedingVisits$TendFeedVisit - RawFeedingVisits$TstartFeedVisit) # mean = 1.4, med = 0.4
 
 RawFeedingVisits_listperDVDRef <- split (RawFeedingVisits, RawFeedingVisits$Filename)
 x <- RawFeedingVisits_listperDVDRef[[3]]
-x <- RawFeedingVisits_listperDVDRef[[76]]
+x <- RawFeedingVisits_listperDVDRef[[27]]
 
 RawFeedingVisits_listperDVDRef_fun = function(x) {
 x <- x[order(x$Filename, x$Tstart, -x$Tend),]
 
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
-x$NextTstartwithin1minTend <-  c(x$TstartFeedVisit[-1],NA) <= x$TendFeedVisit +1 &  c(x$TstartFeedVisit[-1],NA) >= x$TendFeedVisit
+
+x$NextTstartafterhalfminTstart <-  c(x$TstartFeedVisit[-1],NA) <= x$TstartFeedVisit +0.5 &  c(x$TstartFeedVisit[-1],NA) >= x$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+x$NextTstartplusminushalfminTend <-  c(x$TstartFeedVisit[-1],NA) <= x$TendFeedVisit +0.5 | c(x$TstartFeedVisit[-1],NA) >= x$TendFeedVisit -0.5 # second arrive when first exit - cover cases where second visit can't happen as long as first visit not finished > can assess chick state of hunger + less conspicuous? 
+x$NextTendplusminusnhalfminTend <-  c(x$TendFeedVisit[-1],NA) <= x$TendFeedVisit +0.5 | c(x$TendFeedVisit[-1],NA) >= x$TendFeedVisit -0.5 # when visit overlapping, shorter one close to the end of longer one: exit about simulatenously > less conspicuouness ? + overlapp in the nest, so can assess feeding ? unless only feed at Tstart..
+
 
 return(c(
 length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]),	#NbAlternation
-length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) & x$NextTstartwithin1minTend == TRUE & !is.na(x$NextTstartwithin1minTend)] ),	#NbSynchronousVisits
+
+length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& ((x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart) )	
+			|(x$NextTstartplusminushalfminTend == TRUE & !is.na(x$NextTstartplusminushalfminTend))) ]), #NbSynchro_ChickFeedingEquanim
+
+length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& ((x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart) )	
+			|(x$NextTstartplusminushalfminTend == TRUE & !is.na(x$NextTstartplusminushalfminTend)) 
+			|(x$NextTendplusminusnhalfminTend == TRUE & !is.na(x$NextTendplusminusnhalfminTend))) ]),	#NbSynchro_LessConspicuous
+
 length(x$Sex[x$Sex == 1]),	#NbMVisit
 length(x$Sex[x$Sex == 0])	#NbFVisit
 ))
@@ -1963,7 +1977,7 @@ RawFeedingVisits_listperDVDRef_out2 <- data.frame(rownames(do.call(rbind,RawFeed
 
 nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visits)
 rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
-colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbMVisit','NbFVisit')
+colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbMVisit','NbFVisit')
 head(RawFeedingVisits_listperDVDRef_out2)
 
 }
@@ -1983,7 +1997,7 @@ MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVD
 }
 
 head(RawFeedingVisits,60)
-head(MY_tblParentalCare)
+head(MY_tblParentalCare,30)
 
 
 {### MY_tblDVDInfo
