@@ -823,7 +823,7 @@ Fig1comparison
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue")]
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous")]
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
@@ -2791,6 +2791,21 @@ HPDinterval(R_Alternation_BreedingYear_Female)
 }
 
 }
+
+
+
+
+
+#### Synchrony
+
+
+ggplot(data=MY_TABLE_perDVD, aes(y=S,x=A)) + geom_point() + geom_smooth(method = "lm") + geom_abline(intercept = 0, slope = 0.5)
+
+
+
+
+
+
 
 
 
