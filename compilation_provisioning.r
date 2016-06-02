@@ -4,7 +4,7 @@
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
 #	 last modif :04/05/2016
-#	 commit: add dummy variables to MY_tables
+#	 commit: add measures of synchrony to MY_tblParentalCare
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -1992,7 +1992,7 @@ MY_tblParentalCare2[MY_tblParentalCare2$DiffFVisit1 != 0 | MY_tblParentalCare2$D
 RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0339.xlsx',] # OK
 }
 
-MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation')], all.x=TRUE)
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous')], all.x=TRUE)
 
 }
 
@@ -2331,11 +2331,12 @@ DurationScript # ~ 14 min
  # 20160504 with new dummy variables
  # 20160516 save the 2112 lines (had saved the selection of 1768 lines last time...)
  
-## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare2.csv", sep="/"), row.names = FALSE) 
+## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
  # 20160415
  # 20160425 identical with changes to call new DB
  # 20160504 with new dummy variables
  # 20160525 for some unknown reasons 344 files had NS for EffectiveTime instead of 10 files...
+ # 20160602 add measures of synchrony
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
