@@ -1945,26 +1945,27 @@ x <- RawFeedingVisits_listperDVDRef[[3]]
 x <- RawFeedingVisits_listperDVDRef[[27]]
 
 RawFeedingVisits_listperDVDRef_fun = function(x) {
+
 x <- x[order(x$Filename, x$Tstart, -x$Tend),]
-
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
-
 x$NextTstartafterhalfminTstart <-  c(x$TstartFeedVisit[-1],NA) <= x$TstartFeedVisit +0.5 &  c(x$TstartFeedVisit[-1],NA) >= x$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
-x$NextTstartplusminushalfminTend <-  c(x$TstartFeedVisit[-1],NA) <= x$TendFeedVisit +0.5 | c(x$TstartFeedVisit[-1],NA) >= x$TendFeedVisit -0.5 # second arrive when first exit - cover cases where second visit can't happen as long as first visit not finished > can assess chick state of hunger + less conspicuous? 
-x$NextTendplusminusnhalfminTend <-  c(x$TendFeedVisit[-1],NA) <= x$TendFeedVisit +0.5 | c(x$TendFeedVisit[-1],NA) >= x$TendFeedVisit -0.5 # when visit overlapping, shorter one close to the end of longer one: exit about simulatenously > less conspicuouness ? + overlapp in the nest, so can assess feeding ? unless only feed at Tstart..
+
+y <- data.frame(c(x$Tstart, x$Tend), c(as.character(x$Sex),as.character(x$Sex)))
+colnames(y) <- c("Time", "Sex" )
+y$Sex <- as.character(y$Sex)
+y <- y[order(y$Time),]
+y$NextSexSame <- c(y$Sex[-1],NA) == y$Sex
+y$NextTimeafterhalfminTime <-  c(y$Time[-1],NA) <= y$Time +0.5 # entry or exits shortly after each other > less conspicuous
 
 
 return(c(
 length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]),	#NbAlternation
 
 length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
-		& ((x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart) )	
-			|(x$NextTstartplusminushalfminTend == TRUE & !is.na(x$NextTstartplusminushalfminTend))) ]), #NbSynchro_ChickFeedingEquanim
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)]), #NbSynchro_ChickFeedingEquanim
 
-length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
-		& ((x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart) )	
-			|(x$NextTstartplusminushalfminTend == TRUE & !is.na(x$NextTstartplusminushalfminTend)) 
-			|(x$NextTendplusminusnhalfminTend == TRUE & !is.na(x$NextTendplusminusnhalfminTend))) ]),	#NbSynchro_LessConspicuous
+length(y$NextSexSame[y$NextSexSame == FALSE & !is.na(y$NextSexSame) 
+		& y$NextTimeafterhalfminTime == TRUE & !is.na(y$NextTimeafterhalfminTime) ]),	#NbSynchro_LessConspicuous
 
 length(x$Sex[x$Sex == 1]),	#NbMVisit
 length(x$Sex[x$Sex == 0])	#NbFVisit
@@ -1979,6 +1980,10 @@ nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visi
 rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
 colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbMVisit','NbFVisit')
 head(RawFeedingVisits_listperDVDRef_out2)
+
+sunflowerplot(RawFeedingVisits_listperDVDRef_out2$NbSynchro_ChickFeedingEquanim~RawFeedingVisits_listperDVDRef_out2$NbSynchro_LessConspicuous)
+abline(0,1)
+cor.test(RawFeedingVisits_listperDVDRef_out2$NbSynchro_ChickFeedingEquanim,RawFeedingVisits_listperDVDRef_out2$NbSynchro_LessConspicuous)
 
 }
 
@@ -2337,6 +2342,7 @@ DurationScript # ~ 14 min
  # 20160504 with new dummy variables
  # 20160525 for some unknown reasons 344 files had NS for EffectiveTime instead of 10 files...
  # 20160602 add measures of synchrony
+ # 20160602 add measures of synchrony according to Joel's feedbacks 
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
