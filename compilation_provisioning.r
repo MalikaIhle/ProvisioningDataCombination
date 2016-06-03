@@ -2288,7 +2288,7 @@ MY_tblParentalCare[(is.na(MY_tblParentalCare$DiffEffectTime) | MY_tblParentalCar
 
 MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('DiffEffectTime','EffectTime', 'TapeLength','Tstart'))]
 
-{# add MFTime1, MFTime02, MFTime2, provisioning rates, AlternationValue
+{# add MFTime1, MFTime02, MFTime2, provisioning rates, AlternationValue, SynchronyFeedValue, SynchronyMvtValue
 
 MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime1 + MY_tblParentalCare$FTime1 - MY_tblParentalCare$ShareTime1
 MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$MFTime1,1)
@@ -2304,6 +2304,8 @@ MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParen
 MY_tblParentalCare$DiffTime1Rate <- abs(round(MY_tblParentalCare$FTime1RateH - MY_tblParentalCare$MTime1RateH, 2))
 
 MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1)
+MY_tblParentalCare$SynchronyFeedValue <- round(MY_tblParentalCare$NbSynchro_ChickFeedingEquanim/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
+MY_tblParentalCare$SynchronyMvtValue <- round(MY_tblParentalCare$NbSynchro_LessConspicuous/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
 
 
 }
@@ -2313,8 +2315,6 @@ MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(M
 
 head(MY_tblParentalCare)
 
-nrow(MY_tblParentalCare)
-summary(MY_tblParentalCare$EffectiveTime)
 
 DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
@@ -2343,6 +2343,7 @@ DurationScript # ~ 14 min
  # 20160525 for some unknown reasons 344 files had NS for EffectiveTime instead of 10 files...
  # 20160602 add measures of synchrony
  # 20160602 add measures of synchrony according to Joel's feedbacks 
+ # 20130603 add synchrony score (divided by t-1 unlike Ben's paper)
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
