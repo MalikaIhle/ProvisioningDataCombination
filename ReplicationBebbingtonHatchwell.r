@@ -823,7 +823,7 @@ Fig1comparison
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous")]
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue")]
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
@@ -1530,7 +1530,8 @@ return(c(
 mean(x$MFVisit1RateH), # TotalProRate
 mean(x$AlternationValue), #MeanA
 mean(x$MeanAsim) - mean(x$AlternationValue), # Adev
-mean(x$DiffVisit1Rate) # MeanDiffVisit1Rate
+mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
+mean(x$SynchronyFeedValue) # MeanSynchroFeed
 ))
 }
 
@@ -1539,9 +1540,9 @@ MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_ou
 
 nrow(MY_TABLE_perBrood_out2)	# 919
 rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev','MeanDiffVisit1Rate')
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev','MeanDiffVisit1Rate','MeanSynchroFeed')
 
-MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
+MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("HatchingDayAfter0401","DadAge","MumAge","MBroodNb","FBroodNb","MPriorResidence","NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
 							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
 							
 
@@ -2798,13 +2799,51 @@ HPDinterval(R_Alternation_BreedingYear_Female)
 
 #### Synchrony
 
+head(MY_TABLE_perDVD)
 
-ggplot(data=MY_TABLE_perDVD, aes(y=S,x=A)) + geom_point() + geom_smooth(method = "lm") + geom_abline(intercept = 0, slope = 0.5)
+ggplot(data=MY_TABLE_perDVD, aes(y=NbSynchro_ChickFeedingEquanim,x=NbAlternation) ) + 
+							geom_point() + 
+							geom_smooth(method = "lm") +
+							geom_abline(intercept=0,slope=0.5)+
+							geom_abline(intercept=0,slope=1)
+							
+							
+ggplot(data=MY_TABLE_perDVD, aes(y=NbSynchro_LessConspicuous,x=NbAlternation) ) + 
+							geom_point() + 
+							geom_smooth(method = "lm") +
+							geom_abline(intercept=0,slope=0.5)+
+							geom_abline(intercept=0,slope=1)	
 
+ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyFeedValue,x=AlternationValue) ) + 
+							geom_point() + 
+							geom_smooth(method = "lm") +
+							geom_abline(intercept=0,slope=0.5)+
+							geom_abline(intercept=0,slope=1)
+							
+							
+ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyMvtValue,x=AlternationValue) ) + 
+							geom_point() + 
+							geom_smooth(method = "lm") +
+							geom_abline(intercept=0,slope=0.5)+
+							geom_abline(intercept=0,slope=1)							
+							
 
+hist(MY_TABLE_perDVD$AlternationValue)
 
+head(MY_TABLE_perBrood)
 
-
+MDivorce~MeanSynchroFeed + 	
+		scale(DadAge, scale=FALSE) + 
+		scale(HatchingDayAfter0401, scale=FALSE) + 
+		scale(PairBroodNb, scale=FALSE) +
+		scale(DVDInfoChickNb, scale=FALSE) + 
+		ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+		DiffVisit1Rate +  
+		scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+		(1|BroodRef) + 
+		(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+		# + (1|PairIDYear) # explain 0% of the variance
+		, data = MY_TABLE_perDVD)
 
 
 
