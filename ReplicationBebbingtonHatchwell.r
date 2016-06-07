@@ -394,6 +394,9 @@ quantile(MY_tblParentalCare$MVisit1RateH[!is.na(MY_tblParentalCare$MVisit1RateH)
 nrow(MY_tblParentalCare) # 1499 if remove quantiles
 }
 
+{## look at raw data
+hist(MY_RawFeedingVisits$Interval,breaks=200)
+}
 
 {### simulation alternation with Kat's method
 
@@ -963,8 +966,6 @@ shapiro.test(MY_TABLE_perDVD$AlternationValue^1.6) # not normal
 
 {# modA
 
-
-
 modA <- lmer(AlternationValue^1.6~  
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
@@ -976,9 +977,10 @@ modA <- lmer(AlternationValue^1.6~
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE_perDVD)
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
 
-summary(modA) # Number of obs: 1696, groups:  BroodRef, 916; PairID, 453; SocialMumID, 295; SocialDadID, 283; BreedingYear, 12
+summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
 
 {# model assumptions checking
 
@@ -1233,9 +1235,9 @@ modA_Age6 <- lmer(AlternationValue^1.6 ~
 	DiffVisit1Rate +  
 	scale(RelTimeHrs, scale=FALSE) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
-	, data = dat6)
+	, data = dat6[!is.na(dat6$RelTimeHrs),])
 
-summary(modA_Age6) # Number of obs: 874, groups:  PairID, 443; SocialMumID, 292; SocialDadID, 281; BreedingYear, 12
+summary(modA_Age6) # Number of obs: 830, groups:  PairID, 432; SocialMumID, 285; SocialDadID, 278; BreedingYear, 12
 
 
 {# model assumptions checking
@@ -1320,9 +1322,9 @@ modA_Age10 <- lmer(AlternationValue^1.3 ~
 	(1|SocialMumID)+ (1|SocialDadID) 
 	+ (1|PairID) #explained 0% of variance
 	+ (1|BreedingYear) #explained 0% of variance
-	, data = dat10)
+	, data = dat10[!is.na(dat10$RelTimeHrs),])
 
-summary(modA_Age10) #Number of obs: 758, groups:  PairID, 398; SocialMumID, 278; SocialDadID, 264; BreedingYear, 12
+summary(modA_Age10) #Number of obs: 719, groups:  PairID, 391; SocialMumID, 274; SocialDadID, 262; BreedingYear, 12
 
 {# model assumptions checking
 
@@ -1380,11 +1382,11 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 modA_withinIndAgeEffect <- lmer(AlternationValue^1.6~  
 
 	scale(meanMumAge, scale=FALSE) + 
-	#scale(DeltaMumAge, scale=FALSE) +
+	scale(DeltaMumAge, scale=FALSE) +
 	scale(meanDadAge, scale=FALSE) + 
-	#scale(DeltaDadAge, scale=FALSE) +
-MumAge +
-DadAge	+
+	scale(DeltaDadAge, scale=FALSE) +
+	#MumAge+
+	#DadAge+
 	#scale(LastMumReproAge, scale=FALSE) +
 	#scale(LastDadReproAge, scale=FALSE) +
 	#scale(FirstMumReproAge, scale=FALSE) +
@@ -1400,9 +1402,12 @@ DadAge	+
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
 	, data = MY_TABLE_perDVD)
-
+	
 summary(modA_withinIndAgeEffect)
 # removing all Age covariate > hatching date become NS
+
+# see graph in create in paragraph 'create MY_TABLE_perBirdYear', 'get mean Alternation per year per BirdID'
+
 
 
 }
@@ -1422,7 +1427,7 @@ print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
 print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
 
 
-{#### repatability of Alternation 
+{#### repeatability of Alternation 
 
 VarianceRandomEffectsAlternation <- as.data.frame(VarCorr(modA),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
 
@@ -1529,7 +1534,7 @@ MY_TABLE_perBrood_fun = function(x)  {
 return(c(
 mean(x$MFVisit1RateH), # TotalProRate
 mean(x$AlternationValue), #MeanA
-mean(x$MeanAsim) - mean(x$AlternationValue), # Adev
+mean(x$MeanAsim) - mean(x$AlternationValue), # MeanAdev
 mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
 mean(x$SynchronyFeedValue) # MeanSynchroFeed
 ))
@@ -1538,31 +1543,25 @@ mean(x$SynchronyFeedValue) # MeanSynchroFeed
 MY_TABLE_perBrood_out1 <- lapply(MY_TABLE_perBrood, FUN=MY_TABLE_perBrood_fun)
 MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_out1)),do.call(rbind, MY_TABLE_perBrood_out1))
 
-nrow(MY_TABLE_perBrood_out2)	# 919
+nrow(MY_TABLE_perBrood_out2)	# 872
 rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'Adev','MeanDiffVisit1Rate','MeanSynchroFeed')
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed')
 
-MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,c("HatchingDayAfter0401","DadAge","MumAge","MBroodNb","FBroodNb","MPriorResidence","NbRinged","AvgMass","AvgTarsus","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear","PairIDYear" )]),
+MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH",
+																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax",
+																							"NbSynchro_ChickFeedingEquanim","NbSynchro_LessConspicuous","SynchronyFeedValue","SynchronyMvtValue",
+																							"DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs"))]),
 							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
 							
-
-							
+			
 {# calculate residual mass on tarsus
 
-ResMassTarsus <-  cbind(as.numeric(rownames(data.frame(residuals(lm(MY_TABLE_perBrood$AvgMass~ MY_TABLE_perBrood$AvgTarsus))))), 
-											data.frame(residuals(lm(MY_TABLE_perBrood$AvgMass~ MY_TABLE_perBrood$AvgTarsus))))
-colnames(ResMassTarsus) <- c("rownb" , "ResMassTarsus")
+ResMassTarsus <-  cbind( MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus),"BroodRef" ], 
+											data.frame(residuals(lm(AvgMass~ AvgTarsus, data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus), ]))))
+colnames(ResMassTarsus) <- c("BroodRef" , "ResMassTarsus")
 head(ResMassTarsus)
 
-rownameBrood <- data.frame(as.numeric(rownames(MY_TABLE_perBrood)))
-colnames(rownameBrood) <- "rownb"
-
-
-MY_TABLE_perBrood <- cbind(MY_TABLE_perBrood,rownameBrood)
-MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by = "rownb")
-MY_TABLE_perBrood$rownb <- as.numeric(as.character(MY_TABLE_perBrood$rownb))
-MY_TABLE_perBrood <- MY_TABLE_perBrood[order(MY_TABLE_perBrood$rownb),]
-
+MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by = "BroodRef")
 
 }
 
@@ -1574,8 +1573,14 @@ head(MY_TABLE_perBrood)
 {### create MY_TABLE_perChick
 
 MY_TABLE_perChick <- merge(x= MY_tblChicks , y=MY_TABLE_perBrood, by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
-
+MY_TABLE_perChick <- MY_TABLE_perChick[!is.na(MY_TABLE_perChick$BreedingYear),]
 MY_TABLE_perChick$GenPairID <- paste(MY_TABLE_perChick$sire, MY_TABLE_perChick$dam, sep="")
+
+ResMassTarsus_perChick <-  cbind( MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus),"RearingBrood" ], 
+											data.frame(residuals(lm(AvgOfMass~ AvgOfTarsus, data = MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus), ]))))
+colnames(ResMassTarsus_perChick) <- c("RearingBrood" , "ResMassTarsus_perChick")
+
+MY_TABLE_perChick <- merge(x=MY_TABLE_perChick, y=ResMassTarsus_perChick, all.x=TRUE, by = "RearingBrood")
 
 }
 
@@ -1818,9 +1823,9 @@ modFitnessAsChickMass <- lmer(AvgMass ~ NbRinged +
 										MeanA + # Kat&Ben's paper: I assume they used again the average of alternation per nest 
 										AvgTarsus +
 										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
-										data = MY_TABLE_perBrood)
+										data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus), ] )
 										
-summary(modFitnessAsChickMass) # Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
+summary(modFitnessAsChickMass) # Number of obs: 805, groups:  PairID, 426; SocialMumID, 282; SocialDadID, 273; BreedingYear, 12
 
 {# model assumptions checking
 
@@ -1867,7 +1872,7 @@ scatter.smooth(d$MeanA,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMas
 modFitnessAsResChickMass <- lmer(ResMassTarsus ~ NbRinged + 
 												 MeanA + 
 												 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
-												 data = MY_TABLE_perBrood)
+												 data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$ResMassTarsus),])
 										
 summary(modFitnessAsResChickMass) # Number of obs: 852, groups:  PairID, 436; SocialMumID, 287; SocialDadID, 276; BreedingYear, 12
 # identical results as model above
@@ -1883,10 +1888,9 @@ modFitnessAsChickMasslikeabove <- lmer(AvgOfMass ~ NbRinged +
 										(1|SocialDadID) +
 										(1|PairID) + (1|BreedingYear) 
 										#+ (1|dam) + (1|sire) + (1|GenPairID)
-										,data = MY_TABLE_perChick)
+										,data = MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus),])
 
-summary(modFitnessAsChickMasslikeabove)	
-
+summary(modFitnessAsChickMasslikeabove)	# Number of obs: 2286, groups:  RearingBrood, 804; PairID, 426; SocialMumID, 282; SocialDadID, 273; BreedingYear, 12
 
 modFitnessAsChickMasswithGenParents <- lmer(AvgOfMass ~ NbRinged + 
 										MeanA + 
@@ -1895,9 +1899,21 @@ modFitnessAsChickMasswithGenParents <- lmer(AvgOfMass ~ NbRinged +
 										(1|SocialMumID)+ (1|SocialDadID) + 
 										(1|PairID) + (1|BreedingYear) 
 										+ (1|dam) + (1|sire) + (1|GenPairID)
-										, data = MY_TABLE_perChick)
+										, data = MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus),])
 
 summary(modFitnessAsChickMasswithGenParents)
+
+modFitnessAsChickMassRedidualswithGenParents <- lmer(ResMassTarsus_perChick ~ NbRinged + 
+												MeanA + 
+												(1|RearingBrood)+
+												(1|SocialMumID)+ (1|SocialDadID) + 
+												(1|PairID) + (1|BreedingYear) 
+												+ (1|dam) + (1|sire) + (1|GenPairID)
+												, data = MY_TABLE_perChick[!is.na(MY_TABLE_perChick$ResMassTarsus_perChick),])
+
+summary(modFitnessAsChickMassRedidualswithGenParents)
+
+
 
 print(VarCorr(modFitnessAsChickMass),comp=c("Variance","Std.Dev."))
 print(VarCorr(modFitnessAsChickMasswithGenParents),comp=c("Variance","Std.Dev."))
@@ -2013,7 +2029,7 @@ summary(modSurvival_SexAgeInteraction) #Number of obs: 1026, groups:  BirdID, 55
 {# model assumptions checking >> residuals not normal !!!!!!
 
 # residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modFitnessAsChickMass), resid(modFitnessAsChickMass))	
+scatter.smooth(fitted(modSurvival), resid(modSurvival))	# awful !
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
@@ -2080,7 +2096,7 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 }
 
 
-{# survival anaylsis per year
+{# survival analysis per year
 
 modSurvival2004 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
 									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2004,], family = "binomial" )
@@ -2125,8 +2141,113 @@ summary(modSurvival2013)
 modSurvival2014 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
 									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2014,], family = "binomial" )
 summary(modSurvival2014)
+
+
+{# model assumptions checking >> residuals aweful !
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modSurvival2004), resid(modSurvival2004))	# aweful
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modSurvival2004))# terrible !
+qqline(resid(modSurvival2004))
+
+{# get our qqplot within others:
+N <- length(resid(modSurvival2004))
+sigma <- summary(modSurvival2004)$sigma # Extract the estimated standard deviation of the errors
+par(mfrow=c(3,3))  
+rnum<-sample(1:9, 1)
+for(i in 1:(rnum-1)){
+  x<-rnorm(N, 0, sigma)
+  qqnorm(x, main=i)
+  qqline(x)
+  }
+qqnorm(resid(modSurvival2004), main=rnum)
+qqline(resid(modSurvival2004))
+for(i in (rnum+1):9){
+  x<-rnorm(N, 0, sigma)
+  qqnorm(x, main=i)
+  qqline(x)
+  }
+  }
+# can we see our plot ? solution is:
+rnum
+
+qqnorm(unlist(ranef(modSurvival2004))) 
+qqline(unlist(ranef(modSurvival2004)))
+
+
+# check for overdispersion
+modSurvival_withOverdispersionAccounted <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
+									(1|BirdID) +
+									(1|BreedingYear)+
+									(1|BirdIDYear) # overdispersion parameter
+									, data = MY_TABLE_perBirdYear, family = "binomial" )
+summary(modSurvival_withOverdispersionAccounted)
+anova(modSurvival2004, modSurvival_withOverdispersionAccounted) # p = 0.38
+
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modSurvival2004)$BirdID))
+mean(unlist(ranef(modSurvival2004)$BreedingYear))
+
+# residuals vs predictors
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MeanA) & !is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass),]
+scatter.smooth(d$NbRinged, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+scatter.smooth(d$MeanA, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+scatter.smooth(d$AvgTarsus, resid(modFitnessAsChickMass))
+abline(h=0, lty=2)
+
+# dependent variable vs fitted
+d$fitted <- fitted(modFitnessAsChickMass)
+scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="NbRinged")
+scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass", xlab="Adev")
+
 }
 
+
+
+}
+
+{# using the survival package and the cox proportional hazard
+# library(survival)
+
+# MY_TABLE_perBirdYear$DeadNextYearYN[MY_TABLE_perBirdYear$AliveNextYear == TRUE] <- 0
+# MY_TABLE_perBirdYear$DeadNextYearYN[MY_TABLE_perBirdYear$AliveNextYear == FALSE] <- 1
+# head(MY_TABLE_perBirdYear)
+
+
+# modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
+									# (1|BirdID) +
+									# #(1|PairID) + 
+									# (1|BreedingYear)
+									# , data = MY_TABLE_perBirdYear, family = "binomial" )
+									
+# coxph(Surv(BreedingYear, DeadNextYearYN) ~ MeanAYear + strata(Sex) + Age, MY_TABLE_perBirdYear) 
+
+	
+# test1 <- list(time=c(4,3,1,1,2,2,3), 
+# status=c(1,1,1,0,1,1,0), 
+# x=c(0,2,1,1,1,0,0), 
+# sex=c(0,0,0,0,1,1,1)) 
+# # Fit a stratified model 
+# coxph(Surv(time, status) ~ x + strata(sex), test1) 
+# # Create a simple data set for a time-dependent model 
+# test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
+              # stop=c(2,3,6,7,8,9,9,9,14,17), 
+              # event=c(1,1,1,1,1,1,1,0,0,0), 
+              # x=c(1,0,0,1,0,1,1,1,0,0)) 
+# summary(coxph(Surv(start, stop, event) ~ x, test2)) \
+# bladder1 <- bladder[bladder$enum < 5, ] 
+# coxph(Surv(stop, event) ~ (rx + size + number) * strata(enum) + 
+      # cluster(id), bladder1)
 }
 
 }
@@ -2136,7 +2257,7 @@ summary(modFitnessAsChickMass)
 summary(modSurvival)
 
 
-unique(MY_TABLE_perBirdYear$BreedingYear)
+
 
 #########################################
 # replication Nagagawa et al 2007 study #
@@ -2728,23 +2849,23 @@ summary(modProRateRpt_MCMCglmm_Male)
 posterior.mode(modProRateRpt_MCMCglmm_Male$VCV)		
 VP_ProRate_Male <-  modProRateRpt_MCMCglmm_Male$VCV[,"BroodRef"]+ modProRateRpt_MCMCglmm_Male$VCV[,"BirdID"]+ modProRateRpt_MCMCglmm_Male$VCV[,"SocialPartnerID"]+ modProRateRpt_MCMCglmm_Male$VCV[,"PairID"]+ modProRateRpt_MCMCglmm_Male$VCV[,"BreedingYear"]+modProRateRpt_MCMCglmm_Male$VCV[,"units"]
 
-R_Alternation_BroodRef_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BroodRef"]/VP_ProRate
+R_Alternation_BroodRef_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BroodRef"]/VP_ProRate_Male
 posterior.mode(R_Alternation_BroodRef_Male)
 HPDinterval(R_Alternation_BroodRef_Male)
 
-R_Alternation_BirdID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BirdID"]/VP_ProRate
+R_Alternation_BirdID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BirdID"]/VP_ProRate_Male
 posterior.mode(R_Alternation_BirdID_Male)
 HPDinterval(R_Alternation_BirdID_Male)
 
-R_Alternation_SocialPartnerID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"SocialPartnerID"]/VP_ProRate
+R_Alternation_SocialPartnerID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"SocialPartnerID"]/VP_ProRate_Male
 posterior.mode(R_Alternation_SocialPartnerID_Male)
 HPDinterval(R_Alternation_SocialPartnerID_Male)
 
-R_Alternation_PairID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"PairID"]/VP_ProRate
+R_Alternation_PairID_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"PairID"]/VP_ProRate_Male
 posterior.mode(R_Alternation_PairID_Male)
 HPDinterval(R_Alternation_PairID_Male)
 
-R_Alternation_BreedingYear_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BreedingYear"]/VP_ProRate
+R_Alternation_BreedingYear_Male <- modProRateRpt_MCMCglmm_Male$VCV[,"BreedingYear"]/VP_ProRate_Male
 posterior.mode(R_Alternation_BreedingYear_Male)
 HPDinterval(R_Alternation_BreedingYear_Male)									
 }
@@ -2832,18 +2953,13 @@ hist(MY_TABLE_perDVD$AlternationValue)
 
 head(MY_TABLE_perBrood)
 
-MDivorce~MeanSynchroFeed + 	
-		scale(DadAge, scale=FALSE) + 
-		scale(HatchingDayAfter0401, scale=FALSE) + 
-		scale(PairBroodNb, scale=FALSE) +
-		scale(DVDInfoChickNb, scale=FALSE) + 
-		ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-		DiffVisit1Rate +  
-		scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-		(1|BroodRef) + 
-		(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-		# + (1|PairIDYear) # explain 0% of the variance
-		, data = MY_TABLE_perDVD)
+mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed + 	
+					scale(DadAge, scale=FALSE) + 
+					scale(HatchingDayAfter0401, scale=FALSE) + 
+					scale(PairBroodNb, scale=FALSE) +
+					DiffVisit1Rate +  
+					 (1|SocialDadID) + (1|BreedingYear) 
+					, data = MY_TABLE_perBrood, family="binomial")
 
 
 
