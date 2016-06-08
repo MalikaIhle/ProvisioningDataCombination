@@ -3,7 +3,7 @@
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
 #	 last modif : 16/05/2016  
-#	 commit: remove broods fed by Ian Cleasby 
+#	 commit: first analyses on synchrony 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -68,10 +68,13 @@ FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep
 conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 # MassTarsusRearinBrood_allChicks (see annotated sql query 'LastMassTarsusChick')
+# considering only chicks alive and measured between 11 and 14 days
 
 {MassTarsusRearinBrood_allChicks <-  sqlQuery(conDB, "
 SELECT tblCaptures.BirdID AS ChickID, 
+usys_qRearingBrood.NatalBrood,
 usys_qRearingBrood.RearingBrood,
+usys_qRearingBrood.CrossFosteredYN,
  Avg(tblMeasurements.Mass) AS AvgOfMass, 
  Avg(tblMeasurements.Tarsus) AS AvgOfTarsus, 
  Avg(usys_qRelativeChickMassClassesForCaptures.Age) AS AvgOfAge, 
@@ -79,7 +82,8 @@ usys_qRearingBrood.RearingBrood,
  
 FROM tblBirdID INNER JOIN 
 ((
-	(SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood
+	(SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood,  
+			tblBirdID.BroodRef AS NatalBrood, IIf([FosterBrood] Is Null,0,1) AS CrossFosteredYN
 	FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
 	WHERE (((tblBirdID.BroodRef) Is Not Null))) 
 	AS usys_qRearingBrood 
@@ -266,7 +270,7 @@ INNER JOIN tblCaptures ON usys_qRelativeChickMassClassesForCaptures.CaptureRef =
 INNER JOIN tblMeasurements ON tblCaptures.CaptureRef = tblMeasurements.CaptureRef) ON tblBirdID.BirdID = tblCaptures.BirdID
 
 WHERE (((usys_qRelativeChickMassClassesForCaptures.MassClass)=14) AND ((usys_qRearingBrood.RearingBrood) Is Not Null) AND ((tblMeasurements.Mass)>0) AND ((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[CaptureDate]))
-GROUP BY tblCaptures.BirdID, usys_qRearingBrood.RearingBrood, tblCaptures.CaptureDate;
+GROUP BY tblCaptures.BirdID, usys_qRearingBrood.RearingBrood, usys_qRearingBrood.NatalBrood,usys_qRearingBrood.CrossFosteredYN, tblCaptures.CaptureDate;
 
 ")
 }
@@ -274,6 +278,12 @@ GROUP BY tblCaptures.BirdID, usys_qRearingBrood.RearingBrood, tblCaptures.Captur
 tblChicks <- merge(x=MassTarsusRearinBrood_allChicks, y= pedigree[,c("id","dam","sire")], all.x=TRUE, by.x="ChickID", by.y = "id")
 
 close(conDB)
+
+summary(tblChicks)
+
+tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
+colnames(tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
+tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasured != tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
 
 
 }
@@ -300,7 +310,7 @@ MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
 
 MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
-
+MY_tblChicks_byRearingBrood <- tblChicks_byRearingBrood[tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
 {# fill in manually the data where Julia deleted it
 MY_tblBroods[MY_tblBroods$BroodRef == 1152,] 
@@ -346,6 +356,15 @@ summary(MY_tblBroods$PairBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tb
 
 summary(MY_tblBroods$ParentsAge[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
 
+
+Mums <- MY_tblBroods %>% group_by(SocialMumID)%>% summarise(n_distinct(SocialDadID))
+Dads <- MY_tblBroods %>% group_by(SocialDadID)%>% summarise(n_distinct(SocialMumID))
+summary(Mums[!is.na(Mums$SocialMumID),2])
+summary(Dads[!is.na(Dads$SocialDadID),2])
+table(unlist(Mums[!is.na(Mums$SocialMumID),2]))
+table(unlist(Dads[!is.na(Dads$SocialDadID),2]))
+
+
 # female divorce more than male, in majority for the Exes ??? polyandrous females ?
 summary(MY_tblBroods$FDivorce)
 summary(MY_tblBroods$FDivorceforEx)
@@ -362,12 +381,12 @@ head(MY_tblDVDInfo)
 head(MY_tblParentalCare)
 head(MY_RawFeedingVisits)
 head(MY_tblChicks)
+head(MY_tblChicks_byRearingBrood)
 
 
-
-############################################ 
-# replication Bebbington & Hatchwell study #
-############################################
+###############
+# ALTERNATION #
+###############
 
 {#### Simulation random alternation vs observed alternation
 
@@ -435,8 +454,6 @@ hist(MY_RawFeedingVisits$Interval,breaks=200)
 # I don’t know how this impact Kat’s results, but I will now try to run simulations within files because I can better argue for it, and maybe compare both outputs to let her know.
 
 }
-
-
 
 
 {## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
@@ -826,12 +843,13 @@ Fig1comparison
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue")]
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue")]
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
 "MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
 "FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
+MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MixedBroodYN")], by.x="BroodRef", by.y="RearingBrood", all.x=TRUE)
 
 length(unique(MY_TABLE_perDVD$BroodRef[is.na(MY_TABLE_perDVD$SocialMum) | is.na(MY_TABLE_perDVD$SocialDadID)])) # 38 broods - 63 files one parent unknown
 
@@ -1590,7 +1608,7 @@ head(MY_TABLE_perChick)
 {### create MY_TABLE_perBirdYear
 
 {# get both sex piled up
-MY_TABLE_Survival <- merge(x=MY_TABLE_perDVD[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear")],
+MY_TABLE_Survival <- merge(x=MY_TABLE_perDVD[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear","FVisit1RateH","MVisit1RateH")],
 						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
 						  by.x="SocialMumID", by.y="BirdID",
 						  all.x=TRUE)
@@ -1603,8 +1621,8 @@ MY_TABLE_Survival$FAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.x
 MY_TABLE_Survival$MAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.y) > MY_TABLE_Survival$BreedingYear
 
 
-MY_TABLE_Female_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialMumID","MumAge","PairID","BreedingYear","FAliveNextYear")]
-MY_TABLE_Male_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialDadID","DadAge","PairID","BreedingYear","MAliveNextYear")]
+MY_TABLE_Female_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialMumID","MumAge","PairID","BreedingYear","FAliveNextYear","FVisit1RateH")]
+MY_TABLE_Male_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialDadID","DadAge","PairID","BreedingYear","MAliveNextYear","MVisit1RateH")]
 MY_TABLE_Female_Survival$Sex <- 0
 MY_TABLE_Male_Survival$Sex <- 1	
 				
@@ -1614,6 +1632,9 @@ colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "Soc
 colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "SocialDadID")] <- "BirdID"		
 colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FAliveNextYear")] <- "AliveNextYear"		
 colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MAliveNextYear")] <- "AliveNextYear"	
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FVisit1RateH")] <- "Visit1RateH"		
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MVisit1RateH")] <- "Visit1RateH"	
+
 
 head(MY_TABLE_Female_Survival)
 head(MY_TABLE_Male_Survival)
@@ -1624,14 +1645,15 @@ MY_TABLE_Survival_perBird$BirdIDYear <- paste(MY_TABLE_Survival_perBird$BirdID, 
 
 head(MY_TABLE_Survival_perBird)
 
-{# get mean Alternation per year per BirdID
+{# get mean Alternation and pro rate per year per BirdID
 
 MY_TABLE_perBirdYear <- split(MY_TABLE_Survival_perBird,MY_TABLE_Survival_perBird$BirdIDYear)
 MY_TABLE_perBirdYear[[1]]
 
 MY_TABLE_perBirdYear_fun = function(x)  {
-return(mean(x$AlternationValue) #MeanAYear
-)
+return(c(mean(x$AlternationValue), #MeanAYear
+mean(x$Visit1RateH))) #MeanVisit1RateHYear
+
 }
 
 MY_TABLE_perBirdYear_out1 <- lapply(MY_TABLE_perBirdYear, FUN=MY_TABLE_perBirdYear_fun)
@@ -1639,7 +1661,7 @@ MY_TABLE_perBirdYear_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBirdY
 
 nrow(MY_TABLE_perBirdYear_out2)	# 999
 rownames(MY_TABLE_perBirdYear_out2) <- NULL
-colnames(MY_TABLE_perBirdYear_out2) <- c('BirdIDYear','MeanAYear')
+colnames(MY_TABLE_perBirdYear_out2) <- c('BirdIDYear','MeanAYear','MeanVisit1RateHYear')
 
 
 MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
@@ -2216,7 +2238,7 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 
 }
 
-{# using the survival package and the cox proportional hazard
+{# using the survival package and the cox proportional hazard > NOT DONE
 # library(survival)
 
 # MY_TABLE_perBirdYear$DeadNextYearYN[MY_TABLE_perBirdYear$AliveNextYear == TRUE] <- 0
@@ -2251,6 +2273,7 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMass
 }
 
 }
+}
 
 summary(modFitnessAsProRate)
 summary(modFitnessAsChickMass)
@@ -2259,9 +2282,9 @@ summary(modSurvival)
 
 
 
-#########################################
-# replication Nagagawa et al 2007 study #
-#########################################
+######################
+# PROVISIOINING RATE #
+######################
 
 {### get provisioning rate for both sex piled up
 FemaleProRate <- MY_TABLE_perDVD[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
@@ -2282,11 +2305,6 @@ head(FemaleProRate)
 head(MaleProRate)
 
 BirdProRate <- rbind(FemaleProRate,MaleProRate)	
-
-
-# calculate Feeding visit rate per hour per chick
-BirdProRate$Visit1RateHChick <- round(BirdProRate$Visit1RateH / BirdProRate$DVDInfoChickNb,2)
-
 BirdProRate <- BirdProRate[!is.na(BirdProRate$RelTimeHrs),]
 
 }
@@ -2294,7 +2312,31 @@ BirdProRate <- BirdProRate[!is.na(BirdProRate$RelTimeHrs),]
 head(BirdProRate)
 
 
-{# repeatbility of provisioning rate
+{# correlation between female and male number of visits
+head(MY_TABLE_perDVD)
+
+scatter.smooth(MY_TABLE_perDVD$MVisit1 , jitter(MY_TABLE_perDVD$FVisit1,3))
+
+mod_AbsPro_male <- lmer(MVisit1~FVisit1 + (1|BroodRef) + (1|SocialDadID)+ (1|SocialMumID) + (1|BreedingYear) + (1|PairID)
+					, data=MY_TABLE_perDVD)
+summary(mod_AbsPro_male)
+
+mod_AbsPro_female <- lmer(FVisit1~MVisit1 + (1|BroodRef) + (1|SocialDadID)+ (1|SocialMumID) + (1|BreedingYear) + (1|PairID)
+					, data=MY_TABLE_perDVD)
+summary(mod_AbsPro_female)
+
+
+mod_ProRate_male <- lmer(MVisit1RateH~FVisit1RateH + (1|BroodRef) + (1|SocialDadID)+ (1|SocialMumID) + (1|BreedingYear) + (1|PairID)
+					, data=MY_TABLE_perDVD)
+summary(mod_ProRate_male)
+
+mod_ProRate_female <- lmer(FVisit1RateH~MVisit1RateH + (1|BroodRef) + (1|SocialDadID)+ (1|SocialMumID) + (1|BreedingYear) + (1|PairID)
+					, data=MY_TABLE_perDVD)
+summary(mod_ProRate_female)
+
+}
+
+{# repeatability of provisioning rate
 
 {## with Franzi's code
 
@@ -2719,7 +2761,7 @@ exactRLRT(m_BroodRef, mA , m0_BroodRef, nsim = 5000)		#RLRT = 28.183, p-value < 
 
 }
 
-{# repeatbility of provisioning rate per sex
+{# repeatability of provisioning rate per sex
 modProRateRpt_Male <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FALSE) + 
 										scale(DVDInfoChickNb, scale=FALSE) + 
 										ChickAgeCat + 
@@ -2752,24 +2794,6 @@ modProRateRpt_Female <- lmer(Visit1RateH ~ scale(HatchingDayAfter0401, scale=FAL
 summary(modProRateRpt_Female)
 VarianceRandomEffectsFemale <- as.data.frame(VarCorr(modProRateRpt_Female),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
 VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='BirdID'] / sum(VarianceRandomEffectsFemale$vcov) *100 # variance explained by FID
-}
-
-{# repeatbility of provisioning rate per chick like Shinichi did
-
-modProRateRpt_perChick <- lmer(Visit1RateHChick ~ Sex +
-									scale(HatchingDayAfter0401, scale=FALSE) + 
-									scale(DVDInfoChickNb, scale=FALSE) + 
-									ChickAgeCat + 
-									scale(RelTimeHrs, scale=FALSE) + 
-									(1|BroodRef) + 
-									(1|BirdID)+ 
-									(1|SocialPartnerID) +
-									(1|BreedingYear) 
-									 + (1|PairID)
-									, data = BirdProRate, REML=FALSE)
-									
-summary(modProRateRpt_perChick)
-
 }
 
 {# repeatability of provisioning rate using MCMCglmm
@@ -2889,23 +2913,23 @@ summary(modProRateRpt_MCMCglmm_Female)
 posterior.mode(modProRateRpt_MCMCglmm_Female$VCV)		
 VP_ProRate_Female <-  modProRateRpt_MCMCglmm_Female$VCV[,"BroodRef"]+ modProRateRpt_MCMCglmm_Female$VCV[,"BirdID"]+ modProRateRpt_MCMCglmm_Female$VCV[,"SocialPartnerID"]+ modProRateRpt_MCMCglmm_Female$VCV[,"PairID"]+ modProRateRpt_MCMCglmm_Female$VCV[,"BreedingYear"]+modProRateRpt_MCMCglmm_Female$VCV[,"units"]
 
-R_Alternation_BroodRef_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BroodRef"]/VP_ProRate
+R_Alternation_BroodRef_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BroodRef"]/VP_ProRate_Female
 posterior.mode(R_Alternation_BroodRef_Female)
 HPDinterval(R_Alternation_BroodRef_Female)
 
-R_Alternation_BirdID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BirdID"]/VP_ProRate
+R_Alternation_BirdID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BirdID"]/VP_ProRate_Female
 posterior.mode(R_Alternation_BirdID_Female)
 HPDinterval(R_Alternation_BirdID_Female)
 
-R_Alternation_SocialPartnerID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"SocialPartnerID"]/VP_ProRate
+R_Alternation_SocialPartnerID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"SocialPartnerID"]/VP_ProRate_Female
 posterior.mode(R_Alternation_SocialPartnerID_Female)
 HPDinterval(R_Alternation_SocialPartnerID_Female)
 
-R_Alternation_PairID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"PairID"]/VP_ProRate
+R_Alternation_PairID_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"PairID"]/VP_ProRate_Female
 posterior.mode(R_Alternation_PairID_Female)
 HPDinterval(R_Alternation_PairID_Female)
 
-R_Alternation_BreedingYear_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BreedingYear"]/VP_ProRate
+R_Alternation_BreedingYear_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"BreedingYear"]/VP_ProRate_Female
 posterior.mode(R_Alternation_BreedingYear_Female)
 HPDinterval(R_Alternation_BreedingYear_Female)
 }
@@ -2914,13 +2938,65 @@ HPDinterval(R_Alternation_BreedingYear_Female)
 
 }
 
+{# cost of provisioning rate in terms of survival ?
+head(MY_TABLE_perBirdYear)
+
+modPorRateSurvival2004 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2004,], family = "binomial" )
+summary(modPorRateSurvival2004)
+
+modPorRateSurvival2005 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2005,], family = "binomial" )
+summary(modPorRateSurvival2005)
+
+modPorRateSurvival2006 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2006,], family = "binomial" )
+summary(modPorRateSurvival2006)
+
+modPorRateSurvival2007 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2007,], family = "binomial" )
+summary(modPorRateSurvival2007)
+
+modPorRateSurvival2009 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2009,], family = "binomial" )
+summary(modPorRateSurvival2009)
+
+modPorRateSurvival2010 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2010,], family = "binomial" )
+summary(modPorRateSurvival2010) # positive trend
+
+modPorRateSurvival2011 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2011,], family = "binomial" )
+summary(modPorRateSurvival2011)
+
+modPorRateSurvival2012 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2012,], family = "binomial" )
+summary(modPorRateSurvival2012)
+
+modPorRateSurvival2013 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2013,], family = "binomial" )
+summary(modPorRateSurvival2013)
+
+modPorRateSurvival2014 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2014,], family = "binomial" )
+summary(modPorRateSurvival2014)
+
+modPorRateSurvival2015 <- glm(AliveNextYear ~ MeanVisit1RateHYear + Sex + Age
+									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2015,], family = "binomial" )
+summary(modPorRateSurvival2015)
+
+}
 
 
 
-
-#### Synchrony
+#############
+# SYNCHRONY #
+#############
 
 head(MY_TABLE_perDVD)
+head(MY_TABLE_perBrood)
+
+{# compare to simulation correlation A-S
 
 ggplot(data=MY_TABLE_perDVD, aes(y=NbSynchro_ChickFeedingEquanim,x=NbAlternation) ) + 
 							geom_point() + 
@@ -2950,8 +3026,34 @@ ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyMvtValue,x=AlternationValue) ) +
 							
 
 hist(MY_TABLE_perDVD$AlternationValue)
+}
 
-head(MY_TABLE_perBrood)
+
+
+modS <- lmer(SynchronyFeedValue~  
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + 
+	scale(PairBroodNb, scale=FALSE) + 
+	scale(DVDInfoChickNb, scale=FALSE) + 
+	ChickAgeCat + 
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + 
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
+
+summary(modS) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
+mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) +
+										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
+										
+summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
 
 mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed + 	
 					scale(DadAge, scale=FALSE) + 
@@ -2961,9 +3063,12 @@ mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed +
 					 (1|SocialDadID) + (1|BreedingYear) 
 					, data = MY_TABLE_perBrood, family="binomial")
 
-
-
-
+					
+					
+					
+					
+					
+					
 
 {#############################  TO DO + ISSUES
   
