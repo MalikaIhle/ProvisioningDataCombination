@@ -1718,7 +1718,7 @@ summary(MY_TABLE_perBrood$NbRinged)
 }
 
 modFitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + 
-											poly(Adev,1) 
+											poly(MeanAdev,1) 
 											+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 											# + (1|PairIDYear) # explain 0% of the variance
 											, data = MY_TABLE_perBrood)
@@ -1768,7 +1768,7 @@ scatter.smooth(d$Adev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalPr
 
 
 modFitnessAsProRate_poly <- lmer(TotalProRate^0.45 ~  NbRinged +
-											poly(Adev,2) +
+											poly(MeanAdev,2) +
 											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 											# + (1|PairIDYear) # explain 0% of the variance
 											, data = MY_TABLE_perBrood)
@@ -2272,9 +2272,9 @@ summary(modSurvival)
 
 
 
-######################
-# PROVISIOINING RATE #
-######################
+#####################
+# PROVISIONING RATE #
+#####################
 
 {### get provisioning rate for both sex piled up
 FemaleProRate <- MY_TABLE_perDVD[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
@@ -3030,7 +3030,14 @@ ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyMvtValue,x=AlternationValue) ) +
 hist(MY_TABLE_perDVD$AlternationValue)
 }
 
-{# predictors of synchrony
+{#### predictors of synchrony
+
+{# check dependent and explanatory variables 
+hist(MY_TABLE_perDVD$SynchronyFeedValue, breaks =length(unique(MY_TABLE_perDVD$SynchronyFeedValue)))
+table(MY_TABLE_perDVD$SynchronyFeedValue)
+
+}
+
 
 modS <- lmer(SynchronyFeedValue~  
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
@@ -3046,17 +3053,155 @@ modS <- lmer(SynchronyFeedValue~
 
 summary(modS) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
+{# model assumptions checking > not quite !
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modS), resid(modS))	#
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modS))
+qqline(resid(modS))
+qqnorm(unlist(ranef(modS))) 
+qqline(unlist(ranef(modS)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modS))),fitted(modS)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modS)$BroodRef))
+mean(unlist(ranef(modS)$SocialMumID))
+mean(unlist(ranef(modS)$SocialDadID))
+mean(unlist(ranef(modS)$PairID))
+mean(unlist(ranef(modS)$BreedingYear))
+
+# residuals vs predictors
+d <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),]
+
+scatter.smooth(d$ParentsAge, resid(modS))
+abline(h=0, lty=2)
+scatter.smooth(d$HatchingDayAfter0401, resid(modS))
+abline(h=0, lty=2)
+plot(d$DVDInfoChickNb, resid(modS))
+abline(h=0, lty=2)	
+plot(d$ChickAgeCat, resid(modS))
+abline(h=0, lty=2)	
+scatter.smooth(d$DiffVisit1Rate, resid(modS))
+abline(h=0, lty=2)	
+scatter.smooth(d$RelTimeHrs, resid(modS))
+abline(h=0, lty=2)		
+
+# dependent variable vs fitted
+d$fitted <- fitted(modS)
+scatter.smooth(d$fitted, jitter(d$SynchronyFeedValue, 0.05),ylim=c(0, 40))
+
+# fitted vs all predictors
+scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="ParentsAge")
+scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="HatchingDayAfter0401")
+boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="ChickAgeCat")
+plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="DVDInfoChickNb")
+scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="RelTimeHrs")
+
+}
+
+# with glmmADMB : hurdle model with random effect 
+# first analyse the factors that produce zeros (vs.non-zeros) by a logistic regression
+# then use a truncated Poisson-distribution (at y=1) for the non-zero counts
+
+
+library(glmmADMB)
+
+MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
+MY_TABLE_perDVD$BroodRef <- as.factor(MY_TABLE_perDVD$BroodRef)
+MY_TABLE_perDVD$SocialDadID <- as.factor(MY_TABLE_perDVD$SocialDadID)
+MY_TABLE_perDVD$SocialMumID <- as.factor(MY_TABLE_perDVD$SocialMumID)
+MY_TABLE_perDVD$PairID <- as.factor(MY_TABLE_perDVD$PairID)
+MY_TABLE_perDVD$BreedingYear <- as.factor(MY_TABLE_perDVD$BreedingYear)
+
+
+modS_glmmadmb <- glmmadmb(NbSynchro_ChickFeedingEquanim~  
+	+ scale(MFVisit1, scale=FALSE) +
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + 
+	scale(PairBroodNb, scale=FALSE) + 
+	scale(DVDInfoChickNb, scale=FALSE) + 
+	ChickAgeCat + 
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + 
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),], zeroInflation=TRUE, family="poisson")
+
+
+
 }
 
 summary(modS)
 
-{# fitness benefits of synchrony
+{#### fitness benefits of synchrony
 
+{## provisioning rate
+# mathematical negative correlation between number of synchronous provisioning/ total nb of provisioning and total nb of provisioning / time
+# conceptual positive correlation between number of synchronous provisioning and pro rate, as synchrony becomes more likely if interfeed interval are shorter.
+
+mod_Sync_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # storngly correlated with Synchrony
+											 scale(MeanSynchroFeed, scale=FALSE)
+											+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+											 , data = MY_TABLE_perBrood)
+
+summary(mod_Sync_FitnessAsProRate) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(mod_Sync_FitnessAsProRate), resid(mod_Sync_FitnessAsProRate))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(mod_Sync_FitnessAsProRate))
+qqline(resid(mod_Sync_FitnessAsProRate))
+qqnorm(unlist(ranef(mod_Sync_FitnessAsProRate)))
+qqline(unlist(ranef(mod_Sync_FitnessAsProRate)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(mod_Sync_FitnessAsProRate))),fitted(mod_Sync_FitnessAsProRate)) # quite not ! > much nicer if exp 0.45
+	# tried when removing the 5% quantile extreme of provisioning rate, model estimates quite similar, random effect all much much lower
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(mod_Sync_FitnessAsProRate)$SocialMumID))
+mean(unlist(ranef(mod_Sync_FitnessAsProRate)$SocialDadID))
+mean(unlist(ranef(mod_Sync_FitnessAsProRate)$PairID))
+mean(unlist(ranef(mod_Sync_FitnessAsProRate)$BreedingYear))
+
+# residuals vs predictors
+plot(MY_TABLE_perBrood$NbRinged, resid(mod_Sync_FitnessAsProRate))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE_perBrood$MeanSynchroFeed, resid(mod_Sync_FitnessAsProRate))
+abline(h=0, lty=2)
+
+# dependent variable vs fitted
+d <- MY_TABLE_perBrood
+d$fitted <- fitted(mod_Sync_FitnessAsProRate)
+scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
+
+# fitted vs all predictors
+plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
+scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="MeanSynchroFeed")
+
+}
+
+
+}
+
+{# Nb ringed
 mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) +
 										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
 										
 summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+}
+
 }
 
 summary(mod_Sync_FitnessAsNbRinged)
