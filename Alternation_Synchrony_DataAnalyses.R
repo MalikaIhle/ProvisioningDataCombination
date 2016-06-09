@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 16/05/2016  
+#	 last modif : 09/06/2016  
 #	 commit: first analyses on synchrony 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -33,7 +33,6 @@ library(MCMCglmm)
 options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
 # options(warn=-1) # for Rmarkdown not to print the warnings
 }
-
 
 {### Get raw data (from source() or R_output folder)
 
@@ -289,7 +288,6 @@ tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasur
 }
 
 }
-
 
 {### select valid video files for studying behavioural compatibility in chick provisioning
 
@@ -837,9 +835,7 @@ Fig1comparison
 
 
 
-
-
-{### create MY_TABLE_perDVD: where both parents known
+{### create MY_TABLE_perDVD: where both parents known + add expected alternation from simulation
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
@@ -935,6 +931,170 @@ MY_TABLE_perDVD <- as.data.frame(MY_TABLE_perDVD)
 }
 
 head(MY_TABLE_perDVD)
+
+{### create MY_TABLE_perBrood
+MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
+summary(MY_TABLE_perDVD$MFVisit1RateH)
+
+MY_TABLE_perBrood <- split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
+MY_TABLE_perBrood[[1]]
+
+MY_TABLE_perBrood_fun = function(x)  {
+
+return(c(
+mean(x$MFVisit1RateH), # TotalProRate
+mean(x$AlternationValue), #MeanA
+mean(x$MeanAsim) - mean(x$AlternationValue), # MeanAdev
+mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
+mean(x$SynchronyFeedValue) # MeanSynchroFeed
+))
+}
+
+MY_TABLE_perBrood_out1 <- lapply(MY_TABLE_perBrood, FUN=MY_TABLE_perBrood_fun)
+MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_out1)),do.call(rbind, MY_TABLE_perBrood_out1))
+
+nrow(MY_TABLE_perBrood_out2)	# 872
+rownames(MY_TABLE_perBrood_out2) <- NULL
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed')
+
+MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1","FVisit1RateH","MVisit1","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH",
+																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax",
+																							"NbSynchro_ChickFeedingEquanim","NbSynchro_LessConspicuous","SynchronyFeedValue","SynchronyMvtValue",
+																							"DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs"))]),
+							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
+							
+			
+{# calculate residual mass on tarsus
+
+ResMassTarsus <-  cbind( MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus),"BroodRef" ], 
+											data.frame(residuals(lm(AvgMass~ AvgTarsus, data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus), ]))))
+colnames(ResMassTarsus) <- c("BroodRef" , "ResMassTarsus")
+head(ResMassTarsus)
+
+MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by = "BroodRef")
+
+}
+
+}
+
+head(MY_TABLE_perBrood)
+
+{### create MY_TABLE_perChick
+
+MY_TABLE_perChick <- merge(x= MY_tblChicks , y=MY_TABLE_perBrood, by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
+MY_TABLE_perChick <- MY_TABLE_perChick[!is.na(MY_TABLE_perChick$BreedingYear),]
+MY_TABLE_perChick$GenPairID <- paste(MY_TABLE_perChick$sire, MY_TABLE_perChick$dam, sep="")
+
+ResMassTarsus_perChick <-  cbind( MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus),"RearingBrood" ], 
+											data.frame(residuals(lm(AvgOfMass~ AvgOfTarsus, data = MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus), ]))))
+colnames(ResMassTarsus_perChick) <- c("RearingBrood" , "ResMassTarsus_perChick")
+
+MY_TABLE_perChick <- merge(x=MY_TABLE_perChick, y=ResMassTarsus_perChick, all.x=TRUE, by = "RearingBrood")
+
+}
+
+head(MY_TABLE_perChick)
+
+{### create MY_TABLE_perBirdYear
+
+{# get both sex piled up
+MY_TABLE_Survival <- merge(x=MY_TABLE_perDVD[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear","FVisit1RateH","MVisit1RateH")],
+						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
+						  by.x="SocialMumID", by.y="BirdID",
+						  all.x=TRUE)
+MY_TABLE_Survival <- merge(x=MY_TABLE_Survival, 
+						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
+						  by.x="SocialDadID", by.y="BirdID",
+						  all.x=TRUE)
+
+MY_TABLE_Survival$FAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.x) > MY_TABLE_Survival$BreedingYear
+MY_TABLE_Survival$MAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.y) > MY_TABLE_Survival$BreedingYear
+
+
+MY_TABLE_Female_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialMumID","MumAge","PairID","BreedingYear","FAliveNextYear","FVisit1RateH")]
+MY_TABLE_Male_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialDadID","DadAge","PairID","BreedingYear","MAliveNextYear","MVisit1RateH")]
+MY_TABLE_Female_Survival$Sex <- 0
+MY_TABLE_Male_Survival$Sex <- 1	
+				
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "MumAge")] <- "Age"						
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "DadAge")] <- "Age"	
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "SocialMumID")] <- "BirdID"		
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "SocialDadID")] <- "BirdID"		
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FAliveNextYear")] <- "AliveNextYear"		
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MAliveNextYear")] <- "AliveNextYear"	
+colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FVisit1RateH")] <- "Visit1RateH"		
+colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MVisit1RateH")] <- "Visit1RateH"	
+
+
+head(MY_TABLE_Female_Survival)
+head(MY_TABLE_Male_Survival)
+
+MY_TABLE_Survival_perBird <- rbind(MY_TABLE_Female_Survival,MY_TABLE_Male_Survival)	
+MY_TABLE_Survival_perBird$BirdIDYear <- paste(MY_TABLE_Survival_perBird$BirdID, MY_TABLE_Survival_perBird$BreedingYear, sep="")
+}
+
+head(MY_TABLE_Survival_perBird)
+
+{# get mean Alternation and pro rate per year per BirdID
+
+MY_TABLE_perBirdYear <- split(MY_TABLE_Survival_perBird,MY_TABLE_Survival_perBird$BirdIDYear)
+MY_TABLE_perBirdYear[[1]]
+
+MY_TABLE_perBirdYear_fun = function(x)  {
+return(c(mean(x$AlternationValue), #MeanAYear
+mean(x$Visit1RateH))) #MeanVisit1RateHYear
+
+}
+
+MY_TABLE_perBirdYear_out1 <- lapply(MY_TABLE_perBirdYear, FUN=MY_TABLE_perBirdYear_fun)
+MY_TABLE_perBirdYear_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBirdYear_out1)),do.call(rbind, MY_TABLE_perBirdYear_out1))
+
+nrow(MY_TABLE_perBirdYear_out2)	# 999
+rownames(MY_TABLE_perBirdYear_out2) <- NULL
+colnames(MY_TABLE_perBirdYear_out2) <- c('BirdIDYear','MeanAYear','MeanVisit1RateHYear')
+
+
+MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
+							y=MY_TABLE_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
+							
+							
+tspag = ggplot(MY_TABLE_perBirdYear, aes(x=Age, y=MeanAYear)) + 
+  geom_line() + guides(colour=FALSE) + xlab("Bird's Age") +
+  ylab("Mean Altnernation Value") + scale_x_continuous(breaks=1:9)
+spag = tspag + aes(colour = factor(BirdID))
+spag
+spag + facet_wrap(~ Sex)
+sspag = spag + stat_summary(fun.y=mean, colour="black", geom="line", size = 2)
+sspag + facet_wrap(~ Sex)
+}
+
+{# descriptive stats on survival per year
+FemaleSurvival <- list()
+MaleSurvival <- list()
+survivalperyear <- as.data.frame(table(MY_TABLE_perBirdYear$AliveNextYear, MY_TABLE_perBirdYear$BreedingYear, MY_TABLE_perBirdYear$Sex))
+
+for (i in 2004:2015){
+FemaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) 
+MaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 1 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) }
+
+Survival <- as.data.frame(cbind(2004:2015,do.call(rbind,FemaleSurvival),do.call(rbind,MaleSurvival)))
+colnames(Survival) <- c("Year", "FSurvival","MSurvival")
+
+Survival$AvgSurvival <- round((Survival$FSurvival+Survival$MSurvival)*100/2,2)
+mean(Survival$AvgSurvival) # 57.05417
+
+ggplot(Survival, aes(x=Year, y=AvgSurvival))+
+  geom_point()+
+  geom_line()+
+  geom_hline(yintercept=mean(Survival$AvgSurvival), size= 1, linetype= "dashed", colour="indianred")+
+  ylim(0,100)+
+  theme_classic()
+}
+
+}
+
+head(MY_TABLE_perBirdYear)
+
 
 
 {#### Predictors of alternation
@@ -1058,6 +1218,9 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 }
 
 }
+
+summary(modA)$coefficients
+print(VarCorr(modA),comp=c("Variance","Std.Dev."))
 
 {# modA_ParentAge
 
@@ -1204,6 +1367,12 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 }
 
 }
+
+summary(modA_ParentAge)$coefficients
+summary(modA_PairBroodNb)$coefficients
+print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
+print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
+
 
 {# modA_NbRinged
 
@@ -1394,8 +1563,12 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 
 }
 
+summary(modA_Age6)$coefficients
+summary(modA_Age10)$coefficients
+print(VarCorr(modA_Age6),comp=c("Variance","Std.Dev."))
+print(VarCorr(modA_Age10),comp=c("Variance","Std.Dev."))
 
-# modA_withinIndAgeEffect
+{# modA_withinIndAgeEffect
 
 modA_withinIndAgeEffect <- lmer(AlternationValue^1.6~  
 
@@ -1426,24 +1599,11 @@ summary(modA_withinIndAgeEffect)
 
 # see graph in create in paragraph 'create MY_TABLE_perBirdYear', 'get mean Alternation per year per BirdID'
 
-
+}
 
 }
 
 summary(modA)
-
-summary(modA)$coefficients
-summary(modA_Age6)$coefficients
-summary(modA_Age10)$coefficients
-print(VarCorr(modA),comp=c("Variance","Std.Dev."))
-print(VarCorr(modA_Age6),comp=c("Variance","Std.Dev."))
-print(VarCorr(modA_Age10),comp=c("Variance","Std.Dev."))
-
-summary(modA_ParentAge)$coefficients
-summary(modA_PairBroodNb)$coefficients
-print(VarCorr(modA_ParentAge),comp=c("Variance","Std.Dev."))
-print(VarCorr(modA_PairBroodNb),comp=c("Variance","Std.Dev."))
-
 
 {#### repeatability of Alternation 
 
@@ -1537,176 +1697,6 @@ HPDinterval(R_Alternation_BreedingYear)
 }
 
 }
-
-
-
-{### create MY_TABLE_perBrood
-MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
-summary(MY_TABLE_perDVD$MFVisit1RateH)
-
-MY_TABLE_perBrood <- split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
-MY_TABLE_perBrood[[1]]
-
-MY_TABLE_perBrood_fun = function(x)  {
-
-return(c(
-mean(x$MFVisit1RateH), # TotalProRate
-mean(x$AlternationValue), #MeanA
-mean(x$MeanAsim) - mean(x$AlternationValue), # MeanAdev
-mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
-mean(x$SynchronyFeedValue) # MeanSynchroFeed
-))
-}
-
-MY_TABLE_perBrood_out1 <- lapply(MY_TABLE_perBrood, FUN=MY_TABLE_perBrood_fun)
-MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_out1)),do.call(rbind, MY_TABLE_perBrood_out1))
-
-nrow(MY_TABLE_perBrood_out2)	# 872
-rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed')
-
-MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH",
-																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax",
-																							"NbSynchro_ChickFeedingEquanim","NbSynchro_LessConspicuous","SynchronyFeedValue","SynchronyMvtValue",
-																							"DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs"))]),
-							y=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
-							
-			
-{# calculate residual mass on tarsus
-
-ResMassTarsus <-  cbind( MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus),"BroodRef" ], 
-											data.frame(residuals(lm(AvgMass~ AvgTarsus, data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$AvgMass) &!is.na(MY_TABLE_perBrood$AvgTarsus), ]))))
-colnames(ResMassTarsus) <- c("BroodRef" , "ResMassTarsus")
-head(ResMassTarsus)
-
-MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by = "BroodRef")
-
-}
-
-}
-
-head(MY_TABLE_perBrood)
-
-
-{### create MY_TABLE_perChick
-
-MY_TABLE_perChick <- merge(x= MY_tblChicks , y=MY_TABLE_perBrood, by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
-MY_TABLE_perChick <- MY_TABLE_perChick[!is.na(MY_TABLE_perChick$BreedingYear),]
-MY_TABLE_perChick$GenPairID <- paste(MY_TABLE_perChick$sire, MY_TABLE_perChick$dam, sep="")
-
-ResMassTarsus_perChick <-  cbind( MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus),"RearingBrood" ], 
-											data.frame(residuals(lm(AvgOfMass~ AvgOfTarsus, data = MY_TABLE_perChick[!is.na(MY_TABLE_perChick$AvgOfTarsus), ]))))
-colnames(ResMassTarsus_perChick) <- c("RearingBrood" , "ResMassTarsus_perChick")
-
-MY_TABLE_perChick <- merge(x=MY_TABLE_perChick, y=ResMassTarsus_perChick, all.x=TRUE, by = "RearingBrood")
-
-}
-
-head(MY_TABLE_perChick)
-
-
-{### create MY_TABLE_perBirdYear
-
-{# get both sex piled up
-MY_TABLE_Survival <- merge(x=MY_TABLE_perDVD[c("BroodRef","AlternationValue","SocialMumID","SocialDadID","DadAge","MumAge","PairID","BreedingYear","FVisit1RateH","MVisit1RateH")],
-						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
-						  by.x="SocialMumID", by.y="BirdID",
-						  all.x=TRUE)
-MY_TABLE_Survival <- merge(x=MY_TABLE_Survival, 
-						  y=sys_LastSeenAlive[,c("BirdID","LastYearAlive")],
-						  by.x="SocialDadID", by.y="BirdID",
-						  all.x=TRUE)
-
-MY_TABLE_Survival$FAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.x) > MY_TABLE_Survival$BreedingYear
-MY_TABLE_Survival$MAliveNextYear <- as.numeric(MY_TABLE_Survival$LastYearAlive.y) > MY_TABLE_Survival$BreedingYear
-
-
-MY_TABLE_Female_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialMumID","MumAge","PairID","BreedingYear","FAliveNextYear","FVisit1RateH")]
-MY_TABLE_Male_Survival <- MY_TABLE_Survival[,c("BroodRef","AlternationValue","SocialDadID","DadAge","PairID","BreedingYear","MAliveNextYear","MVisit1RateH")]
-MY_TABLE_Female_Survival$Sex <- 0
-MY_TABLE_Male_Survival$Sex <- 1	
-				
-colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "MumAge")] <- "Age"						
-colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "DadAge")] <- "Age"	
-colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "SocialMumID")] <- "BirdID"		
-colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "SocialDadID")] <- "BirdID"		
-colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FAliveNextYear")] <- "AliveNextYear"		
-colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MAliveNextYear")] <- "AliveNextYear"	
-colnames(MY_TABLE_Female_Survival)[which(names(MY_TABLE_Female_Survival) == "FVisit1RateH")] <- "Visit1RateH"		
-colnames(MY_TABLE_Male_Survival)[which(names(MY_TABLE_Male_Survival) == "MVisit1RateH")] <- "Visit1RateH"	
-
-
-head(MY_TABLE_Female_Survival)
-head(MY_TABLE_Male_Survival)
-
-MY_TABLE_Survival_perBird <- rbind(MY_TABLE_Female_Survival,MY_TABLE_Male_Survival)	
-MY_TABLE_Survival_perBird$BirdIDYear <- paste(MY_TABLE_Survival_perBird$BirdID, MY_TABLE_Survival_perBird$BreedingYear, sep="")
-}
-
-head(MY_TABLE_Survival_perBird)
-
-{# get mean Alternation and pro rate per year per BirdID
-
-MY_TABLE_perBirdYear <- split(MY_TABLE_Survival_perBird,MY_TABLE_Survival_perBird$BirdIDYear)
-MY_TABLE_perBirdYear[[1]]
-
-MY_TABLE_perBirdYear_fun = function(x)  {
-return(c(mean(x$AlternationValue), #MeanAYear
-mean(x$Visit1RateH))) #MeanVisit1RateHYear
-
-}
-
-MY_TABLE_perBirdYear_out1 <- lapply(MY_TABLE_perBirdYear, FUN=MY_TABLE_perBirdYear_fun)
-MY_TABLE_perBirdYear_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBirdYear_out1)),do.call(rbind, MY_TABLE_perBirdYear_out1))
-
-nrow(MY_TABLE_perBirdYear_out2)	# 999
-rownames(MY_TABLE_perBirdYear_out2) <- NULL
-colnames(MY_TABLE_perBirdYear_out2) <- c('BirdIDYear','MeanAYear','MeanVisit1RateHYear')
-
-
-MY_TABLE_perBirdYear <- merge(x=unique(MY_TABLE_Survival_perBird[,c("BirdID", "Age","PairID", "BreedingYear","AliveNextYear","Sex","BirdIDYear" )]),
-							y=MY_TABLE_perBirdYear_out2,all.x=TRUE, by='BirdIDYear')
-							
-							
-tspag = ggplot(MY_TABLE_perBirdYear, aes(x=Age, y=MeanAYear)) + 
-  geom_line() + guides(colour=FALSE) + xlab("Bird's Age") +
-  ylab("Mean Altnernation Value") + scale_x_continuous(breaks=1:9)
-spag = tspag + aes(colour = factor(BirdID))
-spag
-spag + facet_wrap(~ Sex)
-sspag = spag + stat_summary(fun.y=mean, colour="black", geom="line", size = 2)
-sspag + facet_wrap(~ Sex)
-}
-
-{# descriptive stats on survival per year
-FemaleSurvival <- list()
-MaleSurvival <- list()
-survivalperyear <- as.data.frame(table(MY_TABLE_perBirdYear$AliveNextYear, MY_TABLE_perBirdYear$BreedingYear, MY_TABLE_perBirdYear$Sex))
-
-for (i in 2004:2015){
-FemaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) 
-MaleSurvival[i] <-  survivalperyear$Freq[survivalperyear$Var3 == 1 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']/  (survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'TRUE']+survivalperyear$Freq[survivalperyear$Var3 == 0 & survivalperyear$Var2 == i & survivalperyear$Var1 == 'FALSE'] ) }
-
-Survival <- as.data.frame(cbind(2004:2015,do.call(rbind,FemaleSurvival),do.call(rbind,MaleSurvival)))
-colnames(Survival) <- c("Year", "FSurvival","MSurvival")
-
-Survival$AvgSurvival <- round((Survival$FSurvival+Survival$MSurvival)*100/2,2)
-mean(Survival$AvgSurvival) # 57.05417
-
-ggplot(Survival, aes(x=Year, y=AvgSurvival))+
-  geom_point()+
-  geom_line()+
-  geom_hline(yintercept=mean(Survival$AvgSurvival), size= 1, linetype= "dashed", colour="indianred")+
-  ylim(0,100)+
-  theme_classic()
-}
-
-}
-
-head(MY_TABLE_perBirdYear)
-
-
-
 
 
 {#### fitness correlate of alternation
@@ -1950,8 +1940,8 @@ summary(modFitnessAsChickMasswithGenParents)$coefficients
 hist(MY_TABLE_perBrood$NbRinged)
 
 
-modFitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanA, scale=FALSE) +
-										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+modFitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanA, scale=FALSE) + 
+										# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
 										
 summary(modFitnessAsNbRinged) # Model is nearly unidentifiable
@@ -2335,6 +2325,7 @@ mod_ProRate_female <- lmer(FVisit1RateH~MVisit1RateH + (1|BroodRef) + (1|SocialD
 summary(mod_ProRate_female)
 
 }
+
 
 {# repeatability of provisioning rate
 
@@ -2938,6 +2929,7 @@ HPDinterval(R_Alternation_BreedingYear_Female)
 
 }
 
+
 {# cost of provisioning rate in terms of survival ?
 head(MY_TABLE_perBirdYear)
 
@@ -2987,6 +2979,16 @@ summary(modPorRateSurvival2015)
 
 }
 
+{# Fitness benefits of provisioning rate ?
+
+mod_Prorate_FitnessAsNbRinged <- glmer(NbRinged ~ scale(TotalProRate, scale=FALSE) + 
+										#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
+										
+summary(mod_Prorate_FitnessAsNbRinged)
+}
+
+
 
 
 #############
@@ -3028,7 +3030,7 @@ ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyMvtValue,x=AlternationValue) ) +
 hist(MY_TABLE_perDVD$AlternationValue)
 }
 
-
+{# predictors of synchrony
 
 modS <- lmer(SynchronyFeedValue~  
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
@@ -3044,16 +3046,22 @@ modS <- lmer(SynchronyFeedValue~
 
 summary(modS) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
+}
 
+summary(modS)
+
+{# fitness benefits of synchrony
 
 mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) +
 										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
 										
 summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+}
 
+summary(mod_Sync_FitnessAsNbRinged)
 
-
+{# consequence of synchrony in term of divorce
 
 mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed + 	
 					scale(DadAge, scale=FALSE) + 
@@ -3063,12 +3071,13 @@ mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed +
 					 (1|SocialDadID) + (1|BreedingYear) 
 					, data = MY_TABLE_perBrood, family="binomial")
 
-					
-					
-					
-					
-					
-					
+}				
+
+
+
+
+
+
 
 {#############################  TO DO + ISSUES
   
