@@ -1,14 +1,16 @@
 # Behavioural compatibility in Provisioning : DATA ANALYSES
 
-## Alternation
-
-### Replication Bebbington & Hatchwell .R
+## Alternation & Synchrony
 
 source compilation_provisioning to get the data
 
 simulation of random alternation for given provisioning rates
 
+Predictors and benefits of alternation
 
+Predictors and benefits of provisioning rate
+
+Predictors and benefits of synchrony
 
 
 
