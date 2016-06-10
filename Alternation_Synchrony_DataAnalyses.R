@@ -30,8 +30,8 @@ library(lme4)
 library(RLRsim) # for testing significance randome effect in repeatability part
 library(MCMCglmm)
 
-options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
-# options(warn=-1) # for Rmarkdown not to print the warnings
+# options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
+ options(warn=-1) # for Rmarkdown not to print the warnings
 }
 
 {### Get raw data (from source() or R_output folder)
@@ -946,7 +946,8 @@ mean(x$MFVisit1RateH), # TotalProRate
 mean(x$AlternationValue), #MeanA
 mean(x$MeanAsim) - mean(x$AlternationValue), # MeanAdev
 mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
-mean(x$SynchronyFeedValue) # MeanSynchroFeed
+mean(x$SynchronyFeedValue), # MeanSynchroFeed
+mean(x$NbSynchro_ChickFeedingEquanim) # MeanSynchroFeed_nb
 ))
 }
 
@@ -955,7 +956,7 @@ MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_ou
 
 nrow(MY_TABLE_perBrood_out2)	# 872
 rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed')
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed','MeanSynchroFeed_nb')
 
 MY_TABLE_perBrood <- merge(x=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1","FVisit1RateH","MVisit1","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH",
 																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax",
@@ -1094,7 +1095,6 @@ ggplot(Survival, aes(x=Year, y=AvgSurvival))+
 }
 
 head(MY_TABLE_perBirdYear)
-
 
 
 {#### Predictors of alternation
@@ -3036,22 +3036,49 @@ hist(MY_TABLE_perDVD$AlternationValue)
 hist(MY_TABLE_perDVD$SynchronyFeedValue, breaks =length(unique(MY_TABLE_perDVD$SynchronyFeedValue)))
 table(MY_TABLE_perDVD$SynchronyFeedValue)
 
+scatter.smooth(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$DiffVisit1Rate )
+cor.test(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$DiffVisit1Rate)
+
+scatter.smooth(MY_TABLE_perDVD$SynchronyFeedValue~MY_TABLE_perDVD$MFVisit1 )
+
 }
 
 
 modS <- lmer(SynchronyFeedValue~  
+	# scale(MFVisit1, scale=FALSE) + # this is strongly correlated to DiffVisit1Rate and with chickNb and this is mathematically linked to Sync score
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + 
-	scale(PairBroodNb, scale=FALSE) + 
+	#scale(HatchingDayAfter0401, scale=FALSE) + 
+	#scale(PairBroodNb, scale=FALSE) + 
 	scale(DVDInfoChickNb, scale=FALSE) + 
 	ChickAgeCat + 
 	DiffVisit1Rate +  
 	scale(RelTimeHrs, scale=FALSE) + 
-	(1|BroodRef) + 
+	#(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
 
 summary(modS) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+modS_nb <- lmer(NbSynchro_ChickFeedingEquanim~  
+	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to DiffVisit1Rate and with chickNb
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	#scale(HatchingDayAfter0401, scale=FALSE) + 
+	#scale(PairBroodNb, scale=FALSE) + 
+	scale(DVDInfoChickNb, scale=FALSE) + 
+	ChickAgeCat + 
+	DiffVisit1Rate +  
+	# scale(RelTimeHrs, scale=FALSE) + 
+	#(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) 
+	# +(1|PairID) 
+	+ (1|BreedingYear) 
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
+
+summary(modS_nb) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
 
 {# model assumptions checking > not quite !
 
@@ -3105,9 +3132,10 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="S
 
 }
 
-# with glmmADMB : hurdle model with random effect 
+{# with glmmADMB : hurdle model with random effect > predicted variables needs to be a count
 # first analyse the factors that produce zeros (vs.non-zeros) by a logistic regression
 # then use a truncated Poisson-distribution (at y=1) for the non-zero counts
+# http://glmmadmb.r-forge.r-project.org/glmmADMB.pdf
 
 
 library(glmmADMB)
@@ -3120,35 +3148,88 @@ MY_TABLE_perDVD$PairID <- as.factor(MY_TABLE_perDVD$PairID)
 MY_TABLE_perDVD$BreedingYear <- as.factor(MY_TABLE_perDVD$BreedingYear)
 
 
-modS_glmmadmb <- glmmadmb(NbSynchro_ChickFeedingEquanim~  
-	+ scale(MFVisit1, scale=FALSE) +
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + 
-	scale(PairBroodNb, scale=FALSE) + 
-	scale(DVDInfoChickNb, scale=FALSE) + 
-	ChickAgeCat + 
-	DiffVisit1Rate +  
-	scale(RelTimeHrs, scale=FALSE) + 
-	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
+modS_nb_glmmadmb <- glmmadmb(NbSynchro_ChickFeedingEquanim~scale(MFVisit1, scale=FALSE) +# this is strongly correlated to DiffVisit1Rate and with chickNb
+														scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+														# scale(HatchingDayAfter0401, scale=FALSE) + 
+														# scale(PairBroodNb, scale=FALSE) + 
+														scale(DVDInfoChickNb, scale=FALSE) + 
+														ChickAgeCat + 
+														DiffVisit1Rate +  
+														# scale(RelTimeHrs, scale=FALSE) + 
+														#(1|BroodRef) + 
+														(1|SocialMumID)+ (1|SocialDadID) 
+														# + (1|PairID) 
+														+ (1|BreedingYear) 
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),], zeroInflation=TRUE, family="poisson")
 
+summary(modS_nb_glmmadmb) # might have an issue because doesnt give the variance of the random effects in the output thought ranefs available
+
+plot(unlist(ranef(modS_nb_glmmadmb)$SocialMumID),unlist(ranef(modS)$SocialMumID))
+plot(unlist(ranef(modS_nb_glmmadmb)$SocialDadID),unlist(ranef(modS)$SocialDadID))
+plot(unlist(ranef(modS_nb_glmmadmb)$PairID),unlist(ranef(modS)$PairID))
+plot(unlist(ranef(modS_nb_glmmadmb)$BreedingYear),unlist(ranef(modS)$BreedingYear))
 
 
 }
 
-summary(modS)
+
+{## Gamma hurdle model with continuous data
+# http://seananderson.ca/2014/05/18/gamma-hurdle.html
+
+MY_TABLE_perDVD$SynchroFeed_non_zero <- ifelse(MY_TABLE_perDVD$SynchronyFeedValue > 0, 1, 0)
+ggplot(MY_TABLE_perDVD, aes(DVDRef, SynchronyFeedValue, colour = as.factor(SynchroFeed_non_zero))) + geom_point()
+
+modS1_Logistic <- glmer(SynchroFeed_non_zero ~ MFVisit1 +# this is strongly correlated to DiffVisit1Rate
+												ParentsAge + # this is strongly correlated to PairBroodNb
+												#HatchingDayAfter0401 + 
+												#PairBroodNb + 
+												DVDInfoChickNb + 
+												ChickAgeCat + 
+												DiffVisit1Rate +  
+												#RelTimeHrs + 
+												#(1|BroodRef) + 
+												#(1|SocialMumID)+ 
+												(1|SocialDadID) + 
+												(1|PairID)
+												# +(1|BreedingYear) 
+												, data = MY_TABLE_perDVD, family = binomial(link = logit))
+
+summary(modS1_Logistic)
+
+modS2_Gamma <- glm(SynchronyFeedValue ~ # MFVisit1 +# this is strongly correlated to DiffVisit1Rate and this is mathematically linked to Sync score
+										ParentsAge + # this is strongly correlated to PairBroodNb
+										#HatchingDayAfter0401 + 
+										#PairBroodNb + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										DiffVisit1Rate 
+										#scale(RelTimeHrs, scale=FALSE) + 
+										#(1|BroodRef) + 
+										#(1|SocialMumID)+ (1|SocialDadID) 
+										# +(1|PairID) 
+										#+ (1|BreedingYear) 
+										, data = subset(MY_TABLE_perDVD, MY_TABLE_perDVD$SynchroFeed_non_zero == 1), family = Gamma(link = log))
+
+summary(modS2_Gamma)	# can't make the glmer to converge
+}
+
+
+	
+}
+
+summary(modS_nb_glmmadmb)
 
 {#### fitness benefits of synchrony
 
-{## provisioning rate
+{## provisioning rate > do not make sense ?
 # mathematical negative correlation between number of synchronous provisioning/ total nb of provisioning and total nb of provisioning / time
 # conceptual positive correlation between number of synchronous provisioning and pro rate, as synchrony becomes more likely if interfeed interval are shorter.
 
-mod_Sync_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # storngly correlated with Synchrony
-											 scale(MeanSynchroFeed, scale=FALSE)
-											+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
-											 , data = MY_TABLE_perBrood)
+mod_Sync_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # strongly correlated with Synchrony
+														HatchingDayAfter0401 + 
+														scale(MeanSynchroFeed, scale=FALSE)
+														+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+														 , data = MY_TABLE_perBrood)
 
 summary(mod_Sync_FitnessAsProRate) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
@@ -3192,14 +3273,41 @@ scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, yl
 }
 
 
+mod_Sync_nb_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # strongly correlated with Synchrony
+														HatchingDayAfter0401 + 
+														scale(MeanSynchroFeed_nb, scale=FALSE)
+														+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
+														 , data = MY_TABLE_perBrood)
+
+summary(mod_Sync_nb_FitnessAsProRate) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
 }
 
 {# Nb ringed
-mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) +
+
+cor.test(MY_TABLE_perBrood$MeanSynchroFeed,MY_TABLE_perBrood$TotalProRate) # 0.68 !
+
+
+mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) + 
+#scale(TotalProRate, scale=FALSE) +
 										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
+										(1|BreedingYear) , data = MY_TABLE_perBrood, family = "gaussian")
 										
 summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
+
+mod_Sync_nb_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanSynchroFeed_nb, scale=FALSE) + scale(TotalProRate, scale=FALSE) +
+										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|BreedingYear) , data = MY_TABLE_perBrood)
+										
+summary(mod_Sync_nb_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
 }
 
 }
