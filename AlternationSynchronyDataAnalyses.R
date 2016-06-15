@@ -848,7 +848,7 @@ Fig1comparison
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue")]
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue","NbSynchroFemaleStart", "PropSynchroFemaleStart")]
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
@@ -3529,7 +3529,7 @@ scatter.smooth(d$MeanSynchroFeed_nb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2,
 
 summary(mod_Sync_FitnessAsNbRinged)
 
-{# consequence of synchrony in term of divorce
+{#### consequence of synchrony in term of divorce
 
 {# check dependent and explanatory variables 
 head(MY_TABLE_perBrood)
@@ -3542,12 +3542,13 @@ MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 4060
 
 
 mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed + 
-									 MeanA	+
+									MeanA	+
 									#scale(DadAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
 									# MeanDiffVisit1Rate +  
-									MPriorResidence + MPrevNbRinged +
-									 (1|SocialDadID) + (1|BreedingYear) 
+									 MPriorResidence + 
+									 MPrevNbRinged +
+									(1|SocialDadID) + (1|BreedingYear) 
 									, data = MY_TABLE_perBrood, family="binomial")
 
 summary(mod_MaleDivorce) # Number of obs: 688, groups:  SocialDadID, 231; BreedingYear, 12
@@ -3720,6 +3721,22 @@ plot(d$FPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce
 }
 
 }				
+
+
+
+#### proportion of synchronous visits where female enters first > repeatable means could induce alternation
+
+hist(MY_TABLE_perDVD$PropSynchroFemaleStart)
+
+as.data.frame(MY_TABLE_perDVD %>% group_by(PairID) %>% summarise(sd(PropSynchroFemaleStart),n()))
+
+
+
+
+
+
+
+
 
 
 

@@ -1967,6 +1967,11 @@ length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)
 length(y$NextSexSame[y$NextSexSame == FALSE & !is.na(y$NextSexSame) 
 		& y$NextTimeafterhalfminTime == TRUE & !is.na(y$NextTimeafterhalfminTime) ]),	#NbSynchro_LessConspicuous
 
+length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)
+		& x$Sex == 0]), #NbSynchroFemaleStart
+		
+		
 length(x$Sex[x$Sex == 1]),	#NbMVisit
 length(x$Sex[x$Sex == 0])	#NbFVisit
 ))
@@ -1978,7 +1983,7 @@ RawFeedingVisits_listperDVDRef_out2 <- data.frame(rownames(do.call(rbind,RawFeed
 
 nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visits)
 rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
-colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbMVisit','NbFVisit')
+colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbSynchroFemaleStart','NbMVisit','NbFVisit')
 head(RawFeedingVisits_listperDVDRef_out2)
 
 sunflowerplot(RawFeedingVisits_listperDVDRef_out2$NbSynchro_ChickFeedingEquanim~RawFeedingVisits_listperDVDRef_out2$NbSynchro_LessConspicuous)
@@ -1997,7 +2002,7 @@ MY_tblParentalCare2[MY_tblParentalCare2$DiffFVisit1 != 0 | MY_tblParentalCare2$D
 RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0339.xlsx',] # OK
 }
 
-MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous')], all.x=TRUE)
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbSynchroFemaleStart')], all.x=TRUE)
 
 }
 
@@ -2306,8 +2311,8 @@ MY_tblParentalCare$DiffTime1Rate <- abs(round(MY_tblParentalCare$FTime1RateH - M
 MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1)
 MY_tblParentalCare$SynchronyFeedValue <- round(MY_tblParentalCare$NbSynchro_ChickFeedingEquanim/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
 MY_tblParentalCare$SynchronyMvtValue <- round(MY_tblParentalCare$NbSynchro_LessConspicuous/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
-
-
+MY_tblParentalCare$PropSynchroFemaleStart <- round(MY_tblParentalCare$NbSynchroFemaleStart/MY_tblParentalCare$NbSynchro_ChickFeedingEquanim *100,1)
+hist(MY_tblParentalCare$PropSynchroFemaleStart)
 }
 
 
@@ -2343,7 +2348,8 @@ DurationScript # ~ 14 min
  # 20160525 for some unknown reasons 344 files had NS for EffectiveTime instead of 10 files...
  # 20160602 add measures of synchrony
  # 20160602 add measures of synchrony according to Joel's feedbacks 
- # 20130603 add synchrony score (divided by t-1 unlike Ben's paper)
+ # 20160603 add synchrony score (divided by t-1 unlike Ben's paper)
+ # 20160615 add proportion of synchronous visit where female enters first
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
