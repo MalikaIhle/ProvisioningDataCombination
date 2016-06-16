@@ -3728,11 +3728,25 @@ plot(d$FPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce
 
 hist(MY_TABLE_perDVD$PropSynchroFemaleStart)
 
-as.data.frame(MY_TABLE_perDVD %>% group_by(PairID) %>% summarise(sd(PropSynchroFemaleStart),n()))
+meanPropSynchroFemaleStart <- as.data.frame(MY_TABLE_perDVD %>% group_by(PairID) %>% summarise(mean(PropSynchroFemaleStart),sd(PropSynchroFemaleStart),n()))
+colnames(meanPropSynchroFemaleStart) <- c("PairID", "MeanPropSynchroFemaleStart", 'sdPropSynchroFemaleStart', 'nbMeasures')
+head(meanPropSynchroFemaleStart)
 
+meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart<-arrange(meanPropSynchroFemaleStart,MeanPropSynchroFemaleStart)
+meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart$xID <- 1:nrow(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart)
+meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart <- meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart[!is.na(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart$MeanPropSynchroFemaleStart),]
+tail(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart)
+MY_TABLE_perDVD_sortby_PropSynchroFemaleStart <- merge(x=MY_TABLE_perDVD,y=meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart[,c("PairID","xID")],
+														by='PairID', all.x=TRUE)
 
-
-
+ggplot() +
+  geom_point(data = MY_TABLE_perDVD_sortby_PropSynchroFemaleStart, aes(x = xID, y = PropSynchroFemaleStart))+
+  geom_point(data = meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart, aes(x = xID, y = MeanPropSynchroFemaleStart),
+                        colour = 'red', size = 3) +
+  geom_errorbar(data = meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart, aes(x = xID, y = MeanPropSynchroFemaleStart,
+                    ymin = MeanPropSynchroFemaleStart - sdPropSynchroFemaleStart, ymax = MeanPropSynchroFemaleStart + sdPropSynchroFemaleStart),
+                    colour = 'red', width = 0.4)+
+					xlab("PairID")
 
 
 
