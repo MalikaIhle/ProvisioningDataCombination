@@ -945,9 +945,133 @@ theme_classic()
   
 Fig1comparison 
 
+
+{### simulation alternation keeping some temporal autocorrelation: shuffling consecutives intervals within one individual 
+
+head(RawFeedingVisitsBothSexes)
+
+{# creation of i simulated dataset (and calculation of i Asim) for each j file
+
+sample_vector_prob <- function(x,...){if(length(x)<=1) x else sample(x,replace=F,prob=(seq(0.9,0.1, along.with=x) ))} 
+
+out_Asimter_j = list()
+out_Asimter_i = list()
+
+
+for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
+
+x <- split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[j]]
+
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[2]] # a normal file
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[1]] # only one male visit
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[13]] # only 2 female visits > screw up the function 'sample'
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[['935']] # no female visits > now removed
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[15]] # only one male and one female visit
+
+x <- x[order(x$TstartFeedVisit),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+
+for (i in 1:100) # to increase up to 1000
+{
+
+x1sim <- x1
+
+x1sim$Interval <- c(0, sample_vector_prob(x1sim$Interval[-1]))
+x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
+
+xsim <- rbind(x0,x1sim)
+xsim <- xsim[order(xsim$TstartFeedVisit),]
+
+Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
+
+out_Asimter_i[i] <- Asim
+out_Asimter_j[j] <- list(unlist(out_Asimter_i))
+
+		# clean up
+		x1sim <- NULL
+		Asim <- NULL
 }
 
-Fig1comparison
+		# clean up
+		x <- NULL
+		x0 <- NULL
+		x1 <- NULL
+
+}
+
+out_Asimter <- do.call(rbind, out_Asimter_j)
+
+}
+
+head(out_Asimter)
+
+{# out A sim summary
+
+out_Asimter_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Asimter)
+out_Asimter_df <- merge(x=out_Asimter_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+
+out_Asimter_df_perDiffVisit1Rate <- split(out_Asimter_df,out_Asimter_df$DiffVisit1Rate)
+
+ # x <-out_Asimter_df_perDiffVisit1Rate[[31]]
+ # x <-out_Asimter_df_perDiffVisit1Rate[[30]] # just one file
+
+
+out_Asimter_df_perDiffVisit1Rate_fun <- function(x) {
+
+x <- x[,-1]
+x <- x[,-ncol(x)]
+v <- unlist(list(x))
+
+return(c(
+mean(v), # Amean
+mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower
+mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper
+nrow(x) # NbFiles
+))
+}
+
+out_Asimter_df_perDiffVisit1Rate_out1 <- lapply(out_Asimter_df_perDiffVisit1Rate,out_Asimter_df_perDiffVisit1Rate_fun)
+out_Asimter_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asimter_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asimter_df_perDiffVisit1Rate_out1))
+
+nrow(out_Asimter_df_perDiffVisit1Rate_out2)	# 33
+rownames(out_Asimter_df_perDiffVisit1Rate_out2) <- NULL
+colnames(out_Asimter_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+
+}
+
+head(out_Asimter_df_perDiffVisit1Rate_out2)
+
+{### comparison both method of randomization
+
+out_Asimter_df_perDiffVisit1Rate_out2_forcomparison <- out_Asimter_df_perDiffVisit1Rate_out2[1:21,-5]
+out_Asimter_df_perDiffVisit1Rate_out2_forcomparison$Type <- 'Expected'
+out_Asimter_df_perDiffVisit1Rate_out2_forcomparison$TypeSim <- 'ExpectedTempoAuto'
+VisitRateDiff_Amean_for_comparison_ter <- rbind(VisitRateDiff_Amean_for_comparison,out_Asimter_df_perDiffVisit1Rate_out2_forcomparison)
+VisitRateDiff_Amean_for_comparison_ter$VisitRateDifference <- as.numeric(as.character(VisitRateDiff_Amean_for_comparison_ter$VisitRateDifference))
+
+Fig1comparisonbis <- ggplot(data=VisitRateDiff_Amean_for_comparison_ter, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("red", 'orange','green','grey'), labels=c("95% Expected Kat", "95% Expected Malika", "95% Expected Autocor","95% Observed"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
+theme_classic()
+}  
+  
+
+
+}
+
+
+
+}
+
+Fig1comparisonbis
 FigS
 
 {### create MY_TABLE_perDVD: where both parents known + add expected alternation from simulation
@@ -1033,6 +1157,26 @@ theme_classic()
 
 Fig1comparison_withMax
 
+{# add AMax to Figure 1 comparison bis
+
+VisitRateDiff_Amean_for_comparison_withAMax_bis <- bind_rows(VisitRateDiff_Amean_for_comparison_ter,as.data.frame(Summary_MY_TABLE_perDVD_perVisitRateDiff[1:21,]) )
+as.data.frame(VisitRateDiff_Amean_for_comparison_withAMax_bis)
+
+Fig1comparison_withMax_bis <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("red", 'orange','green','grey', "black"), labels=c("95% sim among watch", "95% sim within watch","95% sim within watch with autocor","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()
+
+
+}
+
+Fig1comparison_withMax_bis
 
 
 }
@@ -1055,6 +1199,7 @@ MY_TABLE_perDVD <- as.data.frame(MY_TABLE_perDVD)
 }
 
 head(MY_TABLE_perDVD)
+Fig1comparison_withMax
 
 {### create MY_TABLE_perBrood
 MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
@@ -3850,8 +3995,8 @@ summary(mod_FemaleDivorce)
 mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+MFVisit1RateH + 
 													(1|BroodRef) +
 													(1|PairID)
-													# +(1|DVDRef) 
-													, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >0,], family ="binomial")
+													 #+(1|DVDRef) 
+													, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >3,], family ="binomial")
 
 summary(mod_proportionSexStartSynchro)
 
