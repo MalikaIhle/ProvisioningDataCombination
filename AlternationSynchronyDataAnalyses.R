@@ -664,7 +664,7 @@ Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, gro
 Fig1
 
 
-{### simulation alternation: shuffling intervals within files where both sex visit at least once
+{### simulation alternation and synchrony: shuffling intervals within files where both sex visit at least once
 
 ## I think it could be still interesting to remove extreme values of provisioning rate (not normal to have just one visit, or 50...)
 ## I kept the time of the first visit of both male and female in each file, and randomized subsequent intervals
@@ -679,6 +679,8 @@ sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)}
   
 out_Asim_j = list()
 out_Asim_i = list()
+out_Ssim_j = list()
+out_Ssim_i = list()
 
 for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
 
@@ -709,16 +711,26 @@ x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(
 
 xsim <- rbind(x0sim,x1sim)
 xsim <- xsim[order(xsim$TstartFeedVisit),]
+xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
+xsim$NextTstartafterhalfminTstart <-  c(xsim$TstartFeedVisit[-1],NA) <= xsim$TstartFeedVisit +0.5 &  c(xsim$TstartFeedVisit[-1],NA) >= xsim$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+
 
 Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
+Ssim <- round( (length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
+		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart)]) / (nrow(xsim) -1) ) *100   ,2)
 
 out_Asim_i[i] <- Asim
 out_Asim_j[j] <- list(unlist(out_Asim_i))
+
+out_Ssim_i[i] <- Ssim
+out_Ssim_j[j] <- list(unlist(out_Ssim_i))
+
 
 		# clean up
 		x0sim <- NULL
 		x1sim <- NULL
 		Asim <- NULL
+		Ssim <- NULL
 }
 
 		# clean up
@@ -729,10 +741,12 @@ out_Asim_j[j] <- list(unlist(out_Asim_i))
 }
 
 out_Asim <- do.call(rbind, out_Asim_j)
+out_Ssim <- do.call(rbind, out_Ssim_j)
 
 }
 
 head(out_Asim)
+head(out_Ssim)
 
 {# out A sim summary
 
@@ -771,6 +785,44 @@ colnames(out_Asim_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean',
 head(out_Asim_df_perDiffVisit1Rate_out2)
 
 
+{# out S sim summary
+
+out_Ssim_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Ssim)
+out_Ssim_df <- merge(x=out_Ssim_df, y= MY_tblParentalCare[,c('DVDRef','MFVisit1RateH')], by='DVDRef', all.x =TRUE)
+
+out_Ssim_df_per_MFVisit1RateH <- split(out_Ssim_df,out_Ssim_df$MFVisit1RateH)
+
+ # x <-out_Ssim_df_per_MFVisit1RateH[[31]]
+ # x <-out_Ssim_df_per_MFVisit1RateH[[30]] # just one file
+
+
+out_Ssim_df_per_MFVisit1RateH_fun <- function(x) {
+
+x <- x[,-1]
+x <- x[,-ncol(x)]
+v <- unlist(list(x))
+
+return(c(
+mean(v), # Smean
+mean(v) - sd(v)/sqrt(length(v))*1.96, # Slower
+mean(v) + sd(v)/sqrt(length(v))*1.96, # Supper
+nrow(x) # NbFiles
+))
+}
+
+out_Ssim_df_per_MFVisit1RateH_out1 <- lapply(out_Ssim_df_per_MFVisit1RateH,out_Ssim_df_per_MFVisit1RateH_fun)
+out_Ssim_df_per_MFVisit1RateH_out2 <- data.frame(rownames(do.call(rbind,out_Ssim_df_per_MFVisit1RateH_out1)),do.call(rbind, out_Ssim_df_per_MFVisit1RateH_out1))
+
+nrow(out_Ssim_df_per_MFVisit1RateH_out2)	# 59
+rownames(out_Ssim_df_per_MFVisit1RateH_out2) <- NULL
+colnames(out_Ssim_df_per_MFVisit1RateH_out2) <- c('TotalProRate','Smean','Slower','Supper','NbFiles')
+
+}
+
+head(out_Ssim_df_per_MFVisit1RateH_out2)
+
+
+
 {# summary Aobserved when both sexes visit
 
 MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare, DiffVisit1Rate)
@@ -787,8 +839,25 @@ Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- dplyr::rename(Summary_M
 
 as.data.frame(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes)
 
+{# summary Sobserved when both sexes visit
 
-{# for the moment cut at 20 visit rate difference in both randomized and observed, and plot
+MY_tblParentalCare_perTotalProRate_bothSexes <- group_by(MY_tblParentalCare, MFVisit1RateH)
+
+Summary_MY_tblParentalCare_perTotalProRate_bothSexes <- summarise (MY_tblParentalCare_perTotalProRate_bothSexes,
+					Smean = mean(SynchronyFeedValue),
+					Slower = Smean - sd(SynchronyFeedValue)/sqrt(n())*1.96,
+					Supper = Smean + sd(SynchronyFeedValue)/sqrt(n())*1.96,
+					NbFiles = n())
+					
+Summary_MY_tblParentalCare_perTotalProRate_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perTotalProRate_bothSexes,TotalProRate= MFVisit1RateH)
+
+}
+
+as.data.frame(Summary_MY_tblParentalCare_perTotalProRate_bothSexes)
+
+
+
+{# A: for the moment cut at 20 visit rate difference in both randomized and observed, and plot
 
 Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes$Type <- "Observed"
 out_Asim_df_perDiffVisit1Rate_out2$Type <- "Expected"
@@ -811,6 +880,32 @@ Fig1bis <- ggplot(data=VisitRateDiff_Amean_bis, aes(x=VisitRateDifference, y=Ame
   theme_classic()
   
 }
+
+{# S: for the moment cut before 4 and after 40 total pro rate in both randomized and observed, and plot
+
+Summary_MY_tblParentalCare_perTotalProRate_bothSexes$Type <- "Observed"
+out_Ssim_df_per_MFVisit1RateH_out2$Type <- "Expected"
+
+
+TotalProRate_Smean_bis <- as.data.frame(rbind( Summary_MY_tblParentalCare_perTotalProRate_bothSexes[4:39,],out_Ssim_df_per_MFVisit1RateH_out2[4:39,] ))
+TotalProRate_Smean_bis$TotalProRate <- as.numeric(TotalProRate_Smean_bis$TotalProRate)
+
+
+
+FigS <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
+  xlab("Total provisioning rate")+
+  ylab("Mean synchrony")+
+  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
+  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 20)) +
+  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 20)) +  
+  theme_classic()
+  
+}
+
+
 
 }
 
@@ -841,7 +936,7 @@ Fig1comparison
 }
 
 Fig1comparison
-
+FigS
 
 
 {### create MY_TABLE_perDVD: where both parents known + add expected alternation from simulation
@@ -3724,7 +3819,7 @@ plot(d$FPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce
 
 
 
-#### proportion of synchronous visits where female enters first > repeatable means could induce alternation
+#### proportion of synchronous visits where female enters first > repeatability could induce alternation
 
 hist(MY_TABLE_perDVD$PropSynchroFemaleStart)
 
@@ -3739,7 +3834,7 @@ tail(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart)
 MY_TABLE_perDVD_sortby_PropSynchroFemaleStart <- merge(x=MY_TABLE_perDVD,y=meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart[,c("PairID","xID")],
 														by='PairID', all.x=TRUE)
 
-ggplot() +
+Fig_PropSynchroFemaleStart_perPairID <- ggplot() +
   geom_point(data = MY_TABLE_perDVD_sortby_PropSynchroFemaleStart, aes(x = xID, y = PropSynchroFemaleStart))+
   geom_point(data = meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart, aes(x = xID, y = MeanPropSynchroFemaleStart),
                         colour = 'red', size = 3) +
@@ -3747,7 +3842,8 @@ ggplot() +
                     ymin = MeanPropSynchroFemaleStart - sdPropSynchroFemaleStart, ymax = MeanPropSynchroFemaleStart + sdPropSynchroFemaleStart),
                     colour = 'red', width = 0.4)+
 					xlab("PairID")
-
+					
+Fig_PropSynchroFemaleStart_perPairID
 
 
 
