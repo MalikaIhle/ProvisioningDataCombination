@@ -1937,7 +1937,7 @@ RawFeedingVisits <- RawFeedingVisits[order(RawFeedingVisits$DVDRef,RawFeedingVis
 
 }
 
-{# calculate alternation, synchrony, and NbVisits per file
+{# calculate alternation, synchrony, duration and Nb of Visits per file
 summary(RawFeedingVisits$TendFeedVisit - RawFeedingVisits$TstartFeedVisit) # mean = 1.4, med = 0.4
 
 RawFeedingVisits_listperDVDRef <- split (RawFeedingVisits, RawFeedingVisits$Filename)
@@ -1947,6 +1947,7 @@ x <- RawFeedingVisits_listperDVDRef[[27]]
 RawFeedingVisits_listperDVDRef_fun = function(x) {
 
 x <- x[order(x$Filename, x$Tstart, -x$Tend),]
+x$Duration <- x$Tend-x$Tstart
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 x$NextTstartafterhalfminTstart <-  c(x$TstartFeedVisit[-1],NA) <= x$TstartFeedVisit +0.5 &  c(x$TstartFeedVisit[-1],NA) >= x$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
 
@@ -1973,7 +1974,11 @@ length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)
 		
 		
 length(x$Sex[x$Sex == 1]),	#NbMVisit
-length(x$Sex[x$Sex == 0])	#NbFVisit
+length(x$Sex[x$Sex == 0]),	#NbFVisit
+mean(x$Duration[x$Sex == 1]), # MmeanDuration
+mean(x$Duration[x$Sex == 0]) # FmeanDuration
+
+
 ))
 
 }
@@ -1983,7 +1988,7 @@ RawFeedingVisits_listperDVDRef_out2 <- data.frame(rownames(do.call(rbind,RawFeed
 
 nrow(RawFeedingVisits_listperDVDRef_out2) # 2100 (12 files where no Feeding visits)
 rownames(RawFeedingVisits_listperDVDRef_out2) <- NULL
-colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbSynchroFemaleStart','NbMVisit','NbFVisit')
+colnames(RawFeedingVisits_listperDVDRef_out2) <- c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbSynchroFemaleStart','NbMVisit','NbFVisit','MmeanDuration','FmeanDuration')
 head(RawFeedingVisits_listperDVDRef_out2)
 
 sunflowerplot(RawFeedingVisits_listperDVDRef_out2$NbSynchro_ChickFeedingEquanim~RawFeedingVisits_listperDVDRef_out2$NbSynchro_LessConspicuous)
@@ -2002,7 +2007,7 @@ MY_tblParentalCare2[MY_tblParentalCare2$DiffFVisit1 != 0 | MY_tblParentalCare2$D
 RawFeedingVisits[RawFeedingVisits$Filename == '2013\\VM0339.xlsx',] # OK
 }
 
-MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbSynchroFemaleStart')], all.x=TRUE)
+MY_tblParentalCare <- merge(x=MY_tblParentalCare, y =RawFeedingVisits_listperDVDRef_out2[,c('Filename','NbAlternation','NbSynchro_ChickFeedingEquanim','NbSynchro_LessConspicuous','NbSynchroFemaleStart','MmeanDuration','FmeanDuration')], all.x=TRUE)
 
 }
 
@@ -2350,6 +2355,7 @@ DurationScript # ~ 14 min
  # 20160602 add measures of synchrony according to Joel's feedbacks 
  # 20160603 add synchrony score (divided by t-1 unlike Ben's paper)
  # 20160615 add proportion of synchronous visit where female enters first
+ # 20160616 add mean duration of feeding visit per individual
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415

@@ -391,10 +391,6 @@ head(MY_tblChicks)
 head(MY_tblChicks_byRearingBrood)
 
 
-###############
-# ALTERNATION #
-###############
-
 {#### Simulation random alternation vs observed alternation
 
 {## ? keep the middle 90% of feeding rates for each sex ?
@@ -422,6 +418,12 @@ nrow(MY_tblParentalCare) # 1499 if remove quantiles
 
 {## look at raw data
 hist(MY_RawFeedingVisits$Interval,breaks=200)
+summary(MY_RawFeedingVisits$Interval)
+MY_RawFeedingVisits$Duration <- MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit
+hist(MY_RawFeedingVisits$Duration,breaks=200)
+summary(MY_RawFeedingVisits$Duration)
+
+
 }
 
 {### simulation alternation with Kat's method
@@ -681,6 +683,8 @@ out_Asim_j = list()
 out_Asim_i = list()
 out_Ssim_j = list()
 out_Ssim_i = list()
+out_SsimFemale_j = list()
+out_SsimFemale_i = list()
 
 for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
 
@@ -718,6 +722,8 @@ xsim$NextTstartafterhalfminTstart <-  c(xsim$TstartFeedVisit[-1],NA) <= xsim$Tst
 Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
 Ssim <- round( (length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
 		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart)]) / (nrow(xsim) -1) ) *100   ,2)
+SsimFemale <- length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
+		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart) & xsim$Sex == 0])	
 
 out_Asim_i[i] <- Asim
 out_Asim_j[j] <- list(unlist(out_Asim_i))
@@ -725,12 +731,16 @@ out_Asim_j[j] <- list(unlist(out_Asim_i))
 out_Ssim_i[i] <- Ssim
 out_Ssim_j[j] <- list(unlist(out_Ssim_i))
 
+out_SsimFemale_i[i] <- SsimFemale
+out_SsimFemale_j[j] <- list(unlist(out_SsimFemale_i))
+
 
 		# clean up
 		x0sim <- NULL
 		x1sim <- NULL
 		Asim <- NULL
 		Ssim <- NULL
+		SsimFemale <- NULL
 }
 
 		# clean up
@@ -742,11 +752,13 @@ out_Ssim_j[j] <- list(unlist(out_Ssim_i))
 
 out_Asim <- do.call(rbind, out_Asim_j)
 out_Ssim <- do.call(rbind, out_Ssim_j)
+out_SsimFemale <- do.call(rbind, out_SsimFemale_j)
 
 }
 
 head(out_Asim)
 head(out_Ssim)
+head(out_SsimFemale)
 
 {# out A sim summary
 
@@ -938,12 +950,11 @@ Fig1comparison
 Fig1comparison
 FigS
 
-
 {### create MY_TABLE_perDVD: where both parents known + add expected alternation from simulation
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue","NbSynchroFemaleStart", "PropSynchroFemaleStart")]
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue","NbSynchroFemaleStart", "PropSynchroFemaleStart","MmeanDuration","FmeanDuration")]
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
@@ -958,6 +969,14 @@ MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(
 nrow(MY_TABLE_perDVD) # 1599 files
 length(unique(MY_TABLE_perDVD$BroodRef)) # 872 broods
 MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
+MY_TABLE_perDVD$MFmeanDuration <- (MY_TABLE_perDVD$FmeanDuration+MY_TABLE_perDVD$MmeanDuration)/2
+MY_TABLE_perDVD$NbSynchroMaleStart <- MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim - MY_TABLE_perDVD$NbSynchroFemaleStart
+
+scatter.smooth(MY_TABLE_perDVD$FVisit1, MY_TABLE_perDVD$FmeanDuration)
+scatter.smooth(MY_TABLE_perDVD$MVisit1, MY_TABLE_perDVD$MmeanDuration)
+scatter.smooth(MY_TABLE_perDVD$MFVisit1, MY_TABLE_perDVD$MFmeanDuration)
+hist( MY_TABLE_perDVD$FmeanDuration, breaks=40)
+hist( MY_TABLE_perDVD$MmeanDuration, breaks=40)
 
 
 {# add MeanAsim and Adev
@@ -1065,7 +1084,7 @@ rownames(MY_TABLE_perBrood_out2) <- NULL
 colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed','MeanSynchroFeed_nb','MeanMFVisit1')
 
 MY_TABLE_perBrood <- merge(y=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1","FVisit1RateH","MVisit1","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","MFVisit1",
-																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax",
+																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax","PropSynchroFemaleStart","MmeanDuration","FmeanDuration","MFmeanDuration","NbSynchroFemaleStart", "NbSynchroMaleStart",
 																							"NbSynchro_ChickFeedingEquanim","NbSynchro_LessConspicuous","SynchronyFeedValue","SynchronyMvtValue",
 																							"DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs"))]),
 							x=MY_TABLE_perBrood_out2,all.x=TRUE, by='BroodRef')
@@ -1215,6 +1234,13 @@ MY_TABLE_perBirdYear <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear !
 
 head(MY_TABLE_perBirdYear)
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+###############
+# ALTERNATION #
+###############
 
 {#### Predictors of alternation
 
@@ -1822,7 +1848,6 @@ HPDinterval(R_Alternation_BreedingYear)
 }
 
 }
-
 
 {#### fitness correlate of alternation
 
@@ -3815,37 +3840,148 @@ plot(d$FPriorResidence,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivor
 plot(d$FPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FPrevNbRinged")
 }
 
-}				
+}	
+
+summary(mod_MaleDivorce)	
+summary(mod_FemaleDivorce)		
+
+{#### proportion of synchronous visits where female enters first > repeatability within pair could induce alternation
+
+mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+MFVisit1RateH + 
+													(1|BroodRef) +
+													(1|PairID)
+													# +(1|DVDRef) 
+													, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >0,], family ="binomial")
+
+summary(mod_proportionSexStartSynchro)
+
+{# model assumptions checking
+
+# check for overdispersion
+mod_proportionSexStartSynchro_overdisp <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+MFVisit1RateH + 
+												(1|BroodRef) +
+												(1|PairID)
+												 +(1|DVDRef) 
+												, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >0,], family ="binomial")
+summary(mod_proportionSexStartSynchro_overdisp)
+anova(mod_proportionSexStartSynchro_overdisp,mod_proportionSexStartSynchro)
+
+# qqplots residuals and ranef
+qqnorm(resid(mod_proportionSexStartSynchro))
+qqline(resid(mod_proportionSexStartSynchro))
+qqnorm(unlist(ranef(mod_proportionSexStartSynchro)))	
+qqline(unlist(ranef(mod_proportionSexStartSynchro)))
+
+# residuals vs fitted					?
+scatter.smooth(fitted(mod_proportionSexStartSynchro), resid(mod_proportionSexStartSynchro))
+abline(h=0, lty=2)
+
+# residuals vs predictors		
+scatter.smooth(MY_TABLE_perDVD$MFmeanDuration[MY_TABLE_perDVD$SynchronyFeedValue >0], resid(mod_proportionSexStartSynchro))
+abline(h=0, lty=2)
+scatter.smooth(MY_TABLE_perDVD$MFVisit1RateH[MY_TABLE_perDVD$SynchronyFeedValue >0], resid(mod_proportionSexStartSynchro))
+abline(h=0, lty=2)
+
+# data vs. fitted ?							
+d <- MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >0,]
+d$fitted <- fitted(mod_proportionSexStartSynchro)
+scatter.smooth(d$fitted, jitter(d$NbSynchroFemaleStart/(d$NbSynchroFemaleStart+d$NbSynchroMaleStart), 0.05),ylim=c(0, 1))
+abline(0,1)	
+
+# data and fitted against all predictors
+scatter.smooth(d$MFmeanDuration,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="proportion of synchronous visits where female enters first", xlab="MFmeanDuration")	
+scatter.smooth(d$MFVisit1RateH,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="proportion of synchronous visits where female enters first", xlab="MFVisit1RateH")	
+
+}
+
+}
+
+summary(mod_proportionSexStartSynchro)
+
+{#### variance in chick mass ~ synchrony
+
+head(MY_TABLE_perChick)
+head(MY_TABLE_perBrood)
+
+ResMassTarsus_perChick_perBrood <- as.data.frame(MY_TABLE_perChick %>% group_by(RearingBrood) %>% summarise(sd(ResMassTarsus_perChick)))
+colnames(ResMassTarsus_perChick_perBrood) <- c('RearingBrood','sdResMassTarsus')
+head(ResMassTarsus_perChick_perBrood)
+MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=ResMassTarsus_perChick_perBrood, by.x='BroodRef', by.y='RearingBrood', all.x=TRUE)
 
 
+hist(MY_TABLE_perBrood$sdMass)
+hist(MY_TABLE_perBrood$sdResMassTarsus)
 
-#### proportion of synchronous visits where female enters first > repeatability could induce alternation
+mod_Sync_sdResMassTarsus <- lmer(sdResMassTarsus ~ MixedBroodYN +
+											NbRinged + 
+											MeanSynchroFeed + 
+											#(1|SocialMumID)+ (1|SocialDadID) + 
+											(1|PairID) + (1|BreedingYear) ,data=MY_TABLE_perBrood)
+summary(mod_Sync_sdResMassTarsus) # Number of obs: 680, groups:  PairID, 378; SocialMumID, 263; SocialDadID, 253; BreedingYear, 12
 
-hist(MY_TABLE_perDVD$PropSynchroFemaleStart)
+{# model assumptions checking  > not quite but alright ??
 
-meanPropSynchroFemaleStart <- as.data.frame(MY_TABLE_perDVD %>% group_by(PairID) %>% summarise(mean(PropSynchroFemaleStart),sd(PropSynchroFemaleStart),n()))
-colnames(meanPropSynchroFemaleStart) <- c("PairID", "MeanPropSynchroFemaleStart", 'sdPropSynchroFemaleStart', 'nbMeasures')
-head(meanPropSynchroFemaleStart)
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(mod_Sync_sdResMassTarsus), resid(mod_Sync_sdResMassTarsus))	#
+abline(h=0, lty=2)
 
-meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart<-arrange(meanPropSynchroFemaleStart,MeanPropSynchroFemaleStart)
-meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart$xID <- 1:nrow(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart)
-meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart <- meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart[!is.na(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart$MeanPropSynchroFemaleStart),]
-tail(meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart)
-MY_TABLE_perDVD_sortby_PropSynchroFemaleStart <- merge(x=MY_TABLE_perDVD,y=meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart[,c("PairID","xID")],
-														by='PairID', all.x=TRUE)
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(mod_Sync_sdResMassTarsus))
+qqline(resid(mod_Sync_sdResMassTarsus))
+qqnorm(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear)) 
+qqline(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear))
 
-Fig_PropSynchroFemaleStart_perPairID <- ggplot() +
-  geom_point(data = MY_TABLE_perDVD_sortby_PropSynchroFemaleStart, aes(x = xID, y = PropSynchroFemaleStart))+
-  geom_point(data = meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart, aes(x = xID, y = MeanPropSynchroFemaleStart),
-                        colour = 'red', size = 3) +
-  geom_errorbar(data = meanPropSynchroFemaleStart_sortby_PropSynchroFemaleStart, aes(x = xID, y = MeanPropSynchroFemaleStart,
-                    ymin = MeanPropSynchroFemaleStart - sdPropSynchroFemaleStart, ymax = MeanPropSynchroFemaleStart + sdPropSynchroFemaleStart),
-                    colour = 'red', width = 0.4)+
-					xlab("PairID")
-					
-Fig_PropSynchroFemaleStart_perPairID
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(mod_Sync_sdResMassTarsus))),fitted(mod_Sync_sdResMassTarsus)) 
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(mod_Sync_sdResMassTarsus)$SocialMumID))
+mean(unlist(ranef(mod_Sync_sdResMassTarsus)$SocialDadID))
+mean(unlist(ranef(mod_Sync_sdResMassTarsus)$PairID))
+mean(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear))
+
+# residuals vs predictors
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$sdResMassTarsus),]
+
+boxplot(d$MixedBroodYN, resid(mod_Sync_sdResMassTarsus))
+abline(h=0, lty=2)
+scatter.smooth(d$NbRinged, resid(mod_Sync_sdResMassTarsus))
+abline(h=0, lty=2)
+scatter.smooth(d$MeanSynchroFeed, resid(mod_Sync_sdResMassTarsus))
+abline(h=0, lty=2)	
+	
+
+# dependent variable vs fitted
+d$fitted <- fitted(mod_Sync_sdResMassTarsus)
+scatter.smooth(d$fitted, jitter(d$sdResMassTarsus, 0.05),ylim=c(0, 5))
+
+# fitted vs all predictors
+boxplot(d$MixedBroodYN,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="MixedBroodYN")
+scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="NbRinged")
+scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="MeanSynchroFeed")
 
 
+}
+
+
+}
+
+summary(mod_Sync_sdResMassTarsus)
+
+
+###############
+# FAMILIARITY #
+###############
+
+{## same partner > higher fitness ?
+# need to control for same residency
+
+## same partner > higher synchrony ?
+# well... PairID did not explain vairaince in synchrony...
+
+## same partner > alternation ?
+# well... PairID did not explain vairaince in synchrony...
+}
 
 
 
