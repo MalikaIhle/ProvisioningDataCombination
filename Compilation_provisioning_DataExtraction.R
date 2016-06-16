@@ -4,7 +4,7 @@
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
 #	 last modif :04/05/2016
-#	 commit: add measures of synchrony to MY_tblParentalCare
+#	 commit: add synchrony to MY_tblParentalCare
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
