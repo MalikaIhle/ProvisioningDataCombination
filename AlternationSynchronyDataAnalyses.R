@@ -3250,10 +3250,10 @@ MY_TABLE_perBrood
 										# (1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
 
 mod_Prorate_FitnessAsNbRinged <- lmer(NbRinged ~ scale(TotalProRate, scale=FALSE) + 
-										#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 										(1|BreedingYear) , data = MY_TABLE_perBrood)
 										
-summary(mod_Prorate_FitnessAsNbRinged)
+summary(mod_Prorate_FitnessAsNbRinged) # fitness does not seem to be a pair trait at all !
 
 {# model assumptions checking > weird residuals ?
 
@@ -4112,6 +4112,9 @@ scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, yl
 }
 
 summary(mod_Sync_sdResMassTarsus)
+
+
+
 
 
 ###############
