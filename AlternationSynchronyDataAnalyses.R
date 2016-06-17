@@ -410,6 +410,9 @@ head(MY_tblChicks)
 head(MY_tblChicks_byRearingBrood)
 
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 {#### Simulation random alternation vs observed alternation
 
 {## ? keep the middle 90% of feeding rates for each sex ?
@@ -971,11 +974,9 @@ head(RawFeedingVisitsBothSexes)
 
 {# creation of i simulated dataset (and calculation of i Asim) for each j file
 
-sample_vector_prob <- function(x,...){if(length(x)<=1) x else sample(x,replace=F,prob=(seq(0.9,0.1, along.with=x) ))} 
+is.even <- function(x) x %% 2 == 0 
 
-out_Asimter_j = list()
-out_Asimter_i = list()
-
+out_Ashift_j = list()
 
 for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
 
@@ -992,56 +993,58 @@ x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
 
-for (i in 1:100) # to increase up to 1000
-{
 
 x1sim <- x1
 
-x1sim$Interval <- c(0, sample_vector_prob(x1sim$Interval[-1]))
+if (nrow(x1) > 1){
+
+x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)])
+
+for (i in 2:nrow(x1sim))
+{ if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
+else {x1sim$Interval[i] <- x1simInterval[i-1]}
+}
+
 x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
+
+}
+
 
 xsim <- rbind(x0,x1sim)
 xsim <- xsim[order(xsim$TstartFeedVisit),]
 
 Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
 
-out_Asimter_i[i] <- Asim
-out_Asimter_j[j] <- list(unlist(out_Asimter_i))
+out_Ashift_j[j] <- Asim
 
 		# clean up
 		x1sim <- NULL
 		Asim <- NULL
-}
-
-		# clean up
 		x <- NULL
 		x0 <- NULL
 		x1 <- NULL
 
 }
 
-out_Asimter <- do.call(rbind, out_Asimter_j)
+out_Ashift <- do.call(rbind, out_Ashift_j)
 
 }
 
-head(out_Asimter)
+head(out_Ashift)
 
 {# out A sim summary
 
-out_Asimter_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Asimter)
-out_Asimter_df <- merge(x=out_Asimter_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+out_Ashift_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Ashift)
+out_Ashift_df <- merge(x=out_Ashift_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
 
-out_Asimter_df_perDiffVisit1Rate <- split(out_Asimter_df,out_Asimter_df$DiffVisit1Rate)
+out_Ashift_df_perDiffVisit1Rate <- split(out_Ashift_df,out_Ashift_df$DiffVisit1Rate)
+x <- out_Ashift_df_perDiffVisit1Rate[[1]]
 
- # x <-out_Asimter_df_perDiffVisit1Rate[[31]]
- # x <-out_Asimter_df_perDiffVisit1Rate[[30]] # just one file
-
-
-out_Asimter_df_perDiffVisit1Rate_fun <- function(x) {
+out_Ashift_df_perDiffVisit1Rate_fun <- function(x) {
 
 x <- x[,-1]
-x <- x[,-ncol(x)]
-v <- unlist(list(x))
+v <- x[,-ncol(x)]
+
 
 return(c(
 mean(v), # Amean
@@ -1051,23 +1054,23 @@ nrow(x) # NbFiles
 ))
 }
 
-out_Asimter_df_perDiffVisit1Rate_out1 <- lapply(out_Asimter_df_perDiffVisit1Rate,out_Asimter_df_perDiffVisit1Rate_fun)
-out_Asimter_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asimter_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asimter_df_perDiffVisit1Rate_out1))
+out_Ashift_df_perDiffVisit1Rate_out1 <- lapply(out_Ashift_df_perDiffVisit1Rate,out_Ashift_df_perDiffVisit1Rate_fun)
+out_Ashift_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Ashift_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Ashift_df_perDiffVisit1Rate_out1))
 
-nrow(out_Asimter_df_perDiffVisit1Rate_out2)	# 33
-rownames(out_Asimter_df_perDiffVisit1Rate_out2) <- NULL
-colnames(out_Asimter_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+nrow(out_Ashift_df_perDiffVisit1Rate_out2)	# 33
+rownames(out_Ashift_df_perDiffVisit1Rate_out2) <- NULL
+colnames(out_Ashift_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
 
 }
 
-head(out_Asimter_df_perDiffVisit1Rate_out2)
+head(out_Ashift_df_perDiffVisit1Rate_out2)
 
 {### comparison both method of randomization
 
-out_Asimter_df_perDiffVisit1Rate_out2_forcomparison <- out_Asimter_df_perDiffVisit1Rate_out2[1:21,-5]
-out_Asimter_df_perDiffVisit1Rate_out2_forcomparison$Type <- 'Expected'
-out_Asimter_df_perDiffVisit1Rate_out2_forcomparison$TypeSim <- 'ExpectedTempoAuto'
-VisitRateDiff_Amean_for_comparison_ter <- rbind(VisitRateDiff_Amean_for_comparison,out_Asimter_df_perDiffVisit1Rate_out2_forcomparison)
+out_Ashift_df_perDiffVisit1Rate_out2_forcomparison <- out_Ashift_df_perDiffVisit1Rate_out2[1:21,-5]
+out_Ashift_df_perDiffVisit1Rate_out2_forcomparison$Type <- 'Expected'
+out_Ashift_df_perDiffVisit1Rate_out2_forcomparison$TypeSim <- 'ExpectedTempoAuto'
+VisitRateDiff_Amean_for_comparison_ter <- rbind(VisitRateDiff_Amean_for_comparison,out_Ashift_df_perDiffVisit1Rate_out2_forcomparison)
 VisitRateDiff_Amean_for_comparison_ter$VisitRateDifference <- as.numeric(as.character(VisitRateDiff_Amean_for_comparison_ter$VisitRateDifference))
 
 Fig1comparisonbis <- ggplot(data=VisitRateDiff_Amean_for_comparison_ter, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
@@ -1076,7 +1079,7 @@ geom_line()+
 geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
 xlab("Visit rate difference")+
 ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','green','grey'), labels=c("95% Expected Kat", "95% Expected Malika", "95% Expected Autocor","95% Observed"))+
+scale_colour_manual(values=c("red", 'orange','green','grey'), labels=c("95% Expected Kat (100 random.)", "95% Expected Malika (100 random.)", "95% Expected Autocor (1 random.)","95% Observed"))+
 scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
 scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
 theme_classic()
@@ -1092,6 +1095,10 @@ theme_classic()
 
 Fig1comparisonbis
 FigS
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 {### create MY_TABLE_perDVD: where both parents known + add expected alternation from simulation
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
@@ -1399,6 +1406,7 @@ MY_TABLE_perBirdYear <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear !
 head(MY_TABLE_perBirdYear)
 
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -4026,7 +4034,7 @@ mod_proportionSexStartSynchro_overdisp <- glmer(cbind(NbSynchroFemaleStart,NbSyn
 												(1|BroodRef) +
 												(1|PairID)
 												 +(1|DVDRef) 
-												, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >0,], family ="binomial")
+												, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >3,], family ="binomial")
 summary(mod_proportionSexStartSynchro_overdisp)
 anova(mod_proportionSexStartSynchro_overdisp,mod_proportionSexStartSynchro)
 
