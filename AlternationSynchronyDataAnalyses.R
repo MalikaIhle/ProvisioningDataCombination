@@ -20,6 +20,25 @@
 rm(list = ls(all = TRUE))
 
 {### packages
+
+# install.packages("beepr")
+# install.packages("RODBC")
+# install.packages("MASS")
+# install.packages("dplyr")
+# install.packages("ggplot2")
+# install.packages("boot")
+# install.packages("lme4")
+# install.packages("arm")
+# install.packages("RLRsim")
+# install.packages("MCMCglmm")
+# install.packages("R2admb")
+# install.packages("glmmADMB", 
+    # repos=c("http://glmmadmb.r-forge.r-project.org/repos",
+            # getOption("repos")),
+    # type="source")
+
+
+
 library(beepr) # so that markdown beeps when error generated
 library(RODBC)
 library(MASS) # for boxcox
