@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 16/06/2016  
+#	 last modif : 17/06/2016  
 #	 commit: analyses on synchrony 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -51,8 +51,8 @@ library(RLRsim) # for testing significance randome effect in repeatability part
 library(MCMCglmm)
 library(glmmADMB)
 
-# options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
-options(warn=-1) # for Rmarkdown not to print the warnings
+options(warn=2)	# when loop generate a error at one iteration, the loop stop, so one can call the filename and check what's wrong with it
+# options(warn=-1) # for Rmarkdown not to print the warnings
 }
 
 {### Get raw data (from source() or R_output folder)
@@ -1194,7 +1194,7 @@ geom_line()+
 geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
 xlab("Visit rate difference")+
 ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','green','grey', "black"), labels=c("95% sim among watch", "95% sim within watch","95% sim within watch with autocor","95% Observed" ,"Maximum Alternation possible"))+
+scale_colour_manual(values=c("red", 'orange','green','grey', "black"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
 scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
 scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
 theme_classic()
@@ -1225,7 +1225,7 @@ MY_TABLE_perDVD <- as.data.frame(MY_TABLE_perDVD)
 }
 
 head(MY_TABLE_perDVD)
-Fig1comparison_withMax
+Fig1comparison_withMax_bis
 
 {### create MY_TABLE_perBrood
 MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
@@ -1469,6 +1469,7 @@ modA <- lmer(AlternationValue^1.6~
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
 	DiffVisit1Rate +  
 	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	# M or F PriorResidence NS
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
@@ -1893,12 +1894,13 @@ modA_withinIndAgeEffect <- lmer(AlternationValue^1.6~
 	scale(DeltaMumAge, scale=FALSE) +
 	scale(meanDadAge, scale=FALSE) + 
 	scale(DeltaDadAge, scale=FALSE) +
-	#MumAge+
-	#DadAge+
+	#scale(MumAge, scale=FALSE)+
+	#scale(DadAge, scale=FALSE)+
 	#scale(LastMumReproAge, scale=FALSE) +
 	#scale(LastDadReproAge, scale=FALSE) +
 	#scale(FirstMumReproAge, scale=FALSE) +
 	#scale(FirstDadReproAge, scale=FALSE) +
+	
 
 	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
 	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
@@ -1914,7 +1916,7 @@ modA_withinIndAgeEffect <- lmer(AlternationValue^1.6~
 summary(modA_withinIndAgeEffect)
 # removing all Age covariate > hatching date become NS
 
-# see graph in create in paragraph 'create MY_TABLE_perBirdYear', 'get mean Alternation per year per BirdID'
+# see graph in paragraph 'create MY_TABLE_perBirdYear', 'get mean Alternation per year per BirdID'
 
 }
 
@@ -2567,9 +2569,9 @@ summary(modSurvival)
 
 {### get provisioning rate for both sex piled up
 FemaleProRate <- MY_TABLE_perDVD[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
-							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
+							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear", "FPriorResidence")]
 MaleProRate <- MY_TABLE_perDVD[,c("MVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
-							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear")]
+							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear", "MPriorResidence")]
 
 FemaleProRate$Sex <- 0
 MaleProRate$Sex <- 1					
@@ -2579,6 +2581,8 @@ colnames(FemaleProRate)[which(names(FemaleProRate) == "SocialMumID")] <- "BirdID
 colnames(MaleProRate)[which(names(MaleProRate) == "SocialDadID")] <- "BirdID"		
 colnames(FemaleProRate)[which(names(FemaleProRate) == "SocialDadID")] <- "SocialPartnerID"		
 colnames(MaleProRate)[which(names(MaleProRate) == "SocialMumID")] <- "SocialPartnerID"	
+colnames(FemaleProRate)[which(names(FemaleProRate) == "FPriorResidence")] <- "PriorResidence"		
+colnames(MaleProRate)[which(names(MaleProRate) == "MPriorResidence")] <- "PriorResidence"	
 
 head(FemaleProRate)
 head(MaleProRate)
@@ -2620,7 +2624,7 @@ summary(mod_ProRate_female)
 
 {## with Franzi's code
 
-modProRateRpt <- lmer(Visit1RateH ~ Sex +
+modProRateRpt <- lmer(Visit1RateH ~ Sex * PriorResidence +
 									scale(HatchingDayAfter0401, scale=FALSE) + 
 									scale(DVDInfoChickNb, scale=FALSE) + 
 									ChickAgeCat + 
@@ -3139,7 +3143,8 @@ modProRateRpt_MCMCglmm_Male <- MCMCglmm(Visit1RateH ~
 										HatchingDayAfter0401 + 
 										DVDInfoChickNb + 
 										ChickAgeCat + 
-										RelTimeHrs ,
+										#PriorResidence + # p=0.12
+										RelTimeHrs, 
 									random= ~
 										BroodRef + 
 										BirdID+ 
@@ -3147,6 +3152,7 @@ modProRateRpt_MCMCglmm_Male <- MCMCglmm(Visit1RateH ~
 										BreedingYear +
 										PairID
 										, data = BirdProRate[BirdProRate$Sex == 1,]
+										#, data = BirdProRate[BirdProRate$Sex == 1 & !is.na(BirdProRate$PriorResidence),]
 										, prior = prior_modProRateRpt_MCMCglmm)
 									
 summary(modProRateRpt_MCMCglmm_Male)
@@ -3176,9 +3182,10 @@ HPDinterval(R_Alternation_BreedingYear_Male)
 
 {# Female
 modProRateRpt_MCMCglmm_Female <- MCMCglmm(Visit1RateH ~
-										HatchingDayAfter0401 + 
+										HatchingDayAfter0401 + # not signi in model with prior residence (=less data)
 										DVDInfoChickNb + 
 										ChickAgeCat + 
+										# PriorResidence + p = 0.34
 										RelTimeHrs ,
 									random= ~
 										BroodRef + 
@@ -3186,7 +3193,8 @@ modProRateRpt_MCMCglmm_Female <- MCMCglmm(Visit1RateH ~
 										SocialPartnerID +
 										BreedingYear +
 										PairID
-										, data = BirdProRate[BirdProRate$Sex == 0,]
+										, data = BirdProRate[BirdProRate$Sex == 0 ,]
+										#, data = BirdProRate[BirdProRate$Sex == 0 & !is.na(BirdProRate$PriorResidence),]
 										, prior = prior_modProRateRpt_MCMCglmm)
 									
 summary(modProRateRpt_MCMCglmm_Female)
@@ -3733,6 +3741,14 @@ mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALS
 summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
 
+mod_Sync_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) + 
+												scale(TotalProRate, scale=FALSE) +
+												scale(PairBroodNb, scale=FALSE) +
+												#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+												(1|BreedingYear) , data = MY_TABLE_perBrood)
+										
+summary(mod_Sync_FitnessAsNbRinged)
+
 {# model assumptions checking > very weird residuals !
 
 # residuals vs fitted: mean should constantly be zero
@@ -3772,9 +3788,11 @@ scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, yl
 }
 
 {# MeanSynchroFeed_nb
-mod_Sync_nb_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanSynchroFeed_nb, scale=FALSE) + scale(TotalProRate, scale=FALSE) +
-										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-										(1|BreedingYear) , data = MY_TABLE_perBrood)
+mod_Sync_nb_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanSynchroFeed_nb, scale=FALSE) +
+												scale(TotalProRate, scale=FALSE) + 
+												scale(PairBroodNb, scale=FALSE) +
+												(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+												(1|BreedingYear) , data = MY_TABLE_perBrood)
 										
 summary(mod_Sync_nb_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
@@ -3833,16 +3851,17 @@ MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 4060
 }
 
 
-mod_MaleDivorce <- glmer(MDivorce~MeanSynchroFeed + 
-									MeanA	+
-									#scale(DadAge, scale=FALSE) + 
+mod_MaleDivorce <- glmer(MDivorce~  scale(MeanSynchroFeed, scale=FALSE) + 
+									#scale(MeanA, scale=FALSE)	+
+									scale(DadAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
-									# MeanDiffVisit1Rate +  
-									 MPriorResidence + 
-									 MPrevNbRinged +
+									#scale(MeanDiffVisit1Rate, scale=FALSE) +  
+									MPriorResidence + 
+									#TotalProRate+
+									#scale(MPrevNbRinged, scale=FALSE) +
 									(1|SocialDadID) + (1|BreedingYear) 
 									, data = MY_TABLE_perBrood, family="binomial")
-
+									
 summary(mod_MaleDivorce) # Number of obs: 688, groups:  SocialDadID, 231; BreedingYear, 12
 
 
@@ -3925,11 +3944,11 @@ plot(d$MPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce
 
 
 mod_FemaleDivorce <- glmer(FDivorce~MeanSynchroFeed + 
-									 MeanA	+
+									MeanA	+
 									#scale(MumAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
-									# MeanDiffVisit1Rate +  
-									# FPriorResidence + 
+									MeanDiffVisit1Rate +  
+									#FPriorResidence + 
 									FPrevNbRinged +
 									 (1|SocialMumID) + (1|BreedingYear) 
 									, data = MY_TABLE_perBrood, family="binomial")
@@ -4026,6 +4045,17 @@ mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleS
 													, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >3,], family ="binomial")
 
 summary(mod_proportionSexStartSynchro)
+
+mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ 1 + 
+													#MFmeanDuration+MFVisit1RateH + 
+													(1|BroodRef) +
+													(1|PairID)
+													 #+(1|DVDRef) 
+													, data=MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue >3,], family ="binomial")
+
+summary(mod_proportionSexStartSynchro)
+
+
 
 {# model assumptions checking
 
@@ -4152,7 +4182,7 @@ summary(mod_Sync_sdResMassTarsus)
 # need to control for same residency
 
 ## same partner > higher synchrony ?
-# well... PairID did not explain vairaince in synchrony...
+# well... PairID did not explain variance in synchrony...
 
 ## same partner > alternation ?
 # well... PairID did not explain vairaince in synchrony...
