@@ -1288,6 +1288,11 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by 
 }
 
 nrow(MY_TABLE_perBrood) # 872
+
+Mums_brood <- MY_TABLE_perBrood %>% group_by(SocialMumID)%>% summarise(n_distinct(BroodRef))
+Dads_brood <- MY_TABLE_perBrood %>% group_by(SocialDadID)%>% summarise(n_distinct(BroodRef))
+summary(Mums_brood[!is.na(Mums_brood$SocialMumID),2])
+summary(Dads_brood[!is.na(Dads_brood$SocialDadID),2])
 }
 
 head(MY_TABLE_perBrood)
@@ -3001,6 +3006,98 @@ R_Alternation_BreedingYear_Female <- modProRateRpt_MCMCglmm_Female$VCV[,"Breedin
 posterior.mode(R_Alternation_BreedingYear_Female)
 HPDinterval(R_Alternation_BreedingYear_Female)
 }
+
+}
+
+# repeatability same dataset as shinichi
+head(MY_TABLE_perDVD)
+
+data_Shinichi <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & (MY_TABLE_perDVD$BreedingYear == "2004" |MY_TABLE_perDVD$BreedingYear == "2005")  ,]
+nrow(data_Shinichi) #433
+
+{# Male
+
+modProRateRpt_lmer_Male_Shinichi_2004 <- lmer(MVisit1RateH ~ DadAge +
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										#PriorResidence + # p=0.12
+										RelTimeHrs +
+										(1|BroodRef) + 
+										(1|SocialDadID)+ 
+										(1|SocialMumID) +
+										(1|PairID)
+										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_Shinichi_2004)
+
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004 <- lmer(MVisit1RateH ~ DVDInfoChickNb +
+										#(1|BroodRef) + 
+										(1|SocialDadID) 
+										#(1|SocialMumID) +
+										#(1|PairID)
+										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004)
+
+
+modProRateRpt_lmer_Male_Shinichi_2005 <- lmer(MVisit1RateH ~ DadAge +
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										MPriorResidence +
+										RelTimeHrs +
+										(1|BroodRef) + 
+										(1|SocialDadID)+ 
+										(1|SocialMumID) +
+										(1|PairID)
+										, data = data_Shinichi[data_Shinichi$BreedingYear == "2005",])
+										
+summary(modProRateRpt_lmer_Male_Shinichi_2005)
+
+}
+
+{# Female
+
+modProRateRpt_lmer_Female_Shinichi_2004 <- lmer(FVisit1RateH ~ MumAge +
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										#PriorResidence + # p=0.12
+										RelTimeHrs +
+										(1|BroodRef) + 
+										(1|SocialDadID)+ 
+										(1|SocialMumID) +
+										(1|PairID)
+										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Female_Shinichi_2004)
+
+
+modProRateRpt_lmer_Female_LIKE_Shinichi_2004 <- lmer(FVisit1RateH ~ DVDInfoChickNb +
+										#(1|BroodRef) + 
+										#1|SocialDadID) 
+										(1|SocialMumID) 
+										#(1|PairID)
+										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Female_LIKE_Shinichi_2004)
+
+
+modProRateRpt_lmer_Female_Shinichi_2005 <- lmer(FVisit1RateH ~ MumAge +
+										HatchingDayAfter0401 + 
+										DVDInfoChickNb + 
+										ChickAgeCat + 
+										#PriorResidence + # p=0.12
+										RelTimeHrs +
+										(1|BroodRef) + 
+										(1|SocialDadID)+ 
+										(1|SocialMumID) +
+										(1|PairID)
+										, data = data_Shinichi[data_Shinichi$BreedingYear == "2005",])
+										
+summary(modProRateRpt_lmer_Female_Shinichi_2005)
 
 }
 
