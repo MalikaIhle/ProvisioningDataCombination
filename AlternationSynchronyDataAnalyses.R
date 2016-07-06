@@ -363,6 +363,12 @@ MY_tblBroods$AvgTarsus[MY_tblBroods$BroodRef == 1152] <- 17.3
 MY_tblBroods[MY_tblBroods$BroodRef == 457,] 
 MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 457] <- 1
 
+MY_tblBroods[MY_tblBroods$BroodRef==969,] # could have 2 hatchling and 1 ringed - not sure
+MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 969] <- 1
+MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
+
+
+
 
 }
 
@@ -939,6 +945,18 @@ FigS <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=T
   scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 20)) +  
   theme_classic()
   
+ 
+FigSppt_observed <- ggplot(data=TotalProRate_Smean_bis[TotalProRate_Smean_bis$Type == "Observed",], aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
+  xlab("Total provisioning rate")+
+  ylab("Mean synchrony")+
+  scale_colour_manual(values=c("black"), labels=c("95% Observed"))+
+  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 9)) +
+  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
+  theme_classic() + theme(legend.position="none")
+  
 }
 
 
@@ -1143,8 +1161,19 @@ MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$AlternationValue - MY_TABLE_perDVD$Mean
 
 }
 
+{# add MeanSsim and Sdev
 
-{# add Max A possible considering both birds provisioning rate
+MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef),MeanSsim = rowMeans(out_Ssim)), 
+				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
+
+MY_TABLE_perDVD$Sdev <-  MY_TABLE_perDVD$SynchronyFeedValue - MY_TABLE_perDVD$MeanSsim 
+
+#hist(MY_TABLE_perDVD$Sdev, breaks=50)
+
+}
+
+
+{# add Max A possible considering both birds provisioning rate - create figures with it
 MY_TABLE_perDVD$AMax <- NA
 
 for (i in 1:nrow(MY_TABLE_perDVD))
@@ -1159,6 +1188,8 @@ MY_TABLE_perDVD$AMax[i] <-
 round((((min(MY_TABLE_perDVD$FVisit1RateH[i],MY_TABLE_perDVD$MVisit1RateH[i]))*2) / (MY_TABLE_perDVD$FVisit1RateH[i] + MY_TABLE_perDVD$MVisit1RateH[i] -1))*100,2) 
 }
 }
+
+MY_TABLE_perDVD$RatioObsvMax <- round(MY_TABLE_perDVD$AlternationValue / MY_TABLE_perDVD$AMax *100)
 
 
 {# add AMax to Figure 1
@@ -1210,8 +1241,131 @@ theme(legend.position="bottom",legend.direction="vertical")
 
 Fig1comparison_withMax_bis
 
+{# create figures for ppt
+
+# observed
+
+Fig1comparison_withMax_bis_0 <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ObservedMalika" |VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ZMaximum Alternation" | VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ExpectedKat" ,],
+ aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c( "white",'black', "white"), labels=c("bla", "95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+
+# observed and maximum
+
+Fig1comparison_withMax_bis_a <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ObservedMalika" |VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ZMaximum Alternation" | VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ExpectedKat"  ,],
+ aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c('white','black', "grey"), labels=c("bla","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+
+# among files > does take into account the interdependency of the intervals of a nest watch
+
+Fig1comparison_withMax_bis_b <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ObservedMalika" |VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ZMaximum Alternation" | VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ExpectedKat" ,],
+aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("#0072B2", "black","grey"), labels=c("95% sim among watch (100 random.)", "95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+
+# within files > does not take into account the autocorrelation to environment variables
+
+Fig1comparison_withMax_bis_c <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim != "ExpectedTempoAuto",], 
+aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("#0072B2", '#56B4E9',"black","grey"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+
+# switching two by two intervals, to keep some autocorrelation and not having to assume a relevant time window 
+# > not a randomisation per see, just one created nest watch to compare with
+
+Fig1comparison_withMax_bis_d <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("#0072B2", '#56B4E9','#009E73','black', "grey"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+# what will be used
+
+Fig1comparison_withMax_bis_e <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim != "ExpectedTempoAuto",], 
+aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("white", '#56B4E9',"black","white"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
 
 }
+
+
+
+}
+
+{# add Smax to FigS
+
+MY_TABLE_perDVD_perTotalProRate <- group_by(MY_TABLE_perDVD, MFVisit1RateH)
+Summary_MY_TABLE_perDVD_perTotalProRate <- summarise (MY_TABLE_perDVD_perTotalProRate, SMaxmean = mean(AlternationValue))
+
+Summary_MY_TABLE_perDVD_perTotalProRate <- cbind(as.data.frame(Summary_MY_TABLE_perDVD_perTotalProRate), rep("ZMaximum Synchrony", nrow(Summary_MY_TABLE_perDVD_perTotalProRate)))
+colnames(Summary_MY_TABLE_perDVD_perTotalProRate) <- c("TotalProRate","Smean","Type")
+
+TotalProRate_Smean_for_comparison_withSMax <- bind_rows(TotalProRate_Smean_bis,as.data.frame(Summary_MY_TABLE_perDVD_perTotalProRate[4:39,]) )
+as.data.frame(TotalProRate_Smean_for_comparison_withSMax)
+
+FigScomparison_withMax <- ggplot(data=TotalProRate_Smean_for_comparison_withSMax, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
+  xlab("Total provisioning rate")+
+  ylab("Mean synchrony")+
+  scale_colour_manual(values=c("orange", "grey", "black"), labels=c("95% Expected", "95% Observed", "Maximum"))+
+  scale_x_continuous(breaks = pretty(TotalProRate_Smean_for_comparison_withSMax$TotalProRate, n = 20)) +
+  scale_y_continuous(breaks = pretty(TotalProRate_Smean_for_comparison_withSMax$Smean, n = 20)) +  
+  theme_classic()
+}
+
 
 
 {# add meanAge and DeltaAge for testing within and between individual effect of age
@@ -1289,10 +1443,29 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by 
 
 nrow(MY_TABLE_perBrood) # 872
 
+# add ratioRingedHatched
+BroodPercSurvived <- MY_tblBroods %>% group_by(BroodRef) %>% summarize(round(NbRinged/NbHatched*100,2))
+colnames(BroodPercSurvived) <- c("BroodRef", "RatioNbRingedNbHatched")
+MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=BroodPercSurvived, all.x=TRUE)
+MY_TABLE_perBrood$RatioNbRingedNbHatched <- as.numeric(as.character(MY_TABLE_perBrood$RatioNbRingedNbHatched))
+MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$RatioNbRingedNbHatched),]
+MY_tblBroods[MY_tblBroods$BroodRef==969,] # could have 2 hatchling  - not sure
+
+hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
+
+
+#summary nb of broods
 Mums_brood <- MY_TABLE_perBrood %>% group_by(SocialMumID)%>% summarise(n_distinct(BroodRef))
 Dads_brood <- MY_TABLE_perBrood %>% group_by(SocialDadID)%>% summarise(n_distinct(BroodRef))
 summary(Mums_brood[!is.na(Mums_brood$SocialMumID),2])
 summary(Dads_brood[!is.na(Dads_brood$SocialDadID),2])
+
+
+# difference in visit rate decline with pairbrood nb ?
+
+scatter.smooth(MY_TABLE_perBrood$PairBroodNb,MY_TABLE_perBrood$MeanDiffVisit1Rate)
+
+
 }
 
 head(MY_TABLE_perBrood)
@@ -1608,6 +1781,30 @@ modAdev <- lmer(Adev~
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
 
 summary(modAdev)
+}
+
+{### predictors ratioObsvMax
+
+hist(MY_TABLE_perDVD$RatioObsvMax)
+scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$MFVisit1RateH)
+scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$DiffVisit1Rate)
+
+
+modRatioObsvMax <- lmer(RatioObsvMax~  MFVisit1RateH+
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	# M or F PriorResidence NS
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
+
+summary(modRatioObsvMax)
 }
 
 {#### repeatability of Alternation 
@@ -2119,6 +2316,49 @@ mean(unlist(ranef(modFitnessAsNbRinged_ADev)$BreedingYear))
 
 }
 
+
+hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
+hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
+
+
+modPercSurvivedChick <- lmer(RatioNbRingedNbHatched ~ MeanA + 
+										TotalProRate+
+										PairBroodNb+
+										DadAge +
+										MumAge +
+										HatchingDayAfter0401 +
+										MBroodNb+
+										FBroodNb +
+										MPriorResidence +
+										FPriorResidence +
+										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|BreedingYear) , data = MY_TABLE_perBrood)
+										
+summary(modPercSurvivedChick)
+
+scatter.smooth(MY_TABLE_perBrood$RatioNbRingedNbHatched~MY_TABLE_perBrood$MeanA)
+
+
+modPercSurvivedChick_ADev <- lmer(RatioNbRingedNbHatched ~ TotalProRate+
+										MeanAdev+
+										PairBroodNb+
+										DadAge +
+										MumAge +
+										HatchingDayAfter0401 +
+										MBroodNb+
+										FBroodNb +
+										MPriorResidence +
+										FPriorResidence +
+										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+										(1|BreedingYear) , data = MY_TABLE_perBrood)
+										
+summary(modPercSurvivedChick_ADev)
+
+scatter.smooth(MY_TABLE_perBrood$RatioNbRingedNbHatched~MY_TABLE_perBrood$MeanAdev)
+
+
+
+
 }
 
 {## Parent survival
@@ -2377,9 +2617,9 @@ summary(modSurvival)
 
 {### get provisioning rate for both sex piled up
 FemaleProRate <- MY_TABLE_perDVD[,c("FVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
-							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear", "FPriorResidence")]
+							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear", "FPriorResidence","PairBroodNb")]
 MaleProRate <- MY_TABLE_perDVD[,c("MVisit1RateH","DVDInfoChickNb","ChickAgeCat","HatchingDayAfter0401","RelTimeHrs", 
-							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear", "MPriorResidence")]
+							"DVDRef","BroodRef","SocialMumID", "SocialDadID","PairID", "BreedingYear", "MPriorResidence","PairBroodNb")]
 
 FemaleProRate$Sex <- 0
 MaleProRate$Sex <- 1					
@@ -2397,6 +2637,9 @@ head(MaleProRate)
 
 BirdProRate <- rbind(FemaleProRate,MaleProRate)	
 BirdProRate <- BirdProRate[!is.na(BirdProRate$RelTimeHrs),]
+
+# sunflowerplot(BirdProRate$Visit1RateH~BirdProRate$DVDInfoChickNb)
+# scatter.smooth(BirdProRate$Visit1RateH~BirdProRate$DVDInfoChickNb)
 
 }
 
@@ -2912,6 +3155,7 @@ modProRateRpt_MCMCglmm_Male <- MCMCglmm(MVisit1RateH ~ DadAge +
 										DVDInfoChickNb + 
 										ChickAgeCat + 
 										#PriorResidence + # p=0.12
+										PairBroodNb +
 										RelTimeHrs, 
 									random= ~
 										BroodRef + 
@@ -2969,6 +3213,7 @@ modProRateRpt_MCMCglmm_Female <- MCMCglmm(FVisit1RateH ~MumAge +
 										DVDInfoChickNb + 
 										ChickAgeCat + 
 										# PriorResidence + p = 0.34
+										PairBroodNb +
 										RelTimeHrs ,
 									random= ~
 										BroodRef + 
@@ -3009,7 +3254,7 @@ HPDinterval(R_Alternation_BreedingYear_Female)
 
 }
 
-# repeatability same dataset as shinichi
+{# repeatability same dataset as shinichi
 head(MY_TABLE_perDVD)
 
 data_Shinichi <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & (MY_TABLE_perDVD$BreedingYear == "2004" |MY_TABLE_perDVD$BreedingYear == "2005")  ,]
@@ -3101,6 +3346,7 @@ summary(modProRateRpt_lmer_Female_Shinichi_2005)
 
 }
 
+}
 
 {# cost of provisioning rate in terms of survival ?
 # head(MY_TABLE_perBirdYear)
@@ -3449,6 +3695,26 @@ ggplot(ranefs_modS_nb_glmmadmb_PairID, aes(PairID,ranefs, colour = as.factor(Pai
 }
 
 summary(modS_nb_glmmadmb)
+
+{# predictors of Sdev
+
+modSdev <- lmer(Sdev~  
+	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to DiffVisit1Rate and with chickNb and this is mathematically linked to Sync score
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + 
+	scale(PairBroodNb, scale=FALSE) + 
+	scale(DVDInfoChickNb, scale=FALSE) + 
+	ChickAgeCat + 
+	DiffVisit1Rate +  
+	scale(RelTimeHrs, scale=FALSE) + 
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
+
+summary(modSdev)
+
+}
+
 
 {#### fitness benefits of synchrony > meaningless ?
 
