@@ -461,7 +461,7 @@ head(sys_LastSeenAlive)
 head(sunrise)
 head(LastMassTarsusChick)
 head(usys_qBroodHatchDate)
-head(usys_qBroodEggDate)
+
 
 {### extract provisioning raw data from excel files
 
@@ -2178,7 +2178,7 @@ x <- x[order(x$BroodName),]
 
 x$MPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # MPrevNbRinged
 x$MBroodNb <- 1:nrow(x) # MBroodNb
-x$MPriorResidence <- x$NestboxRef == c(NA,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here.
+x$MPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
 x$MPrevFemaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialMum[-nrow(x)]))
 x$MwithsameF <- x$SocialMumID == c(NA,x$SocialMumID[-nrow(x)]) # Mwith same Female does not take into account change of year here. and neither if male goes back with an example
 x$MDivorce <- as.POSIXct(x$MPrevFemaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$MwithsameF == FALSE
@@ -2211,7 +2211,7 @@ x <- x[order(x$BroodName),]
 
 x$FPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # FPrevNbRinged
 x$FBroodNb <- 1:nrow(x) # FBroodNb
-x$FPriorResidence <- x$NestboxRef == c(NA,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here.
+x$FPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
 x$FPrevMaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialDad[-nrow(x)]))
 x$FwithsameM <- x$SocialMumID == c(NA,x$SocialDadID[-nrow(x)]) # Fwith same Male does not take into account change of year here. and neither if female goes back with an example
 x$FDivorce <- as.POSIXct(x$FPrevMaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$FwithsameM == FALSE
@@ -2276,7 +2276,6 @@ nrow(MY_tblBroods) # 1886
 }
 
 head(MY_tblBroods)
-
 
 {### MY_tblParentalCare with summary of rates and durations (use of effective time from MY_tblDVDInfo)
 
@@ -2363,6 +2362,6 @@ DurationScript # ~ 14 min
  # 20160503 updated lastseenalive and added Mass
  # 20160504 with new dummy variables and reextract hatching date
  # 20160509 reextract BreedingYear and BroodNb by BroodName
-
+ # 20160707 set Prior residence of male and female to FALSE instead of NA for first breeding event
 
  
