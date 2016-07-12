@@ -435,6 +435,60 @@ WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDat
 ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodEggDate.BroodRef;
 ")}
 
+
+{usys_qBroodEggDate <- sqlQuery(conDB, "
+SELECT tblBroods.BroodRef, 
+IIf(usys_qBroodTrueEggDate.LayDate,
+usys_qBroodTrueEggDate.LayDate,
+usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+IIf(usys_qBroodTrueEggDate.BroodRef,
+usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+
+FROM (
+	(SELECT tblBroodEvents.BroodRef, 
+	tblBroodEvents.EventDate AS LayDate, 
+	tblBroodEvents.DateEstimated
+	FROM tblBroodEvents
+	WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+	AND ((tblBroodEvents.EventNumber)=0))
+	) 
+	AS usys_qBroodTrueEggDate 
+	
+RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+LEFT JOIN 
+	(SELECT tblBroodEvents.BroodRef, 
+	IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+	[EventDate]-[EggCount],
+	[Hatchdate]-14) AS LayDate, 
+	IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+	'EggCount','HatchDate') AS EstimateSource
+	
+	FROM tblBroodEvents 
+	LEFT JOIN 
+		(SELECT tblBroodEvents.BroodRef, 
+		tblBroodEvents.EventDate AS HatchDate, 
+		tblBroodEvents.DateEstimated
+		FROM tblBroodEvents
+		WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+		AND ((tblBroodEvents.EventNumber)=1))
+		) 
+		AS usys_qBroodHatchDatesFromTable 
+	
+	ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+	
+	WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+	AND ((tblBroodEvents.EventNumber)=4) 
+	AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+	OR (((tblBroodEvents.EventNumber)=4) 
+	AND ((tblBroodEvents.EggCount) Is Not Null))
+	
+	) 
+	AS usys_qBroodEggDateFromFirstSeen 
+	ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+	
+WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null));
+")}
+
 # BreedingYear for all brood
 
 BreedingYear <- data.frame(c("Z",LETTERS[1:25]), 2000:2025)
@@ -461,7 +515,7 @@ head(sys_LastSeenAlive)
 head(sunrise)
 head(LastMassTarsusChick)
 head(usys_qBroodHatchDate)
-
+head(usys_qBroodEggDate)
 
 {### extract provisioning raw data from excel files
 
@@ -2096,7 +2150,7 @@ MY_tblBroods$BreedingYear[substr(MY_tblBroods$BroodName,1,1) == as.character(Bre
 }
 }
 
-{# add hatching date from usys_qBroodHatchDate
+{# add hatching date from usys_qBroodHatchDate and layin date from usys_qBroodEggDate
 MY_tblBroods <- merge (x= MY_tblBroods, 
 						y= usys_qBroodHatchDate[, c('BroodRef', 'HatchDate')],
 						all.x=TRUE, by ='BroodRef')
@@ -2107,6 +2161,10 @@ MY_tblBroods$HatchingDayAfter0401[!is.na(MY_tblBroods$HatchingDate)] <-
 as.numeric(strftime(as.POSIXct(MY_tblBroods$HatchingDate[!is.na(MY_tblBroods$HatchingDate)]), format = "%j"))- 
 as.numeric(strftime(as.POSIXct(paste(MY_tblBroods$BreedingYear[!is.na(MY_tblBroods$HatchingDate)], "-04-02", sep="")), format = "%j"))
 
+
+MY_tblBroods <- merge (x= MY_tblBroods, 
+						y= usys_qBroodEggDate[, c('BroodRef', 'LayDate')],
+						all.x=TRUE, by ='BroodRef')
 
 }
 
@@ -2176,20 +2234,35 @@ MY_tblBroods_split_per_SocialDadID <- split(MY_tblBroods,MY_tblBroods$SocialDadI
 MY_tblBroods_split_per_SocialDadID_fun = function(x)  {
 x <- x[order(x$BroodName),]
 
-x$MPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # MPrevNbRinged
 x$MBroodNb <- 1:nrow(x) # MBroodNb
 x$MPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
-x$MPrevFemaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialMum[-nrow(x)]))
-x$MwithsameF <- x$SocialMumID == c(NA,x$SocialMumID[-nrow(x)]) # Mwith same Female does not take into account change of year here. and neither if male goes back with an example
-x$MDivorce <- as.POSIXct(x$MPrevFemaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$MwithsameF == FALSE
 
-x$MDivorceforEx <- NA
-if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MDivorce[i]) & x$MDivorce[i] == TRUE)
-{x$MDivorceforEx[i] <- x$SocialMumID[i] %in% x$SocialMumID[1:i-1]}}}
+	## considering divorce happened just before this brood >> removed 12/07/2016
+	# x$MPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # MPrevNbRinged
+	# x$MPrevFemaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialMum[-nrow(x)]))
+	# x$MwithsameF <- x$SocialMumID == c(NA,x$SocialMumID[-nrow(x)]) # Mwith same Female does not take into account change of year here. and neither if male goes back with an example
+	# x$MDivorce <- as.POSIXct(x$MPrevFemaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$MwithsameF == FALSE
+	
+	# x$MDivorceforEx <- NA
+	# if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MDivorce[i]) & x$MDivorce[i] == TRUE)
+	# {x$MDivorceforEx[i] <- x$SocialMumID[i] %in% x$SocialMumID[1:i-1]}}}
+	# if(nrow(x)==1)
+	# {x$MDivorceforEx <- NA}
+
+# considering wheater divorce happened just after this brood >>  added 12/07/2016
+x$MnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)	
+x$MnextLayDate <- c(x$LayDate[-1],NA)
+x$MnextFsame <- x$SocialMumID == c(x$SocialMumID[-1],NA) 
+x$MwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialMum, format = "%d.%m.%Y") > x$MnextLayDate & x$MnextFsame == FALSE
+x$MwillDivorceforEx <- NA
+if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MwillDivorce[i]) & x$MwillDivorce[i] == TRUE)
+{x$MwillDivorceforEx[i] <- x$SocialMumID[i+1] %in% x$SocialMumID[1:i-1]}}}
 if(nrow(x)==1)
-{x$MDivorceforEx <- NA}
+{x$MwillDivorceforEx <- NA}
 
-return(x[,c('BroodRef', 'MPrevNbRinged','MBroodNb','MPriorResidence','MPrevFemaleLastSeenAlive','MwithsameF','MDivorce','MDivorceforEx')])
+
+
+return(x[,c('BroodRef', 'MBroodNb','MPriorResidence','MnextNBsame','MnextLayDate','MnextFsame','MwillDivorce','MwillDivorceforEx')])
 
 }
 
@@ -2204,25 +2277,40 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialDadID_out2[
 
 {# add Female divorce
 MY_tblBroods_split_per_SocialMumID <- split(MY_tblBroods,MY_tblBroods$SocialMumID)
-x <- MY_tblBroods_split_per_SocialMumID[[5]]
+#x <- MY_tblBroods_split_per_SocialMumID[[5]]
 
 MY_tblBroods_split_per_SocialMumID_fun = function(x)  {
 x <- x[order(x$BroodName),]
 
-x$FPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # FPrevNbRinged
 x$FBroodNb <- 1:nrow(x) # FBroodNb
 x$FPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
-x$FPrevMaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialDad[-nrow(x)]))
-x$FwithsameM <- x$SocialMumID == c(NA,x$SocialDadID[-nrow(x)]) # Fwith same Male does not take into account change of year here. and neither if female goes back with an example
-x$FDivorce <- as.POSIXct(x$FPrevMaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$FwithsameM == FALSE
+	
+	## considering divorce happened just before this brood >> removed 12/07/2016
+	# x$FPrevNbRinged <- c(NA,x$NbRinged[-nrow(x)]) # FPrevNbRinged
+	# x$FPrevMaleLastSeenAlive <- c(NA,as.character(x$LastLiveRecordSocialDad[-nrow(x)]))
+	# x$FwithsameM <- x$SocialMumID == c(NA,x$SocialDadID[-nrow(x)]) # Fwith same Male does not take into account change of year here. and neither if female goes back with an example
+	# x$FDivorce <- as.POSIXct(x$FPrevMaleLastSeenAlive, format = "%d.%m.%Y") > x$HatchingDate & x$FwithsameM == FALSE
 
-x$FDivorceforEx <- NA
-if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FDivorce[i]) & x$FDivorce[i] == TRUE)
-{x$FDivorceforEx[i] <- x$SocialDadID[i] %in% x$SocialDadID[1:i-1]}}}
+	# x$FDivorceforEx <- NA
+	# if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FDivorce[i]) & x$FDivorce[i] == TRUE)
+	# {x$FDivorceforEx[i] <- x$SocialDadID[i] %in% x$SocialDadID[1:i-1]}}}
+	# if(nrow(x)==1)
+	# {x$FDivorceforEx <- NA}
+
+
+# considering wheater divorce happened just after this brood >>  added 12/07/2016
+x$FnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)	
+x$FnextLayDate <- c(x$LayDate[-1],NA)
+x$FnextMsame <- x$SocialDadID == c(x$SocialDadID[-1],NA) 
+x$FwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialDad, format = "%d.%m.%Y") > x$FnextLayDate & x$FnextMsame == FALSE
+x$FwillDivorceforEx <- NA
+if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
+{x$FwillDivorceforEx[i] <- x$SocialDadID[i+1] %in% x$SocialDadID[1:i-1]}}}
 if(nrow(x)==1)
-{x$FDivorceforEx <- NA}
+{x$FwillDivorceforEx <- NA}
 
-return(x[,c('BroodRef', 'FPrevNbRinged','FBroodNb','FPriorResidence','FPrevMaleLastSeenAlive','FwithsameM','FDivorce','FDivorceforEx')])
+
+return(x[,c('BroodRef', 'FBroodNb','FPriorResidence','FnextNBsame','FnextLayDate','FnextMsame','FwillDivorce','FwillDivorceforEx')])
 
 
 }
@@ -2363,5 +2451,5 @@ DurationScript # ~ 14 min
  # 20160504 with new dummy variables and reextract hatching date
  # 20160509 reextract BreedingYear and BroodNb by BroodName
  # 20160707 set Prior residence of male and female to FALSE instead of NA for first breeding event
-
+ # 20160712 change the way of deducting divorce: will divorce happen AFTER the brood/line considered
  
