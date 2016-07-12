@@ -1131,8 +1131,8 @@ MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1Ra
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
-"MPrevNbRinged","MBroodNb","MPriorResidence","MDivorce","MDivorceforEx",
-"FPrevNbRinged","FBroodNb","FPriorResidence","FDivorce","FDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
+"MBroodNb","MPriorResidence","MnextNBsame", "MwillDivorce","MwillDivorceforEx",
+"FBroodNb","FPriorResidence","FnextNBsame","FwillDivorce","FwillDivorceforEx","PairID","PairBroodNb","PairIDYear", "AvgMass", "MinMass", "AvgTarsus")], by='BroodRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MixedBroodYN")], by.x="BroodRef", by.y="RearingBrood", all.x=TRUE)
 
 length(unique(MY_TABLE_perDVD$BroodRef[is.na(MY_TABLE_perDVD$SocialMum) | is.na(MY_TABLE_perDVD$SocialDadID)])) # 38 broods - 63 files one parent unknown
@@ -1413,7 +1413,9 @@ mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
 mean(x$SynchronyFeedValue), # MeanSynchroFeed
 mean(x$NbSynchro_ChickFeedingEquanim), # MeanSynchroFeed_nb
 mean(x$MFVisit1), # MeanMFVisit1
-mean(x$SynchronyFeedValue) - mean(x$MeanSsim) # MeanSdev
+mean(x$SynchronyFeedValue) - mean(x$MeanSsim), # MeanSdev
+mean(x$MVisit1RateH), #MeanMVisit1RateH
+mean(x$FVisit1RateH) #MeanFVisit1RateH
 
 ))
 }
@@ -1423,7 +1425,7 @@ MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_ou
 
 nrow(MY_TABLE_perBrood_out2)	# 872
 rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed','MeanSynchroFeed_nb','MeanMFVisit1', 'MeanSdev')
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed','MeanSynchroFeed_nb','MeanMFVisit1', 'MeanSdev','MeanMVisit1RateH','MeanFVisit1RateH')
 
 MY_TABLE_perBrood <- merge(y=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1","FVisit1RateH","MVisit1","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","MFVisit1",
 																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax","PropSynchroFemaleStart","MmeanDuration","FmeanDuration","MFmeanDuration","NbSynchroFemaleStart", "NbSynchroMaleStart",
@@ -1445,7 +1447,7 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by 
 
 nrow(MY_TABLE_perBrood) # 872
 
-# add ratioRingedHatched
+{# add ratioRingedHatched
 BroodPercSurvived <- MY_tblBroods %>% group_by(BroodRef) %>% summarize(round(NbRinged/NbHatched*100,2))
 colnames(BroodPercSurvived) <- c("BroodRef", "RatioNbRingedNbHatched")
 MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=BroodPercSurvived, all.x=TRUE)
@@ -1454,14 +1456,14 @@ MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$RatioNbRingedNbHatched),]
 MY_tblBroods[MY_tblBroods$BroodRef==969,] # could have 2 hatchling  - not sure
 
 hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
+}
 
-
-#summary nb of broods
+{#summary nb of broods
 Mums_brood <- MY_TABLE_perBrood %>% group_by(SocialMumID)%>% summarise(n_distinct(BroodRef))
 Dads_brood <- MY_TABLE_perBrood %>% group_by(SocialDadID)%>% summarise(n_distinct(BroodRef))
 summary(Mums_brood[!is.na(Mums_brood$SocialMumID),2])
 summary(Dads_brood[!is.na(Dads_brood$SocialDadID),2])
-
+}
 
 # difference in visit rate decline with pairbrood nb ?
 
@@ -4146,28 +4148,27 @@ summary(mod_Sync_sdResMassTarsus)
 {#### consequence of behavioural compatiblity or fitness in term of divorce
 
 {# check dependent and explanatory variables 
-nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MDivorce) & !is.na(MY_TABLE_perBrood$MPrevNbRinged),])
-MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$MDivorce) & !is.na(MY_TABLE_perBrood$MPrevNbRinged),] # when Social female was NA
+nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MwillDivorce) & !is.na(MY_TABLE_perBrood$NbRinged),])
+MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$MwillDivorce) & !is.na(MY_TABLE_perBrood$NbRinged),] # when Social female was NA
 MY_TABLE_perBrood[MY_TABLE_perBrood$SocialDadID == 4060,]
 MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 4060,]
 
 }
 
 
-mod_MaleDivorce <- glmer(MDivorce~  scale(MeanSynchroFeed, scale=FALSE) + 
-									#scale(MeanA, scale=FALSE)	+
+mod_MaleDivorce <- glmer(MwillDivorce~  scale(MeanSynchroFeed, scale=FALSE) + 
+									scale(MeanA, scale=FALSE)	+
 									scale(DadAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
-									#scale(MeanDiffVisit1Rate, scale=FALSE) +  
-									MPriorResidence + 
-									#TotalProRate+
-									#scale(MPrevNbRinged, scale=FALSE) +
+									scale(MeanFVisit1RateH, scale=FALSE) +  
+									MnextNBsame + 
+									scale(NbRinged, scale=FALSE) +
 									(1|SocialDadID) + (1|BreedingYear) 
-									#, data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MDivorce),], family="binomial")
 									, data = MY_TABLE_perBrood, family="binomial")
 
 									
-summary(mod_MaleDivorce) # Number of obs: 688, groups:  SocialDadID, 231; BreedingYear, 12
+summary(mod_MaleDivorce) # Number of obs: 680, groups:  SocialDadID, 223; BreedingYear, 12
+
 
 
 {# model assumptions checking >> residuals not normal !!!!!!
@@ -4251,17 +4252,17 @@ mean(unlist(ranef(mod_MaleDivorce)$BreedingYear))
 
 
 
-mod_FemaleDivorce <- glmer(FDivorce~scale(MeanSynchroFeed, scale=FALSE) + 
+mod_FemaleDivorce <- glmer(FwillDivorce~scale(MeanSynchroFeed, scale=FALSE) + 
 									scale(MeanA, scale=FALSE)	+
-									#scale(MumAge, scale=FALSE) + 
+									scale(MumAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
-									scale(MeanDiffVisit1Rate, scale=FALSE) +  
-									#FPriorResidence + 
-									scale(FPrevNbRinged, scale=FALSE) +
+									scale(MeanMVisit1RateH, scale=FALSE) +  
+									FnextNBsame + 
+									scale(NbRinged, scale=FALSE) +
 									 (1|SocialMumID) + (1|BreedingYear) 
-									, data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FDivorce),], family="binomial")
+									, data = MY_TABLE_perBrood, family="binomial")
 									
-summary(mod_FemaleDivorce)
+summary(mod_FemaleDivorce) # Number of obs: 679, groups:  SocialMumID, 232; BreedingYear, 12
 
 {# model assumptions checking >> residuals not normal !!!!!!
 
@@ -4318,14 +4319,14 @@ mean(unlist(ranef(mod_FemaleDivorce)$BreedingYear))
 
 # residuals vs predictors
 
-d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FDivorce) & !is.na(MY_TABLE_perBrood$FPrevNbRinged),]
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce),]
 plot(d$MeanSynchroFeed, resid(mod_FemaleDivorce))
 abline(h=0, lty=2)
 plot(d$PairBroodNb, resid(mod_FemaleDivorce))
 abline(h=0, lty=2)
-plot(d$FPriorResidence, resid(mod_FemaleDivorce))
+plot(d$FnextNBsame, resid(mod_FemaleDivorce))
 abline(h=0, lty=2)
-plot(d$FPrevNbRinged, resid(mod_FemaleDivorce))
+plot(d$NbRinged, resid(mod_FemaleDivorce))
 abline(h=0, lty=2)
 
 # dependent variable vs fitted
@@ -4336,8 +4337,8 @@ abline(0,1)
 # fitted vs all predictors
 plot(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="MeanSynchroFeed")
 plot(d$PairBroodNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="PairBroodNb")
-plot(d$FPriorResidence,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FPriorResidence")
-plot(d$FPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FPrevNbRinged")
+plot(d$FnextNBsame,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FnextNBsame")
+plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FPrevNbRinged")
 }
 
 }	
