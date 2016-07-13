@@ -1337,6 +1337,37 @@ scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_b
 theme_classic()+
 theme(legend.position="none")
 
+
+# what will be used + autocorrelation
+
+Fig1comparison_withMax_bis_f <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("white", '#56B4E9','#009E73','black', "white"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+
+# among + within + autocorrelation + observed
+
+Fig1comparison_withMax_bis_g <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("#0072B2", '#56B4E9','#009E73','black', "white"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
+theme_classic()+
+theme(legend.position="none")
+
+
 }
 
 
@@ -3135,7 +3166,7 @@ summary(mod_ProRate_female)
 
 }
 
-modProRateRpt_Male <- lmer(MVisit1RateH ~ scale(DadAge,scale=FALSE)+
+modProRateRpt_Male <- lmer(scale(MVisit1RateH) ~ scale(DadAge,scale=FALSE)+
 										scale(HatchingDayAfter0401, scale=FALSE) + 
 										scale(DVDInfoChickNb, scale=FALSE) + 
 										ChickAgeCat + 
@@ -3154,7 +3185,7 @@ VarianceRandomEffectsMale <- as.data.frame(VarCorr(modProRateRpt_Male),comp=c("V
 VarianceRandomEffectsMale$vcov[VarianceRandomEffectsMale$grp=='SocialDadID'] / sum(VarianceRandomEffectsMale$vcov) *100 # variance explained by MID
 
 
-modProRateRpt_Female <- lmer(FVisit1RateH ~ scale(MumAge,scale=FALSE)+
+modProRateRpt_Female <- lmer(scale(FVisit1RateH) ~ scale(MumAge,scale=FALSE)+
 										scale(HatchingDayAfter0401, scale=FALSE) + 
 										scale(DVDInfoChickNb, scale=FALSE) + 
 										ChickAgeCat + 
@@ -4156,14 +4187,14 @@ MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 4060
 }
 
 
-mod_MaleDivorce <- glmer(MwillDivorce~  scale(MeanSynchroFeed, scale=FALSE) + 
-									scale(MeanA, scale=FALSE)	+
+mod_MaleDivorce <- glmer(MwillDivorce~  scale(MeanSdev, scale=FALSE) + 
+									scale(MeanAdev, scale=FALSE)	+
 									scale(DadAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
 									scale(MeanFVisit1RateH, scale=FALSE) +  
 									MnextNBsame + 
 									scale(NbRinged, scale=FALSE) +
-									(1|SocialDadID) + (1|BreedingYear) 
+									(1|SocialDadID) + (1|SocialMumID) +(1|BreedingYear) 
 									, data = MY_TABLE_perBrood, family="binomial")
 
 									
@@ -4252,14 +4283,14 @@ mean(unlist(ranef(mod_MaleDivorce)$BreedingYear))
 
 
 
-mod_FemaleDivorce <- glmer(FwillDivorce~scale(MeanSynchroFeed, scale=FALSE) + 
-									scale(MeanA, scale=FALSE)	+
+mod_FemaleDivorce <- glmer(FwillDivorce~scale(MeanSdev, scale=FALSE) + 
+									scale(MeanAdev, scale=FALSE)	+
 									scale(MumAge, scale=FALSE) + 
 									scale(PairBroodNb, scale=FALSE) +
 									scale(MeanMVisit1RateH, scale=FALSE) +  
 									FnextNBsame + 
 									scale(NbRinged, scale=FALSE) +
-									 (1|SocialMumID) + (1|BreedingYear) 
+									 (1|SocialMumID) + (1|SocialDadID) + (1|BreedingYear) 
 									, data = MY_TABLE_perBrood, family="binomial")
 									
 summary(mod_FemaleDivorce) # Number of obs: 679, groups:  SocialMumID, 232; BreedingYear, 12
