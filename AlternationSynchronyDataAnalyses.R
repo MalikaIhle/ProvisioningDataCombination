@@ -957,6 +957,30 @@ FigSppt_observed <- ggplot(data=TotalProRate_Smean_bis[TotalProRate_Smean_bis$Ty
   scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
   theme_classic() + theme(legend.position="none")
   
+  
+FigS_pptexpected <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
+  xlab("Total provisioning rate")+
+  ylab("Mean synchrony")+
+  scale_colour_manual(values=c("#56B4E9", "white"), labels=c("95% Expected", "95% Observed"))+
+  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 9)) +
+  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
+  theme_classic()+ theme(legend.position="none")
+  
+  
+FigS_pptcomplete <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
+  xlab("Total provisioning rate")+
+  ylab("Mean synchrony")+
+  scale_colour_manual(values=c("#56B4E9", "black"), labels=c("95% Expected", "95% Observed"))+
+  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 9)) +
+  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
+  theme_classic()+ theme(legend.position="none")
+  
 }
 
 
@@ -1116,8 +1140,7 @@ theme_classic()
 
 }
 
-Fig1comparisonbis
-FigS
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
