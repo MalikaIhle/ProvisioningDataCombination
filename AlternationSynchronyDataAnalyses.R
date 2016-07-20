@@ -3349,8 +3349,8 @@ HPDinterval(R_Alternation_BreedingYear_Female)
 {# repeatability same dataset as shinichi
 head(MY_TABLE_perDVD)
 
-data_Shinichi <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & (MY_TABLE_perDVD$BreedingYear == "2004" |MY_TABLE_perDVD$BreedingYear == "2005")  ,]
-nrow(data_Shinichi) #433
+data_Shinichi_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & (MY_TABLE_perDVD$BreedingYear == "2004" |MY_TABLE_perDVD$BreedingYear == "2005")  ,]
+nrow(data_Shinichi_perDVD) #433
 
 {# Male
 
@@ -3364,19 +3364,31 @@ modProRateRpt_lmer_Male_Shinichi_2004 <- lmer(MVisit1RateH ~ DadAge +
 										(1|SocialDadID)+ 
 										(1|SocialMumID) +
 										(1|PairID)
-										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
 										
 summary(modProRateRpt_lmer_Male_Shinichi_2004)
 
 
-modProRateRpt_lmer_Male_LIKE_Shinichi_2004 <- lmer(MVisit1RateH ~ DVDInfoChickNb +
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_Adj <- lmer(MVisit1RateH ~ DVDInfoChickNb +
 										#(1|BroodRef) + 
 										(1|SocialDadID) 
 										#(1|SocialMumID) +
 										#(1|PairID)
-										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
 										
-summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004)
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_Adj)
+
+
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004 <- lmer(MVisit1RateH ~ #DVDInfoChickNb +
+										#(1|BroodRef) + 
+										(1|SocialDadID) 
+										#(1|SocialMumID) +
+										#(1|PairID)
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004) # 28% !
+
 
 
 modProRateRpt_lmer_Male_Shinichi_2005 <- lmer(MVisit1RateH ~ DadAge +
@@ -3389,7 +3401,7 @@ modProRateRpt_lmer_Male_Shinichi_2005 <- lmer(MVisit1RateH ~ DadAge +
 										(1|SocialDadID)+ 
 										(1|SocialMumID) +
 										(1|PairID)
-										, data = data_Shinichi[data_Shinichi$BreedingYear == "2005",])
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2005",])
 										
 summary(modProRateRpt_lmer_Male_Shinichi_2005)
 
@@ -3407,7 +3419,7 @@ modProRateRpt_lmer_Female_Shinichi_2004 <- lmer(FVisit1RateH ~ MumAge +
 										(1|SocialDadID)+ 
 										(1|SocialMumID) +
 										(1|PairID)
-										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
 										
 summary(modProRateRpt_lmer_Female_Shinichi_2004)
 
@@ -3417,7 +3429,7 @@ modProRateRpt_lmer_Female_LIKE_Shinichi_2004 <- lmer(FVisit1RateH ~ DVDInfoChick
 										#1|SocialDadID) 
 										(1|SocialMumID) 
 										#(1|PairID)
-										, data = data_Shinichi[data_Shinichi$BreedingYear == "2004",])
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
 										
 summary(modProRateRpt_lmer_Female_LIKE_Shinichi_2004)
 
@@ -3432,11 +3444,42 @@ modProRateRpt_lmer_Female_Shinichi_2005 <- lmer(FVisit1RateH ~ MumAge +
 										(1|SocialDadID)+ 
 										(1|SocialMumID) +
 										(1|PairID)
-										, data = data_Shinichi[data_Shinichi$BreedingYear == "2005",])
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2005",])
 										
 summary(modProRateRpt_lmer_Female_Shinichi_2005)
 
 }
+
+
+head(MY_TABLE_perBrood)
+
+data_Shinichi_perBrood <- MY_TABLE_perBrood[(MY_TABLE_perBrood$BreedingYear == "2004" |MY_TABLE_perBrood$BreedingYear == "2005")  ,]
+nrow(data_Shinichi_perBrood) #237
+
+
+modProRateRpt_lmer_Male_Shinichi_2004_perBrood <- lmer(MeanMVisit1RateH ~ DadAge +
+										HatchingDayAfter0401 + 
+										NbRinged + 
+										#PriorResidence + # p=0.12
+										(1|SocialDadID)+ 
+										(1|SocialMumID) +
+										(1|PairID)
+										, data = data_Shinichi_perBrood[data_Shinichi_perBrood$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_Shinichi_2004_perBrood)
+
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood_Adj <- lmer(MeanMVisit1RateH ~ NbRinged +(1|SocialDadID) 
+														, data = data_Shinichi_perBrood[data_Shinichi_perBrood$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood_Adj) # MID = 36 % !!!
+
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood <- lmer(MeanMVisit1RateH ~ 1+(1|SocialDadID) 
+														, data = data_Shinichi_perBrood[data_Shinichi_perBrood$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood) # MID = 16%
+
 
 }
 
