@@ -70,7 +70,7 @@ output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/sta
 MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
 MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
-MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged feeding visits ; will be used for simulation
+MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
 }
 
 {# input txt files
@@ -313,8 +313,10 @@ summary(tblChicks)
 tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
 colnames(tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
 tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasured != tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
+head(tblChicks_byRearingBrood)
 
-nrow(tblChicks) # 2352 = length(unique(tblChicks$ChickID))
+
+nrow(tblChicks) # 3252 = length(unique(tblChicks$ChickID))
 
 }
 
@@ -332,7 +334,8 @@ MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 DV
 MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% unlist(FedBroods)] # 106 extra files for 48 broods (the 49th: 980 already excluded as only female visited) fed by Ian 
 )
 
-length(unique(list_non_valid_DVDRef)) # 450
+
+length(unique(list_non_valid_DVDRef)) # 450 
 
 MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
@@ -341,7 +344,11 @@ MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% l
 MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 MY_tblChicks_byRearingBrood <- tblChicks_byRearingBrood[tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
-{# fill in manually the data where Julia deleted it
+{# fill in manually the data where Julia deleted it 
+# unfortunately this list is not exhaustive and migth even be arguable 
+# they were deleted from the dataset by Julia because the genetic parents did not match the social parents
+#  but the social parents most likely did raise that one chick ! and since I am looking at social fitness...
+
 MY_tblBroods[MY_tblBroods$BroodRef == 1152,] 
 MY_tblBroods$HatchingDate <- as.character(MY_tblBroods$HatchingDate)
 MY_tblBroods$HatchingDate[MY_tblBroods$BroodRef == 1152] <- "2010-05-18" # couldn't add it because it is a new factor level...
@@ -400,10 +407,10 @@ table(unlist(Dads[!is.na(Dads$SocialDadID),2]))
 
 
 # female divorce more than male, in majority for the Exes ??? polyandrous females ?
-summary(MY_tblBroods$FDivorce)
-summary(MY_tblBroods$FDivorceforEx)
-summary(MY_tblBroods$MDivorce)
-summary(MY_tblBroods$MDivorceforEx)
+summary(MY_tblBroods$FwillDivorce)
+summary(MY_tblBroods$FwillDivorceforEx)
+summary(MY_tblBroods$MwillDivorce)
+summary(MY_tblBroods$MwillDivorceforEx)
 
 
 }
@@ -1438,7 +1445,7 @@ MY_TABLE_perDVD <- as.data.frame(MY_TABLE_perDVD)
 
 MY_TABLE_perDVD$TotalProRatePerChick <- round(MY_TABLE_perDVD$MFVisit1RateH /MY_TABLE_perDVD$DVDInfoChickNb,2)
 
-MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
+
 MY_TABLE_perDVD$BroodRef <- as.factor(MY_TABLE_perDVD$BroodRef)
 MY_TABLE_perDVD$SocialDadID <- as.factor(MY_TABLE_perDVD$SocialDadID)
 MY_TABLE_perDVD$SocialMumID <- as.factor(MY_TABLE_perDVD$SocialMumID)
@@ -1448,14 +1455,15 @@ MY_TABLE_perDVD$BreedingYear <- as.factor(MY_TABLE_perDVD$BreedingYear)
 }
 
 head(MY_TABLE_perDVD)
-Fig1comparison_withMax_bis
+Fig1comparison_withMax_bis_d
+FigScomparison_withMax
 
 {### create MY_TABLE_perBrood
 MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
 summary(MY_TABLE_perDVD$MFVisit1RateH)
 
 MY_TABLE_perBrood <- split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
-MY_TABLE_perBrood[[1]]
+	# MY_TABLE_perBrood[[1]]
 
 MY_TABLE_perBrood_fun = function(x)  {
 
@@ -1469,7 +1477,8 @@ mean(x$NbSynchro_ChickFeedingEquanim), # MeanSynchroFeed_nb
 mean(x$MFVisit1), # MeanMFVisit1
 mean(x$SynchronyFeedValue) - mean(x$MeanSsim), # MeanSdev
 mean(x$MVisit1RateH), #MeanMVisit1RateH
-mean(x$FVisit1RateH) #MeanFVisit1RateH
+mean(x$FVisit1RateH), #MeanFVisit1RateH
+mean(x$DVDInfoChickNb) # MeanDVDInfoChickNb
 
 ))
 }
@@ -1479,7 +1488,7 @@ MY_TABLE_perBrood_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perBrood_ou
 
 nrow(MY_TABLE_perBrood_out2)	# 872
 rownames(MY_TABLE_perBrood_out2) <- NULL
-colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed','MeanSynchroFeed_nb','MeanMFVisit1', 'MeanSdev','MeanMVisit1RateH','MeanFVisit1RateH')
+colnames(MY_TABLE_perBrood_out2) <- c('BroodRef','TotalProRate','MeanA', 'MeanAdev','MeanDiffVisit1Rate','MeanSynchroFeed','MeanSynchroFeed_nb','MeanMFVisit1', 'MeanSdev','MeanMVisit1RateH','MeanFVisit1RateH','MeanDVDInfoChickNb')
 
 MY_TABLE_perBrood <- merge(y=unique(MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c("DVDRef","FVisit1","FVisit1RateH","MVisit1","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","MFVisit1",
 																							"NbAlternation","AlternationValue","MeanAsim", "Adev","AMax","PropSynchroFemaleStart","MmeanDuration","FmeanDuration","MFmeanDuration","NbSynchroFemaleStart", "NbSynchroMaleStart",
@@ -1559,6 +1568,7 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=ResMassTarsus_perChick_perBrood
 }
 
 head(MY_TABLE_perChick)
+head(MY_TABLE_perBrood)
 
 {### create MY_TABLE_perBirdYear
 
@@ -1648,7 +1658,7 @@ Survival <- as.data.frame(cbind(2004:2015,do.call(rbind,FemaleSurvival),do.call(
 colnames(Survival) <- c("Year", "FSurvival","MSurvival")
 
 Survival$AvgSurvival <- round((Survival$FSurvival+Survival$MSurvival)*100/2,2)
-mean(Survival$AvgSurvival) # 57.05417
+mean(Survival$AvgSurvival) # 57.05417 # 58.11417 on 20160919
 
 ggplot(Survival, aes(x=Year, y=AvgSurvival))+
   geom_point()+
@@ -3226,6 +3236,20 @@ summary(modProRateRpt_Female) # in ppt 20160707
 VarianceRandomEffectsFemale <- as.data.frame(VarCorr(modProRateRpt_Female),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
 VarianceRandomEffectsFemale$vcov[VarianceRandomEffectsFemale$grp=='SocialMumID'] / sum(VarianceRandomEffectsFemale$vcov) *100 # variance explained by FID
 
+
+
+modProRateRpt_Male_withoutFixed <- lmer(scale(MVisit1RateH) ~ 
+										(1|BroodRef) + 
+										(1|SocialDadID)+ 
+										(1|SocialMumID) +
+										(1|BreedingYear) 
+										 + (1|PairID)
+										, data = MY_TABLE_perDVD, REML=FALSE)
+										
+summary(modProRateRpt_Male_withoutFixed) 
+VarianceRandomEffectsMale_withoutFixed <- as.data.frame(VarCorr(modProRateRpt_Male_withoutFixed),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
+VarianceRandomEffectsMale_withoutFixed$vcov[VarianceRandomEffectsMale_withoutFixed$grp=='SocialDadID'] / sum(VarianceRandomEffectsMale_withoutFixed$vcov) *100 # variance explained by MID
+
 }
 
 {# repeatability of provisioning rate per sex - MCMCglmm
@@ -3391,6 +3415,25 @@ summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004) # 28% !
 
 
 
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perchick <- lmer(MVisit1RateH/DVDInfoChickNb ~ #DVDInfoChickNb +
+										#(1|BroodRef) + 
+										(1|SocialDadID) 
+										#(1|SocialMumID) +
+										#(1|PairID)
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perchick) # 40% !
+
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perchick_Adj <- lmer(MVisit1RateH/DVDInfoChickNb ~ DVDInfoChickNb +
+										#(1|BroodRef) + 
+										(1|SocialDadID) 
+										#(1|SocialMumID) +
+										#(1|PairID)
+										, data = data_Shinichi_perDVD[data_Shinichi_perDVD$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perchick_Adj) # 35% !
+
 modProRateRpt_lmer_Male_Shinichi_2005 <- lmer(MVisit1RateH ~ DadAge +
 										HatchingDayAfter0401 + 
 										DVDInfoChickNb + 
@@ -3456,7 +3499,7 @@ head(MY_TABLE_perBrood)
 data_Shinichi_perBrood <- MY_TABLE_perBrood[(MY_TABLE_perBrood$BreedingYear == "2004" |MY_TABLE_perBrood$BreedingYear == "2005")  ,]
 nrow(data_Shinichi_perBrood) #237
 
-
+{# male
 modProRateRpt_lmer_Male_Shinichi_2004_perBrood <- lmer(MeanMVisit1RateH ~ DadAge +
 										HatchingDayAfter0401 + 
 										NbRinged + 
@@ -3479,6 +3522,22 @@ modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood <- lmer(MeanMVisit1RateH ~ 1
 														, data = data_Shinichi_perBrood[data_Shinichi_perBrood$BreedingYear == "2004",])
 										
 summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood) # MID = 16%
+
+
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood_perchick <- lmer(MeanMVisit1RateH/MeanDVDInfoChickNb ~ 1+(1|SocialDadID) 
+														, data = data_Shinichi_perBrood[data_Shinichi_perBrood$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood_perchick) # MID = %
+
+modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood_Adj_perchick <- lmer(MeanMVisit1RateH/MeanDVDInfoChickNb ~ MeanDVDInfoChickNb +(1|SocialDadID) 
+														, data = data_Shinichi_perBrood[data_Shinichi_perBrood$BreedingYear == "2004",])
+										
+summary(modProRateRpt_lmer_Male_LIKE_Shinichi_2004_perBrood_Adj_perchick) # MID =  32% !!!
+
+}
+
+
 
 
 }
