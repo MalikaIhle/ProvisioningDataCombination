@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Terry's idea: put one bird to unit, rescale other accordingly
 #	 Start : 05/10/2016
-#	 last modif : 05/10/2016
+#	 last modif : 06/10/2016
 #	 commit: 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -128,7 +128,7 @@ MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% l
 
 }
 
-MY_RawFeedingVisits$Sex <- as.factor(MY_RawFeedingVisits$Sex)
+#MY_RawFeedingVisits$Sex <- as.factor(MY_RawFeedingVisits$Sex)
 MY_RawFeedingVisits$DVDRef <- as.factor(MY_RawFeedingVisits$DVDRef)
 
 {### keep files with at least 2 visit per sex
@@ -136,19 +136,27 @@ MY_RawFeedingVisits$DVDRef <- as.factor(MY_RawFeedingVisits$DVDRef)
 split_MY_RawFeedingVisits_perDVD <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$DVDRef)
 
 split_MY_RawFeedingVisits_perDVD_fun <- function(x) {
-return(c(nrow(x[x$Sex == '0',]), nrow(x[x$Sex == '1',])))
+return(c(nrow(x[x$Sex == 0,]), nrow(x[x$Sex == 1,]), nrow(x)))
 }
 
 out1_split_MY_RawFeedingVisits_perDVD <- lapply(split_MY_RawFeedingVisits_perDVD,split_MY_RawFeedingVisits_perDVD_fun)
 out2_split_MY_RawFeedingVisits_perDVD <- data.frame(rownames(do.call(rbind,out1_split_MY_RawFeedingVisits_perDVD)),do.call(rbind, out1_split_MY_RawFeedingVisits_perDVD))
 nrow(out2_split_MY_RawFeedingVisits_perDVD)	# 1662
 rownames(out2_split_MY_RawFeedingVisits_perDVD) <- NULL
-colnames(out2_split_MY_RawFeedingVisits_perDVD) <- c('DVDRef','CoutSex0','CoutSex1')
+colnames(out2_split_MY_RawFeedingVisits_perDVD) <- c('DVDRef','CoutSex0','CoutSex1','Nrow')
 
 DVDRefToExclude <- out2_split_MY_RawFeedingVisits_perDVD$DVDRef[out2_split_MY_RawFeedingVisits_perDVD$CoutSex0 <2 | out2_split_MY_RawFeedingVisits_perDVD$CoutSex1 <2]
 
 
 MY_RawFeedingVisits <- data.frame(MY_RawFeedingVisits[!MY_RawFeedingVisits$DVDRef %in% DVDRefToExclude,])
+
+out3_split_MY_RawFeedingVisits_perDVD <- data.frame(out2_split_MY_RawFeedingVisits_perDVD[!out2_split_MY_RawFeedingVisits_perDVD$DVDRef %in% DVDRefToExclude,])
+out3_split_MY_RawFeedingVisits_perDVD$splitID <- seq_along(out3_split_MY_RawFeedingVisits_perDVD$DVDRef)
+head(out3_split_MY_RawFeedingVisits_perDVD)
+
+MY_RawFeedingVisits <- MY_RawFeedingVisits[,c('DVDRef', 'TstartFeedVisit','Sex','Interval' )]
+MY_RawFeedingVisits <- merge(MY_RawFeedingVisits, out3_split_MY_RawFeedingVisits_perDVD[,c('DVDRef','splitID')])
+MY_RawFeedingVisits <- MY_RawFeedingVisits[order(MY_RawFeedingVisits$DVDRef),]
 
 }
 
@@ -167,10 +175,10 @@ plot9randomgraphsTimeInNB <- function(){
 p <- NULL
 
 for (j in 1:9)  {
-for (i in sample(1:1662,9))
+for (i in sample(1:length(split_MY_RawFeedingVisits_perDVD),9))
 {
-p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=Sex)) + 
-		geom_segment(aes(x=TstartFeedVisit, xend=TendFeedVisit, y=Sex, yend=Sex), size=3) +
+p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=as.factor(Sex))) + 
+		geom_segment(aes(x=TstartFeedVisit, xend=TendFeedVisit, y=as.factor(Sex), yend=as.factor(Sex)), size=3) +
 		xlab("Duration") +
 		geom_text(x=max(split_MY_RawFeedingVisits_perDVD[[i]]$TendFeedVisit)/2, 
 				y= 0.5,label=unique(split_MY_RawFeedingVisits_perDVD[[i]]$DVDRef), colour='black')+
@@ -191,10 +199,10 @@ plot9randomgraphs <- function(){
 p <- NULL
 
 for (j in 1:9)  {
-for (i in sample(1:1662,9))
+for (i in sample(1:length(split_MY_RawFeedingVisits_perDVD),9))
 {
-p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=Sex)) + 
-		geom_segment(aes(x=TstartFeedVisit, xend=TstartFeedVisit+0.5, y=Sex, yend=Sex), size=3) +
+p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=as.factor(Sex))) + 
+		geom_segment(aes(x=TstartFeedVisit, xend=TstartFeedVisit+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3) +
 		xlab("Duration") +
 		geom_text(x=max(split_MY_RawFeedingVisits_perDVD[[i]]$TendFeedVisit)/2, 
 				y= 0.5,label=unique(split_MY_RawFeedingVisits_perDVD[[i]]$DVDRef), colour='black')+
@@ -213,37 +221,38 @@ plot9randomgraphs()
 }
 
 
-split_MY_RawFeedingVisits_perDVD <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$DVDRef)
 
-# x <-split_MY_RawFeedingVisits_perDVD[[4]]
+{#### scale visits
 
-my_crasy_function <- function(x){ 
+split_MY_RawFeedingVisits_per_splitID <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$splitID)
 
+out_scaling <- list()
+options(warn=2)
 
+for (j in 1:length(unique(MY_RawFeedingVisits$splitID)))
+{
+
+x <- split_MY_RawFeedingVisits_per_splitID[[j]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[2]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[778]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[432]]
+	
 FirstSex <- x$Sex[1]
+x_FirstSex = subset(x, Sex == FirstSex)
+x_OtherSex = subset(x, Sex != FirstSex)
 
-x$multiplicator <- NA
-x$multiplicator[x$Sex == FirstSex] <- x$Interval[x$Sex == FirstSex] / mean(x$Interval[x$Sex == FirstSex])
+x_FirstSex$NextTstart <- c(x_FirstSex$TstartFeedVisit[-1],NA)
+x_OtherSex$NextTstart <- c(x_OtherSex$TstartFeedVisit[-1],NA)	
 
-multiplicator <-  x$Interval[x$Sex == FirstSex] / mean(x$Interval[x$Sex == FirstSex])
-multiplicator <- multiplicator[-1]
+multiplicator <-  mean(x_FirstSex$Interval[x_FirstSex$Sex == FirstSex]) /x_FirstSex$Interval[x_FirstSex$Sex == FirstSex]
 
-x$ScaledInterval <- NA
-x$ScaledInterval <- x$Interval*x$multiplicator
+# remark: problem caused by two consecutive visits of the same bird at the same Tstart (10th of minutes...) : avoided by using 'median' of the scaled intervals excluding Inf
+ScaledInterval <- median(x_FirstSex$Interval*multiplicator, na.rm=TRUE)
+multiplicator <- !is.infinite(multiplicator)
 
-x$ScaledTstart <- NA
-x$ScaledTstart[x$Sex == FirstSex] <- x$TstartFeedVisit[1] + cumsum(x$ScaledInterval[!is.na(x$ScaledInterval)])
+x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + c(0,cumsum(rep(ScaledInterval, nrow(x_FirstSex)-1)))
 
-		
-		# Modified from Lotte Schlicht
-		# find the times when males/females are in a foraging trip
-		# subset to each sex
-		x_FirstSex = subset(x, Sex == FirstSex)
-		x_OtherSex = subset(x, Sex != FirstSex)
-		
-		x_FirstSex$NextTstart <- c(x_FirstSex$TstartFeedVisit[-1],NA)
-		x_OtherSex$NextTstart <- c(x_OtherSex$TstartFeedVisit[-1],NA)		
-		
+
 		# create vector of times on a foraging trip (the *10 and then /10 are the easiest way to construct thenths of minutes)
 
 		FirstSex_trip = mapply(FUN = function(TstartFeedVisit, NextTstart) {  
@@ -272,165 +281,108 @@ x$ScaledTstart[x$Sex == FirstSex] <- x$TstartFeedVisit[1] + cumsum(x$ScaledInter
 		for (k in 1:length(FirstSex_trip)){
 		outK[k] <- length(which(OtherSex_trip[[i]] %in% FirstSex_trip[[k]]))
 		}
-		outKI[[i]] <- sum(outK*multiplicator)/10
+		outKI[[i]] <- sum(outK*multiplicator[-1])/10
 		}
 		
-		# add to subset other sex
-		x_OtherSex$ScaledInterval <- c(0,do.call(rbind,outKI))
-		x_OtherSex$ScaledTstart <- x_OtherSex$TstartFeedVisit[1] +cumsum(x_OtherSex$ScaledInterval)
-		
-		x <-rbind(x_FirstSex, x_OtherSex)
-		x <- x[,c('DVDRef','TstartFeedVisit','Sex','ScaledTstart')]
-		x <- x[order(x$TstartFeedVisit),]
-		
-return(x)		
+# add to subset other sex
+x_OtherSex$ScaledInterval <- c(0,do.call(rbind,outKI))
+x_OtherSex$ScaledTstart <- x_OtherSex$TstartFeedVisit[1] +cumsum(x_OtherSex$ScaledInterval)
+
+x <-rbind(x_FirstSex, x_OtherSex[,-which(names(x_OtherSex)%in%c("ScaledInterval"))])
+x <- x[,c('DVDRef','TstartFeedVisit','Sex','ScaledTstart','splitID')]
+x$ScaledTstart <- round(x$ScaledTstart,1)
+x <- x[order(x$TstartFeedVisit),]
+
+out_scaling[[j]] <- x	
+
+}	
+	
+MY_RawFeedingVisits_scaled <- do.call(rbind, out_scaling)
 
 }
 
+head(MY_RawFeedingVisits_scaled,20)
 
-out_crasy <- lapply(split_MY_RawFeedingVisits_perDVD,FUN=my_crasy_function) # don't know why not working
+{#### plot scaled visit near raw visits
 
+{## reshape dataframe
 
+MY_RawFeedingVisits_scaled_raw <- MY_RawFeedingVisits_scaled[,c('splitID','DVDRef','TstartFeedVisit','Sex')]
+MY_RawFeedingVisits_scaled_raw$Type <- 'Original'
+colnames(MY_RawFeedingVisits_scaled_raw)[which(names(MY_RawFeedingVisits_scaled_raw) == "TstartFeedVisit")] <- "Tstart"
+	
+MY_RawFeedingVisits_scaled_scaled <- MY_RawFeedingVisits_scaled[,c('splitID','DVDRef','ScaledTstart','Sex')]
+MY_RawFeedingVisits_scaled_scaled$Type <- 'Scaled'
+colnames(MY_RawFeedingVisits_scaled_scaled)[which(names(MY_RawFeedingVisits_scaled_scaled) == "ScaledTstart")] <- "Tstart"	
+MY_RawFeedingVisits_scaled_scaled$Sex[MY_RawFeedingVisits_scaled_scaled$Sex == 0 & MY_RawFeedingVisits_scaled_scaled$Type == "Scaled"] <- -1
+MY_RawFeedingVisits_scaled_scaled$Sex[MY_RawFeedingVisits_scaled_scaled$Sex == 1 & MY_RawFeedingVisits_scaled_scaled$Type == "Scaled"] <- 2
 
+MY_RawFeedingVisits_scaled_for_plotting <- rbind(MY_RawFeedingVisits_scaled_raw,MY_RawFeedingVisits_scaled_scaled)
+MY_RawFeedingVisits_scaled_for_plotting <- MY_RawFeedingVisits_scaled_for_plotting[order(MY_RawFeedingVisits_scaled_for_plotting$DVDRef),]
+rownames(MY_RawFeedingVisits_scaled_for_plotting) <- NULL
 
+split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID <- split(MY_RawFeedingVisits_scaled_for_plotting,MY_RawFeedingVisits_scaled_for_plotting$splitID)
 
+add_color_function <- function(x){
+x$Colours[x$Sex == 0] <- "orange"
+x$Colours[x$Sex == 1] <- "green"
 
-
-
-
-
-
-
-	# for (j in 1:length(split_MY_RawFeedingVisits_perDVD) )		{ }
-
-
-out5 <- list()
-
-for (j in 1:length(out2_split_MY_RawFeedingVisits_perDVD))		{ 
-x <-split_MY_RawFeedingVisits_perDVD[[2]]
-
-FirstSex <- x$Sex[1]
-
-x$multiplicator <- NA
-x$multiplicator[x$Sex == FirstSex] <- x$Interval[x$Sex == FirstSex] / mean(x$Interval[x$Sex == FirstSex])
-
-multiplicator <-  x$Interval[x$Sex == FirstSex] / mean(x$Interval[x$Sex == FirstSex])
-multiplicator <- multiplicator[-1]
-
-x$ScaledInterval <- NA
-x$ScaledInterval <- x$Interval*x$multiplicator
-
-x$ScaledTstart <- NA
-x$ScaledTstart[x$Sex == FirstSex] <- x$TstartFeedVisit[1] + cumsum(x$ScaledInterval[!is.na(x$ScaledInterval)])
-
-		
-		# Modified from Lotte Schlicht
-		# find the times when males/females are in a foraging trip
-		# subset to each sex
-		x_FirstSex = subset(x, Sex == FirstSex)
-		x_OtherSex = subset(x, Sex != FirstSex)
-		
-		x_FirstSex$NextTstart <- c(x_FirstSex$TstartFeedVisit[-1],NA)
-		x_OtherSex$NextTstart <- c(x_OtherSex$TstartFeedVisit[-1],NA)		
-		
-		# create vector of times on a foraging trip (the *10 and then /10 are the easiest way to construct thenths of minutes)
-
-		FirstSex_trip = mapply(FUN = function(TstartFeedVisit, NextTstart) {  
-		if (TstartFeedVisit==NextTstart) 
-		{return (TstartFeedVisit)} 
-		if (TstartFeedVisit!=NextTstart)	
-		{return(list(((TstartFeedVisit*10) : (NextTstart*10-1))/10))}}, 
-		TstartFeedVisit = x_FirstSex$TstartFeedVisit[-nrow(x_FirstSex)], 
-		NextTstart = x_FirstSex$NextTstart[-nrow(x_FirstSex)])
-		
-		OtherSex_trip = mapply(FUN = function(TstartFeedVisit, NextTstart) {  
-		if (TstartFeedVisit==NextTstart) 
-		{return (TstartFeedVisit)} 
-		if (TstartFeedVisit!=NextTstart)	
-		{return(list(((TstartFeedVisit*10) : (NextTstart*10-1))/10))}}, 
-		TstartFeedVisit = x_OtherSex$TstartFeedVisit[-nrow(x_OtherSex)], 
-		NextTstart = x_OtherSex$NextTstart[-nrow(x_OtherSex)])
-		
-
-		# check for the list entry of the other sex how many of the numbers also occur for the first sex
-		# this gives you the number of tenths-of-minutes that both birds were foraging at the same time
-		outK <- NULL
-		outKI<- list()
-		
-		for (i in 1:length(OtherSex_trip)){
-		for (k in 1:length(FirstSex_trip)){
-		outK[k] <- length(which(OtherSex_trip[[i]] %in% FirstSex_trip[[k]]))
-		}
-		outKI[[i]] <- sum(outK*multiplicator)/10
-		}
-		
-		# add to subset other sex
-		x_OtherSex$ScaledInterval <- c(0,do.call(rbind,outKI))
-		x_OtherSex$ScaledTstart <- x_OtherSex$TstartFeedVisit[1] +cumsum(x_OtherSex$ScaledInterval)
-		
-		x <-rbind(x_FirstSex, x_OtherSex)
-		x <- x[,c('DVDRef','TstartFeedVisit','Sex','ScaledTstart')]
-		x <- x[order(x$TstartFeedVisit),]
-		
-		#
-		out5[[j]] <- x
-		
-		#6. clean up
-		FirstSex <- NULL
-		x <- NULL
-		multiplicator <- NULL
-		x_FirstSex <- NULL
-		x_OtherSex <- NULL
-		FirstSex_trip <- NULL
-		OtherSex_trip <- NULL
-		outKI <- NULL
-
+if(x$Sex[1] == 0){
+x$Colours[x$Sex == -1] <- "black"
+x$Colours[x$Sex == 2] <- "deepskyblue"
+}
+else{
+x$Colours[x$Sex == -1] <- "red"
+x$Colours[x$Sex == 2] <- "black"
 }
 
-combination <- do.call(rbind, out5)
+return(x)
+}
 
-
-
-
-
-
-
-
-
-
-# ~~~~~~~~~~~~~ MESS
-
-j=3
-
-for (j in 1:length(split_MY_RawFeedingVisits_perDVD) )		{ 
-x <-split_MY_RawFeedingVisits_perDVD[[j]][,c(2,4,5,6)]
-
-FirstSex <- x$Sex[1]
-mean(x$Interval[x$Sex == FirstSex])
-
-x$multiplicator <- NA
-x$multiplicator[x$Sex == FirstSex] <- x$Interval[x$Sex == FirstSex] / mean(x$Interval[x$Sex == FirstSex])
-
-multiplicator <-  x$Interval[x$Sex == FirstSex] / mean(x$Interval[x$Sex == FirstSex])
-
-x$ScaledInterval <- NA
-x$ScaledInterval <- x$Interval*x$multiplicator
-
-x$ScaledTstart <- NA
-x$ScaledTstart[x$Sex == FirstSex] <- x$TstartFeedVisit[1] + cumsum(x$ScaledInterval[!is.na(x$ScaledInterval)])
-
-
-
+out1_split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID <- lapply(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID,add_color_function)
+MY_RawFeedingVisits_scaled_for_plotting <- do.call(rbind,out1_split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID)
+rownames(MY_RawFeedingVisits_scaled_for_plotting) <- NULL
 
 
 }
 
+head(MY_RawFeedingVisits_scaled_for_plotting,50)
 
-if (FirstSex == 0) {
-ClockSex <- -1
-OtherSex <- 2
-} else { 
-ClockSex <- 2
-OtherSex <- -1
+{## plot '4' sexes # couldn't get the rigth color to be selected
+split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID <- split(MY_RawFeedingVisits_scaled_for_plotting,MY_RawFeedingVisits_scaled_for_plotting$splitID)
+
+plot9randomgraphs_scaled <- function(){
+p <- NULL
+
+for (j in 1:9)  {
+for (i in sample(1:length(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID),9))
+{
+# colour=split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours
+p[[j]] <-ggplot(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]])  + 
+		geom_segment(aes(x=Tstart, xend=Tstart+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3, colour =split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours) +
+		#scale_colour_manual(values = split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours)+
+		xlab("Duration") + ylab("Sex")+
+		geom_text(x=(max(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Tstart) + 0.5)/2, 
+				y= 0.5,label=unique(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$DVDRef), colour='black')+
+		theme(legend.position="none") 
 }
+}
+
+multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
+
+}
+
+}
+
+set.seed(10)
+dev.new()
+plot9randomgraphs_scaled()
+
+}
+
+
+
+
+
+
 
