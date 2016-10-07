@@ -230,7 +230,7 @@ plot9randomgraphs()
 split_MY_RawFeedingVisits_per_splitID <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$splitID)
 
 out_scaling <- list()
-options(warn=2)
+options(warn=2) # so that loop breaks if one file doesn't work through all functions: call 'j' to check it out
 
 for (j in 1:length(unique(MY_RawFeedingVisits$splitID)))
 {
@@ -242,32 +242,42 @@ x <- split_MY_RawFeedingVisits_per_splitID[[j]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[7]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[13]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[1202]]
-	
-FirstSex <- x$Sex[1]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[17]]
+
+StandardizingSex <- sample(c(0,1),1) # pick a random sex as the sdandardizing sex
+FirstSex <- x$Sex[1] # who is the first sex to visit
+LastSex <- x$Sex[nrow(x)] # who is the last sex to visit
+
+if (StandardizingSex == FirstSex){ # if StandardizingSex == FirstSex, the first intervals of the others sex can already be standardized, they fully overlap with the intervals of the standardizing sex
+
 x_FirstSex = subset(x, Sex == FirstSex)
 x_OtherSex = subset(x, Sex != FirstSex)
 
 x_FirstSex$NextTstart <- c(x_FirstSex$TstartFeedVisit[-1],NA)
 x_OtherSex$NextTstart <- c(x_OtherSex$TstartFeedVisit[-1],NA)	
 
-multiplicator <-  mean(x_FirstSex$Interval[x_FirstSex$Sex == FirstSex]) /x_FirstSex$Interval[x_FirstSex$Sex == FirstSex]
+	# for the standardizing sex, all interval will be set to its initial mean interval
+	
+	multiplicator <-  mean(x_FirstSex$Interval)/x_FirstSex$Interval
 
-# remark: problem caused by two consecutive visits of the same bird at the same Tstart (10th of minutes...) : avoided by using 'median' of the scaled intervals excluding Inf
-ScaledInterval <- median(x_FirstSex$Interval*multiplicator, na.rm=TRUE)
-multiplicator <- multiplicator[-1]
-multiplicator[which(is.infinite(multiplicator))] <- multiplicator[which(is.infinite(multiplicator))-1]
+# to solve problem caused by two consecutive visits of the standardizing bird at the same Tstart (issie with scoring to the 10th of minutes...)
+# need to exclude multiplicator == 'Inf' that arise for intervals == 0
+ScaledInterval <- median(x_FirstSex$Interval*multiplicator, na.rm=TRUE) # all scaled intervals (interval*multiplicator) are the same, but those that are 'Inf' excluded by taking the 'median' of this vector
+multiplicator <- multiplicator[-1] # remove the firs multiplicator ('Inf') to keep first visit Tstart at the same ScaledTstart
+multiplicator[which(is.infinite(multiplicator))] <- multiplicator[which(is.infinite(multiplicator))-1] # replace the 'Inf' multiplicator by the multiplicator just previous to it, that is the one with the same initial Tstart
+
+# to recalculate ScaledTstart, start from the initial first Tstart and add up scaled intervals (cumulative sum)
+x_FirstSex$ScaledInterval <- c(0,(rep(ScaledInterval, nrow(x_FirstSex)-1))) # the scaled Interval for the standardizing sex is always the same, hence the repeat function
+x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + cumsum(x_FirstSex$ScaledInterval) 
 
 
-x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + c(0,cumsum(rep(ScaledInterval, nrow(x_FirstSex)-1)))
-
-
-		# create vector of times on a foraging trip (the *10 and then /10 are the easiest way to construct thenths of minutes)
+		# create vector of times on each foraging trip (all 10th in between two Tstart from the same sex)
 
 		FirstSex_trip = mapply(FUN = function(TstartFeedVisit, NextTstart) {  
 		if (TstartFeedVisit==NextTstart) 
 		{return (TstartFeedVisit)} 
 		if (TstartFeedVisit!=NextTstart)	
-		{return(list(((TstartFeedVisit*10) : (NextTstart*10-1))/10))}}, 
+		{return(list(((TstartFeedVisit*10) : (NextTstart*10-1))/10))}}, # (the *10 and then /10 are the easiest way to construct thenths of minutes)
 		TstartFeedVisit = x_FirstSex$TstartFeedVisit[-nrow(x_FirstSex)], 
 		NextTstart = x_FirstSex$NextTstart[-nrow(x_FirstSex)])
 		
@@ -280,7 +290,7 @@ x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + c(0,cumsum(rep(Scaled
 		NextTstart = x_OtherSex$NextTstart[-nrow(x_OtherSex)])
 		
 
-		# check for the list entry of the other sex how many of the numbers also occur for the first sex
+		# check for the list entry of the other sex how many of the numbers also occur for the first sex (here the standadirzing sex)
 		# this gives you the number of tenths-of-minutes that both birds were foraging at the same time
 		outK <- NULL
 		outKI<- list()
@@ -292,16 +302,32 @@ x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + c(0,cumsum(rep(Scaled
 		outKI[[i]] <- sum(outK*multiplicator)/10
 		}
 		
-# add to subset other sex
+# recalculate ScaledTstart from those ScaledIntervals for the other sex
 x_OtherSex$ScaledInterval <- c(0,do.call(rbind,outKI))
 x_OtherSex$ScaledTstart <- x_OtherSex$TstartFeedVisit[1] +cumsum(x_OtherSex$ScaledInterval)
 
-x <-rbind(x_FirstSex, x_OtherSex[,-which(names(x_OtherSex)%in%c("ScaledInterval"))])
-x <- x[,c('DVDRef','TstartFeedVisit','Sex','ScaledTstart','splitID')]
+# recreate x with Tstart and scaledTstart for both sexes
+x <-rbind(x_FirstSex, x_OtherSex)
+x <-x[,-which(names(x)%in%c("NextTstart"))]
 x$ScaledTstart <- round(x$ScaledTstart,1)
 x <- x[order(x$TstartFeedVisit),]
 
+
+if (FirstSex != LastSex){ # if the First Sex here the standardazing sex does not have intervals for the other sex to overlap with, those later can't be standardized, and are therefore 'left' intact unstandardized
+
+x$ScaledTstart[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <- x$ScaledTstart[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] + min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ]) - max(x$TstartFeedVisit[x$Sex==FirstSex])
+x$ScaledTstart[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <- x$ScaledTstart[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] + cumsum(x$Interval[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])])
+
+
+}
+
+
+# x$ScaledInterval <- 
+
 out_scaling[[j]] <- x	
+
+}
+
 
 }	
 	
