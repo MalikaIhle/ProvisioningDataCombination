@@ -15,6 +15,9 @@ rm(list = ls(all = TRUE))
 
 # I will have to select files where both birds visit at least twice, to scale at least an intervisit interval
 
+# I pick the standard bird to be the first arriving at the nest within that nest watch. 
+
+# if the first bird is not the last, the other bird last visit whose time during the last visit is not overlapping
 }
 
 {#### packages
@@ -164,7 +167,7 @@ MY_RawFeedingVisits <- MY_RawFeedingVisits[order(MY_RawFeedingVisits$DVDRef),]
 }
 
 head(MY_RawFeedingVisits)
-
+MY_RawFeedingVisits[MY_RawFeedingVisits$DVDRef == '3824',]
 
 {#### plot some raw data
 
@@ -236,6 +239,9 @@ x <- split_MY_RawFeedingVisits_per_splitID[[j]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[2]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[778]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[432]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[7]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[13]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[1202]]
 	
 FirstSex <- x$Sex[1]
 x_FirstSex = subset(x, Sex == FirstSex)
@@ -248,7 +254,9 @@ multiplicator <-  mean(x_FirstSex$Interval[x_FirstSex$Sex == FirstSex]) /x_First
 
 # remark: problem caused by two consecutive visits of the same bird at the same Tstart (10th of minutes...) : avoided by using 'median' of the scaled intervals excluding Inf
 ScaledInterval <- median(x_FirstSex$Interval*multiplicator, na.rm=TRUE)
-multiplicator <- !is.infinite(multiplicator)
+multiplicator <- multiplicator[-1]
+multiplicator[which(is.infinite(multiplicator))] <- multiplicator[which(is.infinite(multiplicator))-1]
+
 
 x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + c(0,cumsum(rep(ScaledInterval, nrow(x_FirstSex)-1)))
 
@@ -281,7 +289,7 @@ x_FirstSex$ScaledTstart <- x_FirstSex$TstartFeedVisit[1] + c(0,cumsum(rep(Scaled
 		for (k in 1:length(FirstSex_trip)){
 		outK[k] <- length(which(OtherSex_trip[[i]] %in% FirstSex_trip[[k]]))
 		}
-		outKI[[i]] <- sum(outK*multiplicator[-1])/10
+		outKI[[i]] <- sum(outK*multiplicator)/10
 		}
 		
 # add to subset other sex
@@ -357,13 +365,13 @@ p <- NULL
 for (j in 1:9)  {
 for (i in sample(1:length(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID),9))
 {
-# colour=split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours
+
 p[[j]] <-ggplot(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]])  + 
 		geom_segment(aes(x=Tstart, xend=Tstart+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3, colour =split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours) +
-		#scale_colour_manual(values = split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours)+
-		xlab("Duration") + ylab("Sex")+
+		xlab("Nest watch duration") + ylab("Sex")+ scale_y_discrete(breaks=c("-1","0","1","2"),
+        labels=c("S0", "0", "1","S1"))+
 		geom_text(x=(max(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Tstart) + 0.5)/2, 
-				y= 0.5,label=unique(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$DVDRef), colour='black')+
+				y= 2.5,label=unique(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$DVDRef), colour='black')+
 		theme(legend.position="none") 
 }
 }
