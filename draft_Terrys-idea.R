@@ -240,9 +240,9 @@ x <- split_MY_RawFeedingVisits_per_splitID[[j]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[778]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[432]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[7]]
-	# x <- split_MY_RawFeedingVisits_per_splitID[[13]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[1202]]
 	# x <- split_MY_RawFeedingVisits_per_splitID[[17]]
+	# x <- split_MY_RawFeedingVisits_per_splitID[[13]]
 
 StandardizingSex <- sample(c(0,1),1) # pick a random sex as the sdandardizing sex
 FirstSex <- x$Sex[1] # who is the first sex to visit
@@ -315,14 +315,22 @@ x <- x[order(x$TstartFeedVisit),]
 
 if (FirstSex != LastSex){ # if the First Sex here the standardazing sex does not have intervals for the other sex to overlap with, those later can't be standardized, and are therefore 'left' intact unstandardized
 
-x$ScaledTstart[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <- x$ScaledTstart[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] + min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ]) - max(x$TstartFeedVisit[x$Sex==FirstSex])
-x$ScaledTstart[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <- x$ScaledTstart[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] + cumsum(x$Interval[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])])
+# add to the last overlapping foraging trip interval, the extra time that is not overlapping, left unstandardized
+x$ScaledInterval[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <- 
+x$ScaledInterval[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])]+
+min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ]) - max(x$TstartFeedVisit[x$Sex==FirstSex])
 
+# keep the interval non standardized for the extra non overlapping trips
+x$ScaledInterval[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <- 
+x$Interval[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])]
+
+# recalculate the Tstart for the last overlapping trip of the other sex and for the exra non overlapping trips of the other sex
+x$ScaledTstart[x$TstartFeedVisit >= min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] <-
+x$ScaledTstart[x$TstartFeedVisit == max(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit <=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])] +
+cumsum(x$ScaledInterval[x$TstartFeedVisit >= min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==FirstSex]) ])])
 
 }
 
-
-# x$ScaledInterval <- 
 
 out_scaling[[j]] <- x	
 
