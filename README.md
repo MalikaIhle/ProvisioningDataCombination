@@ -30,6 +30,18 @@ query the DB to get MY_tblParentalCare, MY_tblBrood, MY_tblDVDInfo
 creates all R_output 
 
 
+# Side .R codes
+
+## simulation correlation Aleternation - Synchrony
+to understand mathematical and necessary relationships between variables
+
+## Alternation with standardized intervals
+to try out an idea how to remove the effect of both birds being potentially influence simulatenously by the environment and
+for each nest wacth, use one random sex as the bird who knows how to react to the environment
+set all its intervisit intervals to its mean
+rescaled the other bird intervisit intervals according to the standardizing bird
+calculate observed and expected alternation (after randomization) in those scaled nest watches
+
 
 
 # ErrorChecking
