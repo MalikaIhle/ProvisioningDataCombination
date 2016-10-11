@@ -15,9 +15,9 @@ rm(list = ls(all = TRUE))
 
 # I will have to select files where both birds visit at least twice, to scale at least an intervisit interval
 
-# I pick the standard bird to be the first arriving at the nest within that nest watch. 
+# if the standardizing bird is not the first and or last, the other bird first and or last visit are not overlapping: time left non-standardized
 
-# if the first bird is not the last, the other bird last visit whose time during the last visit is not overlapping
+# by rescaling, for 2% of the files the observed alternation slightly change (max Nb alternation difference = 4)
 }
 
 {#### packages
@@ -75,6 +75,8 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 }
 
+sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
+  
 }
 
 {#### selection valid files
@@ -167,61 +169,6 @@ MY_RawFeedingVisits <- MY_RawFeedingVisits[order(MY_RawFeedingVisits$DVDRef),]
 }
 
 head(MY_RawFeedingVisits)
-
-{#### plot some raw visits
-
-
-# plotting time in the nest
-
-plot9randomgraphsTimeInNB <- function(){
-p <- NULL
-
-for (j in 1:9)  {
-for (i in sample(1:length(split_MY_RawFeedingVisits_perDVD),9))
-{
-p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=as.factor(Sex))) + 
-		geom_segment(aes(x=TstartFeedVisit, xend=TendFeedVisit, y=as.factor(Sex), yend=as.factor(Sex)), size=3) +
-		xlab("Duration") +
-		geom_text(x=max(split_MY_RawFeedingVisits_perDVD[[i]]$TendFeedVisit)/2, 
-				y= 0.5,label=unique(split_MY_RawFeedingVisits_perDVD[[i]]$DVDRef), colour='black')+
-		theme(legend.position="none")
-}
-}
-
-multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
-
-}
-
-set.seed(10)
-plot9randomgraphsTimeInNB()
-
-# plotting visits, considering they do not have duration (i.e. how 'intervals' were calculated)
-
-plot9randomgraphs <- function(){
-p <- NULL
-
-for (j in 1:9)  {
-for (i in sample(1:length(split_MY_RawFeedingVisits_perDVD),9))
-{
-p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=as.factor(Sex))) + 
-		geom_segment(aes(x=TstartFeedVisit, xend=TstartFeedVisit+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3) +
-		xlab("Duration") +
-		geom_text(x=max(split_MY_RawFeedingVisits_perDVD[[i]]$TendFeedVisit)/2, 
-				y= 0.5,label=unique(split_MY_RawFeedingVisits_perDVD[[i]]$DVDRef), colour='black')+
-		theme(legend.position="none")
-}
-}
-
-multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
-
-}
-
-set.seed(10)
-dev.new()
-plot9randomgraphs()
-
-}
-
 
 
 {###### scale visits for one random set of standardizing sex
@@ -405,37 +352,6 @@ MY_RawFeedingVisits_scaled_for_plotting <- do.call(rbind, out_scaling_for_plotti
 head(MY_RawFeedingVisits_scaled,20)
 head(MY_RawFeedingVisits_scaled_for_plotting,50)
 
-{#### plot scaled visits + raw visits
-
-split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID <- split(MY_RawFeedingVisits_scaled_for_plotting,MY_RawFeedingVisits_scaled_for_plotting$splitID)
-
-plot9randomgraphs_scaled <- function(){
-p <- NULL
-
-for (j in 1:9)  {
-for (i in sample(1:length(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID),9))
-{
-
-p[[j]] <-ggplot(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]])  + 
-		geom_segment(aes(x=Tstart, xend=Tstart+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3, colour =split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours) +
-		xlab("Nest watch duration") + ylab("Sex")+ scale_y_discrete(breaks=c("-1","0","1","2"),
-        labels=c("S0", "0", "1","S1"))+
-		geom_text(x=(max(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Tstart) + 0.5)/2, 
-				y= 2.5,label=unique(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$DVDRef), colour='black')+
-		theme(legend.position="none") 
-}
-}
-
-multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
-
-}
-
-set.seed(10)
-dev.new()
-plot9randomgraphs_scaled()
-
-}
-
 
 
 {### Calculate A score for observed scaled data
@@ -445,7 +361,7 @@ plot9randomgraphs_scaled()
 MY_RawFeedingVisits_scaled_split <- split(MY_RawFeedingVisits_scaled,MY_RawFeedingVisits_scaled$splitID)
 
 MY_RawFeedingVisits_scaled_split_fun = function(x) {
-x <- x[order(x$splitID, x$ScaledTstart),]
+x <- x[order(x$ScaledTstart),] # for 2% of the files, this change slightly the order of max 4 visits
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 return(c(as.character(unique(x$DVDRef)), length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]))) #NbAlternationScaled
 }
@@ -497,8 +413,7 @@ MY_RawFeedingVisits_scaled_for_Sim <- MY_RawFeedingVisits_scaled[,c('splitID','D
 
 {# creation of i simulated dataset (and calculation of i Asim) for each j file
 
-sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
-  
+
 out_Asim_j = list()
 out_Asim_i = list()
 
@@ -626,6 +541,94 @@ MY_tblParentalCare_scaled <- MY_tblParentalCare_scaled[order(MY_tblParentalCare_
 head(MY_tblParentalCare_scaled)
 
 
+{#### timeline plots 
+
+{## plotting time in the nest
+
+plot9randomgraphsTimeInNB <- function(){
+p <- NULL
+
+for (j in 1:9)  {
+for (i in sample(1:length(split_MY_RawFeedingVisits_perDVD),9))
+{
+p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=as.factor(Sex))) + 
+		geom_segment(aes(x=TstartFeedVisit, xend=TendFeedVisit, y=as.factor(Sex), yend=as.factor(Sex)), size=3) +
+		xlab("Duration") +
+		geom_text(x=max(split_MY_RawFeedingVisits_perDVD[[i]]$TendFeedVisit)/2, 
+				y= 0.5,label=unique(split_MY_RawFeedingVisits_perDVD[[i]]$DVDRef), colour='black')+
+		theme(legend.position="none")
+}
+}
+
+multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
+
+}
+
+set.seed(10)
+dev.new()
+plot9randomgraphsTimeInNB()
+}
+
+{## plotting visits, considering they do not have duration (i.e. how 'intervals' were calculated)
+
+plot9randomgraphs <- function(){
+p <- NULL
+
+for (j in 1:9)  {
+for (i in sample(1:length(split_MY_RawFeedingVisits_perDVD),9))
+{
+p[[j]] <-ggplot(split_MY_RawFeedingVisits_perDVD[[i]], aes(colour=as.factor(Sex))) + 
+		geom_segment(aes(x=TstartFeedVisit, xend=TstartFeedVisit+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3) +
+		xlab("Duration") +
+		geom_text(x=max(split_MY_RawFeedingVisits_perDVD[[i]]$TendFeedVisit)/2, 
+				y= 0.5,label=unique(split_MY_RawFeedingVisits_perDVD[[i]]$DVDRef), colour='black')+
+		theme(legend.position="none")
+}
+}
+
+multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
+
+}
+
+set.seed(10)
+dev.new()
+plot9randomgraphs()
+
+}
+
+{## plotting scaled visits + raw visits
+
+split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID <- split(MY_RawFeedingVisits_scaled_for_plotting,MY_RawFeedingVisits_scaled_for_plotting$splitID)
+
+plot9randomgraphs_scaled <- function(){
+p <- NULL
+
+for (j in 1:9)  {
+for (i in sample(1:length(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID),9))
+{
+
+p[[j]] <-ggplot(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]])  + 
+		geom_segment(aes(x=Tstart, xend=Tstart+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3, colour =split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Colours) +
+		xlab("Nest watch duration") + ylab("Sex")+ scale_y_discrete(breaks=c("-1","0","1","2"),
+        labels=c("S0", "0", "1","S1"))+
+		geom_text(x=(max(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$Tstart) + 0.5)/2, 
+				y= 2.5,label=unique(split_MY_RawFeedingVisits_scaled_for_plotting_per_splitID[[i]]$DVDRef), colour='black')+
+		theme(legend.position="none") 
+}
+}
+
+multiplot(p[[1]],p[[2]],p[[3]], p[[4]], p[[5]], p[[6]], p[[7]], p[[8]], p[[9]], cols=3)
+
+}
+
+set.seed(10)
+dev.new()
+plot9randomgraphs_scaled()
+}
+
+}
+
+
 
 
 ## write.csv(VisitRateDiff_Amean_scaled,file = paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled.csv", sep="/"), row.names = FALSE) # 20161010
@@ -634,7 +637,7 @@ head(MY_tblParentalCare_scaled)
 
 
 
-
+## recode scaling with function instead of loop, and for both sex as standardinzing sex for each file
 
 {#### scale visits for multiple random set of standardizing sex
 split_MY_RawFeedingVisits_per_splitID <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$splitID)
@@ -781,14 +784,14 @@ return(x_for_plotting)
  
 
 out_scaling_list_0 <- lapply(X=split_MY_RawFeedingVisits_per_splitID,FUN=scaling_function, StandardizingSex = 0)
-out_scaling_list_for_plotting_0 <- lapply(X=out_scaling_list,FUN=Reshape_function_for_plotting, StandardizingSex = 0)
+out_scaling_list_for_plotting_0 <- lapply(X=out_scaling_list_0,FUN=Reshape_function_for_plotting, StandardizingSex = 0)
 
 MY_RawFeedingVisits_scaled_0 <- do.call(rbind, out_scaling_list_0)
 MY_RawFeedingVisits_scaled_for_plotting_0 <- do.call(rbind, out_scaling_list_for_plotting_0)
 
 
 out_scaling_list_1 <- lapply(split_MY_RawFeedingVisits_per_splitID,FUN=scaling_function, StandardizingSex = 1)
-out_scaling_list_for_plotting_1 <- lapply(out_scaling_list,FUN=Reshape_function_for_plotting, StandardizingSex = 1)
+out_scaling_list_for_plotting_1 <- lapply(out_scaling_list_1,FUN=Reshape_function_for_plotting, StandardizingSex = 1)
 
 MY_RawFeedingVisits_scaled_1 <- do.call(rbind, out_scaling_list_1)
 MY_RawFeedingVisits_scaled_for_plotting_1 <- do.call(rbind, out_scaling_list_for_plotting_1)
@@ -803,6 +806,196 @@ head(MY_RawFeedingVisits_scaled_for_plotting_0,50)
 head(MY_RawFeedingVisits_scaled_1,20)
 head(MY_RawFeedingVisits_scaled_for_plotting_1,50)
 
+{### Calculate A score for observed scaled data with standardizing sex being 0 then 1
+
+{# calculate Nb of Alternation for each file
+
+
+MY_RawFeedingVisits_scaled_split_fun = function(x) {
+x <- x[order(x$ScaledTstart),] # for 2% of the files, this change slightly the order of max 4 visits
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+return(c(as.character(unique(x$DVDRef)), length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]))) #NbAlternationScaled
+}
+
+
+MY_RawFeedingVisits_scaled_split_0 <- split(MY_RawFeedingVisits_scaled_0,MY_RawFeedingVisits_scaled$splitID)
+
+out1_MY_RawFeedingVisits_scaled_split_0 <-lapply(MY_RawFeedingVisits_scaled_split_0,MY_RawFeedingVisits_scaled_split_fun)
+out2_MY_RawFeedingVisits_scaled_split_0 <- data.frame(rownames(do.call(rbind,out1_MY_RawFeedingVisits_scaled_split_0)),do.call(rbind, out1_MY_RawFeedingVisits_scaled_split_0))
+rownames(out2_MY_RawFeedingVisits_scaled_split_0) <- NULL
+colnames(out2_MY_RawFeedingVisits_scaled_split_0) <- c('splitID','DVDRef','NbAlternationScaled')
+
+MY_RawFeedingVisits_scaled_split_1 <- split(MY_RawFeedingVisits_scaled_1,MY_RawFeedingVisits_scaled$splitID)
+
+out1_MY_RawFeedingVisits_scaled_split_1 <-lapply(MY_RawFeedingVisits_scaled_split_1,MY_RawFeedingVisits_scaled_split_fun)
+out2_MY_RawFeedingVisits_scaled_split_1 <- data.frame(rownames(do.call(rbind,out1_MY_RawFeedingVisits_scaled_split_1)),do.call(rbind, out1_MY_RawFeedingVisits_scaled_split_1))
+rownames(out2_MY_RawFeedingVisits_scaled_split_1) <- NULL
+colnames(out2_MY_RawFeedingVisits_scaled_split_1) <- c('splitID','DVDRef','NbAlternationScaled')
+
+out2_MY_RawFeedingVisits_scaled_split_01 <- rbind(out2_MY_RawFeedingVisits_scaled_split_0,out2_MY_RawFeedingVisits_scaled_split_1)
+}
+
+head(out2_MY_RawFeedingVisits_scaled_split_01)
+
+{# calculate AlternationValue for each file
+
+MY_tblParentalCare_scaled <- merge(x= out2_MY_RawFeedingVisits_scaled_split_01, y=MY_tblParentalCare[,c('DVDRef','MVisit1','FVisit1','DiffVisit1Rate')], all.x=TRUE, by='DVDRef')
+MY_tblParentalCare_scaled$splitID <-  as.numeric(as.character(MY_tblParentalCare_scaled$splitID))
+MY_tblParentalCare_scaled$NbAlternationScaled <-  as.numeric(as.character(MY_tblParentalCare_scaled$NbAlternation))
+MY_tblParentalCare_scaled <- MY_tblParentalCare_scaled[order(MY_tblParentalCare_scaled$splitID),]
+
+MY_tblParentalCare_scaled$AlternationValueScaled <- round(MY_tblParentalCare_scaled$NbAlternationScaled/(MY_tblParentalCare_scaled$MVisit1 + MY_tblParentalCare_scaled$FVisit1 -1) *100,1)
+}
+
+head(MY_tblParentalCare_scaled)
+
+# average NbAlternationScaled and AlternationValueScaled accross standardizing sex = 0 and then 1
+
+MY_tblParentalCare_scaled_01 <- data.frame(summarise (group_by(MY_tblParentalCare_scaled, DVDRef),
+					splitID = unique(splitID),
+					NbAlternationScaled = mean(NbAlternationScaled),
+					DiffVisit1Rate = unique(DiffVisit1Rate),
+					AlternationValueScaled = mean(AlternationValueScaled)))
+
+MY_tblParentalCare_scaled_01 <- MY_tblParentalCare_scaled_01[order(MY_tblParentalCare_scaled_01$splitID),]
+
+
+{# summary Aobserved per VisitRateDifference
+
+MY_tblParentalCare_scaled_perVisitRateDiff_01 <- group_by(MY_tblParentalCare_scaled_01, DiffVisit1Rate)
+
+Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01 <- summarise (MY_tblParentalCare_scaled_perVisitRateDiff_01,
+					Amean = mean(AlternationValueScaled),
+					Alower = Amean - sd(AlternationValueScaled)/sqrt(n())*1.96,
+					Aupper = Amean + sd(AlternationValueScaled)/sqrt(n())*1.96,
+					NbFiles = n())
+					
+Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01 <- dplyr::rename(Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01,VisitRateDifference= DiffVisit1Rate)
+Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01 <- as.data.frame(Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01)
+
+}
+
+
+}
+
+head(MY_tblParentalCare_scaled_01)
+Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01
+
+{### simulation alternation: shuffling intervals within files 
+## I kept the time of the first visit of both male and female in each file, and randomized subsequent intervals
+
+
+{# creation of i simulated dataset (and calculation of i Asim) for each j file
+
+simulation_nestwatch_function <- function(x) {
+
+x <- x[order(x$ScaledTstart),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+out_Asim_i <- list()
+
+for (i in 1:100) # to increase up to 1000
+{
+
+x0sim <- x0
+x1sim <- x1
+
+x0sim$ScaledInterval <- c(0, sample_vector(x0sim$ScaledInterval[-1]))
+x0sim$ScaledTstart <- c(x0sim$ScaledTstart[1],x0sim$ScaledTstart[-nrow(x0sim)]+x0sim$ScaledInterval[-1])
+
+x1sim$ScaledInterval <- c(0, sample_vector(x1sim$ScaledInterval[-1]))
+x1sim$ScaledTstart <- c(x1sim$ScaledTstart[1],x1sim$ScaledTstart[-nrow(x1sim)]+x1sim$ScaledInterval[-1])
+
+xsim <- rbind(x0sim,x1sim)
+xsim <- xsim[order(xsim$ScaledTstart),]
+xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
+
+Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
+out_Asim_i[i] <- Asim
+
+
+}
+
+return((unlist(out_Asim_i)))
+}
+
+MY_RawFeedingVisits_scaled_for_Sim_0 <- MY_RawFeedingVisits_scaled_0[,c('splitID','DVDRef','ScaledTstart','Sex','ScaledInterval')]
+MY_RawFeedingVisits_scaled_for_Sim_split_0 <- split(MY_RawFeedingVisits_scaled_for_Sim_0,MY_RawFeedingVisits_scaled_for_Sim_0$splitID)
+
+out_Asim_j_0 <- lapply(MY_RawFeedingVisits_scaled_for_Sim_split,simulation_nestwatch_function)
+out_Asim_0 <- do.call(rbind, out_Asim_j_0)
+
+MY_RawFeedingVisits_scaled_for_Sim_1 <- MY_RawFeedingVisits_scaled_1[,c('splitID','DVDRef','ScaledTstart','Sex','ScaledInterval')]
+MY_RawFeedingVisits_scaled_for_Sim_split_1 <- split(MY_RawFeedingVisits_scaled_for_Sim_1,MY_RawFeedingVisits_scaled_for_Sim_1$splitID)
+out_Asim_j_1 <- lapply(MY_RawFeedingVisits_scaled_for_Sim_split,simulation_nestwatch_function)
+out_Asim_1 <- do.call(rbind, out_Asim_j_1)
+
+}
+
+head(out_Asim_0)
+head(out_Asim_1)
+
+{# out A sim summary
+
+out_Asim_df_0 <- data.frame(DVDRef = unique(MY_RawFeedingVisits_scaled_for_Sim_0$DVDRef), out_Asim_0)
+out_Asim_df_1 <- data.frame(DVDRef = unique(MY_RawFeedingVisits_scaled_for_Sim_1$DVDRef), out_Asim_1)
+out_Asim_df <- rbind(out_Asim_df_0,out_Asim_df_1)
+out_Asim_df <- merge(x=out_Asim_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+
+out_Asim_df_perDiffVisit1Rate <- split(out_Asim_df,out_Asim_df$DiffVisit1Rate)
+
+out_Asim_df_perDiffVisit1Rate_fun <- function(x) {
+
+x <- x[,-1]
+x <- x[,-ncol(x)]
+v <- unlist(list(x))
+
+return(c(
+mean(v), # Amean
+mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower
+mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper
+nrow(x) # NbFiles
+))
+}
+
+out_Asim_df_perDiffVisit1Rate_out1_01 <- lapply(out_Asim_df_perDiffVisit1Rate,out_Asim_df_perDiffVisit1Rate_fun)
+out_Asim_df_perDiffVisit1Rate_out2_01 <- data.frame(rownames(do.call(rbind,out_Asim_df_perDiffVisit1Rate_out1_01)),do.call(rbind, out_Asim_df_perDiffVisit1Rate_out1_01))
+
+nrow(out_Asim_df_perDiffVisit1Rate_out2_01)	# 32
+rownames(out_Asim_df_perDiffVisit1Rate_out2_01) <- NULL
+colnames(out_Asim_df_perDiffVisit1Rate_out2_01) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+
+}
+
+out_Asim_df_perDiffVisit1Rate_out2_01
+
+
+{# A: for the moment cut at 20 visit rate difference in both randomized and observed, and plot
+
+Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01$Type <- "Observed"
+out_Asim_df_perDiffVisit1Rate_out2_01$Type <- "Expected"
+
+
+VisitRateDiff_Amean_scaled_01 <- as.data.frame(rbind( Summary_MY_tblParentalCare_scaled_perVisitRateDiff_01[1:21,],out_Asim_df_perDiffVisit1Rate_out2_01[1:21,] ))
+VisitRateDiff_Amean_scaled_01$VisitRateDifference <- as.numeric(VisitRateDiff_Amean_scaled_01$VisitRateDifference)
+
+Fig1Scaled_01 <- ggplot(data=VisitRateDiff_Amean_scaled_01, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+  xlab("Visit rate difference")+
+  ylab("Mean alternation")+
+  scale_colour_manual(values=c("#009E73", "black"), labels=c("95% Expected", "95% Observed"))+
+  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_scaled_01$VisitRateDifference, n = 12)) +
+  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_scaled_01$Amean, n = 9)) +  
+  theme_classic()
+  
+}
+
+}
+
+Fig1Scaled_01
 
 
 
@@ -810,6 +1003,12 @@ head(MY_RawFeedingVisits_scaled_for_plotting_1,50)
 
 
 
+
+
+{#######~~~~~~~~~~~~~~~ to check weird stuff
+lapply(split(MY_tblParentalCare_scaled,MY_tblParentalCare_scaled$splitID),FUN=function(x){return(x$AlternationValueScaled[1] == x$AlternationValueScaled[2] )})
+which(do.call(rbind,lapply(split(MY_tblParentalCare_scaled,MY_tblParentalCare_scaled$splitID),FUN=function(x){return(x$AlternationValueScaled[1] != x$AlternationValueScaled[2] )})),
+do.call(rbind,lapply(split(MY_tblParentalCare_scaled,MY_tblParentalCare_scaled$splitID),FUN=function(x){return(x$AlternationValueScaled[1] != x$AlternationValueScaled[2] )})))
 
 
 
@@ -823,7 +1022,7 @@ MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef %in% unique(MY_RawF
 
 MY_tblParentalCare_scaled <- merge(x=MY_tblParentalCare_scaled, y=MY_tblParentalCare[,c('DVDRef','NbAlternation','AlternationValue')],all.x=TRUE, by='DVDRef')
 
-MY_tblParentalCare_scaled[MY_tblParentalCare_scaled$AlternationValue != MY_tblParentalCare_scaled$AlternationValueScaled,]
+unique(MY_tblParentalCare_scaled$DVDRef[MY_tblParentalCare_scaled$AlternationValue != MY_tblParentalCare_scaled$AlternationValueScaled])
 
 
 x <- MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '1155',]
@@ -837,10 +1036,14 @@ MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '1155',]
 MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '1561',]
 MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '1561',]
 
-MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '226',]
+x <- MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '226',]
 MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '226',]
 
+x <- MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '1012',]
+MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '1012',]
 
+
+}
 
 
 
