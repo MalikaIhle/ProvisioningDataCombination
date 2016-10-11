@@ -224,21 +224,23 @@ plot9randomgraphs()
 
 
 
-{###### scale visits
+{###### scale visits for one random set of standardizing sex
 
 split_MY_RawFeedingVisits_per_splitID <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$splitID)
 
 # define standardizing sex, here random for each video
 set.seed(10)
 StandardizingSexAll <- sample(c(0,1),length(split_MY_RawFeedingVisits_per_splitID), replace=TRUE) # pick a random sex as the standardizing sex for each video j
-set.seed(10)
-StandardizingSexAllopposite <- sample(c(1,0),length(split_MY_RawFeedingVisits_per_splitID), replace=TRUE)
-
+	# set.seed(10)
+	# StandardizingSexAllopposite <- sample(c(1,0),length(split_MY_RawFeedingVisits_per_splitID), replace=TRUE)
+	# StandardizingSexAll <- StandardizingSexAllopposite # 
+	# StandardizingSexAll <- rep(0,length(split_MY_RawFeedingVisits_per_splitID))
+	# StandardizingSexAll <- rep(1,length(split_MY_RawFeedingVisits_per_splitID))
 
 out_scaling <- list()
 out_scaling_for_plotting <- list()
 
-options(warn=2) # so that loop breaks if one file doesn't work through all functions: call 'j' to know which one and check it out
+options(warn=2) # so that loop breaks if one file doesn't work through all functions: call 'j' to know which one, check it out, and adjust the code so that it works for al files
 
 for (j in 1:length(unique(MY_RawFeedingVisits$splitID)))
 {
@@ -443,7 +445,7 @@ plot9randomgraphs_scaled()
 MY_RawFeedingVisits_scaled_split <- split(MY_RawFeedingVisits_scaled,MY_RawFeedingVisits_scaled$splitID)
 
 MY_RawFeedingVisits_scaled_split_fun = function(x) {
-x <- x[order(x$splitID, x$Tstart),]
+x <- x[order(x$splitID, x$ScaledTstart),]
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 return(c(as.character(unique(x$DVDRef)), length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]))) #NbAlternation
 }
@@ -625,8 +627,6 @@ head(MY_tblParentalCare_scaled)
 
 ## write.csv(VisitRateDiff_Amean_scaled,file = paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled.csv", sep="/"), row.names = FALSE) # 20161010
 ## write.csv(MY_tblParentalCare_scaled,file = paste(output_folder,"R_MY_tblParentalCare_scaled.csv", sep="/"), row.names = FALSE) # 20161010
-
-
 
 
 
