@@ -157,7 +157,7 @@ out3_split_MY_RawFeedingVisits_perDVD <- data.frame(out2_split_MY_RawFeedingVisi
 out3_split_MY_RawFeedingVisits_perDVD$splitID <- seq_along(out3_split_MY_RawFeedingVisits_perDVD$DVDRef)
 head(out3_split_MY_RawFeedingVisits_perDVD)
 
-MY_RawFeedingVisits <- MY_RawFeedingVisits[,c('DVDRef', 'TstartFeedVisit','Sex','Interval' )]
+MY_RawFeedingVisits <- MY_RawFeedingVisits[,c('DVDRef', 'TstartFeedVisit','Sex','Interval' )] 
 MY_RawFeedingVisits <- merge(MY_RawFeedingVisits, out3_split_MY_RawFeedingVisits_perDVD[,c('DVDRef','splitID')])
 MY_RawFeedingVisits <- MY_RawFeedingVisits[order(MY_RawFeedingVisits$DVDRef),]
 
@@ -316,8 +316,8 @@ x_OtherSex$ScaledTstart <- x_OtherSex$TstartFeedVisit[1] +cumsum(x_OtherSex$Scal
 # recreate x with Tstart and scaledTstart for both sexes
 x <-rbind(x_StandardizingSex, x_OtherSex)
 x <-x[,-which(names(x)%in%c("NextTstart"))]
-x <- x[order(x$TstartFeedVisit),]
-
+x <- x[order(as.numeric(rownames(x))),] # x[order(x$TstartFeedVisit, -x$TendFeedVisit),] this sorting wasnt precise enough for those 7 cases where both Tstart and Tend are identical between two visits.
+ 
 # to solve edges with no overlap: modify some ScaledInterval and ScaledTstart from x
 FirstSex <- x$Sex[1] # who is the first sex to visit
 LastSex <- x$Sex[nrow(x)] # who is the last sex to visit
@@ -447,13 +447,13 @@ MY_RawFeedingVisits_scaled_split <- split(MY_RawFeedingVisits_scaled,MY_RawFeedi
 MY_RawFeedingVisits_scaled_split_fun = function(x) {
 x <- x[order(x$splitID, x$ScaledTstart),]
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
-return(c(as.character(unique(x$DVDRef)), length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]))) #NbAlternation
+return(c(as.character(unique(x$DVDRef)), length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]))) #NbAlternationScaled
 }
 
 out1_MY_RawFeedingVisits_scaled_split <-lapply(MY_RawFeedingVisits_scaled_split,MY_RawFeedingVisits_scaled_split_fun)
 out2_MY_RawFeedingVisits_scaled_split <- data.frame(rownames(do.call(rbind,out1_MY_RawFeedingVisits_scaled_split)),do.call(rbind, out1_MY_RawFeedingVisits_scaled_split))
 rownames(out2_MY_RawFeedingVisits_scaled_split) <- NULL
-colnames(out2_MY_RawFeedingVisits_scaled_split) <- c('splitID','DVDRef','NbAlternation')
+colnames(out2_MY_RawFeedingVisits_scaled_split) <- c('splitID','DVDRef','NbAlternationScaled')
 }
 
 head(out2_MY_RawFeedingVisits_scaled_split)
@@ -462,10 +462,10 @@ head(out2_MY_RawFeedingVisits_scaled_split)
 
 MY_tblParentalCare_scaled <- merge(x= out2_MY_RawFeedingVisits_scaled_split, y=MY_tblParentalCare[,c('DVDRef','MVisit1','FVisit1','DiffVisit1Rate')], all.x=TRUE, by='DVDRef')
 MY_tblParentalCare_scaled$splitID <-  as.numeric(as.character(MY_tblParentalCare_scaled$splitID))
-MY_tblParentalCare_scaled$NbAlternation <-  as.numeric(as.character(MY_tblParentalCare_scaled$NbAlternation))
+MY_tblParentalCare_scaled$NbAlternationScaled <-  as.numeric(as.character(MY_tblParentalCare_scaled$NbAlternation))
 MY_tblParentalCare_scaled <- MY_tblParentalCare_scaled[order(MY_tblParentalCare_scaled$splitID),]
 
-MY_tblParentalCare_scaled$AlternationValue <- round(MY_tblParentalCare_scaled$NbAlternation/(MY_tblParentalCare_scaled$MVisit1 + MY_tblParentalCare_scaled$FVisit1 -1) *100,1)
+MY_tblParentalCare_scaled$AlternationValueScaled <- round(MY_tblParentalCare_scaled$NbAlternationScaled/(MY_tblParentalCare_scaled$MVisit1 + MY_tblParentalCare_scaled$FVisit1 -1) *100,1)
 }
 
 {# summary Aobserved per VisitRateDifference
@@ -473,9 +473,9 @@ MY_tblParentalCare_scaled$AlternationValue <- round(MY_tblParentalCare_scaled$Nb
 MY_tblParentalCare_scaled_perVisitRateDiff <- group_by(MY_tblParentalCare_scaled, DiffVisit1Rate)
 
 Summary_MY_tblParentalCare_scaled_perVisitRateDiff <- summarise (MY_tblParentalCare_scaled_perVisitRateDiff,
-					Amean = mean(AlternationValue),
-					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
-					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
+					Amean = mean(AlternationValueScaled),
+					Alower = Amean - sd(AlternationValueScaled)/sqrt(n())*1.96,
+					Aupper = Amean + sd(AlternationValueScaled)/sqrt(n())*1.96,
 					NbFiles = n())
 					
 Summary_MY_tblParentalCare_scaled_perVisitRateDiff <- dplyr::rename(Summary_MY_tblParentalCare_scaled_perVisitRateDiff,VisitRateDifference= DiffVisit1Rate)
@@ -625,8 +625,223 @@ MY_tblParentalCare_scaled <- MY_tblParentalCare_scaled[order(MY_tblParentalCare_
 
 head(MY_tblParentalCare_scaled)
 
+
+
+
 ## write.csv(VisitRateDiff_Amean_scaled,file = paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled.csv", sep="/"), row.names = FALSE) # 20161010
 ## write.csv(MY_tblParentalCare_scaled,file = paste(output_folder,"R_MY_tblParentalCare_scaled.csv", sep="/"), row.names = FALSE) # 20161010
+
+
+
+
+
+
+{#### scale visits for multiple random set of standardizing sex
+split_MY_RawFeedingVisits_per_splitID <- split(MY_RawFeedingVisits,MY_RawFeedingVisits$splitID)
+
+scaling_function <- function(x,StandardizingSex) {
+
+x_StandardizingSex = subset(x, Sex == StandardizingSex)
+x_OtherSex = subset(x, Sex != StandardizingSex)
+
+x_StandardizingSex$NextTstart <- c(x_StandardizingSex$TstartFeedVisit[-1],NA)
+x_OtherSex$NextTstart <- c(x_OtherSex$TstartFeedVisit[-1],NA)	
+
+		# for the standardizing sex, all intervals will be set to its initial mean interval
+		multiplicator <-  mean(x_StandardizingSex$Interval[-1])/x_StandardizingSex$Interval[-1]
+
+# to solve problem caused by two consecutive visits of the standardizing bird at the same Tstart (issie with scoring to the 10th of minutes...)
+# need to exclude multiplicator == 'Inf' that arise for intervals == 0
+ScaledInterval <- median(x_StandardizingSex$Interval[-1]*multiplicator, na.rm=TRUE) # all scaled intervals (interval*multiplicator) are the same, but those that are 'Inf' excluded by taking the 'median' of this vector
+multiplicator[which(is.infinite(multiplicator))] <- multiplicator[which(is.infinite(multiplicator))-1] # replace the 'Inf' multiplicator by the multiplicator just previous to it, that is the one with the same initial Tstart
+
+# to recalculate ScaledTstart, start from the initial first Tstart and add up scaled intervals (cumulative sum)
+x_StandardizingSex$ScaledInterval <- c(0,(rep(ScaledInterval, nrow(x_StandardizingSex)-1))) # the scaled Interval for the standardizing sex is always the same, hence the repeat function
+x_StandardizingSex$ScaledTstart <- x_StandardizingSex$TstartFeedVisit[1] + cumsum(x_StandardizingSex$ScaledInterval) 
+
+
+		# create vector of times on each foraging trip (all 10th of minute in between two Tstart from the same sex)
+		StandardizingSex_trip = mapply(FUN = function(TstartFeedVisit, NextTstart) {  
+		if (TstartFeedVisit==NextTstart) 
+		{return (TstartFeedVisit)} 
+		if (TstartFeedVisit!=NextTstart)	
+		{return(list(((TstartFeedVisit*10) : (NextTstart*10-1))/10))}}, # (the *10 and then /10 are the easiest way to construct thenths of minutes)
+		TstartFeedVisit = x_StandardizingSex$TstartFeedVisit[-nrow(x_StandardizingSex)], 
+		NextTstart = x_StandardizingSex$NextTstart[-nrow(x_StandardizingSex)])
+		
+		OtherSex_trip = mapply(FUN = function(TstartFeedVisit, NextTstart) {  
+		if (TstartFeedVisit==NextTstart) 
+		{return (TstartFeedVisit)} 
+		if (TstartFeedVisit!=NextTstart)	
+		{return(list(((TstartFeedVisit*10) : (NextTstart*10-1))/10))}}, 
+		TstartFeedVisit = x_OtherSex$TstartFeedVisit[-nrow(x_OtherSex)], 
+		NextTstart = x_OtherSex$NextTstart[-nrow(x_OtherSex)])
+		
+
+		# check for the list entry of the other sex how many of the numbers also occur for the first sex (here the standadirzing sex)
+		# this gives you the number of tenths-of-minutes that both birds were foraging at the same time
+		outK <- NULL
+		outKI<- list()
+		
+		for (i in 1:length(OtherSex_trip)){
+		for (k in 1:length(StandardizingSex_trip)){
+		outK[k] <- length(which(OtherSex_trip[[i]] %in% StandardizingSex_trip[[k]])) # stored the number of 10th of minutes from the other sex i trip that overlaps with all k trips from the standardising sex
+		}
+		outKI[[i]] <- sum(outK*multiplicator)/10 # there is one multiplicator per standardizing sex trip ; this is the scaled interval fro the other sex for this i trip
+		}
+		
+# recalculate ScaledTstart from those ScaledIntervals for the other sex
+x_OtherSex$ScaledInterval <- c(0,do.call(rbind,outKI))
+x_OtherSex$ScaledTstart <- x_OtherSex$TstartFeedVisit[1] +cumsum(x_OtherSex$ScaledInterval)
+
+# recreate x with Tstart and scaledTstart for both sexes
+x <-rbind(x_StandardizingSex, x_OtherSex)
+x <-x[,-which(names(x)%in%c("NextTstart"))]
+x <- x[order(as.numeric(rownames(x))),] # x[order(x$TstartFeedVisit, -x$TendFeedVisit),] this sorting wasnt precise enough for those 7 cases where both Tstart and Tend are identical between two visits.
+ 
+
+# to solve edges with no overlap: modify some ScaledInterval and ScaledTstart from x
+FirstSex <- x$Sex[1] # who is the first sex to visit
+LastSex <- x$Sex[nrow(x)] # who is the last sex to visit
+
+if (StandardizingSex != FirstSex){ # if StandardizingSex is not the FirstSex, the first intervals of the others sex can't already be standardized, they do not fully overlap with the intervals of the standardizing sex, and are therefore left intact, unstandardized
+
+# add to the first overlapping foraging trip interval, the extra time that is not overlapping, left unstandardized
+x$ScaledInterval[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==FirstSex & x$TstartFeedVisit >=min(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])] <- 
+x$ScaledInterval[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==FirstSex & x$TstartFeedVisit >=min(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])]+
+min(x$TstartFeedVisit[x$Sex==StandardizingSex]) - max(x$TstartFeedVisit[x$Sex==FirstSex & x$TstartFeedVisit <= min(x$TstartFeedVisit[x$Sex==StandardizingSex])])
+
+# keep the interval non standardized for the extra non overlapping trips
+x$ScaledInterval[x$TstartFeedVisit <= min(x$TstartFeedVisit[x$Sex==StandardizingSex]) & x$Sex==FirstSex] <- 
+x$Interval[x$TstartFeedVisit <= min(x$TstartFeedVisit[x$Sex==StandardizingSex]) & x$Sex==FirstSex] 
+
+# recalculate the Tstart for the first overlapping trip of the other sex and for the exra non overlapping trips of the other sex from the beginning of the nest watch
+x$ScaledTstart[x$Sex==FirstSex] <- x$TstartFeedVisit[1] + cumsum(x$ScaledInterval[x$Sex==FirstSex])
+
+}
+
+if (StandardizingSex != LastSex){ # if Standardazing is not the LastSex: there is no interval for the other sex to overlap with at the end, those ones can't be standardized, and are therefore 'left' intact unstandardized
+
+# add to the last overlapping foraging trip interval, the extra time that is not overlapping, left unstandardized
+x$ScaledInterval[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])] <- 
+x$ScaledInterval[x$TstartFeedVisit == min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])]+
+min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ]) - max(x$TstartFeedVisit[x$Sex==StandardizingSex])
+
+# keep the interval non standardized for the extra non overlapping trips
+x$ScaledInterval[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])] <- 
+x$Interval[x$TstartFeedVisit > min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])]
+
+# recalculate the Tstart for the last overlapping trip of the other sex and for the exra non overlapping trips of the other sex from the end of the nest watch
+x$ScaledTstart[x$TstartFeedVisit >= min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])] <-
+x$ScaledTstart[x$TstartFeedVisit == max(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit <=max(x$TstartFeedVisit[x$Sex==StandardizingSex])]) & x$Sex==LastSex ] +
+cumsum(x$ScaledInterval[x$TstartFeedVisit >= min(x$TstartFeedVisit[x$Sex==LastSex & x$TstartFeedVisit >=max(x$TstartFeedVisit[x$Sex==StandardizingSex]) ])])
+
+}
+
+# round calculated numbers
+x$ScaledTstart <- round(x$ScaledTstart,1)
+x$ScaledInterval <- round(x$ScaledInterval,1)
+
+return(x)
+}
+
+Reshape_function_for_plotting <- function(x,StandardizingSex) {
+
+x_raw <- x[,c('splitID','DVDRef','TstartFeedVisit','Sex')]
+x_raw$Type <- 'Original'
+colnames(x_raw)[which(names(x_raw) == "TstartFeedVisit")] <- "Tstart"
+	
+x_scaled <- x[,c('splitID','DVDRef','ScaledTstart','Sex')]
+x_scaled$Type <- 'Scaled'
+colnames(x_scaled)[which(names(x_scaled) == "ScaledTstart")] <- "Tstart"	
+x_scaled$Sex[x_scaled$Sex == 0 & x_scaled$Type == "Scaled"] <- -1
+x_scaled$Sex[x_scaled$Sex == 1 & x_scaled$Type == "Scaled"] <- 2
+
+x_for_plotting <- rbind(x_raw,x_scaled)
+x_for_plotting <- x_for_plotting[order(x_for_plotting$DVDRef),]
+rownames(x_for_plotting) <- NULL
+
+# add colours for plotting depending on standardizing sex (random for each j)
+x_for_plotting$Colours[x_for_plotting$Sex == 0] <- "orange"
+x_for_plotting$Colours[x_for_plotting$Sex == 1] <- "green"
+
+if(StandardizingSex == 0){
+x_for_plotting$Colours[x_for_plotting$Sex == -1] <- "black"
+x_for_plotting$Colours[x_for_plotting$Sex == 2] <- "deepskyblue"
+}
+
+if(StandardizingSex == 1){
+x_for_plotting$Colours[x_for_plotting$Sex == -1] <- "red"
+x_for_plotting$Colours[x_for_plotting$Sex == 2] <- "black"
+}
+
+return(x_for_plotting)
+}
+ 
+ 
+
+out_scaling_list_0 <- lapply(X=split_MY_RawFeedingVisits_per_splitID,FUN=scaling_function, StandardizingSex = 0)
+out_scaling_list_for_plotting_0 <- lapply(X=out_scaling_list,FUN=Reshape_function_for_plotting, StandardizingSex = 0)
+
+MY_RawFeedingVisits_scaled_0 <- do.call(rbind, out_scaling_list_0)
+MY_RawFeedingVisits_scaled_for_plotting_0 <- do.call(rbind, out_scaling_list_for_plotting_0)
+
+
+out_scaling_list_1 <- lapply(split_MY_RawFeedingVisits_per_splitID,FUN=scaling_function, StandardizingSex = 1)
+out_scaling_list_for_plotting_1 <- lapply(out_scaling_list,FUN=Reshape_function_for_plotting, StandardizingSex = 1)
+
+MY_RawFeedingVisits_scaled_1 <- do.call(rbind, out_scaling_list_1)
+MY_RawFeedingVisits_scaled_for_plotting_1 <- do.call(rbind, out_scaling_list_for_plotting_1)
+
+
+
+
+}
+
+head(MY_RawFeedingVisits_scaled_0,20)
+head(MY_RawFeedingVisits_scaled_for_plotting_0,50)
+head(MY_RawFeedingVisits_scaled_1,20)
+head(MY_RawFeedingVisits_scaled_for_plotting_1,50)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$TstartFeedVisit == c(MY_RawFeedingVisits$TstartFeedVisit[-1],NA)])
+
+MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef %in% unique(MY_RawFeedingVisits_scaled$DVDRef[MY_RawFeedingVisits_scaled$TstartFeedVisit == c(MY_RawFeedingVisits_scaled$TstartFeedVisit[-1],NA)]),]
+
+MY_tblParentalCare_scaled <- merge(x=MY_tblParentalCare_scaled, y=MY_tblParentalCare[,c('DVDRef','NbAlternation','AlternationValue')],all.x=TRUE, by='DVDRef')
+
+MY_tblParentalCare_scaled[MY_tblParentalCare_scaled$AlternationValue != MY_tblParentalCare_scaled$AlternationValueScaled,]
+
+
+x <- MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '1155',]
+x <- x[order(x$splitID, x$ScaledTstart),]
+x <- x[order(x$splitID, x$TstartFeedVisit),]
+
+
+MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '1155',]
+MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '1155',]
+
+MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '1561',]
+MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '1561',]
+
+MY_RawFeedingVisits_scaled[MY_RawFeedingVisits_scaled$DVDRef == '226',]
+MY_RawFeedingVisits[MY_RawFeedingVisits_scaled$DVDRef == '226',]
+
+
+
 
 
 
