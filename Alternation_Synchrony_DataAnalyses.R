@@ -3,7 +3,7 @@
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
 #	 last modif : 07/07/2016  
-#	 commit: for ISBE talk 
+#	 commit: source scaled nest watch ('observed' and 'simulated')
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -71,6 +71,9 @@ MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", s
 MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
 MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
+
+MY_VisitRateDiff_Amean_scaled_01 <- read.csv(paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled_01.csv", sep="/")) # summary to plot, once interval are scaled (output of code alternation_standardized_interval.R)
+
 }
 
 {# input txt files
@@ -1676,6 +1679,42 @@ MY_TABLE_perBirdYear <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear !
 }
 
 head(MY_TABLE_perBirdYear)
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+{### compare original and scaled nest watches (observed and simulated)
+
+MY_VisitRateDiff_Amean_scaled_01$TypeSim[MY_VisitRateDiff_Amean_scaled_01$Type == 'Observed'] <- "ObservedScaled"
+MY_VisitRateDiff_Amean_scaled_01$TypeSim[MY_VisitRateDiff_Amean_scaled_01$Type == 'Expected'] <- "ExpectedScaled"
+Original_and_Scaled_A_summaries <- rbind(data.frame(VisitRateDiff_Amean_for_comparison_withAMax_bis),
+MY_VisitRateDiff_Amean_scaled_01[,-which(names(MY_VisitRateDiff_Amean_scaled_01) %in% c("NbFiles"))])
+
+{Fig1comparison_withMax_bis_h <- ggplot(data=Original_and_Scaled_A_summaries, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("#0072B2", '#56B4E9','#009e24','#009E73','black', 'gray30' ,"grey"), 
+labels=c(
+"Expected, among nest watch (10000 bootstrapping)", 
+"Expected, within nest watch (100 random.)",
+"Expected, Scaled (100 random./standardizing sex/nest watch)",
+"Expected, switch 2 by 2 within nest watch (once)",
+"Observed" ,
+"Observed, Scaled (average accross both standardizing sex)" ,
+"Maximum Alternation possible"))+
+scale_x_continuous(breaks = pretty(Original_and_Scaled_A_summaries$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(Original_and_Scaled_A_summaries$Amean, n = 9)) +  
+theme_classic() #+
+#theme(legend.position="none")
+}
+
+}
+
+Fig1comparison_withMax_bis_h
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
