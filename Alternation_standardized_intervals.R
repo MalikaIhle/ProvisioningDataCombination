@@ -19,7 +19,7 @@ rm(list = ls(all = TRUE))
 
 # by rescaling with one sex or the other, Nbalternation is different within 41% of the files (min =1, med = 2, max = 8)
 
-# by rescaling, for 2% of the files the observed alternation slightly change (max Nb alternation difference = 4)
+# by rescaling, for some of the files the observed alternation slightly change (max Nb alternation difference = 4)
 }
 
 {#### packages
