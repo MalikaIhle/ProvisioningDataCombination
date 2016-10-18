@@ -507,7 +507,7 @@ nrow(MY_tblParentalCare) # 1499 if remove quantiles
 
 {## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
 
-{# Create RawInterfeeds and split per sex and select provisioning rates from 3 to 22
+{# Create RawInterfeeds per sex and select provisioning rates from 3 to 22
 RawInterfeeds <- merge(x= MY_RawFeedingVisits[,c('DVDRef','Sex','Interval')], 
                        y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , 
                        by='DVDRef', all.x=TRUE)
@@ -516,47 +516,47 @@ MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','MVisit1Rate
 MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
 FRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
 FRawInterfeeds322 <- FRawInterfeeds[FRawInterfeeds$FVisit1RateH >=3 & FRawInterfeeds$FVisit1RateH <=22,]
-}
 
-{# Randomise the interfeed intervals within individuals of the same sex that have the same visit rate
+# shuffled intervals among individuals of the same sex that have the same visit rate
 FShuffledInterfeeds322 <- FRawInterfeeds322[-1] %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
 MShuffledInterfeeds322 <- MRawInterfeeds322[-1] %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval))
 }
 
 {# create one simulated df per sex per visit rate, with shuffled intervals associated to a SimID of length 'visit rate - 1'
-
 SimFemale <- list ()
-
-for (i in 3:22)
-{
+for (i in 3:22){
 # one group of visit rate at a time
 SimFemale[[i]] <- filter(FShuffledInterfeeds322, FVisit1RateH == i)
+
 # add SimID to (visit rate - 1) visits
 SimFemale[[i]] <- mutate(SimFemale[[i]], SimID = rep(1:((nrow(SimFemale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimFemale[[i]])))
+
 # Shuffle the SimID
-SimFemale[[i]]<-mutate(SimFemale[[i]], SimID = sample(SimID)) # sample without replacement
+ SimFemale[[i]]<-mutate(SimFemale[[i]], SimID = sample(SimID)) # sample without replacement
+
 # sort (not needed but easier to look at output)
 SimFemale[[i]]<-arrange(SimFemale[[i]],SimID)
+
 # Calculate cumulative sum for each SimID
 SimFemale[[i]]<-SimFemale[[i]]%>%
-  group_by(SimID)%>%
-  mutate(CumInt = cumsum(Interval))
-
+group_by(SimID)%>%
+ mutate(CumInt = cumsum(Interval))
 }
 
-
 SimMale <- list ()
-
-for (i in 3:22)
-{
+for (i in 3:22) {
 # one group of visit rate at a time
 SimMale[[i]] <- filter(MShuffledInterfeeds322, MVisit1RateH == i)
+ 
 # add SimID to (visit rate - 1) visits
 SimMale[[i]] <- mutate(SimMale[[i]], SimID = rep(1:((nrow(SimMale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimMale[[i]])))
+ 
 # Shuffle the SimID
 SimMale[[i]]<-mutate(SimMale[[i]], SimID = sample(SimID)) # sample without replacement
+
 # sort
 SimMale[[i]]<-arrange(SimMale[[i]],SimID)
+ 
 # Calculate cumulative sum for each SimID
 SimMale[[i]]<-SimMale[[i]]%>%
   group_by(SimID)%>%
@@ -564,7 +564,7 @@ SimMale[[i]]<-SimMale[[i]]%>%
 
 }
 
-
+# bind together
 SimMale <- do.call(rbind,SimMale)
 SimFemale <- do.call(rbind,SimFemale)
 SimData <- bind_rows(SimMale, SimFemale) # different from rbind as it binds two df with different columns, adding NAs
@@ -588,7 +588,7 @@ arrange(SimID, CumInt)
 }
 
 AllMiFj <- do.call(rbind, MiFj)
-nrow(AllMiFj) # 1075820
+nrow(AllMiFj)
 }
 
 {# add running OverallSimID and select combinations with both sex, with the full number of intervals for a given provisioning rates
@@ -1149,8 +1149,6 @@ theme_classic()
 
 
 }
-
-	## write.csv(AllMiFj, file = paste(output_folder,"R_MY_AllMiFj.csv", sep="/"), row.names = FALSE) #20161018 for simulation scaling effect on Alternation
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
