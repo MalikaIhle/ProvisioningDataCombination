@@ -1,10 +1,10 @@
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 07/07/2016  
-#	 commit: source scaled nest watch ('observed' and 'simulated')
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#	 last modif : 18/10/2016  
+#	 commit: source scaled nest watch ('observed' and 'simulated'), export among nest watch randomization for simulation scaling effect
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
 # LastSeenAlive information needs to be updated manually when DB updated
@@ -1150,7 +1150,7 @@ theme_classic()
 
 }
 
-
+	## write.csv(AllMiFj, file = paste(output_folder,"R_MY_AllMiFj.csv", sep="/"), row.names = FALSE) #20161018 for simulation scaling effect on Alternation
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
