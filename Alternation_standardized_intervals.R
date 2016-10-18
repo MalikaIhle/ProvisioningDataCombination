@@ -17,9 +17,8 @@ rm(list = ls(all = TRUE))
 
 # if the standardizing bird is not the first and or last, the other bird first and or last visit are not overlapping: time left non-standardized
 
-# by rescaling with one sex or the other, Nbalternation is different within 41% of the files (min =1, med = 2, max = 8)
-
-# by rescaling, for some of the files the observed alternation slightly change (max Nb alternation difference = 4)
+# by rescaling with one sex or the other, NbalternationScaled is different within 41% of the files (min =1, med = 2, max = 8)
+# as well as dofferent from the observed alternation in the original nest watch
 }
 
 {#### packages
@@ -78,20 +77,15 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 
 sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
-  
+ 
+ as.numeric.factor <- function(x) {as.numeric(levels(x))[x]}
 }
 
-{#### selection valid files
-
-{### copy paste from AlternationSynchronyDataAnalyses code to get same file selection
+{#### Get raw data & select valid files
 
 {### Get raw data (from source() or R_output folder)
 
-
 {# output csv files
-
-# source('COMPILATION_PROVISIONING.R')
-# or :
 
 output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
 
@@ -99,6 +93,7 @@ MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", s
 MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
 MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
+AllMiFj <-  read.csv(paste(output_folder,"R_MY_AllMiFj.csv", sep="/")) # among nest watch randomisation output from Alternation Data Analyses (Kat style simulation)
 }
 
 {# input txt files
@@ -113,6 +108,7 @@ FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep
 }
 
 {### select valid video files for studying behavioural compatibility in chick provisioning
+# copy paste from AlternationSynchronyDataAnalyses code to get same file selection
 
 list_non_valid_DVDRef <- 
 c(
@@ -130,8 +126,6 @@ length(unique(list_non_valid_DVDRef)) # 450
 MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
 MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
-
-}
 
 }
 
@@ -341,7 +335,7 @@ head(MY_RawFeedingVisits_scaled_for_plotting_1,50)
 {# calculate Nb of Alternation for each file
 
 MY_RawFeedingVisits_scaled_split_fun = function(x) {
-x <- x[order(x$ScaledTstart),] # for 2% of the files, this change slightly the order of max 4 visits, and therefore NbAlternation is different than NbAlternaitonScaled for those
+x <- x[order(x$ScaledTstart),] # for 41% of the files, this change slightly the order of max 4 visits, and therefore NbAlternation is different than NbAlternaitonScaled for those
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 return(c(as.character(unique(x$DVDRef)), length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]))) #NbAlternationScaled
 }
@@ -660,4 +654,144 @@ plot9randomgraphs_scaled(dfsplit = split_MY_RawFeedingVisits_scaled_for_plotting
 ## 20161012
 # write.csv(VisitRateDiff_Amean_scaled_01,file = paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled_01.csv", sep="/"), row.names = FALSE)
 # write.csv(MY_tblParentalCare_scaled_01,file = paste(output_folder,"R_MY_tblParentalCare_scaled_01.csv", sep="/"), row.names = FALSE)
+
+
+
+
+{### comparison Alternation in original and scaled nest watches
+
+head(out2_MY_RawFeedingVisits_scaled_split_1)
+head(out2_MY_RawFeedingVisits_scaled_split_0)
+
+NbAlternation_scaled_01 <- merge(x=out2_MY_RawFeedingVisits_scaled_split_0, y= out2_MY_RawFeedingVisits_scaled_split_1[,c("splitID","NbAlternationScaled")], by="splitID")
+head(NbAlternation_scaled_01)
+All_versions_NbAlternation <- merge(x=NbAlternation_scaled_01,y= MY_tblParentalCare[,c('DVDRef', 'NbAlternation')])
+head(All_versions_NbAlternation)
+
+All_versions_NbAlternation$NbAlternationScaled.x <- as.numeric.factor(All_versions_NbAlternation$NbAlternationScaled.x)
+All_versions_NbAlternation$NbAlternationScaled.y <- as.numeric.factor(All_versions_NbAlternation$NbAlternationScaled.y)
+All_versions_NbAlternation$DVDRef<- as.numeric.factor(All_versions_NbAlternation$DVDRef)
+All_versions_NbAlternation$DiffOrig0 <- All_versions_NbAlternation$NbAlternation - All_versions_NbAlternation$NbAlternationScaled.x
+All_versions_NbAlternation$DiffOrig1 <- All_versions_NbAlternation$NbAlternation - All_versions_NbAlternation$NbAlternationScaled.y
+All_versions_NbAlternation$DiffScaled01 <- All_versions_NbAlternation$NbAlternationScaled.x - All_versions_NbAlternation$NbAlternationScaled.y
+head(All_versions_NbAlternation)
+
+summary(All_versions_NbAlternation$DiffOrig0)
+summary(All_versions_NbAlternation$DiffOrig1)
+
+nrow(All_versions_NbAlternation[All_versions_NbAlternation$DiffOrig0 !=0 | All_versions_NbAlternation$DiffOrig1 !=0 ,])/1619*100 #41.5
+file_with_Observed_Alternation_different <- unique(All_versions_NbAlternation$DVDRef[All_versions_NbAlternation$DiffOrig0 !=0 | All_versions_NbAlternation$DiffOrig1 !=0])
+
+head(MY_RawFeedingVisits)
+MY_RawFeedingVisits_toCheck <- MY_RawFeedingVisits[,c('DVDRef','TstartFeedVisit')]
+MY_RawFeedingVisits_toCheck$nextTstart <- c(MY_RawFeedingVisits_toCheck$TstartFeedVisit[-1],0)
+file_with_duplicated_times <- unique(MY_RawFeedingVisits_toCheck$DVDRef[MY_RawFeedingVisits_toCheck$TstartFeedVisit == MY_RawFeedingVisits_toCheck$nextTstart])
+
+{## plotting selected scaled visits + raw visits
+
+dfsplit <- split_MY_RawFeedingVisits_scaled_for_plotting_0_per_splitID
+#dfsplit <- split_MY_RawFeedingVisits_scaled_for_plotting_1_per_splitID
+selectedsplitID <- c(268,16,1540,1617,1322,932,199,12,1163)
+p <- NULL
+for (i in selectedsplitID)
+{
+
+p[[i]] <-ggplot(dfsplit[[i]])  + 
+		geom_segment(aes(x=Tstart, xend=Tstart+0.5, y=as.factor(Sex), yend=as.factor(Sex)), size=3, colour =dfsplit[[i]]$Colours) +
+		xlab("Nest watch duration") + ylab("Sex")+ scale_y_discrete(breaks=c("-1","0","1","2"),
+        labels=c("S0", "0", "1","S1"))+
+		geom_text(x=(max(dfsplit[[i]]$Tstart) + 0.5)/2, 
+				y= 2.5,label=unique(dfsplit[[i]]$DVDRef), colour='black')+
+		theme(legend.position="none") 
+}
+
+dev.new()
+multiplot(p[[268]],p[[16]],p[[1540]], p[[1617]], p[[1322]], p[[932]], p[[199]], p[[12]], p[[1163]], cols=3)
+
+}
+
+
+file_with_Observed_Alternation_different[!file_with_Observed_Alternation_different %in%file_with_duplicated_times]
+file_with_duplicated_times[!file_with_duplicated_times %in%file_with_Observed_Alternation_different]
+
+All_versions_NbAlternation[All_versions_NbAlternation$DVDRef == 1012,]
+MY_RawFeedingVisits_scaled_1[MY_RawFeedingVisits_scaled_1$DVDRef == 1012,]
+MY_RawFeedingVisits_scaled_0[MY_RawFeedingVisits_scaled_0$DVDRef == 1012,]
+
+}
+
+
+### simulation scaling effect on alternation (i.e. when one bird becomes completely regular)
+
+colnames(AllMiFj) <- c('Sex', 'Interval','MVisit1', 'SimID', 'TstartFeedVisit', 'FVisit1', 'splitID')
+AllMiFj <- data.frame(AllMiFj[,c('splitID','Sex','TstartFeedVisit','Interval','MVisit1','FVisit1')])
+head(AllMiFj,70)
+
+
+AllMiFj_per_splitID <- split(AllMiFj,AllMiFj$splitID)
+#x <- AllMiFj_per_splitID[[100]]
+#StandardizingSex <- 0
+
+out_scaling_list_AllMiFj_0 <- lapply(X=AllMiFj_per_splitID,FUN=scaling_function, StandardizingSex = 0)
+out_scaling_list_for_plotting_AllMiFj_0 <- lapply(X=out_scaling_list_AllMiFj_0,FUN=Reshape_function_for_plotting, StandardizingSex = 0)
+
+AllMiFj_scaled_0 <- do.call(rbind, out_scaling_list_AllMiFj_0)
+AllMiFj_scaled_for_plotting_0 <- do.call(rbind, out_scaling_list_for_plotting_AllMiFj_0)
+
+
+
+{# Create RawInterfeeds per sex and select provisioning rates from 3 to 22
+RawInterfeeds <- merge(x= MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')], 
+                       y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , 
+                       by='DVDRef', all.x=TRUE)
+
+MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','TstartFeedVisit','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
+MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
+FRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','TstartFeedVisit','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
+FRawInterfeeds322 <- FRawInterfeeds[FRawInterfeeds$FVisit1RateH >=3 & FRawInterfeeds$FVisit1RateH <=22,]
+
+# remove the first line with interval (=0) from each file for each sex before shuffling interval (added 20161018)
+FRawInterfeeds322toShuffle <- do.call(rbind,lapply(X=split(FRawInterfeeds322,FRawInterfeeds322$DVDRef), FUN=function(x){return(x[-1,])}))
+rownames(FRawInterfeeds322toShuffle) <- NULL
+head(FRawInterfeeds322toShuffle)
+
+MRawInterfeeds322toShuffle <- do.call(rbind,lapply(X=split(MRawInterfeeds322,MRawInterfeeds322$DVDRef), FUN=function(x){return(x[-1,])}))
+rownames(MRawInterfeeds322toShuffle) <- NULL
+
+# save first Tstart of each file and each sex  (with interval = 0)
+FRawFirstTstart <- do.call(rbind,lapply(X=split(FRawInterfeeds322,FRawInterfeeds322$DVDRef), FUN=function(x){return(x[1,])}))
+rownames(FRawFirstTstart) <- NULL
+head(FRawFirstTstart)
+
+MRawFirstTstart <- do.call(rbind,lapply(X=split(MRawInterfeeds322,MRawInterfeeds322$DVDRef), FUN=function(x){return(x[1,])}))
+rownames(MRawFirstTstart) <- NULL
+
+# shuffled intervals among individuals of the same sex that have the same visit rate
+FShuffledInterfeeds322 <- data.frame(FRawInterfeeds322toShuffle %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval)))
+MShuffledInterfeeds322 <- data.frame(MRawInterfeeds322toShuffle %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval)))
+
+# add first Tstart
+SimFemale <- rbind(FRawFirstTstart,FShuffledInterfeeds322)
+SimFemale <- SimFemale[order(SimFemale$DVDRef),]
+tail(SimFemale,50)
+
+SimMale <- rbind(MRawFirstTstart,MShuffledInterfeeds322)
+SimMale <- SimMale[order(SimMale$DVDRef),]
+
+# recalculate TstartFeedVisit
+SimFemale <- do.call(rbind,lapply(X=split(SimFemale,SimFemale$DVDRef), FUN=function(x){x$TstartFeedVisit <- x$TstartFeedVisit[1] + cumsum(x$Interval)
+return(x)}))
+rownames(SimFemale) <- NULL
+
+SimMale <- do.call(rbind,lapply(X=split(SimMale,SimMale$DVDRef), FUN=function(x){x$TstartFeedVisit <- x$TstartFeedVisit[1] + cumsum(x$Interval)
+return(x)}))
+rownames(SimMale) <- NULL
+
+# bind together
+SimData <- bind_rows(SimMale, SimFemale) # different from rbind as it binds two df with different columns, adding NAs
+SimData[is.na(SimData)] <- 0
+}
+
+head(SimData)
+
 
