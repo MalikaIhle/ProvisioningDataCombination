@@ -748,10 +748,13 @@ x0sim <- x0
 x1sim <- x1
 
 x0sim$Interval <- c(0, sample_vector(x0sim$Interval[-1]))
-x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
+#x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
+x0sim$TstartFeedVisit <- c(x0sim$Tstart[1] + cumsum(x0sim$Interval)) # corrected 20161024 
 
 x1sim$Interval <- c(0, sample_vector(x1sim$Interval[-1]))
-x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
+#x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
+x1sim$TstartFeedVisit <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval)) # corrected 20161024 
+
 
 xsim <- rbind(x0sim,x1sim)
 xsim <- xsim[order(xsim$TstartFeedVisit),]
