@@ -814,9 +814,6 @@ OriginalSimulatedGammaData <- rbind(males,females)
 OriginalSimulatedGammaData <- OriginalSimulatedGammaData[order(OriginalSimulatedGammaData$DVD,OriginalSimulatedGammaData$Tstart),]
 rownames(OriginalSimulatedGammaData) <- NULL
 
-# remove those nest watch where one sex does not visit more than twice
-
-
 }
 
 head(OriginalSimulatedGammaData,100)
@@ -889,7 +886,7 @@ Type = 'Simulated Gamma Data')
 
 
 
-
+OriginalSimulatedGammaData[OriginalSimulatedGammaData$Interval == 0,]
 
 
 
