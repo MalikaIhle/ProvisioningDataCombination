@@ -111,15 +111,17 @@ as.character(unique(x$DVDRef)),
 length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]),#NbAlternation
 nrow(x[x$Sex == 1,]), # MVisit
 nrow(x[x$Sex == 0,]), # FVisit
-abs(round(nrow(x[x$Sex == 1,]) - nrow(x[x$Sex == 0,]))), # VisitRateDifference
+#abs(round(nrow(x[x$Sex == 1,]) - nrow(x[x$Sex == 0,]))), # VisitRateDifference if this was one hour video !
 round(length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)])/(nrow(x) -1) *100,1)# AlternationValue
 ))
+
+
 }
 
 out1 <-lapply(split(Data,Data$splitID),CreateDataSummary)
 SummaryData <- data.frame(rownames(do.call(rbind,out1)),do.call(rbind, out1))
 rownames(SummaryData) <- NULL
-colnames(SummaryData) <- c('splitID','DVDRef','NbAlternation', 'MVisit','FVisit','VisitRateDifference','AlternationValue')
+colnames(SummaryData) <- c('splitID','DVDRef','NbAlternation', 'MVisit','FVisit','AlternationValue')
 SummaryData <- as.numeric.column.factor(SummaryData)
 
 return(SummaryData)
@@ -141,6 +143,7 @@ return(data.frame(summarise (group_by(DataSummary, VisitRateDifference),
 
 }
 
+
 ## randomization of original data or scaled data
 
 Randomize_Data_WithinFile_and_Calculate_AlternationValue <- function(Data, Type) {
@@ -158,16 +161,17 @@ x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
 x0$Interval <- c(0, sample_vector(x0$Interval[-1]))
-x0$Tstart <- c(x0$Tstart[1],x0$Tstart[-nrow(x0)]+x0$Interval[-1])# keep the first Tstart
+x0$Tstart <- x0$Tstart[1] + cumsum(x0$Interval) 
 
 x1$Interval <- c(0, sample_vector(x1$Interval[-1]))
-x1$Tstart <- c(x1$Tstart[1],x1$Tstart[-nrow(x1)]+x1$Interval[-1]) 
+x1$Tstart <- x1$Tstart[1] + cumsum(x1$Interval) 
 
 xsim <- rbind(x0,x1)
 xsim <- xsim[order(xsim$Tstart),] 
 xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
 
 return(round(length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame)])/(nrow(xsim) -1) *100,1)) # AlternationValue
+
 }
 
 
@@ -189,6 +193,13 @@ Summarise_RandomizedData_perVisitRateDifference <- function(Asim, DataSummary) {
 Asim_df <- merge(x=Asim, y= DataSummary[,c('splitID','VisitRateDifference')], by='splitID', all.x =TRUE)
 
 Summarise_AlternationValue_from_Randomized_Data_oneSplit <- function(x) {
+	
+	# for testing function
+	# Asim <- AlternationValue_from_RealDataRandomized
+	# DataSummary <- RealDataSummary
+	# Asim_df <- merge(x=Asim, y= DataSummary[,c('splitID','VisitRateDifference')], by='splitID', all.x =TRUE)
+	# x <- split(Asim_df,Asim_df$VisitRateDifference)[[1]]
+
 
 x <- x[,-1]
 x <- x[,-ncol(x)]
@@ -212,6 +223,7 @@ colnames(DataSummary_perVisitRateDifference) <- c('VisitRateDifference','Amean',
 return(DataSummary_perVisitRateDifference)
 }
 
+
 ## join original and randomized data for plotting
 
 Plot_Original_vs_Randomized <- function(DataSummary_perVisitRateDifference, RandomizedDataSummary_perVisitRateDifference){
@@ -219,7 +231,7 @@ Plot_Original_vs_Randomized <- function(DataSummary_perVisitRateDifference, Rand
 DataSummary_perVisitRateDifference$Type <- "Observed"
 RandomizedDataSummary_perVisitRateDifference$Type <- "Expected"
 
-Original_vs_Randomized <- data.frame(rbind(DataSummary_perVisitRateDifference[1:20,],RandomizedDataSummary_perVisitRateDifference[1:20,] ))
+Original_vs_Randomized <- data.frame(rbind(DataSummary_perVisitRateDifference[1:17,],RandomizedDataSummary_perVisitRateDifference[1:17,] ))
 Original_vs_Randomized$VisitRateDifference <- as.numeric(Original_vs_Randomized$VisitRateDifference)
 
 ggplot(data=Original_vs_Randomized, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
@@ -236,12 +248,16 @@ ggplot(data=Original_vs_Randomized, aes(x=VisitRateDifference, y=Amean, group=Ty
 
 
 ## scale original data
-Scale_Data(OriginalSimulatedGammaData, StandardizingSex = 0)
-Data <- OriginalSimulatedGammaData
-StandardizingSex <- 0
-x <- split(Data,Data$splitID)[[1]]
 
 Scale_Data <- function(Data, StandardizingSex) {
+	#out_x <- list()#to test each file
+	#options(warn=2)#to test each file
+	#Data <- #to test each file
+	#StandardizingSex <- #to test each file
+
+	#for (j in 1:length(split(Data,Data$splitID))) {#to test each file
+
+	#x <- split(Data,Data$splitID)[[j]]#to test each file
 
 scaling_function <- function(x) {
 
@@ -251,24 +267,25 @@ x_OtherSex = subset(x, Sex != StandardizingSex)
 x_StandardizingSex$NextTstart <- c(x_StandardizingSex$Tstart[-1],NA)
 x_OtherSex$NextTstart <- c(x_OtherSex$Tstart[-1],NA)	
 
-{# modify all Tstart of visits that have the same Tstart as the previous visit (add 0.1)
-x_StandardizingSex$Interval[x_StandardizingSex$Tstart ==
-x_StandardizingSex$Tstart[x_StandardizingSex$NextTstart == x_StandardizingSex$Tstart & !is.na(x_StandardizingSex$NextTstart)]][2] <- 0.1
+{# modify all Tstart of visits that have the same Tstart as the previous visit (add 0.05), within individuals
+for (i in 1:nrow(x_StandardizingSex)){
+if (x_StandardizingSex$Tstart[i] == x_StandardizingSex$NextTstart[i] & !is.na(x_StandardizingSex$NextTstart[i]))
+{
+x_StandardizingSex$Interval[i+1] <- 0.05
+x_StandardizingSex$Tstart[i+1] <- x_StandardizingSex$Tstart[i]+0.05
+}
+}
 
-x_StandardizingSex$Tstart[x_StandardizingSex$Tstart ==
-x_StandardizingSex$Tstart[x_StandardizingSex$NextTstart == x_StandardizingSex$Tstart & !is.na(x_StandardizingSex$NextTstart)]][2] <- 
-x_StandardizingSex$Tstart[x_StandardizingSex$NextTstart == x_StandardizingSex$Tstart & !is.na(x_StandardizingSex$NextTstart)]+0.1
+for (i in 1:nrow(x_OtherSex)){
+if (x_OtherSex$Tstart[i] == x_OtherSex$NextTstart[i] & !is.na(x_OtherSex$NextTstart[i]))
+{
+x_OtherSex$Interval[i+1] <- 0.05
+x_OtherSex$Tstart[i+1] <- x_OtherSex$Tstart[i]+0.05
+}
+}
+
 
 x_StandardizingSex$Interval <- c(0,diff(x_StandardizingSex$Tstart))
-
-
-x_OtherSex$Interval[x_OtherSex$Tstart ==
-x_OtherSex$Tstart[x_OtherSex$NextTstart == x_OtherSex$Tstart & !is.na(x_OtherSex$NextTstart)]][2] <- 0.1
-
-x_OtherSex$Tstart[x_OtherSex$Tstart ==
-x_OtherSex$Tstart[x_OtherSex$NextTstart == x_OtherSex$Tstart & !is.na(x_OtherSex$NextTstart)]][2] <- 
-x_OtherSex$Tstart[x_OtherSex$NextTstart == x_OtherSex$Tstart & !is.na(x_OtherSex$NextTstart)]+0.1
-
 x_OtherSex$Interval <- c(0,diff(x_OtherSex$Tstart))
 
 x_StandardizingSex$NextTstart <- c(x_StandardizingSex$Tstart[-1],NA)
@@ -312,7 +329,7 @@ x_StandardizingSex$ScaledTstart <- x_StandardizingSex$Tstart[1] + cumsum(x_Stand
 		for (k in 1:length(StandardizingSex_trip)){
 		outK[k] <- length(which(OtherSex_trip[[i]] %in% StandardizingSex_trip[[k]])) # stored the number of 10th of minutes from the other sex i trip that overlaps with all k trips from the standardising sex
 		}
-		outKI[[i]] <- sum(outK*multiplicator)/10 # there is one multiplicator per standardizing sex trip ; this is the scaled interval fro the other sex for this i trip
+		outKI[[i]] <- sum(outK*multiplicator)/10 # there is one multiplicator per standardizing sex trip ; this is the scaled interval for the other sex for this i trip
 		}
 		
 # recalculate ScaledTstart from those ScaledIntervals for the other sex
@@ -320,8 +337,8 @@ x_OtherSex$ScaledInterval <- c(0,do.call(rbind,outKI))
 x_OtherSex$ScaledTstart <- x_OtherSex$Tstart[1] +cumsum(x_OtherSex$ScaledInterval)
 
 # recreate x with Tstart and scaledTstart for both sexes
-x <-rbind(x_StandardizingSex, x_OtherSex)
-x <-x[,-which(names(x)%in%c("NextTstart"))]
+x <- rbind(x_StandardizingSex, x_OtherSex)
+x <- x[,-which(names(x)%in%c("NextTstart"))]
 x <- x[order(as.numeric(rownames(x))),] # sort as in initial x (order ScaledTstart migth slightly vary)
 
 # to solve edges with no overlap: modify some ScaledInterval and ScaledTstart from x
@@ -330,7 +347,7 @@ LastSex <- x$Sex[nrow(x)] # who is the last sex to visit
 
 if (StandardizingSex != FirstSex){ # if StandardizingSex is not the FirstSex, the first intervals of the others sex can't already be standardized, they do not fully overlap with the intervals of the standardizing sex, and are therefore left intact, unstandardized
 
-if(sum(x_OtherSex$ScaledInterval) >0){
+if(sum(x_OtherSex$ScaledInterval) >0){ 
 # add to the first overlapping foraging trip interval, the extra time that is not overlapping, left unstandardized
 x$ScaledInterval[x$Tstart == min(x$Tstart[x$Sex==FirstSex & x$Tstart >=min(x$Tstart[x$Sex==StandardizingSex]) ])] <- 
 x$ScaledInterval[x$Tstart == min(x$Tstart[x$Sex==FirstSex & x$Tstart >=min(x$Tstart[x$Sex==StandardizingSex]) ])]+
@@ -344,7 +361,7 @@ x$Interval[x$Tstart <= min(x$Tstart[x$Sex==StandardizingSex]) & x$Sex==FirstSex]
 x$ScaledTstart[x$Sex==FirstSex] <- x$Tstart[1] + cumsum(x$ScaledInterval[x$Sex==FirstSex])
 }
 
-if(sum(x_OtherSex$ScaledInterval) ==0){
+if(sum(x_OtherSex$ScaledInterval) ==0){ # these are cases where all visits happen before the first visit of the standardizing sex
 
 x$ScaledInterval[x$Sex == FirstSex] <- x$Interval[x$Sex == FirstSex]
 x$ScaledTstart[x$Sex == FirstSex] <- x$ScaledTstart[x$Sex == FirstSex][1] +cumsum(x$ScaledInterval[x$Sex == FirstSex])
@@ -369,7 +386,7 @@ x$Interval[x$Tstart > min(x$Tstart[x$Sex==LastSex & x$Tstart >=max(x$Tstart[x$Se
 x$ScaledTstart[x$Sex==LastSex] <- x$Tstart[x$Sex==LastSex][1] +cumsum(x$ScaledInterval[x$Sex==LastSex])
 }
 
-if(sum(x_OtherSex$ScaledInterval) ==0){
+if(sum(x_OtherSex$ScaledInterval) ==0){  # these are cases where all visits happen after the last visit of the standardizing sex
 x$ScaledInterval[x$Sex == LastSex] <- x$Interval[x$Sex == LastSex]
 x$ScaledTstart[x$Sex == LastSex] <- x$ScaledTstart[x$Sex == LastSex][1] +cumsum(x$ScaledInterval[x$Sex == LastSex])
 
@@ -380,7 +397,9 @@ x$ScaledTstart[x$Sex == LastSex] <- x$ScaledTstart[x$Sex == LastSex][1] +cumsum(
 x$ScaledTstart <- round(x$ScaledTstart,1)
 x$ScaledInterval <- round(x$ScaledInterval,1)
 
+	#out_x[[j]] <- x#to test each file
 return(x)
+
 }
 
 out_scaling_list <- lapply(split(Data,Data$splitID),scaling_function)
@@ -466,7 +485,7 @@ names(SummaryScaledData_01)[names(SummaryScaledData_01) == 'ScaledAlternationVal
 Summary_AverageScaledData <-  data.frame(summarise (group_by(SummaryScaledData_01, splitID),
 					DVDRef = unique(DVDRef),
 					ScaledAvNbAlternation = mean(NbAlternation),
-					DiffScaledNbAlternation = max(NbAlternation)-min(NbAlternation),
+					DiffScaledNbAlternation = max(NbAlternation)-min(NbAlternation), # to check where Alternation differ depending on which sex is the standardizing sex
 					VisitRateDifference = unique(VisitRateDifference),
 					ScaledAvAlternationValue = mean(AlternationValue)))
 
@@ -490,10 +509,10 @@ RandomizedDataSummary_perVisitRateDifference$Type <- "O_Expected"
 ScaledDataSummary_perVisitRateDifference$Type <- "S_Observed"
 RandomizedScaledDataSummary_perVisitRateDifference$Type <- "S_Expected"
 
-Original_vs_Randomized <- data.frame(rbind(DataSummary_perVisitRateDifference[1:20,],
-											RandomizedDataSummary_perVisitRateDifference[1:20,],
-											ScaledDataSummary_perVisitRateDifference[1:20,],
-											RandomizedScaledDataSummary_perVisitRateDifference[1:20,]))
+Original_vs_Randomized <- data.frame(rbind(DataSummary_perVisitRateDifference[1:17,],
+											RandomizedDataSummary_perVisitRateDifference[1:17,],
+											ScaledDataSummary_perVisitRateDifference[1:17,],
+											RandomizedScaledDataSummary_perVisitRateDifference[1:17,]))
 											
 Original_vs_Randomized$VisitRateDifference <- as.numeric(Original_vs_Randomized$VisitRateDifference)
 
@@ -508,7 +527,7 @@ ggplot(data=Original_vs_Randomized, aes(x=VisitRateDifference, y=Amean, group=Ty
   "95% Observed Original",
   "95% Expected Scaled",
   "95% Observed Scaled"))+
-  ylim(25,75)+
+  ylim(20,75)+
   theme_classic()+ ggtitle(Type)
 
 }
@@ -535,11 +554,11 @@ M_FirstTstart <- do.call(rbind,lapply(X=split(MData,MData$DVDRef), FUN=function(
 randomization_among_nest_watch_fun <- function(FData_to_Shuffle,M_FirstTstart){
 
 # shuffled intervals among individuals of the same sex that have the same visit rate
-FShuffled <- data.frame(FData_to_Shuffle %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval)))
-MShuffled <- data.frame(M_FirstTstart %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval)))
+FShuffled <- data.frame(FData_to_Shuffle %>% group_by(FVisit1RateH) %>% mutate(Interval=base::sample(Interval)))
+MShuffled <- data.frame(MData_to_Shuffle %>% group_by(MVisit1RateH) %>% mutate(Interval=base::sample(Interval)))
 
 # add first Tstart
-SimFemale <- rbind(F_FirstTstart,FShuffled)
+SimFemale <- rbind(F_FirstTstart,FShuffled) # this set the order: the first Tstart from the original file is above the visits with shuffled intervals
 SimFemale <- SimFemale[order(SimFemale$DVDRef),]
 
 SimMale <- rbind(M_FirstTstart,MShuffled)
@@ -585,15 +604,18 @@ return(SimData)
 NreplicatesWithinFileRandomization <- 50
 
 
-{### Original DataSet1: Real data
+{### Original DataSet 1: Real data
 
 {## Original Data
 
 RealData <- read.csv(paste(output_folder,"R_RealData_to_Scale.csv", sep="/")) 
 MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) 
-RealDataVisitRATES <- MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH')]
+RealDataVisitRATES <- MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','DiffVisit1Rate')]
 
 RealDataSummary <- SummariseData(RealData, Type='Original')
+RealDataSummary <- merge(RealDataSummary,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(RealDataSummary)[names(RealDataSummary) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
 RealDataSummary_perVisitRateDifference <- SummariseData_perVisitRateDifference(RealDataSummary, Type='Original')
 
 ## Randomization Original Data
@@ -602,7 +624,8 @@ AlternationValue_from_RealDataRandomized <- Randomize_Data_WithinFile_and_Calcul
 	# just to compare OBserved and Expected 
 	RealDataSummary <- Add_MeanAsim_to_DataSummary(AlternationValue_from_RealDataRandomized, RealDataSummary)
 
-RandomizedRealDataSummary_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(AlternationValue_from_RealDataRandomized,RealDataSummary)
+RandomizedRealDataSummary_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(
+AlternationValue_from_RealDataRandomized,RealDataSummary)
 
 ## join them to plot per Visit Rate Difference
 PlotRealData_Original_vs_Randomized <- Plot_Original_vs_Randomized(
@@ -630,6 +653,13 @@ Plot_Timeline_Original_and_Scaled_Data(ScaledRealData_1,StandardizingSex = 1)
 Summary_ScaledRealData_0 <- SummariseData(ScaledRealData_0,Type='Scaled')
 Summary_ScaledRealData_1 <- SummariseData(ScaledRealData_1,Type='Scaled')
 
+Summary_ScaledRealData_0 <- merge(Summary_ScaledRealData_0,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(Summary_ScaledRealData_0)[names(Summary_ScaledRealData_0) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
+Summary_ScaledRealData_1 <- merge(Summary_ScaledRealData_1,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(Summary_ScaledRealData_1)[names(Summary_ScaledRealData_1) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
+
 ## Average summary scaled data accross both standardizing sex 
 Summary_ScaledRealData_01 <- Summarise_AverageScaledData_AcrossBothStandardizingSex(Summary_ScaledRealData_0,Summary_ScaledRealData_1, Type = 'Scaled')
 
@@ -646,9 +676,13 @@ AlternationValue_from_ScaledRealDataRandomized_01 <- data.frame(bind_cols(Altern
 Summary_RandomizedScaledRealData_01 <- Summarise_AverageScaledData_AcrossBothStandardizingSex(Summary_ScaledRealData_0,Summary_ScaledRealData_1, Type = 'ScaledRandomized')
 
 ## summarize average scaled data accross VisitRateDifference
-Summary_Randomized_Scaled_RealData_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(AlternationValue_from_ScaledRealDataRandomized_01,Summary_ScaledRealData_01)
+Summary_Randomized_Scaled_RealData_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(
+AlternationValue_from_ScaledRealDataRandomized_01,
+Summary_ScaledRealData_01)
 
-Plot_Scaled_RealData_Original_vs_Randomized <- Plot_Original_vs_Randomized(Summary_Scaled_RealData_perVisitRateDifference,Summary_Randomized_Scaled_RealData_perVisitRateDifference)
+Plot_Scaled_RealData_Original_vs_Randomized <- Plot_Original_vs_Randomized(
+Summary_Scaled_RealData_perVisitRateDifference,
+Summary_Randomized_Scaled_RealData_perVisitRateDifference)
 	
 	
 }
@@ -658,8 +692,12 @@ head(ScaledRealData_0)
 }
 
 dev.new()
-Plot_Original_vs_Randomized_Scaled_vs_Non_Scaled(RealDataSummary_perVisitRateDifference,RandomizedRealDataSummary_perVisitRateDifference,
-	Summary_Scaled_RealData_perVisitRateDifference,Summary_Randomized_Scaled_RealData_perVisitRateDifference, Type = 'Real Data')
+Plot_Original_vs_Randomized_Scaled_vs_Non_Scaled(
+RealDataSummary_perVisitRateDifference,
+RandomizedRealDataSummary_perVisitRateDifference,
+Summary_Scaled_RealData_perVisitRateDifference,
+Summary_Randomized_Scaled_RealData_perVisitRateDifference, 
+Type = 'Real Data')
 
 
 
@@ -671,6 +709,9 @@ NreplicatesAmongFileRandomization <- 2
 OriginalSimulatedData <- Randomize_among_nest_watch(RealData,RealDataVisitRATES)
 
 OriginalSimulatedDataSummary <- SummariseData(OriginalSimulatedData, Type='Original')
+OriginalSimulatedDataSummary <- merge(OriginalSimulatedDataSummary,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(OriginalSimulatedDataSummary)[names(OriginalSimulatedDataSummary) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
 OriginalSimulatedDataSummary_perVisitRateDifference <- SummariseData_perVisitRateDifference(OriginalSimulatedDataSummary, Type='Original')
 
 ## Randomization Original Data
@@ -681,7 +722,7 @@ RandomizedOriginalSimulatedDataSummary_perVisitRateDifference <- Summarise_Rando
 
 Plot_OriginalSimulatedData_Original_vs_Randomized <- 
 Plot_Original_vs_Randomized(OriginalSimulatedDataSummary_perVisitRateDifference,
-RandomizedOriginalSimulatedDataSummary_perVisitRateDifference, ylim = ylim(25,75))
+RandomizedOriginalSimulatedDataSummary_perVisitRateDifference)
 
 
 }
@@ -694,6 +735,13 @@ ScaledOriginalSimulatedData_1 <- Scale_Data(OriginalSimulatedData, Standardizing
 ## Summarize Scaled Data
 Summary_ScaledOriginalSimulatedData_0 <- SummariseData(ScaledOriginalSimulatedData_0,Type='Scaled')
 Summary_ScaledOriginalSimulatedData_1 <- SummariseData(ScaledOriginalSimulatedData_1,Type='Scaled')
+
+Summary_ScaledOriginalSimulatedData_0 <- merge(Summary_ScaledOriginalSimulatedData_0,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(Summary_ScaledOriginalSimulatedData_0)[names(Summary_ScaledOriginalSimulatedData_0) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
+Summary_ScaledOriginalSimulatedData_1 <- merge(Summary_ScaledOriginalSimulatedData_1,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(Summary_ScaledOriginalSimulatedData_1)[names(Summary_ScaledOriginalSimulatedData_1) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
 
 ## Average summary scaled data accross both standardizing sex 
 Summary_ScaledOriginalSimulatedData_01 <- Summarise_AverageScaledData_AcrossBothStandardizingSex(Summary_ScaledOriginalSimulatedData_0,Summary_ScaledOriginalSimulatedData_1, Type = 'Scaled')
@@ -713,7 +761,10 @@ Summary_RandomizedScaledOriginalSimulatedData_01 <- Summarise_AverageScaledData_
 ## summarize average scaled data accross VisitRateDifference
 Summary_Randomized_Scaled_OriginalSimulatedData_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(AlternationValue_from_ScaledOriginalSimulatedDataRandomized_01,Summary_ScaledOriginalSimulatedData_01)
 
-Plot_Scaled_OriginalSimulatedData_Original_vs_Randomized <- Plot_Original_vs_Randomized(Summary_Scaled_OriginalSimulatedData_perVisitRateDifference,Summary_Randomized_Scaled_OriginalSimulatedData_perVisitRateDifference)
+Plot_Scaled_OriginalSimulatedData_Original_vs_Randomized <- 
+Plot_Original_vs_Randomized(
+Summary_Scaled_OriginalSimulatedData_perVisitRateDifference,
+Summary_Randomized_Scaled_OriginalSimulatedData_perVisitRateDifference)
 	
 
 }
@@ -721,29 +772,31 @@ Plot_Scaled_OriginalSimulatedData_Original_vs_Randomized <- Plot_Original_vs_Ran
 }
 
 dev.new()
-Plot_Original_vs_Randomized_Scaled_vs_Non_Scaled(OriginalSimulatedDataSummary_perVisitRateDifference,RandomizedOriginalSimulatedDataSummary_perVisitRateDifference,
-	Summary_Scaled_OriginalSimulatedData_perVisitRateDifference,Summary_Randomized_Scaled_OriginalSimulatedData_perVisitRateDifference, Type = 'Simulated Randomized Data')
+Plot_Original_vs_Randomized_Scaled_vs_Non_Scaled(
+OriginalSimulatedDataSummary_perVisitRateDifference,
+RandomizedOriginalSimulatedDataSummary_perVisitRateDifference,
+Summary_Scaled_OriginalSimulatedData_perVisitRateDifference,
+Summary_Randomized_Scaled_OriginalSimulatedData_perVisitRateDifference, 
+Type = 'Simulated Randomized Data')
 
 
 
 
-## Original DataSet 3: Simulated Gamma Data
+{## Original DataSet 3: Simulated Gamma Data
 
 
-{## simulate nest watches 
+{## simulate nest watches of 1 hour (to have visit rate per hour directly as number of visits)
 
 visits <- function(){
 	visits <- rgamma(100, rate=0.281,shape=1.08)
 	csVisits <- cumsum(visits)
-	outVisits <- round(csVisits[csVisits<90],1)
+	outVisits <- round(csVisits[csVisits<60],1)
 	if (length(outVisits) >= 2) {return(outVisits)}
 	}
 
-set.seed(10)
 males <- as.data.frame(do.call(rbind, lapply(1:1619, function(x) data.frame(splitID=x, DVDRef = x, Tstart=visits()))))
 length(unique(males$splitID))
 
-set.seed(20)
 females <- as.data.frame(do.call(rbind, lapply(1:1619, function(x) data.frame(splitID=x, DVDRef = x, Tstart=visits()))))
 length(unique(males$splitID))
 
@@ -766,12 +819,14 @@ rownames(OriginalSimulatedGammaData) <- NULL
 
 }
 
-head(OriginalSimulatedGammaData)
+head(OriginalSimulatedGammaData,100)
 
 
 {## Original Data
 
 OriginalSimulatedGammaDataSummary <- SummariseData(OriginalSimulatedGammaData, Type='Original')
+OriginalSimulatedGammaDataSummary$VisitRateDifference <- abs(OriginalSimulatedGammaDataSummary$MVisit - OriginalSimulatedGammaDataSummary$FVisit)
+
 OriginalSimulatedGammaDataSummary_perVisitRateDifference <- SummariseData_perVisitRateDifference(OriginalSimulatedGammaDataSummary, Type='Original')
 
 ## Randomization Original Data
@@ -794,6 +849,9 @@ ScaledOriginalSimulatedGammaData_1 <- Scale_Data(OriginalSimulatedGammaData, Sta
 Summary_ScaledOriginalSimulatedGammaData_0 <- SummariseData(ScaledOriginalSimulatedGammaData_0,Type='Scaled')
 Summary_ScaledOriginalSimulatedGammaData_1 <- SummariseData(ScaledOriginalSimulatedGammaData_1,Type='Scaled')
 
+Summary_ScaledOriginalSimulatedGammaData_0$VisitRateDifference <- abs(Summary_ScaledOriginalSimulatedGammaData_0$MVisit - Summary_ScaledOriginalSimulatedGammaData_0$FVisit)
+Summary_ScaledOriginalSimulatedGammaData_1$VisitRateDifference <- abs(Summary_ScaledOriginalSimulatedGammaData_1$MVisit - Summary_ScaledOriginalSimulatedGammaData_1$FVisit)
+
 ## Average summary scaled data accross both standardizing sex 
 Summary_ScaledOriginalSimulatedGammaData_01 <- Summarise_AverageScaledData_AcrossBothStandardizingSex(Summary_ScaledOriginalSimulatedGammaData_0,Summary_ScaledOriginalSimulatedGammaData_1, Type = 'Scaled')
 
@@ -812,10 +870,28 @@ Summary_RandomizedScaledOriginalSimulatedGammaData_01 <- Summarise_AverageScaled
 ## summarize average scaled data accross VisitRateDifference
 Summary_Randomized_Scaled_OriginalSimulatedGammaData_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(AlternationValue_from_ScaledOriginalSimulatedGammaDataRandomized_01,Summary_ScaledOriginalSimulatedGammaData_01)
 
-Plot_Scaled_OriginalSimulatedGammaData_Original_vs_Randomized <- Plot_Original_vs_Randomized(Summary_Scaled_OriginalSimulatedGammaData_perVisitRateDifference,Summary_Randomized_Scaled_OriginalSimulatedGammaData_perVisitRateDifference)
+Plot_Scaled_OriginalSimulatedGammaData_Original_vs_Randomized <- 
+Plot_Original_vs_Randomized(Summary_Scaled_OriginalSimulatedGammaData_perVisitRateDifference,
+Summary_Randomized_Scaled_OriginalSimulatedGammaData_perVisitRateDifference)
 	
 
 }
+
+}
+
+dev.new()
+Plot_Original_vs_Randomized_Scaled_vs_Non_Scaled(
+OriginalSimulatedGammaDataSummary_perVisitRateDifference,
+RandomizedOriginalSimulatedGammaDataSummary_perVisitRateDifference,
+Summary_Scaled_OriginalSimulatedGammaData_perVisitRateDifference,
+Summary_Randomized_Scaled_OriginalSimulatedGammaData_perVisitRateDifference, 
+Type = 'Simulated Gamma Data')
+
+
+
+
+
+
 
 
 
