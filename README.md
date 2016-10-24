@@ -32,7 +32,7 @@ creates all R_output
 
 # Side .R codes
 
-## simulation correlation Aleternation - Synchrony
+## simulation correlation Alternation - Synchrony
 to understand mathematical and necessary relationships between variables
 
 ## Alternation with standardized intervals
