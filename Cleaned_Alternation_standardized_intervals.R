@@ -95,6 +95,51 @@ output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/sta
 
 {######## THE SPECIFIC FUNCTIONS 
 
+Redefining_Tstarts <- function(Data){
+
+	#Data <- RealData
+	#x <- split(Data,Data$splitID)[[1]]
+
+Redefining_Tstarts_one_split <- function(x) {
+
+x0 <- x[x$Sex == 0,]
+x1 <- x[x$Sex == 1,]
+
+x0$NextTstart <-  c(x0$Tstart[-1],NA)	
+x1$NextTstart <-  c(x1$Tstart[-1],NA)	
+
+# modify all Tstart of visits that have the same Tstart as the previous visit (add 0.05), within individuals
+for (i in 1:nrow(x0)){
+if (x0$Tstart[i] == x0$NextTstart[i] & !is.na(x0$NextTstart[i]))
+{
+x0$Interval[i+1] <- 0.05
+x0$Tstart[i+1] <- x0$Tstart[i]+0.05
+}
+}
+
+for (i in 1:nrow(x1)){
+if (x1$Tstart[i] == x1$NextTstart[i] & !is.na(x1$NextTstart[i]))
+{
+x1$Interval[i+1] <- 0.05
+x1$Tstart[i+1] <- x1$Tstart[i]+0.05
+}
+}
+
+
+x <- rbind(x0, x1)
+x <- x[,-which(names(x)%in%c("NextTstart"))]
+x <- x[order(as.numeric(rownames(x))),] 
+
+return(x)
+}
+
+DataRedefined <- do.call(rbind, lapply(split(Data,Data$splitID),Redefining_Tstarts_one_split))
+rownames(DataRedefined) <- NULL
+
+return(DataRedefined)
+}
+
+
 ## original data or scaled data
 
 SummariseData <- function(Data, Type) {
@@ -252,8 +297,8 @@ ggplot(data=Original_vs_Randomized, aes(x=VisitRateDifference, y=Amean, group=Ty
 Scale_Data <- function(Data, StandardizingSex) {
 	#out_x <- list()#to test each file
 	#options(warn=2)#to test each file
-	#Data <- #to test each file
-	#StandardizingSex <- #to test each file
+	#Data <- RealData#to test each file
+	#StandardizingSex <- 1#to test each file
 
 	#for (j in 1:length(split(Data,Data$splitID))) {#to test each file
 
@@ -612,6 +657,8 @@ RealData <- read.csv(paste(output_folder,"R_RealData_to_Scale.csv", sep="/"))
 MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) 
 RealDataVisitRATES <- MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','DiffVisit1Rate')]
 
+	#RealData <- Redefining_Tstarts(RealData) # does not make any difference?
+
 RealDataSummary <- SummariseData(RealData, Type='Original')
 RealDataSummary <- merge(RealDataSummary,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
 names(RealDataSummary)[names(RealDataSummary) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
@@ -886,7 +933,64 @@ Type = 'Simulated Gamma Data')
 
 
 
-OriginalSimulatedGammaData[OriginalSimulatedGammaData$Interval == 0,]
+## Original Data Set 4: Simulated Gamma Data - do not keep first Tstart for randomization not scaling, do not change
+
+
+## change RealData not to have Tstart identical
+head(RealData)
+
+Redefining_Tstarts <- function(Data){
+
+Redefining_Tstarts_one_split <- function(x) {
+
+x0 <- x[x$Sex == 0,]
+x1 <- x[x$Sex == 1,]
+
+x0$NextTstart <-  c(x0$Tstart[-1],NA)	
+x1$NextTstart <-  c(x1$Tstart[-1],NA)	
+
+# modify all Tstart of visits that have the same Tstart as the previous visit (add 0.05), within individuals
+for (i in 1:nrow(x0)){
+if (x0$Tstart[i] == x0$NextTstart[i] & !is.na(x0$NextTstart[i]))
+{
+x0$Interval[i+1] <- 0.05
+x0$Tstart[i+1] <- x0$Tstart[i]+0.05
+}
+}
+
+for (i in 1:nrow(x1)){
+if (x1$Tstart[i] == x1$NextTstart[i] & !is.na(x1$NextTstart[i]))
+{
+x1$Interval[i+1] <- 0.05
+x1$Tstart[i+1] <- x1$Tstart[i]+0.05
+}
+}
+
+x <- rbind(x0, x1)
+x <- x[,-which(names(x)%in%c("NextTstart"))]
+x <- x[order(as.numeric(rownames(x))),] 
+
+return(x)
+}
+
+out <- lapply(split(Data,Data$splitID),Redefining_Tstarts_one_split)
+DataRedefined <- do.call(rbind, out)
+
+return(DataRedefined)
+}
+
+
+RealDataRedifined <- Redefining_Tstarts(RealData)
+Summary_RealDataRedifined <- SummariseData(RealDataRedifined, Type = 'Original')
+
+Summary_RealDataRedifined <- merge(Summary_RealDataRedifined,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
+names(Summary_RealDataRedifined)[names(Summary_RealDataRedifined) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+
+RealDataRedifined_Summary_perVisitRateDifference <- SummariseData_perVisitRateDifference(Summary_RealDataRedifined, Type='Original')
+
+PlotRealData_Original_vs_Randomized <- Plot_Original_vs_Randomized(
+RealDataSummary_perVisitRateDifference,
+RealDataRedifined_Summary_perVisitRateDifference)
 
 
 
