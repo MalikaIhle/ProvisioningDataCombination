@@ -3,8 +3,8 @@
 #	 Alternation in parental provisioning
 #	 Randomization, Scaling, Simulation
 #	 Start : 20/10/2016
-#	 last modif : 21/10/2016
-#	 commit: write old code into function
+#	 last modif : 24/10/2016
+#	 commit: test all functions to correct and optimize them
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list = ls(all = TRUE))
@@ -933,64 +933,301 @@ Type = 'Simulated Gamma Data')
 
 
 
-## Original Data Set 4: Simulated Gamma Data - do not keep first Tstart for randomization not scaling, do not change
+{## Original Data Set 4: Simulated Gamma Data - do not keep first Tstart for randomization nor scaling
+
+{# slightly modify simulation above: the forst interval is not 0 but the first Tstart
+
+males2 <- as.data.frame(do.call(rbind, lapply(split(males,males$DVDRef),function(x) {x$Interval <- c(x$Tstart[1],diff(x$Tstart))
+return(x)})))
+
+females2 <- as.data.frame(do.call(rbind, lapply(split(females,females$DVDRef),function(x) {x$Interval <- c(x$Tstart[1],diff(x$Tstart))
+return(x)})))
+
+OriginalSimulatedGammaData2 <- rbind(males2,females2)
+OriginalSimulatedGammaData2 <- OriginalSimulatedGammaData2[order(OriginalSimulatedGammaData2$DVD,OriginalSimulatedGammaData2$Tstart),]
+rownames(OriginalSimulatedGammaData2) <- NULL
+}
+
+head(OriginalSimulatedGammaData2)
 
 
-## change RealData not to have Tstart identical
-head(RealData)
+Randomize_Data_WithinFile_and_Calculate_AlternationValue_Without_Keeping_First_Tstart <- function(Data, Type) {
 
-Redefining_Tstarts <- function(Data){
+RandomizeData_oneSplit <-  function(x){
 
-Redefining_Tstarts_one_split <- function(x) {
+if (Type == 'Scaled'){
+x <- x[,c('DVDRef','Sex','splitID','ScaledInterval','ScaledTstart')]
+names(x)[names(x) == 'ScaledTstart'] <- 'Tstart'
+names(x)[names(x) == 'ScaledInterval'] <- 'Interval'
+}
 
-x0 <- x[x$Sex == 0,]
-x1 <- x[x$Sex == 1,]
+	# x <- split(OriginalSimulatedGammaData2, OriginalSimulatedGammaData2$splitID)[[1]]
 
-x0$NextTstart <-  c(x0$Tstart[-1],NA)	
-x1$NextTstart <-  c(x1$Tstart[-1],NA)	
+x <- x[order(x$Tstart),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
 
-# modify all Tstart of visits that have the same Tstart as the previous visit (add 0.05), within individuals
-for (i in 1:nrow(x0)){
-if (x0$Tstart[i] == x0$NextTstart[i] & !is.na(x0$NextTstart[i]))
+x0$Interval <- sample_vector(x0$Interval)
+x0$Tstart <- cumsum(x0$Interval) 
+
+x1$Interval <- sample_vector(x1$Interval)
+x1$Tstart <- cumsum(x1$Interval) 
+
+xsim <- rbind(x0,x1)
+xsim <- xsim[order(xsim$Tstart),] 
+xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
+
+return(round(length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame)])/(nrow(xsim) -1) *100,1)) # AlternationValue
+
+}
+
+
+Asim <- data.frame(splitID = unique(Data$splitID), 
+do.call(cbind, replicate(NreplicatesWithinFileRandomization,do.call(rbind,lapply(split(Data,Data$splitID),RandomizeData_oneSplit)),simplify=FALSE)))
+
+return(Asim)
+
+}
+
+
+{## Original Data
+
+OriginalSimulatedGammaData2Summary <- SummariseData(OriginalSimulatedGammaData2, Type='Original')
+OriginalSimulatedGammaData2Summary$VisitRateDifference <- abs(OriginalSimulatedGammaData2Summary$MVisit - OriginalSimulatedGammaData2Summary$FVisit)
+
+OriginalSimulatedGammaData2Summary_perVisitRateDifference <- SummariseData_perVisitRateDifference(OriginalSimulatedGammaData2Summary, Type='Original')
+
+## Randomization Original Data
+AlternationValue_from_OriginalSimulatedGammaData2_Randomized <- Randomize_Data_WithinFile_and_Calculate_AlternationValue_Without_Keeping_First_Tstart(OriginalSimulatedGammaData2, Type='Original')
+RandomizedOriginalSimulatedGammaData2Summary_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(AlternationValue_from_OriginalSimulatedGammaData2_Randomized,OriginalSimulatedGammaData2Summary)
+
+}
+
+
+Scale_Data_Without_Keeping_First_Tstart <- function(Data, StandardizingSex) {
+	#out_x <- list()#to test each file
+	#options(warn=2)#to test each file
+	#Data <- OriginalSimulatedGammaData2#to test each file
+	#StandardizingSex <- 0#to test each file
+
+	#for (j in 1:length(split(Data,Data$splitID))) {#to test each file
+
+	#x <- split(Data,Data$splitID)[[j]]#to test each file
+
+scaling_function <- function(x) {
+
+x_StandardizingSex = subset(x, Sex == StandardizingSex)
+x_OtherSex = subset(x, Sex != StandardizingSex)
+
+x_StandardizingSex$NextTstart <- c(x_StandardizingSex$Tstart[-1],NA)
+x_OtherSex$NextTstart <- c(x_OtherSex$Tstart[-1],NA)	
+
+{# modify all Tstart of visits that have the same Tstart as the previous visit (add 0.05), within individuals
+for (i in 1:nrow(x_StandardizingSex)){
+if (x_StandardizingSex$Tstart[i] == x_StandardizingSex$NextTstart[i] & !is.na(x_StandardizingSex$NextTstart[i]))
 {
-x0$Interval[i+1] <- 0.05
-x0$Tstart[i+1] <- x0$Tstart[i]+0.05
+x_StandardizingSex$Interval[i+1] <- 0.05
+x_StandardizingSex$Tstart[i+1] <- x_StandardizingSex$Tstart[i]+0.05
 }
 }
 
-for (i in 1:nrow(x1)){
-if (x1$Tstart[i] == x1$NextTstart[i] & !is.na(x1$NextTstart[i]))
+for (i in 1:nrow(x_OtherSex)){
+if (x_OtherSex$Tstart[i] == x_OtherSex$NextTstart[i] & !is.na(x_OtherSex$NextTstart[i]))
 {
-x1$Interval[i+1] <- 0.05
-x1$Tstart[i+1] <- x1$Tstart[i]+0.05
+x_OtherSex$Interval[i+1] <- 0.05
+x_OtherSex$Tstart[i+1] <- x_OtherSex$Tstart[i]+0.05
 }
 }
 
-x <- rbind(x0, x1)
+
+x_StandardizingSex$Interval <- c(x_StandardizingSex$Tstart[1],diff(x_StandardizingSex$Tstart))
+x_OtherSex$Interval <- c(x_OtherSex$Tstart[1],diff(x_OtherSex$Tstart))
+
+x_StandardizingSex$NextTstart <- c(x_StandardizingSex$Tstart[-1],NA)
+x_OtherSex$NextTstart <- c(x_OtherSex$Tstart[-1],NA)	
+
+}
+
+		if (x_StandardizingSex$Interval[1] != 0) {
+		
+		# for the standardizing sex, all intervals will be set to its initial mean interval
+		multiplicator <-  mean(x_StandardizingSex$Interval)/x_StandardizingSex$Interval
+		
+		x_StandardizingSex$ScaledInterval <- rep(median(x_StandardizingSex$Interval*multiplicator), nrow(x_StandardizingSex)) # the scaled Interval for the standardizing sex is always the same, hence the repeat function ; the use of median instead of unique is because of rounding that make identical number tiny different
+		x_StandardizingSex$ScaledTstart <- cumsum(x_StandardizingSex$ScaledInterval) 
+		
+		# create vector of times on each foraging trip (all 10th of minute in between two Tstart from the same sex)
+		StandardizingSex_trip = mapply(FUN = function(Tstart, NextTstart) {  
+		if (Tstart==NextTstart) 
+		{return (Tstart)} 
+		if (Tstart!=NextTstart)	
+		{return(list(((Tstart*10) : (NextTstart*10-1))/10))}}, # (the *10 and then /10 are the easiest way to construct thenths of minutes)
+		Tstart = c(0,x_StandardizingSex$Tstart[-nrow(x_StandardizingSex)]), # add 0 as a first Tstart since 0 to first Tstart is a real interval / foraging trip
+		NextTstart = c(x_StandardizingSex$Tstart[1],x_StandardizingSex$NextTstart[-nrow(x_StandardizingSex)]))
+		}
+		
+		if (x_StandardizingSex$Interval[1] == 0){ # when bird in the nest when starts video
+		
+		multiplicator <-  mean(x_StandardizingSex$Interval[-1])/x_StandardizingSex$Interval[-1]
+		
+		x_StandardizingSex$ScaledInterval <- rep(median(x_StandardizingSex$Interval[-1]*multiplicator), nrow(x_StandardizingSex)) # the scaled Interval for the standardizing sex is always the same, hence the repeat function ; the use of median instead of unique is because of rounding that make identical number tiny different
+		x_StandardizingSex$ScaledTstart <- cumsum(x_StandardizingSex$ScaledInterval) 
+		
+		# create vector of times on each foraging trip (all 10th of minute in between two Tstart from the same sex)
+		StandardizingSex_trip = mapply(FUN = function(Tstart, NextTstart) {  
+		if (Tstart==NextTstart) 
+		{return (Tstart)} 
+		if (Tstart!=NextTstart)	
+		{return(list(((Tstart*10) : (NextTstart*10-1))/10))}}, # (the *10 and then /10 are the easiest way to construct thenths of minutes)
+		Tstart = x_StandardizingSex$Tstart[-nrow(x_StandardizingSex)],
+		NextTstart = x_StandardizingSex$NextTstart[-nrow(x_StandardizingSex)])
+		}
+
+		OtherSex_trip = mapply(FUN = function(Tstart, NextTstart) {  
+		if (Tstart==NextTstart) 
+		{return (Tstart)} 
+		if (Tstart!=NextTstart)	
+		{return(list(((Tstart*10) : (NextTstart*10-1))/10))}}, 
+		Tstart = c(0,x_OtherSex$Tstart[-nrow(x_OtherSex)]), 
+		NextTstart = c(x_OtherSex$Tstart[1],x_OtherSex$NextTstart[-nrow(x_OtherSex)]))
+		
+
+		# check for the list entry of the other sex how many of the numbers also occur for the first sex (here the standadirzing sex)
+		# this gives you the number of tenths-of-minutes that both birds were foraging at the same time
+		outK <- NULL
+		outKI<- list()
+		
+		for (i in 1:length(OtherSex_trip)){
+		for (k in 1:length(StandardizingSex_trip)){
+		outK[k] <- length(which(OtherSex_trip[[i]] %in% StandardizingSex_trip[[k]])) # stored the number of 10th of minutes from the other sex i trip that overlaps with all k trips from the standardising sex
+		}
+		outKI[[i]] <- sum(outK*multiplicator)/10 # there is one multiplicator per standardizing sex trip ; this is the scaled interval for the other sex for this i trip
+		}
+		
+# recalculate ScaledTstart from those ScaledIntervals for the other sex
+x_OtherSex$ScaledInterval <- do.call(rbind,outKI)
+x_OtherSex$ScaledTstart <- cumsum(x_OtherSex$ScaledInterval)
+
+# recreate x with Tstart and scaledTstart for both sexes
+x <- rbind(x_StandardizingSex, x_OtherSex)
 x <- x[,-which(names(x)%in%c("NextTstart"))]
-x <- x[order(as.numeric(rownames(x))),] 
+x <- x[order(as.numeric(rownames(x))),] # sort as in initial x (order ScaledTstart migth slightly vary)
 
+# to solve edges with no overlap: modify some ScaledInterval and ScaledTstart from x
+FirstSex <- x$Sex[1] # who is the first sex to visit
+LastSex <- x$Sex[nrow(x)] # who is the last sex to visit
+
+if (StandardizingSex != FirstSex){ # if StandardizingSex is not the FirstSex, the first intervals of the others sex can't already be standardized, they do not fully overlap with the intervals of the standardizing sex, and are therefore left intact, unstandardized
+
+if(sum(x_OtherSex$ScaledInterval) >0){ 
+# add to the first overlapping foraging trip interval, the extra time that is not overlapping, left unstandardized
+x$ScaledInterval[x$Tstart == min(x$Tstart[x$Sex==FirstSex & x$Tstart >=min(x$Tstart[x$Sex==StandardizingSex]) ])] <- 
+x$ScaledInterval[x$Tstart == min(x$Tstart[x$Sex==FirstSex & x$Tstart >=min(x$Tstart[x$Sex==StandardizingSex]) ])]+
+min(x$Tstart[x$Sex==StandardizingSex]) - max(x$Tstart[x$Sex==FirstSex & x$Tstart <= min(x$Tstart[x$Sex==StandardizingSex])])
+
+# keep the interval non standardized for the extra non overlapping trips
+x$ScaledInterval[x$Tstart <= min(x$Tstart[x$Sex==StandardizingSex]) & x$Sex==FirstSex] <- 
+x$Interval[x$Tstart <= min(x$Tstart[x$Sex==StandardizingSex]) & x$Sex==FirstSex] 
+
+# recalculate the Tstart for the first overlapping trip of the other sex and for the exra non overlapping trips of the other sex from the beginning of the nest watch
+x$ScaledTstart[x$Sex==FirstSex] <- x$Tstart[1] + cumsum(x$ScaledInterval[x$Sex==FirstSex])
+}
+
+if(sum(x_OtherSex$ScaledInterval) ==0){ # these are cases where all visits happen before the first visit of the standardizing sex
+
+x$ScaledInterval[x$Sex == FirstSex] <- x$Interval[x$Sex == FirstSex]
+x$ScaledTstart[x$Sex == FirstSex] <- x$ScaledTstart[x$Sex == FirstSex][1] +cumsum(x$ScaledInterval[x$Sex == FirstSex])
+
+}
+
+}
+
+if (StandardizingSex != LastSex){ # if Standardazing is not the LastSex: there is no interval for the other sex to overlap with at the end, those ones can't be standardized, and are therefore 'left' intact unstandardized
+
+if(sum(x_OtherSex$ScaledInterval) >0){
+# add to the last overlapping foraging trip interval, the extra time that is not overlapping, left unstandardized
+x$ScaledInterval[x$Tstart == min(x$Tstart[x$Sex==LastSex & x$Tstart >=max(x$Tstart[x$Sex==StandardizingSex]) ])] <- 
+x$ScaledInterval[x$Tstart == min(x$Tstart[x$Sex==LastSex & x$Tstart >=max(x$Tstart[x$Sex==StandardizingSex]) ])]+
+min(x$Tstart[x$Sex==LastSex & x$Tstart >=max(x$Tstart[x$Sex==StandardizingSex]) ]) - max(x$Tstart[x$Sex==StandardizingSex])
+
+# keep the interval non standardized for the extra non overlapping trips
+x$ScaledInterval[x$Tstart > min(x$Tstart[x$Sex==LastSex & x$Tstart >=max(x$Tstart[x$Sex==StandardizingSex]) ])] <- 
+x$Interval[x$Tstart > min(x$Tstart[x$Sex==LastSex & x$Tstart >=max(x$Tstart[x$Sex==StandardizingSex]) ])]
+
+# recalculate the Tstart for the last sex
+x$ScaledTstart[x$Sex==LastSex] <- x$Tstart[x$Sex==LastSex][1] +cumsum(x$ScaledInterval[x$Sex==LastSex])
+}
+
+if(sum(x_OtherSex$ScaledInterval) ==0){  # these are cases where all visits happen after the last visit of the standardizing sex
+x$ScaledInterval[x$Sex == LastSex] <- x$Interval[x$Sex == LastSex]
+x$ScaledTstart[x$Sex == LastSex] <- x$ScaledTstart[x$Sex == LastSex][1] +cumsum(x$ScaledInterval[x$Sex == LastSex])
+
+}
+}
+
+# round calculated numbers
+x$ScaledTstart <- round(x$ScaledTstart,1)
+x$ScaledInterval <- round(x$ScaledInterval,1)
+
+	#out_x[[j]] <- x#to test each file
 return(x)
+
 }
 
-out <- lapply(split(Data,Data$splitID),Redefining_Tstarts_one_split)
-DataRedefined <- do.call(rbind, out)
+out_scaling_list <- lapply(split(Data,Data$splitID),scaling_function)
+Data_scaled <- do.call(rbind, out_scaling_list)
 
-return(DataRedefined)
+return(Data_scaled)
+
 }
 
 
-RealDataRedifined <- Redefining_Tstarts(RealData)
-Summary_RealDataRedifined <- SummariseData(RealDataRedifined, Type = 'Original')
+{## Scaled Original Data
 
-Summary_RealDataRedifined <- merge(Summary_RealDataRedifined,RealDataVisitRATES[,c('DVDRef','DiffVisit1Rate')])
-names(Summary_RealDataRedifined)[names(Summary_RealDataRedifined) == 'DiffVisit1Rate'] <- 'VisitRateDifference' # on visit rate per hour
+ScaledOriginalSimulatedGammaData2_0 <- Scale_Data_Without_Keeping_First_Tstart(OriginalSimulatedGammaData2, StandardizingSex = 0)
+ScaledOriginalSimulatedGammaData2_1 <- Scale_Data_Without_Keeping_First_Tstart(OriginalSimulatedGammaData2, StandardizingSex = 1)
 
-RealDataRedifined_Summary_perVisitRateDifference <- SummariseData_perVisitRateDifference(Summary_RealDataRedifined, Type='Original')
+## Summarize Scaled Data
+Summary_ScaledOriginalSimulatedGammaData2_0 <- SummariseData(ScaledOriginalSimulatedGammaData2_0,Type='Scaled')
+Summary_ScaledOriginalSimulatedGammaData2_1 <- SummariseData(ScaledOriginalSimulatedGammaData2_1,Type='Scaled')
 
-PlotRealData_Original_vs_Randomized <- Plot_Original_vs_Randomized(
-RealDataSummary_perVisitRateDifference,
-RealDataRedifined_Summary_perVisitRateDifference)
+Summary_ScaledOriginalSimulatedGammaData2_0$VisitRateDifference <- abs(Summary_ScaledOriginalSimulatedGammaData2_0$MVisit - Summary_ScaledOriginalSimulatedGammaData2_0$FVisit)
+Summary_ScaledOriginalSimulatedGammaData2_1$VisitRateDifference <- abs(Summary_ScaledOriginalSimulatedGammaData2_1$MVisit - Summary_ScaledOriginalSimulatedGammaData2_1$FVisit)
+
+## Average summary scaled data accross both standardizing sex 
+Summary_ScaledOriginalSimulatedGammaData2_01 <- Summarise_AverageScaledData_AcrossBothStandardizingSex(Summary_ScaledOriginalSimulatedGammaData2_0,Summary_ScaledOriginalSimulatedGammaData2_1, Type = 'Scaled')
+
+## summarize average scaled data accross VisitRateDifference
+Summary_Scaled_OriginalSimulatedGammaData2_perVisitRateDifference <- SummariseData_perVisitRateDifference(Summary_ScaledOriginalSimulatedGammaData2_01,Type='Scaled')
+
+## randomize Scaled data 0 and 1
+AlternationValue_from_ScaledOriginalSimulatedGammaData2Randomized_0 <- Randomize_Data_WithinFile_and_Calculate_AlternationValue_Without_Keeping_First_Tstart(ScaledOriginalSimulatedGammaData2_0, Type='Scaled')
+AlternationValue_from_ScaledOriginalSimulatedGammaData2Randomized_1 <- Randomize_Data_WithinFile_and_Calculate_AlternationValue_Without_Keeping_First_Tstart(ScaledOriginalSimulatedGammaData2_1, Type='Scaled')
+
+AlternationValue_from_ScaledOriginalSimulatedGammaData2Randomized_01 <- data.frame(bind_cols(AlternationValue_from_ScaledOriginalSimulatedGammaData2Randomized_0,AlternationValue_from_ScaledOriginalSimulatedGammaData2Randomized_1[-1]))
+
+## summarize average scaled data accross VisitRateDifference
+Summary_Randomized_Scaled_OriginalSimulatedGammaData2_perVisitRateDifference <- Summarise_RandomizedData_perVisitRateDifference(AlternationValue_from_ScaledOriginalSimulatedGammaData2Randomized_01,Summary_ScaledOriginalSimulatedGammaData2_01)
+
+}
+
+}
+
+dev.new()
+Plot_Original_vs_Randomized_Scaled_vs_Non_Scaled(
+OriginalSimulatedGammaData2Summary_perVisitRateDifference,
+RandomizedOriginalSimulatedGammaData2Summary_perVisitRateDifference,
+Summary_Scaled_OriginalSimulatedGammaData2_perVisitRateDifference,
+Summary_Randomized_Scaled_OriginalSimulatedGammaData2_perVisitRateDifference, 
+Type = 'Simulated Gamma Data without Keeping first Tstart')
+
+
+
+## Original Data Set 5: Simulaed Gsamma data from different gamma distribution to match observed variation in provisioning rates?
+
+
+
+
 
 
 
