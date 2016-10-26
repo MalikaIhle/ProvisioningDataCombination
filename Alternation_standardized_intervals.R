@@ -562,18 +562,26 @@ Original_vs_Randomized <- data.frame(rbind(DataSummary_perVisitRateDifference[1:
 Original_vs_Randomized$VisitRateDifference <- as.numeric(Original_vs_Randomized$VisitRateDifference)
 
 ggplot(data=Original_vs_Randomized, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+  geom_point(size = 2)+
+  geom_line(size = 1)+
+  geom_errorbar(aes(ymin=Alower, ymax=Aupper),width=0.9, size =0.8)+
   xlab("Visit rate difference")+
   ylab("Mean alternation")+
-  scale_colour_manual(values=c("#56B4E9", "black","#009e24", "gray30"), labels=c(
+  ggtitle(Type) + 
+  scale_colour_manual(values=c("#56B4E9", "black","#009e24", "gray50"), name= "", labels=c(
   "95% Expected Original", 
   "95% Observed Original",
   "95% Expected Scaled",
   "95% Observed Scaled"))+
   ylim(20,75)+
-  theme_classic()+ ggtitle(Type)
+ theme_classic()+ 
+ theme(panel.background = element_rect(colour = "black"))+
+ theme(plot.title = element_text(size = rel(2)))+
+ theme(axis.title.y = element_text(size = rel(1.5))) +
+ theme(axis.title.x = element_text(size = rel(1.5)))+
+ theme(axis.text = element_text(size = rel(1.5)))+
+ theme(legend.position = c(0.1, 0.1))+
+ theme(legend.text = element_text(size = rel(1.1)))
 
 }
 
@@ -1223,8 +1231,43 @@ Type = 'Simulated Gamma Data without Keeping first Tstart')
 
 
 
-## Original Data Set 5: Simulaed Gsamma data from different gamma distribution to match observed variation in provisioning rates?
+## Original Data Set 5: Simulaed Gamma data from different gamma distributions to match observed variation in provisioning rates?
 
+
+
+## 
+regularvisits <- function(){
+	visits <- rep(2.74,1000)
+	csVisits <- cumsum(visits)
+	outVisits <- round(csVisits[csVisits<60],1)
+	{return(outVisits)}
+	}
+
+
+males <- as.data.frame(do.call(rbind, lapply(1:1619, function(x) data.frame(splitID=x, DVDRef = x, Tstart=regularvisits()))))
+length(unique(males$splitID))
+
+females <- as.data.frame(do.call(rbind, lapply(1:1619, function(x) data.frame(splitID=x, DVDRef = x, Tstart=visits()))))
+length(unique(males$splitID))
+
+males$Sex <- 1
+females$Sex <-0
+
+
+
+males <- as.data.frame(do.call(rbind, lapply(split(males,males$DVDRef),function(x) {x$Interval <- c(0,diff(x$Tstart))
+return(x)})))
+
+females <- as.data.frame(do.call(rbind, lapply(split(females,females$DVDRef),function(x) {x$Interval <- c(0,diff(x$Tstart))
+return(x)})))
+
+
+OriginalSimulatedGammaData3 <- rbind(males,females)
+OriginalSimulatedGammaData3 <- OriginalSimulatedGammaData3[order(OriginalSimulatedGammaData3$DVD,OriginalSimulatedGammaData3$Tstart),]
+rownames(OriginalSimulatedGammaData3) <- NULL
+
+
+head(OriginalSimulatedGammaData3)
 
 
 
