@@ -8,7 +8,7 @@
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list = ls(all = TRUE))
-
+ 
 {#### remarks
 # I will have to neglect the time birds spend within the nest box, which might not be neglecteable 
 # hist(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit, 40)
