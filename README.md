@@ -1,10 +1,26 @@
-# Behavioural compatibility in Provisioning : DATA ANALYSES
 
-## Alternation_Analyses
+# REPO PURPOSE
 
-call selected data for this project from the folder 'DataDryad'
+1) extract all provisioning data from 2004 until 2015
+2) select and analyse the data with regard to parental coordination
 
-clean code for data analyses (only alternation, synchrony, fitness, divorce)
+
+# 1) Compilation provisioning .R : DATA EXTRACTION
+
+
+## extract raw data in excel files and Database and give list of errors in the original excel files
+
+give 'Tstart' 'Tend' 'Sex' for all excel files
+
+for old files, also gives comments 'S', 'IN', 'O' with color of 'O' visits
+
+query the DB to get MY_tblParentalCare, MY_tblBrood, MY_tblDVDInfo, create variables on all data
+
+#### creates all tables of all extracted data and stored then in R_output folder: these can be used by other members of the team, working on provisioning and not necessarily behavioural compatibility (i.e. this is the full set of data)
+
+
+
+# 2) Behavioural compatibility in Provisioning : DATA ANALYSES
 
 ## Alternation_Data Selection and Simulation
 
@@ -14,8 +30,22 @@ data selection
 
 clean code for simulation
 
+#### create all Data to be published stored in DataDryad folder
 
-## Alternation & Synchrony > OLD code put in R side code
+
+## Alternation_Analyses
+
+call selected data for this project from the folder 'DataDryad'
+
+clean code for data analyses (only alternation, synchrony, fitness, divorce)
+
+
+
+
+
+# Side .R codes Folder
+
+## Alternation & Synchrony > OLD code which got split into selection and simulation vs analyses
 
 source compilation_provisioning to get the data
 
@@ -29,26 +59,6 @@ Predictors and benefits of provisioning rate
 
 Predictors and benefits of synchrony
 
-
-
-
-# Compilation provisioning .R : DATA EXTRACTION
-
-
-
-## extract raw data in excel files and Database and give list of errors in the original excel files
-
-give 'Tstart' 'Tend' 'Sex' for all excel files
-
-for old files, also gives comments 'S', 'IN', 'O' with color of 'O' visits
-
-query the DB to get MY_tblParentalCare, MY_tblBrood, MY_tblDVDInfo
-
-creates all R_output : these can be used by other members of the team, working on provisioning and not necessarily behavioural compatibility (i.e. this is the full set of data)
-
-
-# Side .R codes
-
 ## simulation correlation Alternation - Synchrony
 to understand mathematical and necessary relationships between variables
 
@@ -61,10 +71,11 @@ calculate observed and expected alternation (after randomization) in those scale
 
 
 
-# ErrorChecking
+# ErrorChecking Folder: relative to data extraction
 
 
 ## ProvisioningErrorCheck: to standardize file, correct chronology, fill in missing info
+
 
 ### for files with Old Template
 
@@ -90,10 +101,6 @@ the data is contained in the second sheet (create sheet1 otherwise)
 ### for files with New Template
 
 Checked that all Tout were filled in, chronology logical, no comments within the raw data
-
-
-
-
 
 
 ## LogChangesExcelFiles
@@ -169,6 +176,25 @@ summary stats for all analyzed videos, i.e. with excelfile with raw data availab
 ### R_MY_tblBroods
 
 all broods where at least one social parent identified, even those not videotaped
+
+
+# DataDryad
+
+data after selection for behavioural compatiblity project, included results of various randomizations
+
+### MY_TABLE_perDVD
+
+### MY_TABLE_perBrood
+
+### MY_TABLE_perChick
+
+### MY_TABLE_perBirdYear
+
+
+
+
+
+
 
 
 
