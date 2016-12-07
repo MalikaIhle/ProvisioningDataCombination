@@ -1,8 +1,19 @@
 # Behavioural compatibility in Provisioning : DATA ANALYSES
 
+## _Ihle_et_al_Alternation_Analyses
+
+call selected data for this project from the folder 'DataDryad'
+
+clean code for simulation
+
+clean code for data analyses (only alternation, synchrony, fitness, divorce)
+
+
 ## Alternation & Synchrony
 
 source compilation_provisioning to get the data
+
+select data valid for studing parental coordination
 
 simulation of random alternation for given provisioning rates
 
@@ -27,7 +38,7 @@ for old files, also gives comments 'S', 'IN', 'O' with color of 'O' visits
 
 query the DB to get MY_tblParentalCare, MY_tblBrood, MY_tblDVDInfo
 
-creates all R_output 
+creates all R_output : these can be used by other members of the team, working on provisioning and not necessarily behavioural compatibility (i.e. this is the full set of data)
 
 
 # Side .R codes
@@ -123,13 +134,13 @@ ultimately, everything will be called directly from the DB with the code compila
 ### R_RawAllVisits_forDB
 
 this as all the raw data until time of code run (last: 20160323)
-this is the raw data I will do my analyses on, this is also what Ian Stevensson could import into the DB
+this is the raw data I will do my analyses on (no data selection yet), this is also what Ian Stevensson could import into the DB
 (historically, it first included files from 2004 to 2014, then 206 missing files from this period, then videos from 2015 from Andrew)
 
 
 ## R_MY_tables 
 
-data, meta data, and summary of data I calculated
+data, meta data, and summary of data I calculated (data cleaned but no selection relative to project on compatibility yet: this can be used by Joel working on provisioning itself)
 
 
 ### R_MY_RawFeedingVisits
