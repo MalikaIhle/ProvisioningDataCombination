@@ -1,3 +1,48 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#	 Malika IHLE      malika_ihle@hotmail.fr
+#	 Analyse provisioning data sparrows
+#	 Start : 07/12/2016
+#	 last modif : 07/12/2016
+#	 commit: clean up DataAnalyses script
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+{### remarks
+# LastSeenAlive information needs to be updated manually when DB updated
+# MY_tblBrood$Nb3 is the number of post fledgling
+# MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
+# MY_TABLE_perDVD has one line per file
+# MY_TABLE_perBrood has one line per brood, averaging the summary accross files
+}
+
+rm(list = ls(all = TRUE))
+
+{### packages
+
+library(dplyr) 
+library(ggplot2)
+library(lme4)
+
+}
+
+{### Get raw data (from source() or R_output folder)
+
+{# output csv files
+
+# source('Alternation_DataSelection_DataSimulation.R')
+# or :
+
+DataDryad_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/DataDryad"
+
+MY_TABLE_perDVD
+MY_TABLE_perBrood
+MY_TABLE_perChick
+MY_TABLE_perBirdYear
+
+
+}
+
+
+}
 
 
 
