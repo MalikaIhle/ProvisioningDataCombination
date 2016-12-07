@@ -1,15 +1,21 @@
 # Behavioural compatibility in Provisioning : DATA ANALYSES
 
-## _Ihle_et_al_Alternation_Analyses
+## Alternation_Analyses
 
 call selected data for this project from the folder 'DataDryad'
 
-clean code for simulation
-
 clean code for data analyses (only alternation, synchrony, fitness, divorce)
 
+## Alternation_Data Selection and Simulation
 
-## Alternation & Synchrony
+call data from data extraction code
+
+data selection
+
+clean code for simulation
+
+
+## Alternation & Synchrony > OLD code put in R side code
 
 source compilation_provisioning to get the data
 
