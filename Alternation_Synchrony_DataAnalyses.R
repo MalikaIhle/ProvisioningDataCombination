@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 15/04/2015
-#	 last modif : 18/10/2016  
-#	 commit: source scaled nest watch ('observed' and 'simulated'), export among nest watch randomization for simulation scaling effect
+#	 last modif : 07/12/2016 
+#	 commit: move all SQL to data extraction code
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -65,20 +65,20 @@ options(warn=-1) # for Rmarkdown not to print the warnings
 # source('COMPILATION_PROVISIONING.R')
 # or :
 
-output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+output_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
 
 MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
 MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
 MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
 
-MY_VisitRateDiff_Amean_scaled_01 <- read.csv(paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled_01.csv", sep="/")) # summary to plot, once interval are scaled (output of code alternation_standardized_interval.R)
+#MY_VisitRateDiff_Amean_scaled_01 <- read.csv(paste(output_folder,"R_MY_VisitRateDiff_Amean_scaled_01.csv", sep="/")) # summary to plot, once interval are scaled (output of code alternation_standardized_interval.R)
 
 }
 
-{# input txt files
+{# input txt files  !!! needs updating if specific data change !!!
 
-input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
+input_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
 
 sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 sys_LastSeenAlive$LastYearAlive <- substr(sys_LastSeenAlive$LastLiveRecord, 7,10)
@@ -87,239 +87,7 @@ pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/
 
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 
-}
-
-{# query DB
-
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
-
-# MassTarsusRearinBrood_allChicks (see annotated sql query 'LastMassTarsusChick')
-# considering only chicks alive and measured between 11 and 14 days
-
-{MassTarsusRearinBrood_allChicks <-  sqlQuery(conDB, "
-SELECT tblCaptures.BirdID AS ChickID, 
-usys_qRearingBrood.NatalBrood,
-usys_qRearingBrood.RearingBrood,
-usys_qRearingBrood.CrossFosteredYN,
- Avg(tblMeasurements.Mass) AS AvgOfMass, 
- Avg(tblMeasurements.Tarsus) AS AvgOfTarsus, 
- Avg(usys_qRelativeChickMassClassesForCaptures.Age) AS AvgOfAge, 
- Count(usys_qRearingBrood.BirdID) AS nMeasures
- 
-FROM tblBirdID INNER JOIN 
-((
-	(SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood,  
-			tblBirdID.BroodRef AS NatalBrood, IIf([FosterBrood] Is Null,0,1) AS CrossFosteredYN
-	FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
-	WHERE (((tblBirdID.BroodRef) Is Not Null))) 
-	AS usys_qRearingBrood 
-
-INNER JOIN (
-	(SELECT First(tblCaptures.CaptureRef) AS CaptureRef, 
-	14 AS MassClass, 
-	First(tblCaptures.CaptureDate-[HatchDate])+1 AS Age
-
-	FROM (tblBirdID INNER JOIN tblCaptures ON tblBirdID.BirdID = tblCaptures.BirdID)
-	
-	INNER JOIN 
-	 
-		(
-			SELECT tblBirdID.BirdID, 
-			usys_qBroodEggDate.LayDate AS EggDate, 
-			usys_qBroodHatchDate.HatchDate, 
-			usys_qBroodEggDate.DateEstimated AS EggDateEst, 
-			IIf(usys_qBroodHatchDate.BroodRef Is Not Null,usys_qBroodHatchDate.DateEstimated,0) AS HatchDateEst
-
-			FROM ((tblBroods 
-			LEFT JOIN 
-
-					(SELECT tblBroods.BroodRef, 
-					IIf(usys_qBroodTrueEggDate.LayDate,
-					usys_qBroodTrueEggDate.LayDate,
-					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
-					IIf(usys_qBroodTrueEggDate.BroodRef,
-					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
-					
-					FROM (
-						(SELECT tblBroodEvents.BroodRef, 
-						tblBroodEvents.EventDate AS LayDate, 
-						tblBroodEvents.DateEstimated
-						FROM tblBroodEvents
-						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
-						AND ((tblBroodEvents.EventNumber)=0))
-						) 
-						AS usys_qBroodTrueEggDate 
-						
-					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
-					LEFT JOIN 
-						(SELECT tblBroodEvents.BroodRef, 
-						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
-						[EventDate]-[EggCount],
-						[Hatchdate]-14) AS LayDate, 
-						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
-						'EggCount','HatchDate') AS EstimateSource
-						
-						FROM tblBroodEvents 
-						LEFT JOIN 
-							(SELECT tblBroodEvents.BroodRef, 
-							tblBroodEvents.EventDate AS HatchDate, 
-							tblBroodEvents.DateEstimated
-							FROM tblBroodEvents
-							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
-							AND ((tblBroodEvents.EventNumber)=1))
-							) 
-							AS usys_qBroodHatchDatesFromTable 
-						
-						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
-						
-						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
-						AND ((tblBroodEvents.EventNumber)=4) 
-						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
-						OR (((tblBroodEvents.EventNumber)=4) 
-						AND ((tblBroodEvents.EggCount) Is Not Null))
-						
-						) 
-						AS usys_qBroodEggDateFromFirstSeen 
-						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
-						
-					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
-					
-					) 
-					AS usys_qBroodEggDate
-			 
-			ON tblBroods.BroodRef = usys_qBroodEggDate.BroodRef) 
-			
-			LEFT JOIN 
-				(
-				SELECT usys_qBroodsWithHatchlings.BroodRef, 
-				IIf(usys_qBroodHatchDatesFromTable.HatchDate Is Not Null,
-				usys_qBroodHatchDatesFromTable.HatchDate,
-				usys_qBroodEggDate.LayDate+14) AS HatchDate, 
-				usys_qBroodHatchDatesFromTable.HatchDate Is Null Or usys_qBroodHatchDatesFromTable.DateEstimated AS DateEstimated
-				FROM (
-					(SELECT DISTINCT tblBirdID.BroodRef, 
-					Count(*) AS NoHatchlings
-					FROM tblBirdID
-					WHERE (((tblBirdID.LastStage)>1) AND ((tblBirdID.BroodRef) Is Not Null))
-					GROUP BY tblBirdID.BroodRef
-					) 
-					AS usys_qBroodsWithHatchlings 
-					
-				LEFT JOIN 
-					(SELECT tblBroodEvents.BroodRef, 
-					tblBroodEvents.EventDate AS HatchDate, 
-					tblBroodEvents.DateEstimated
-					FROM tblBroodEvents
-					WHERE (((tblBroodEvents.EventDate) Is Not Null) AND ((tblBroodEvents.EventNumber)=1))
-					) 
-					AS usys_qBroodHatchDatesFromTable 
-					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef) 
-					
-				LEFT JOIN 
-					(SELECT tblBroods.BroodRef, 
-					IIf(usys_qBroodTrueEggDate.LayDate,
-					usys_qBroodTrueEggDate.LayDate,
-					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
-					IIf(usys_qBroodTrueEggDate.BroodRef,
-					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
-					
-					FROM (
-						(SELECT tblBroodEvents.BroodRef, 
-						tblBroodEvents.EventDate AS LayDate, 
-						tblBroodEvents.DateEstimated
-						FROM tblBroodEvents
-						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
-						AND ((tblBroodEvents.EventNumber)=0))
-						) 
-						AS usys_qBroodTrueEggDate 
-						
-					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
-					LEFT JOIN 
-						(SELECT tblBroodEvents.BroodRef, 
-						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
-						[EventDate]-[EggCount],
-						[Hatchdate]-14) AS LayDate, 
-						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
-						'EggCount','HatchDate') AS EstimateSource
-						
-						FROM tblBroodEvents 
-						LEFT JOIN 
-							(SELECT tblBroodEvents.BroodRef, 
-							tblBroodEvents.EventDate AS HatchDate, 
-							tblBroodEvents.DateEstimated
-							FROM tblBroodEvents
-							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
-							AND ((tblBroodEvents.EventNumber)=1))
-							) 
-							AS usys_qBroodHatchDatesFromTable 
-						
-						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
-						
-						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
-						AND ((tblBroodEvents.EventNumber)=4) 
-						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
-						OR (((tblBroodEvents.EventNumber)=4) 
-						AND ((tblBroodEvents.EggCount) Is Not Null))
-						
-						) 
-						AS usys_qBroodEggDateFromFirstSeen 
-						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
-						
-					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
-					
-					) AS usys_qBroodEggDate 
-					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodEggDate.BroodRef
-					
-				) 
-				AS usys_qBroodHatchDate 
-
-			ON tblBroods.BroodRef = usys_qBroodHatchDate.BroodRef) 
-			INNER JOIN tblBirdID ON tblBroods.BroodRef = tblBirdID.BroodRef
-			WHERE (((tblBirdID.BroodRef) Is Not Null))
-
-			)
-		AS usys_qBirdEggHatchDates ON tblCaptures.BirdID = usys_qBirdEggHatchDates.BirdID
-
-		WHERE (((([tblCaptures].[CaptureDate]-[HatchDate])+1)<=14) 
-		AND ((tblCaptures.Stage)<3)
-		AND (((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[Capturedate])))
-		GROUP BY tblCaptures.CaptureRef
-		HAVING (((First(tblCaptures.CaptureDate-[HatchDate])+1)=11 Or 
-				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=12 Or 
-				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=13 Or 
-				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=14))
-	) AS usys_qRelativeChickMassClassesForCaptures 
-
-INNER JOIN tblCaptures ON usys_qRelativeChickMassClassesForCaptures.CaptureRef = tblCaptures.CaptureRef) ON usys_qRearingBrood.BirdID = tblCaptures.BirdID) 
-
-
-INNER JOIN tblMeasurements ON tblCaptures.CaptureRef = tblMeasurements.CaptureRef) ON tblBirdID.BirdID = tblCaptures.BirdID
-
-WHERE (((usys_qRelativeChickMassClassesForCaptures.MassClass)=14) AND ((usys_qRearingBrood.RearingBrood) Is Not Null) AND ((tblMeasurements.Mass)>0) AND ((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[CaptureDate]))
-GROUP BY tblCaptures.BirdID, usys_qRearingBrood.RearingBrood, usys_qRearingBrood.NatalBrood,usys_qRearingBrood.CrossFosteredYN, tblCaptures.CaptureDate;
-
-")
-}
-
-# taking the first measurement for chicks measured twice in the right range of age 
-# (even though likely measured when tarsus forgotten the first time but here put priority on getting chicks with the same age...)
-MassTarsusRearinBrood_allChicks[!is.na(MassTarsusRearinBrood_allChicks$ChickID) & MassTarsusRearinBrood_allChicks$ChickID == '4764',]
-MassTarsusRearinBrood_allChicks <- MassTarsusRearinBrood_allChicks[order(MassTarsusRearinBrood_allChicks$AvgOfAge), ] 
-MassTarsusRearinBrood_allChicks <- MassTarsusRearinBrood_allChicks[!duplicated(MassTarsusRearinBrood_allChicks$ChickID),]
-
-tblChicks <- merge(x=MassTarsusRearinBrood_allChicks, y= pedigree[,c("id","dam","sire")], all.x=TRUE, by.x="ChickID", by.y = "id")
-
-close(conDB)
-
-summary(tblChicks)
-
-tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
-colnames(tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
-tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasured != tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
-head(tblChicks_byRearingBrood)
-
-
-nrow(tblChicks) # 3252 = length(unique(tblChicks$ChickID))
+tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
 
 }
 
@@ -345,6 +113,12 @@ MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_
 MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
 
 MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
+
+tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
+colnames(tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
+tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasured != tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
+head(tblChicks_byRearingBrood)
+
 MY_tblChicks_byRearingBrood <- tblChicks_byRearingBrood[tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
 {# fill in manually the data where Julia deleted it 
@@ -420,12 +194,14 @@ summary(MY_tblBroods$MwillDivorceforEx)
 
 }
 
-head(MY_tblBroods) 
+head(MY_tblBroods) # even those where one parent unknown
 head(MY_tblDVDInfo) 
 head(MY_tblParentalCare)
-head(MY_RawFeedingVisits)
+head(MY_RawFeedingVisits) # even those where one parent unknown for simulation
 head(MY_tblChicks)
 head(MY_tblChicks_byRearingBrood)
+
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -463,6 +239,11 @@ nrow(MY_tblParentalCare) # 1499 if remove quantiles
 # hist(MY_RawFeedingVisits$Duration,breaks=200)
 # summary(MY_RawFeedingVisits$Duration)
 
+
+outTsartMin <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[which.min(x$TstartFeedVisit), c('DVDRef','TstartFeedVisit')] ))
+summary(outTsartMin$TstartFeedVisit)
+
+t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
 
 }
 
@@ -1682,40 +1463,39 @@ MY_TABLE_perBirdYear <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear !
 head(MY_TABLE_perBirdYear)
 
 
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-{### compare original and scaled nest watches (observed and simulated)
+# {### compare original and scaled nest watches (observed and simulated)
 
-MY_VisitRateDiff_Amean_scaled_01$TypeSim[MY_VisitRateDiff_Amean_scaled_01$Type == 'Observed'] <- "ObservedScaled"
-MY_VisitRateDiff_Amean_scaled_01$TypeSim[MY_VisitRateDiff_Amean_scaled_01$Type == 'Expected'] <- "ExpectedScaled"
-Original_and_Scaled_A_summaries <- rbind(data.frame(VisitRateDiff_Amean_for_comparison_withAMax_bis),
-MY_VisitRateDiff_Amean_scaled_01[,-which(names(MY_VisitRateDiff_Amean_scaled_01) %in% c("NbFiles"))])
+# MY_VisitRateDiff_Amean_scaled_01$TypeSim[MY_VisitRateDiff_Amean_scaled_01$Type == 'Observed'] <- "ObservedScaled"
+# MY_VisitRateDiff_Amean_scaled_01$TypeSim[MY_VisitRateDiff_Amean_scaled_01$Type == 'Expected'] <- "ExpectedScaled"
+# Original_and_Scaled_A_summaries <- rbind(data.frame(VisitRateDiff_Amean_for_comparison_withAMax_bis),
+# MY_VisitRateDiff_Amean_scaled_01[,-which(names(MY_VisitRateDiff_Amean_scaled_01) %in% c("NbFiles"))])
 
-{Fig1comparison_withMax_bis_h <- ggplot(data=Original_and_Scaled_A_summaries, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("#0072B2", '#56B4E9','#009e24','#009E73','black', 'gray30' ,"grey"), 
-labels=c(
-"Expected, among nest watch (10000 bootstrapping)", 
-"Expected, within nest watch (100 random.)",
-"Expected, Scaled (100 random./standardizing sex/nest watch)",
-"Expected, switch 2 by 2 within nest watch (once)",
-"Observed" ,
-"Observed, Scaled (average accross both standardizing sex)" ,
-"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(Original_and_Scaled_A_summaries$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(Original_and_Scaled_A_summaries$Amean, n = 9)) +  
-theme_classic() #+
-#theme(legend.position="none")
-}
+# {Fig1comparison_withMax_bis_h <- ggplot(data=Original_and_Scaled_A_summaries, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+# geom_point()+
+# geom_line()+
+# geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+# xlab("Visit rate difference")+
+# ylab("Mean alternation")+
+# scale_colour_manual(values=c("#0072B2", '#56B4E9','#009e24','#009E73','black', 'gray30' ,"grey"), 
+# labels=c(
+# "Expected, among nest watch (10000 bootstrapping)", 
+# "Expected, within nest watch (100 random.)",
+# "Expected, Scaled (100 random./standardizing sex/nest watch)",
+# "Expected, switch 2 by 2 within nest watch (once)",
+# "Observed" ,
+# "Observed, Scaled (average accross both standardizing sex)" ,
+# "Maximum Alternation possible"))+
+# scale_x_continuous(breaks = pretty(Original_and_Scaled_A_summaries$VisitRateDifference, n = 12)) +
+# scale_y_continuous(breaks = pretty(Original_and_Scaled_A_summaries$Amean, n = 9)) +  
+# theme_classic() #+
+# #theme(legend.position="none")
+# }
 
-}
+# }
 
-Fig1comparison_withMax_bis_h
+# Fig1comparison_withMax_bis_h
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

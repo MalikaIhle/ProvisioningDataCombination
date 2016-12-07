@@ -3,8 +3,8 @@
 #	 Compile provisioning data sparrows
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
-#	 last modif :04/05/2016
-#	 commit: add synchrony to MY_tblParentalCare
+#	 last modif :07/12/2016
+#	 commit: add body condition per chick SQL code
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
@@ -104,11 +104,13 @@ pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video 
 input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
 sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 sunrise <- read.table(file= paste(input_folder,"sunrise.txt", sep="/"), sep='\t', header=T)
+pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
+
 }
 
 {# input from database
 
-conDB= odbcConnectAccess("C:\\Users\\mihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+conDB= odbcConnectAccess("C:\\Users\\Malika\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 # SqlFetch
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
@@ -352,6 +354,225 @@ GROUP BY usys_qRearingBrood.RearingBrood, usys_qRelativeChickMassClassesForCaptu
 HAVING (((Count(tblMeasurements.Mass))>0));
 ")}
 
+
+# MassTarsusRearinBrood_allChicks (see annotated sql query 'LastMassTarsusChick')
+# considering only chicks alive and measured between 11 and 14 days
+
+{MassTarsusRearinBrood_allChicks <-  sqlQuery(conDB, "
+SELECT tblCaptures.BirdID AS ChickID, 
+usys_qRearingBrood.NatalBrood,
+usys_qRearingBrood.RearingBrood,
+usys_qRearingBrood.CrossFosteredYN,
+ Avg(tblMeasurements.Mass) AS AvgOfMass, 
+ Avg(tblMeasurements.Tarsus) AS AvgOfTarsus, 
+ Avg(usys_qRelativeChickMassClassesForCaptures.Age) AS AvgOfAge, 
+ Count(usys_qRearingBrood.BirdID) AS nMeasures
+ 
+FROM tblBirdID INNER JOIN 
+((
+	(SELECT tblBirdID.BirdID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS RearingBrood,  
+			tblBirdID.BroodRef AS NatalBrood, IIf([FosterBrood] Is Null,0,1) AS CrossFosteredYN
+	FROM tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
+	WHERE (((tblBirdID.BroodRef) Is Not Null))) 
+	AS usys_qRearingBrood 
+
+INNER JOIN (
+	(SELECT First(tblCaptures.CaptureRef) AS CaptureRef, 
+	14 AS MassClass, 
+	First(tblCaptures.CaptureDate-[HatchDate])+1 AS Age
+
+	FROM (tblBirdID INNER JOIN tblCaptures ON tblBirdID.BirdID = tblCaptures.BirdID)
+	
+	INNER JOIN 
+	 
+		(
+			SELECT tblBirdID.BirdID, 
+			usys_qBroodEggDate.LayDate AS EggDate, 
+			usys_qBroodHatchDate.HatchDate, 
+			usys_qBroodEggDate.DateEstimated AS EggDateEst, 
+			IIf(usys_qBroodHatchDate.BroodRef Is Not Null,usys_qBroodHatchDate.DateEstimated,0) AS HatchDateEst
+
+			FROM ((tblBroods 
+			LEFT JOIN 
+
+					(SELECT tblBroods.BroodRef, 
+					IIf(usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+					IIf(usys_qBroodTrueEggDate.BroodRef,
+					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+					
+					FROM (
+						(SELECT tblBroodEvents.BroodRef, 
+						tblBroodEvents.EventDate AS LayDate, 
+						tblBroodEvents.DateEstimated
+						FROM tblBroodEvents
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=0))
+						) 
+						AS usys_qBroodTrueEggDate 
+						
+					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+					LEFT JOIN 
+						(SELECT tblBroodEvents.BroodRef, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						[EventDate]-[EggCount],
+						[Hatchdate]-14) AS LayDate, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						'EggCount','HatchDate') AS EstimateSource
+						
+						FROM tblBroodEvents 
+						LEFT JOIN 
+							(SELECT tblBroodEvents.BroodRef, 
+							tblBroodEvents.EventDate AS HatchDate, 
+							tblBroodEvents.DateEstimated
+							FROM tblBroodEvents
+							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+							AND ((tblBroodEvents.EventNumber)=1))
+							) 
+							AS usys_qBroodHatchDatesFromTable 
+						
+						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+						
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=4) 
+						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+						OR (((tblBroodEvents.EventNumber)=4) 
+						AND ((tblBroodEvents.EggCount) Is Not Null))
+						
+						) 
+						AS usys_qBroodEggDateFromFirstSeen 
+						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+						
+					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+					
+					) 
+					AS usys_qBroodEggDate
+			 
+			ON tblBroods.BroodRef = usys_qBroodEggDate.BroodRef) 
+			
+			LEFT JOIN 
+				(
+				SELECT usys_qBroodsWithHatchlings.BroodRef, 
+				IIf(usys_qBroodHatchDatesFromTable.HatchDate Is Not Null,
+				usys_qBroodHatchDatesFromTable.HatchDate,
+				usys_qBroodEggDate.LayDate+14) AS HatchDate, 
+				usys_qBroodHatchDatesFromTable.HatchDate Is Null Or usys_qBroodHatchDatesFromTable.DateEstimated AS DateEstimated
+				FROM (
+					(SELECT DISTINCT tblBirdID.BroodRef, 
+					Count(*) AS NoHatchlings
+					FROM tblBirdID
+					WHERE (((tblBirdID.LastStage)>1) AND ((tblBirdID.BroodRef) Is Not Null))
+					GROUP BY tblBirdID.BroodRef
+					) 
+					AS usys_qBroodsWithHatchlings 
+					
+				LEFT JOIN 
+					(SELECT tblBroodEvents.BroodRef, 
+					tblBroodEvents.EventDate AS HatchDate, 
+					tblBroodEvents.DateEstimated
+					FROM tblBroodEvents
+					WHERE (((tblBroodEvents.EventDate) Is Not Null) AND ((tblBroodEvents.EventNumber)=1))
+					) 
+					AS usys_qBroodHatchDatesFromTable 
+					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef) 
+					
+				LEFT JOIN 
+					(SELECT tblBroods.BroodRef, 
+					IIf(usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodTrueEggDate.LayDate,
+					usys_qBroodEggDateFromFirstSeen.LayDate) AS LayDate, 
+					IIf(usys_qBroodTrueEggDate.BroodRef,
+					usys_qBroodTrueEggDate.DateEstimated,True) AS DateEstimated
+					
+					FROM (
+						(SELECT tblBroodEvents.BroodRef, 
+						tblBroodEvents.EventDate AS LayDate, 
+						tblBroodEvents.DateEstimated
+						FROM tblBroodEvents
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=0))
+						) 
+						AS usys_qBroodTrueEggDate 
+						
+					RIGHT JOIN tblBroods ON usys_qBroodTrueEggDate.BroodRef = tblBroods.BroodRef) 
+					LEFT JOIN 
+						(SELECT tblBroodEvents.BroodRef, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						[EventDate]-[EggCount],
+						[Hatchdate]-14) AS LayDate, 
+						IIf([usys_qBroodHatchDatesFromTable].[Hatchdate] Is Null,
+						'EggCount','HatchDate') AS EstimateSource
+						
+						FROM tblBroodEvents 
+						LEFT JOIN 
+							(SELECT tblBroodEvents.BroodRef, 
+							tblBroodEvents.EventDate AS HatchDate, 
+							tblBroodEvents.DateEstimated
+							FROM tblBroodEvents
+							WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+							AND ((tblBroodEvents.EventNumber)=1))
+							) 
+							AS usys_qBroodHatchDatesFromTable 
+						
+						ON tblBroodEvents.BroodRef = usys_qBroodHatchDatesFromTable.BroodRef
+						
+						WHERE (((tblBroodEvents.EventDate) Is Not Null) 
+						AND ((tblBroodEvents.EventNumber)=4) 
+						AND ((usys_qBroodHatchDatesFromTable.HatchDate)>=[EventDate])) 
+						OR (((tblBroodEvents.EventNumber)=4) 
+						AND ((tblBroodEvents.EggCount) Is Not Null))
+						
+						) 
+						AS usys_qBroodEggDateFromFirstSeen 
+						ON tblBroods.BroodRef = usys_qBroodEggDateFromFirstSeen.BroodRef
+						
+					WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDate],[usys_qBroodEggDateFromFirstSeen].[LayDate])) Is Not Null))
+					
+					) AS usys_qBroodEggDate 
+					ON usys_qBroodsWithHatchlings.BroodRef = usys_qBroodEggDate.BroodRef
+					
+				) 
+				AS usys_qBroodHatchDate 
+
+			ON tblBroods.BroodRef = usys_qBroodHatchDate.BroodRef) 
+			INNER JOIN tblBirdID ON tblBroods.BroodRef = tblBirdID.BroodRef
+			WHERE (((tblBirdID.BroodRef) Is Not Null))
+
+			)
+		AS usys_qBirdEggHatchDates ON tblCaptures.BirdID = usys_qBirdEggHatchDates.BirdID
+
+		WHERE (((([tblCaptures].[CaptureDate]-[HatchDate])+1)<=14) 
+		AND ((tblCaptures.Stage)<3)
+		AND (((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[Capturedate])))
+		GROUP BY tblCaptures.CaptureRef
+		HAVING (((First(tblCaptures.CaptureDate-[HatchDate])+1)=11 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=12 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=13 Or 
+				 (First(tblCaptures.CaptureDate-[HatchDate])+1)=14))
+	) AS usys_qRelativeChickMassClassesForCaptures 
+
+INNER JOIN tblCaptures ON usys_qRelativeChickMassClassesForCaptures.CaptureRef = tblCaptures.CaptureRef) ON usys_qRearingBrood.BirdID = tblCaptures.BirdID) 
+
+
+INNER JOIN tblMeasurements ON tblCaptures.CaptureRef = tblMeasurements.CaptureRef) ON tblBirdID.BirdID = tblCaptures.BirdID
+
+WHERE (((usys_qRelativeChickMassClassesForCaptures.MassClass)=14) AND ((usys_qRearingBrood.RearingBrood) Is Not Null) AND ((tblMeasurements.Mass)>0) AND ((tblBirdID.DeathDate) Is Null Or (tblBirdID.DeathDate)<>[CaptureDate]))
+GROUP BY tblCaptures.BirdID, usys_qRearingBrood.RearingBrood, usys_qRearingBrood.NatalBrood,usys_qRearingBrood.CrossFosteredYN, tblCaptures.CaptureDate;
+
+")
+}
+
+# taking the first measurement for chicks measured twice in the right range of age 
+# (even though likely measured when tarsus forgotten the first time but here put priority on getting chicks with the same age...)
+MassTarsusRearinBrood_allChicks[!is.na(MassTarsusRearinBrood_allChicks$ChickID) & MassTarsusRearinBrood_allChicks$ChickID == '4764',]
+MassTarsusRearinBrood_allChicks <- MassTarsusRearinBrood_allChicks[order(MassTarsusRearinBrood_allChicks$AvgOfAge), ] 
+MassTarsusRearinBrood_allChicks <- MassTarsusRearinBrood_allChicks[!duplicated(MassTarsusRearinBrood_allChicks$ChickID),]
+
+tblChicks <- merge(x=MassTarsusRearinBrood_allChicks, y= pedigree[,c("id","dam","sire")], all.x=TRUE, by.x="ChickID", by.y = "id")
+
+
+
 # get the hatching date for each brood
 
 {usys_qBroodHatchDate <- sqlQuery(conDB, "
@@ -514,6 +735,7 @@ head(RearingBrood_allBirds)
 head(sys_LastSeenAlive)
 head(sunrise)
 head(LastMassTarsusChick)
+head(tblChicks)
 head(usys_qBroodHatchDate)
 head(usys_qBroodEggDate)
 
@@ -2417,7 +2639,7 @@ DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
 
 
-## output_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+## output_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
 
 ## write.csv(combinedprovisioningALLforDB, file = paste(output_folder,"R_RawAllVisits_forDB.csv", sep="/"), row.names = FALSE) 
 # 20160322
@@ -2453,3 +2675,6 @@ DurationScript # ~ 14 min
  # 20160707 set Prior residence of male and female to FALSE instead of NA for first breeding event
  # 20160712 change the way of deducting divorce: will divorce happen AFTER the brood/line considered
  
+ 
+## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE) 
+ # 20161207 moved from Alternation_Synchrony_DataAnalyses (not to have SQL code there)
