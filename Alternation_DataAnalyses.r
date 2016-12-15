@@ -24,14 +24,14 @@ library(lme4)
 
 }
 
-{### Get raw data (from source() or R_output folder)
+{### Get raw data from R_Selected&SimulatedData folder
 
 {# output csv files
 
 # source('Alternation_DataSelection_DataSimulation.R')
 # or :
 
-DataDryad_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/DataDryad"
+SelectedData_folder <- "R_Selected&SimulatedData"
 
 MY_TABLE_perDVD
 MY_TABLE_perBrood

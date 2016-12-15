@@ -24,26 +24,26 @@ library(boot) # for Kat's simulation
 
 }
 
-{### Get raw data (from source() or R_output folder)
+{### Get raw data from R_ExtractedData
 
 {# output csv files
 
-# source('COMPILATION_PROVISIONING.R')
+# source('Compilation_provisioning_DataExtraction.R')
 # or :
 
-output_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+ExtractedData_folder <- "R_ExtractedData"
 
-MY_tblParentalCare <- read.csv(paste(output_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
-MY_tblBroods <- read.csv(paste(output_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
-MY_tblDVDInfo <- read.csv(paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
-MY_RawFeedingVisits <- read.csv(paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
+MY_tblParentalCare <- read.csv(paste(ExtractedData_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
+MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
+MY_tblDVDInfo <- read.csv(paste(ExtractedData_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
+MY_RawFeedingVisits <- read.csv(paste(ExtractedData_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
 
 
 }
 
 {# input txt files  !!! needs updating if specific data change !!!
 
-input_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
+input_folder <- "R_input"
 
 sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 sys_LastSeenAlive$LastYearAlive <- substr(sys_LastSeenAlive$LastLiveRecord, 7,10)
@@ -171,10 +171,10 @@ t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
 
 }
 
-head(MY_tblBroods) # even those where one parent unknown
+head(MY_tblBroods) # even those where one parent unknown, needed divorce question
 head(MY_tblDVDInfo) 
 head(MY_tblParentalCare)
-head(MY_RawFeedingVisits) # even those where one parent unknown for simulation
+head(MY_RawFeedingVisits) # even those where one parent unknown, needed for simulation
 head(MY_tblChicks)
 head(MY_tblChicks_byRearingBrood)
 
@@ -1366,4 +1366,18 @@ head(MY_TABLE_perBirdYear)
 
 
 
-# write to folder DataDryad
+## output_folder <- "R_Selected&SimulatedData"
+
+
+
+
+
+
+
+
+
+
+
+
+
+

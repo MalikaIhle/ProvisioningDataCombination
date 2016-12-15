@@ -97,11 +97,11 @@ require(zoo)
 }
 
 {# input from excel files in dropbox
-pathdropboxfolder <- "C:\\Users\\mihle\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
+pathdropboxfolder <- "C:\\Users\\Malika\\\\Dropbox\\Sparrow Lundy\\Sparrow video files"
 }
 
 {# text files from input folder
-input_folder <- "C:/Users/mihle/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_input"
+input_folder <- "R_input"
 sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 sunrise <- read.table(file= paste(input_folder,"sunrise.txt", sep="/"), sep='\t', header=T)
 pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
@@ -2639,7 +2639,7 @@ DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
 
 
-## output_folder <- "C:/Users/Malika/Documents/_Malika_Sheffield/_CURRENT BACKUP/stats&data_extraction/ProvisioningDataCombination/R_output"
+## output_folder <- "R_ExtractedData"
 
 ## write.csv(combinedprovisioningALLforDB, file = paste(output_folder,"R_RawAllVisits_forDB.csv", sep="/"), row.names = FALSE) 
 # 20160322
@@ -2676,5 +2676,5 @@ DurationScript # ~ 14 min
  # 20160712 change the way of deducting divorce: will divorce happen AFTER the brood/line considered
  
  
-## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE) 
+## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
  # 20161207 moved from Alternation_Synchrony_DataAnalyses (not to have SQL code there)
