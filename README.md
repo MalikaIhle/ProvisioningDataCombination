@@ -16,7 +16,7 @@ for old files, also gives comments 'S', 'IN', 'O' with color of 'O' visits
 
 query the DB to get MY_tblParentalCare, MY_tblBrood, MY_tblDVDInfo, create variables on all data
 
-#### creates all tables of all extracted data and stored then in R_output folder: these can be used by other members of the team, working on provisioning and not necessarily behavioural compatibility (i.e. this is the full set of data)
+#### creates all tables of all extracted data and store then in R_ExtractedData folder: these can be used by other members of the team, working on provisioning and not necessarily behavioural compatibility (i.e. this is the full set of data)
 
 
 
@@ -30,12 +30,12 @@ data selection
 
 clean code for simulation
 
-#### create all Data to be published stored in DataDryad folder
+#### creates all tables needed for data analyses of the alternation project and store them in the R_Selected&SimulatedData folder
 
 
 ## Alternation_Analyses
 
-call selected data for this project from the folder 'DataDryad'
+call selected data for this project from the folder 'R_Selected&SimulatedData' folder
 
 clean code for data analyses (only alternation, synchrony, fitness, divorce)
 
@@ -141,7 +141,7 @@ ultimately, everything will be called directly from the DB with the code compila
 
 
 
-# R_output
+# R_ExtractedData
 
 
 ### R_RawAllVisits_forDB
@@ -178,7 +178,7 @@ summary stats for all analyzed videos, i.e. with excelfile with raw data availab
 all broods where at least one social parent identified, even those not videotaped
 
 
-# DataDryad
+# R_Selected&SimulatedData
 
 data after selection for behavioural compatiblity project, included results of various randomizations
 
