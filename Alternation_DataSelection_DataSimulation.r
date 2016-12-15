@@ -80,7 +80,7 @@ MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% l
 
 MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
-tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
+MY_tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
 colnames(tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
 tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasured != tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
 head(tblChicks_byRearingBrood)
@@ -833,6 +833,121 @@ theme_classic()
 }
 
 
+### simulation among files within provisioning rate and sex : a simpler version of Kat's renadomisation
+
+RawFeedingVisitsBothSexes_withRates <- merge(x= MY_RawFeedingVisits[,c('DVDRef','TstartFeedVisit','Sex','Interval')], 
+                       y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , 
+                       by='DVDRef', all.x=TRUE)
+					   
+head(RawFeedingVisitsBothSexes_withRates)		
+
+MRawInterfeeds <- subset(RawFeedingVisitsBothSexes_withRates[,c('DVDRef','TstartFeedVisit','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
+FRawInterfeeds <- subset(RawFeedingVisitsBothSexes_withRates[,c('DVDRef','TstartFeedVisit','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
+
+
+# keep first visit aside, name the rest
+Ffirstvisit <- FRawInterfeeds %>% group_by(DVDRef) %>% slice(1)
+Mfirstvisit <- MRawInterfeeds %>% group_by(DVDRef) %>% slice(1)
+
+Fnotfirstvisit <- FRawInterfeeds %>% group_by(DVDRef) %>% slice(-1)
+Mnotfirstvisit <- MRawInterfeeds %>% group_by(DVDRef) %>% slice(-1)
+
+
+#--- process to be repeated
+
+# shuffled real (not first) intervals among individuals of the same sex that have the same visit rate
+FShuffledInterfeeds <- Fnotfirstvisit %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
+MShuffledInterfeeds <- Mnotfirstvisit %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval))
+
+a <- merge(FShuffledInterfeeds, MShuffledInterfeeds)
+head(a)
+
+
+{# creation of i simulated dataset (and calculation of i Asim) for each j file
+
+out_Asim_j = list()
+out_Asim_i = list()
+out_Ssim_j = list()
+out_Ssim_i = list()
+
+
+for (j in 1:length(unique(RawFeedingVisitsBothSexes_withRates$SexRate))){
+
+x <- split(RawFeedingVisitsBothSexes_withRates,RawFeedingVisitsBothSexes_withRates$Sex)[[j]]
+
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[2]] # a normal file
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[1]] # only one male visit
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[13]] # only 2 female visits > screw up the function 'sample'
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[['935']] # no female visits > now removed
+		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[15]] # only one male and one female visit
+
+x <- x[order(x$TstartFeedVisit),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+
+for (i in 1:100) # to increase up to 1000
+{
+
+x0sim <- x0
+x1sim <- x1
+
+x0sim$Interval <- c(0, sample_vector(x0sim$Interval[-1]))
+#x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
+x0sim$TstartFeedVisit <- c(x0sim$Tstart[1] + cumsum(x0sim$Interval)) # corrected 20161024 
+
+x1sim$Interval <- c(0, sample_vector(x1sim$Interval[-1]))
+#x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
+x1sim$TstartFeedVisit <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval)) # corrected 20161024 
+
+
+xsim <- rbind(x0sim,x1sim)
+xsim <- xsim[order(xsim$TstartFeedVisit),]
+xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
+xsim$NextTstartafterhalfminTstart <-  c(xsim$TstartFeedVisit[-1],NA) <= xsim$TstartFeedVisit +0.5 &  c(xsim$TstartFeedVisit[-1],NA) >= xsim$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+
+
+Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
+Ssim <- round( (length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
+		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart)]) / (nrow(xsim) -1) ) *100   ,2)
+SsimFemale <- length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
+		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart) & xsim$Sex == 0])	
+
+out_Asim_i[i] <- Asim
+out_Asim_j[j] <- list(unlist(out_Asim_i))
+
+out_Ssim_i[i] <- Ssim
+out_Ssim_j[j] <- list(unlist(out_Ssim_i))
+
+out_SsimFemale_i[i] <- SsimFemale
+out_SsimFemale_j[j] <- list(unlist(out_SsimFemale_i))
+
+
+		# clean up
+		x0sim <- NULL
+		x1sim <- NULL
+		Asim <- NULL
+		Ssim <- NULL
+		SsimFemale <- NULL
+}
+
+		# clean up
+		x <- NULL
+		x0 <- NULL
+		x1 <- NULL
+
+}
+
+out_Asim <- do.call(rbind, out_Asim_j)
+out_Ssim <- do.call(rbind, out_Ssim_j)
+out_SsimFemale <- do.call(rbind, out_SsimFemale_j)
+
+}
+
+head(out_Asim)
+head(out_Ssim)
+head(out_SsimFemale)
+		   
 
 }
 
@@ -1366,8 +1481,13 @@ head(MY_TABLE_perBirdYear)
 
 
 
+
+
 ## output_folder <- "R_Selected&SimulatedData"
 
+
+## write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD.csv", sep="/"), row.names = FALSE) 
+# 20161215
 
 
 
