@@ -3,7 +3,7 @@
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
 #	 last modif : 07/12/2016
-#	 commit: clean up DataAnalyses script
+#	 commit: clean up simulation script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -185,209 +185,6 @@ head(MY_tblChicks_byRearingBrood)
 {#### Simulation random alternation vs observed alternation
 
 
-{### simulation alternation with Kat's method
-
-
-{## Get all simulated combinations of individuals with specific provisioning rates, and calculate their alternation
-
-{# Create RawInterfeeds per sex and select provisioning rates from 3 to 22
-RawInterfeeds <- merge(x= MY_RawFeedingVisits[,c('DVDRef','Sex','Interval')], 
-                       y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , 
-                       by='DVDRef', all.x=TRUE)
-
-MRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
-MRawInterfeeds322 <- MRawInterfeeds[MRawInterfeeds$MVisit1RateH >=3 & MRawInterfeeds$MVisit1RateH <=22,]
-FRawInterfeeds <- subset(RawInterfeeds[,c('DVDRef','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
-FRawInterfeeds322 <- FRawInterfeeds[FRawInterfeeds$FVisit1RateH >=3 & FRawInterfeeds$FVisit1RateH <=22,]
-
-# shuffled intervals among individuals of the same sex that have the same visit rate
-FShuffledInterfeeds322 <- FRawInterfeeds322[-1] %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
-MShuffledInterfeeds322 <- MRawInterfeeds322[-1] %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval))
-}
-
-{# create one simulated df per sex per visit rate, with shuffled intervals associated to a SimID of length 'visit rate - 1'
-SimFemale <- list ()
-for (i in 3:22){
-# one group of visit rate at a time
-SimFemale[[i]] <- filter(FShuffledInterfeeds322, FVisit1RateH == i)
-
-# add SimID to (visit rate - 1) visits
-SimFemale[[i]] <- mutate(SimFemale[[i]], SimID = rep(1:((nrow(SimFemale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimFemale[[i]])))
-
-# Shuffle the SimID
- SimFemale[[i]]<-mutate(SimFemale[[i]], SimID = sample(SimID)) # sample without replacement
-
-# sort (not needed but easier to look at output)
-SimFemale[[i]]<-arrange(SimFemale[[i]],SimID)
-
-# Calculate cumulative sum for each SimID
-SimFemale[[i]]<-SimFemale[[i]]%>%
-group_by(SimID)%>%
- mutate(CumInt = cumsum(Interval))
-}
-
-SimMale <- list ()
-for (i in 3:22) {
-# one group of visit rate at a time
-SimMale[[i]] <- filter(MShuffledInterfeeds322, MVisit1RateH == i)
- 
-# add SimID to (visit rate - 1) visits
-SimMale[[i]] <- mutate(SimMale[[i]], SimID = rep(1:((nrow(SimMale[[i]])/(i-1))+1), each = (i-1), len = nrow(SimMale[[i]])))
- 
-# Shuffle the SimID
-SimMale[[i]]<-mutate(SimMale[[i]], SimID = sample(SimID)) # sample without replacement
-
-# sort
-SimMale[[i]]<-arrange(SimMale[[i]],SimID)
- 
-# Calculate cumulative sum for each SimID
-SimMale[[i]]<-SimMale[[i]]%>%
-  group_by(SimID)%>%
-  mutate(CumInt = cumsum(Interval))
-
-}
-
-# bind together
-SimMale <- do.call(rbind,SimMale)
-SimFemale <- do.call(rbind,SimFemale)
-SimData <- bind_rows(SimMale, SimFemale) # different from rbind as it binds two df with different columns, adding NAs
-SimData[is.na(SimData)] <- 0
-}
-
-head(SimData)
-
-{# create MiFj: 400 dataframe of combine male visit * female visit rate
-# all individuals of one sex of one visit rate are reused for each combination involving this visit rate
-
-MiFj <- list()
-i = rep(3:22, each = 20) # male visit rate
-j = rep((3:22), 20) # female visit rate
-  
-for (k in 1:400) # 400 combination
-{ 
-MiFj[[k]]<-SimData%>%
-filter(MVisit1RateH==i[k] | FVisit1RateH==j[k])%>%
-arrange(SimID, CumInt) 
-}
-
-AllMiFj <- do.call(rbind, MiFj)
-nrow(AllMiFj)
-}
-
-{# add running OverallSimID and select combinations with both sex, with the full number of intervals for a given provisioning rates
-AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1))) # shift all SimID from 1, get a running number changing at each mismatch between the original vector of SimID and the shifted one
-AllMiFj$Sex <- as.numeric(as.character(AllMiFj$Sex))
-
-AllMiFj_splitperOverallSimID <- split(AllMiFj, AllMiFj$OverallSimID)
-
-AllMiFj_splitperOverallSimID_fun <- function(x){
-return(c(
-length(x$Sex[x$Sex==0]), 
-length(x$Sex[x$Sex==1])
-))
-}
-
-AllMiFj_splitperOverallSimID_out1 <- lapply(AllMiFj_splitperOverallSimID,FUN= AllMiFj_splitperOverallSimID_fun )
-AllMiFj_splitperOverallSimID_out2 <- data.frame(rownames(do.call(rbind,AllMiFj_splitperOverallSimID_out1)),do.call(rbind, AllMiFj_splitperOverallSimID_out1))
- 
-rownames(AllMiFj_splitperOverallSimID_out2 ) <- NULL
-colnames(AllMiFj_splitperOverallSimID_out2 ) <- c('OverallSimID','NbF', 'NbM')
- 
-# remove all OverSimID where one sex not present
-AllMiFj <- AllMiFj[ ! AllMiFj$OverallSimID %in% AllMiFj_splitperOverallSimID_out2$OverallSimID[AllMiFj_splitperOverallSimID_out2$NbF == 0 | AllMiFj_splitperOverallSimID_out2$NbM == 0] ,]
-nrow(AllMiFj) # 778147
- 
-# rename OverallSimID to have it continuous
-AllMiFj$OverallSimID <- cumsum(AllMiFj$SimID != c(0,head(AllMiFj$SimID,-1)))
-
-# write.table(AllMiFj, file = "AllMiFj.xls", col.names=TRUE, sep='\t') # 20160412
-}
-
-head(AllMiFj)
-
-{# calculate alternation for each combination of individuals with specific provisioning rates
-
-FinalMiFj <- group_by(AllMiFj,OverallSimID)
-
-SimulatedSummaryKat <- summarise(FinalMiFj,
-                            tt = n(), # what we have here are interfeeds > if we want numbers of feeds add 2 ?							
-                            F = sum(diff(Sex)!=0),
-                            A = round((F/(tt-1))*100,2),# what we have are interfeeds > ?
-                            MVisitRate = max(MVisit1RateH),## added this for bootstrapping per category - this allows removing lines with 0 ?
-                            FVisitRate = max(FVisit1RateH),## added this for bootstrapping per category
-                            MFVisitRate = paste(max(MVisit1RateH),max(FVisit1RateH), sep="-"), ## added this for bootstrapping per category
-                            VisitRateDifference= abs(max(MVisit1RateH)-max(FVisit1RateH)))
-
-							
-tail(as.data.frame(SimulatedSummaryKat),60)				
-freqCombination <- arrange(count(SimulatedSummaryKat, MFVisitRate), n)
-nrow(freqCombination) # 400 combinations
-
-}
-
-}
-
-head(SimulatedSummaryKat)
-
-{## bootstrap A from SimulatedSummaryKat within each visit rate difference
-
-samplemean <- function(x, d) {return(mean(x[d]))}
-
-Aboot <- data.frame(matrix(,data=NA, nrow=20, ncol=4))
-colnames(Aboot) <- c('VisitRateDifference','Amean','Alower','Aupper')
-Aboot$VisitRateDifference <- c(0:19)
-
-for (i in 1:20)
-{
-Aboot$Amean[i] <- boot.ci(boot(SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == i-1], samplemean, R=10000), type='norm')$t0
-Aboot$Alower[i] <- boot.ci(boot(SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == i-1], samplemean, R=10000), type='norm')$normal[2] 
-Aboot$Aupper[i] <- boot.ci(boot(SimulatedSummaryKat$A[SimulatedSummaryKat$VisitRateDifference == i-1], samplemean, R=10000), type='norm')$normal[3] 
-}
-}
-
-Aboot
-
-{# summary Aobserved
-# per visit rate difference like in the paper
-MY_tblParentalCare_perVisitRateDiff <- group_by(MY_tblParentalCare, DiffVisit1Rate)
-
-Summary_MY_tblParentalCare_perVisitRateDiff <- summarise (MY_tblParentalCare_perVisitRateDiff,
-					Amean = mean(AlternationValue),
-					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
-					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96)
-					
-Summary_MY_tblParentalCare_perVisitRateDiff20 <- Summary_MY_tblParentalCare_perVisitRateDiff[1:20,]
-Summary_MY_tblParentalCare_perVisitRateDiff20 <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff20,VisitRateDifference= DiffVisit1Rate)
-
-}
-
-Summary_MY_tblParentalCare_perVisitRateDiff20
-
-{# combine observed and expected and plot
-
-# per visit rate difference like in the paper
-Summary_MY_tblParentalCare_perVisitRateDiff20$Type <- "Observed"
-Aboot$Type <- "Expected"
-
-VisitRateDiff_Amean <- rbind(Aboot, Summary_MY_tblParentalCare_perVisitRateDiff20)
-
-Fig1 <- ggplot(data=VisitRateDiff_Amean, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
-  xlab("Visit rate difference")+
-  ylab("Mean alternation")+
-  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
-  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean$VisitRateDifference, n = 12)) +
-  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean$Amean, n = 9)) +  
-  theme_classic()
-  
-}
-
-}
-
-Fig1
-
 
 {### simulation alternation and synchrony: shuffling intervals within files where both sex visit at least once
 
@@ -432,11 +229,11 @@ x1sim <- x1
 
 x0sim$Interval <- c(0, sample_vector(x0sim$Interval[-1]))
 #x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
-x0sim$TstartFeedVisit <- c(x0sim$Tstart[1] + cumsum(x0sim$Interval)) # corrected 20161024 
+x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1] + cumsum(x0sim$Interval)) # corrected 20161024 
 
 x1sim$Interval <- c(0, sample_vector(x1sim$Interval[-1]))
 #x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
-x1sim$TstartFeedVisit <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval)) # corrected 20161024 
+x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1] + cumsum(x1sim$Interval)) # corrected 20161024 
 
 
 xsim <- rbind(x0sim,x1sim)
@@ -832,124 +629,310 @@ theme_classic()
 
 }
 
+ 
 
-### simulation among files within provisioning rate and sex : a simpler version of Kat's renadomisation
-
-RawFeedingVisitsBothSexes_withRates <- merge(x= MY_RawFeedingVisits[,c('DVDRef','TstartFeedVisit','Sex','Interval')], 
-                       y=MY_tblParentalCare[,c('DVDRef','MVisit1RateH', 'FVisit1RateH','DiffVisit1Rate','AlternationValue')] , 
-                       by='DVDRef', all.x=TRUE)
-					   
-head(RawFeedingVisitsBothSexes_withRates)		
-
-MRawInterfeeds <- subset(RawFeedingVisitsBothSexes_withRates[,c('DVDRef','TstartFeedVisit','Sex','Interval','MVisit1RateH')], RawInterfeeds$Sex == 1)
-FRawInterfeeds <- subset(RawFeedingVisitsBothSexes_withRates[,c('DVDRef','TstartFeedVisit','Sex','Interval','FVisit1RateH')], RawInterfeeds$Sex == 0)
+}
 
 
-# keep first visit aside, name the rest
-Ffirstvisit <- FRawInterfeeds %>% group_by(DVDRef) %>% slice(1)
-Mfirstvisit <- MRawInterfeeds %>% group_by(DVDRef) %>% slice(1)
-
-Fnotfirstvisit <- FRawInterfeeds %>% group_by(DVDRef) %>% slice(-1)
-Mnotfirstvisit <- MRawInterfeeds %>% group_by(DVDRef) %>% slice(-1)
 
 
-#--- process to be repeated
-
-# shuffled real (not first) intervals among individuals of the same sex that have the same visit rate
-FShuffledInterfeeds <- Fnotfirstvisit %>% group_by(FVisit1RateH) %>% mutate(Interval=sample(Interval))
-MShuffledInterfeeds <- Mnotfirstvisit %>% group_by(MVisit1RateH) %>% mutate(Interval=sample(Interval))
-
-a <- merge(FShuffledInterfeeds, MShuffledInterfeeds)
-head(a)
 
 
-{# creation of i simulated dataset (and calculation of i Asim) for each j file
-
-out_Asim_j = list()
-out_Asim_i = list()
-out_Ssim_j = list()
-out_Ssim_i = list()
 
 
-for (j in 1:length(unique(RawFeedingVisitsBothSexes_withRates$SexRate))){
 
-x <- split(RawFeedingVisitsBothSexes_withRates,RawFeedingVisitsBothSexes_withRates$Sex)[[j]]
 
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[2]] # a normal file
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[1]] # only one male visit
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[13]] # only 2 female visits > screw up the function 'sample'
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[['935']] # no female visits > now removed
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[15]] # only one male and one female visit
 
-x <- x[order(x$TstartFeedVisit),]
+
+
+
+
+
+#### Simulation 
+
+## the Functions used several times
+
+Summarise_A_perVisitRateDifference <- function(DataSummary) {
+
+return(data.frame(summarise (group_by(DataSummary, VisitRateDifference),
+				Amean = mean(AlternationValue),
+				Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
+				Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
+				NbFiles = n())))
+}
+
+
+{## the Data
+
+RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
+colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
+head(RawInterfeeds)
+
+RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','DiffVisit1Rate')])
+
+FRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 0,])
+MRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 1,])
+
+# save first Tstart of each file and each sex  (with interval = 0)
+F_FirstTstart <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1)
+M_FirstTstart <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1)
+
+# remove the first line with interval (=0) from each file for each sex before shuffling interval
+FData_to_Shuffle <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
+MData_to_Shuffle <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
+}
+
+
+### among nest watch, within individual with same provisioning rate and same sex
+
+NreplicatesAmongFileRandomization = 100
+
+randomization_among_nest_watch_and_calculate_A_S_fun <- function(FData_to_Shuffle, MData_to_Shuffle){ # function that simulate all nest watches once with identical first Tstarts and shuffled interval among individual of same sex and same visit rate
+
+## shuffled intervals among individuals of the same sex that have the same visit rate
+FShuffled <- data.frame(FData_to_Shuffle %>% group_by(FVisit1RateH) %>% mutate(Interval=base::sample(Interval)))
+MShuffled <- data.frame(MData_to_Shuffle %>% group_by(MVisit1RateH) %>% mutate(Interval=base::sample(Interval)))
+
+# add first Tstart
+SimFemale <- rbind(F_FirstTstart,FShuffled) # this set the order: the first Tstart from the original file is above the visits with shuffled intervals
+SimFemale <- SimFemale[order(SimFemale$DVDRef),]
+
+SimMale <- rbind(M_FirstTstart,MShuffled)
+SimMale <- SimMale[order(SimMale$DVDRef),]
+
+# recalculate new Tstarts (cumulative sum of sheffuled intervals)
+SimFemale <- do.call(rbind,lapply(X=split(SimFemale,SimFemale$DVDRef), FUN=function(x){x$Tstart <- x$Tstart[1] + cumsum(x$Interval)
+return(x)}))
+rownames(SimFemale) <- NULL
+
+SimMale <- do.call(rbind,lapply(X=split(SimMale,SimMale$DVDRef), FUN=function(x){x$Tstart <- x$Tstart[1] + cumsum(x$Interval)
+return(x)}))
+rownames(SimMale) <- NULL
+
+# bind both sexes together
+SimData <- data.frame(bind_rows(SimMale, SimFemale)) # different from rbind as it binds two df with different columns, adding NAs
+SimData[is.na(SimData)] <- 0
+SimData <- SimData[order(SimData$DVDRef,SimData$Tstart),]
+rownames(SimData) <- NULL
+
+## Calculate Alternation value within each DVD
+
+SimData_Calculate_A <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+Asim <- round(length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)])/(nrow(x) -1) *100,1) # AlternationValue
+return(Asim)
+}
+
+SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
+
+## Calculate Synchrony value within each DVD
+
+SimData_Calculate_S <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+x$NextTstartafterhalfminTstart <-  c(x$Tstart[-1],NA) <= x$Tstart +0.5 &  c(x$Tstart[-1],NA) >= x$Tstart # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+Ssim <- round( (length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)]) / (nrow(x) -1) ) *100   ,2)
+return(Ssim)
+}
+
+SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
+
+# output: Asim of each DVD (first hald of the rows, Ssim of each DVD, second half of the rows)
+return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
+}
+
+Out_A_S_sim_Among <- do.call(cbind,replicate(NreplicatesAmongFileRandomization,randomization_among_nest_watch_and_calculate_A_S_fun(FData_to_Shuffle, MData_to_Shuffle),simplify=FALSE ) )
+
+# first half are A sim
+out_Asim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
+out_Asim_among_df <- merge(x=out_Asim_among_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+
+# second Half are S sim
+out_Ssim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
+out_Ssim_among_df <- merge(x=out_Asim_among_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+
+# Summarise A ans S sim per visit rate difference
+
+summarise_Sim_Among <- function(out_sim_among_df, AS){
+
+out_A_or_S_among_sim_df_perDiffVisit1Rate_fun <- function(x) {
+
+x <- x[,-1]
+x <- x[,-ncol(x)]
+v <- unlist(list(x))
+
+return(c(
+mean(v), # Amean OR Smean
+mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower OR Slower
+mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper OR Supper
+nrow(x) # NbFiles
+))
+}
+
+out_among_df_perDiffVisit1Rate_out1 <- lapply(split(out_sim_among_df,out_sim_among_df$DiffVisit1Rate),out_A_or_S_among_sim_df_perDiffVisit1Rate_fun)
+out_among_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_among_df_perDiffVisit1Rate_out1)),do.call(rbind, out_among_df_perDiffVisit1Rate_out1))
+
+nrow(out_among_df_perDiffVisit1Rate_out2)	# 33
+rownames(out_among_df_perDiffVisit1Rate_out2) <- NULL
+
+if (AS == "A")
+{
+colnames(out_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+}
+
+if (AS == "S")
+{
+colnames(out_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Smean','Slower','Supper','NbFiles')
+}
+
+
+return(out_among_df_perDiffVisit1Rate_out2)
+
+}
+
+
+summarise_Aim_Among(out_Asim_among_df,'A')
+summarise_Sim_Among(out_Ssim_among_df,'S')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{# out A and S sim Among summary
+out_Asim_among_df_perDiffVisit1Rate_out1 <- lapply(split(out_Asim_among_df,out_Asim_among_df$DiffVisit1Rate),out_A_or_S_among_sim_df_perDiffVisit1Rate_fun)
+out_Asim_among_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim_among_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asim_among_df_perDiffVisit1Rate_out1))
+
+nrow(out_Asim_among_df_perDiffVisit1Rate_out2)	# 33
+rownames(out_Asim_among_df_perDiffVisit1Rate_out2) <- NULL
+colnames(out_Asim_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+
+summary_out_Asim_Among <- out_Asim_among_df_perDiffVisit1Rate_out2
+
+out_Asim_among_df_perDiffVisit1Rate_out1 <- lapply(split(out_Asim_among_df,out_Asim_among_df$DiffVisit1Rate),out_A_or_S_among_sim_df_perDiffVisit1Rate_fun)
+out_Asim_among_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim_among_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asim_among_df_perDiffVisit1Rate_out1))
+
+nrow(out_Asim_among_df_perDiffVisit1Rate_out2)	# 33
+rownames(out_Asim_among_df_perDiffVisit1Rate_out2) <- NULL
+colnames(out_Asim_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+
+summary_out_Asim_Among <- out_Asim_among_df_perDiffVisit1Rate_out2
+
+}
+
+
+
+{# A observed summary
+
+MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare, DiffVisit1Rate)
+
+Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- summarise (MY_tblParentalCare_perVisitRateDiff_bothSexes,
+					Amean = mean(AlternationValue),
+					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
+					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
+					NbFiles = n())
+					
+Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes,VisitRateDifference= DiffVisit1Rate)
+
+}
+
+
+{# A: for the moment cut at 20 visit rate difference in both randomized and observed, and plot
+
+Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes$Type <- "Observed"
+out_Asim_among_df_perDiffVisit1Rate_out2$Type <- "Expected"
+
+
+VisitRateDiff_Amean_ter <- as.data.frame(rbind( Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes[1:21,],out_Asim_among_df_perDiffVisit1Rate_out2[1:21,] ))
+VisitRateDiff_Amean_ter$VisitRateDifference <- as.numeric(VisitRateDiff_Amean_ter$VisitRateDifference)
+
+
+
+Fig1bis <- ggplot(data=VisitRateDiff_Amean_ter, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
+  geom_point()+
+  geom_line()+
+  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+  xlab("Visit rate difference")+
+  ylab("Mean alternation")+
+  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
+  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_ter$VisitRateDifference, n = 12)) +
+  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_ter$Amean, n = 9)) +  
+  theme_classic()
+  
+}
+
+{### comparison both method of randomization
+  
+VisitRateDiff_Amean_bis$TypeSim <- c(rep('ObservedWithin',21),rep('ExpectedWithin',21))
+VisitRateDiff_Amean_ter$TypeSim <- c(rep('Observed',21),rep('ExpectedAmong',21))
+VisitRateDiff_Amean_for_comparison <- rbind(VisitRateDiff_Amean_bis[VisitRateDiff_Amean_bis$TypeSim != 'ObservedWithin',],VisitRateDiff_Amean_ter)
+
+
+Fig1comparison <- ggplot(data=VisitRateDiff_Amean_for_comparison, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
+geom_point()+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
+xlab("Visit rate difference")+
+ylab("Mean alternation")+
+scale_colour_manual(values=c("red", 'orange','grey'), labels=c("95% Expected Among", "95% Expected Within","95% Observed"))+
+scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
+theme_classic()
+}  
+  
+Fig1comparison 
+
+
+
+
+Randomize_Data_WithinFile_and_Calculate_AlternationValue <- function(Data, Type) {
+
+RandomizeData_oneSplit <-  function(x){
+
+if (Type == 'Scaled'){
+x <- x[,c('DVDRef','Sex','splitID','ScaledInterval','ScaledTstart')]
+names(x)[names(x) == 'ScaledTstart'] <- 'Tstart'
+names(x)[names(x) == 'ScaledInterval'] <- 'Interval'
+}
+
+x <- x[order(x$Tstart),]
 x0 <- x[x$Sex==0,]
 x1 <- x[x$Sex==1,]
 
+x0$Interval <- c(0, sample_vector(x0$Interval[-1]))
+x0$Tstart <- x0$Tstart[1] + cumsum(x0$Interval) 
 
-for (i in 1:100) # to increase up to 1000
-{
+x1$Interval <- c(0, sample_vector(x1$Interval[-1]))
+x1$Tstart <- x1$Tstart[1] + cumsum(x1$Interval) 
 
-x0sim <- x0
-x1sim <- x1
-
-x0sim$Interval <- c(0, sample_vector(x0sim$Interval[-1]))
-#x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
-x0sim$TstartFeedVisit <- c(x0sim$Tstart[1] + cumsum(x0sim$Interval)) # corrected 20161024 
-
-x1sim$Interval <- c(0, sample_vector(x1sim$Interval[-1]))
-#x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
-x1sim$TstartFeedVisit <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval)) # corrected 20161024 
-
-
-xsim <- rbind(x0sim,x1sim)
-xsim <- xsim[order(xsim$TstartFeedVisit),]
+xsim <- rbind(x0,x1)
+xsim <- xsim[order(xsim$Tstart),] 
 xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
-xsim$NextTstartafterhalfminTstart <-  c(xsim$TstartFeedVisit[-1],NA) <= xsim$TstartFeedVisit +0.5 &  c(xsim$TstartFeedVisit[-1],NA) >= xsim$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
 
-
-Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
-Ssim <- round( (length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
-		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart)]) / (nrow(xsim) -1) ) *100   ,2)
-SsimFemale <- length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
-		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart) & xsim$Sex == 0])	
-
-out_Asim_i[i] <- Asim
-out_Asim_j[j] <- list(unlist(out_Asim_i))
-
-out_Ssim_i[i] <- Ssim
-out_Ssim_j[j] <- list(unlist(out_Ssim_i))
-
-out_SsimFemale_i[i] <- SsimFemale
-out_SsimFemale_j[j] <- list(unlist(out_SsimFemale_i))
-
-
-		# clean up
-		x0sim <- NULL
-		x1sim <- NULL
-		Asim <- NULL
-		Ssim <- NULL
-		SsimFemale <- NULL
-}
-
-		# clean up
-		x <- NULL
-		x0 <- NULL
-		x1 <- NULL
+return(round(length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame)])/(nrow(xsim) -1) *100,1)) # AlternationValue
 
 }
 
-out_Asim <- do.call(rbind, out_Asim_j)
-out_Ssim <- do.call(rbind, out_Ssim_j)
-out_SsimFemale <- do.call(rbind, out_SsimFemale_j)
+
+Asim <- data.frame(splitID = unique(Data$splitID), 
+do.call(cbind, replicate(NreplicatesWithinFileRandomization,do.call(rbind,lapply(split(Data,Data$splitID),RandomizeData_oneSplit)),simplify=FALSE)))
+
+return(Asim)
 
 }
 
-head(out_Asim)
-head(out_Ssim)
-head(out_SsimFemale)
-		   
 
-}
+
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
