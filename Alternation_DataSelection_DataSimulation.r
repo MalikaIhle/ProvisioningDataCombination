@@ -695,12 +695,11 @@ Fig_S
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
 {### create MY_TABLE_perDVD: where both parents known + add expected alternation from simulation
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
 # as broods were watched several time, the brood info appears in duplicate
 
-MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","DiffVisit1Rate","MFVisit1RateH","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue","NbSynchroFemaleStart", "PropSynchroFemaleStart","MmeanDuration","FmeanDuration")]
+MY_TABLE_perDVD <- MY_tblParentalCare[,c("DVDRef","MVisit1","FVisit1","FVisit1RateH","MVisit1RateH","VisitRateDifference","TotalProRate","NbAlternation","AlternationValue", "NbSynchro_ChickFeedingEquanim", "NbSynchro_LessConspicuous", "SynchronyFeedValue","SynchronyMvtValue","NbSynchroFemaleStart", "PropSynchroFemaleStart","MmeanDuration","FmeanDuration")]
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAge","ChickAgeCat","DVDdate","RelTimeHrs")], by='DVDRef')
 MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, 
 y=MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","NbRinged","DadAge","MumAge","ParentsAge",
@@ -710,6 +709,11 @@ MY_TABLE_perDVD <- merge(x=MY_TABLE_perDVD, y=MY_tblChicks_byRearingBrood[,c("Re
 
 length(unique(MY_TABLE_perDVD$BroodRef[is.na(MY_TABLE_perDVD$SocialMum) | is.na(MY_TABLE_perDVD$SocialDadID)])) # 38 broods - 63 files one parent unknown
 
+# MY_TABLE_perDVD2 <- do.call(merge, list(c(MY_tblParentalCare,MY_tblDVDInfo,MY_TABLE_perDVD)))
+# MY_TABLE_perDVD2 <-Reduce(function(x,y) merge(x,y, all=TRUE), list(MY_tblParentalCare, MY_tblDVDInfo, MY_TABLE_perDVD))
+# ncol(MY_TABLE_perDVD2)
+# head(MY_TABLE_perDVD2)
+# head(MY_TABLE_perDVD)
 
 MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(MY_TABLE_perDVD$SocialDadID),] # where both parents known
 nrow(MY_TABLE_perDVD) # 1599 files
@@ -727,7 +731,7 @@ MY_TABLE_perDVD$NbSynchroMaleStart <- MY_TABLE_perDVD$NbSynchro_ChickFeedingEqua
 
 {# add MeanAsim and Adev
 
-MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef),MeanAsim = rowMeans(out_Asim)), 
+MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawInterfeeds$DVDRef),MeanAsim = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))), 
 				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
 
 MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$AlternationValue - MY_TABLE_perDVD$MeanAsim # reversed 22/06/2016
@@ -736,7 +740,7 @@ MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$AlternationValue - MY_TABLE_perDVD$Mean
 
 {# add MeanSsim and Sdev
 
-MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef),MeanSsim = rowMeans(out_Ssim)), 
+MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawInterfeeds$DVDRef),MeanSsim = rowMeans(tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))), 
 				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
 
 MY_TABLE_perDVD$Sdev <-  MY_TABLE_perDVD$SynchronyFeedValue - MY_TABLE_perDVD$MeanSsim 
@@ -761,7 +765,7 @@ MY_TABLE_perDVD <- MY_TABLE_perDVD %>%
 MY_TABLE_perDVD <- as.data.frame(MY_TABLE_perDVD) 
 }
 
-MY_TABLE_perDVD$TotalProRatePerChick <- round(MY_TABLE_perDVD$MFVisit1RateH /MY_TABLE_perDVD$DVDInfoChickNb,2)
+MY_TABLE_perDVD$TotalProRatePerChick <- round(MY_TABLE_perDVD$TotalProRate /MY_TABLE_perDVD$DVDInfoChickNb,2)
 
 
 MY_TABLE_perDVD$BroodRef <- as.factor(MY_TABLE_perDVD$BroodRef)
@@ -773,8 +777,7 @@ MY_TABLE_perDVD$BreedingYear <- as.factor(MY_TABLE_perDVD$BreedingYear)
 }
 
 head(MY_TABLE_perDVD)
-Fig1comparison_withMax_bis_d
-FigScomparison_withMax
+
 
 {### create MY_TABLE_perBrood
 MY_TABLE_perDVD[is.na(MY_TABLE_perDVD$MFVisit1RateH),]
@@ -786,10 +789,10 @@ MY_TABLE_perBrood <- split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
 MY_TABLE_perBrood_fun = function(x)  {
 
 return(c(
-mean(x$MFVisit1RateH), # TotalProRate
+mean(x$TotalProRate), # TotalProRate
 mean(x$AlternationValue), #MeanA
 mean(x$AlternationValue)-mean(x$MeanAsim), # MeanAdev  # reversed 22/06/2016
-mean(x$DiffVisit1Rate), # MeanDiffVisit1Rate
+mean(x$VisitRateDifference), # MeanDiffVisit1Rate
 mean(x$SynchronyFeedValue), # MeanSynchroFeed
 mean(x$NbSynchro_ChickFeedingEquanim), # MeanSynchroFeed_nb
 mean(x$MFVisit1), # MeanMFVisit1
