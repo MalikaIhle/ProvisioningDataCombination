@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 07/12/2016
+#	 last modif : 19/12/2016
 #	 commit: clean up simulation script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -81,11 +81,14 @@ MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% l
 MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
 MY_tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
-colnames(tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
-tblChicks_byRearingBrood$MixedBroodYN <- tblChicks_byRearingBrood$NbChicksMeasured != tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
-head(tblChicks_byRearingBrood)
+colnames(MY_tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
+MY_tblChicks_byRearingBrood$MixedBroodYN <- MY_tblChicks_byRearingBrood$NbChicksMeasured != MY_tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
+head(MY_tblChicks_byRearingBrood)
 
-MY_tblChicks_byRearingBrood <- tblChicks_byRearingBrood[tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
+MY_tblChicks_byRearingBrood <- MY_tblChicks_byRearingBrood[MY_tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
+
+MY_tblParentalCare <- dplyr::rename(MY_tblParentalCare,VisitRateDifference= DiffVisit1Rate)
+MY_tblParentalCare <- dplyr::rename(MY_tblParentalCare, TotalProRate = MFVisit1RateH)
 
 {# fill in manually the data where Julia deleted it 
 # unfortunately this list is not exhaustive and migth even be arguable 
@@ -181,494 +184,15 @@ head(MY_tblChicks_byRearingBrood)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+{#### Simulations
 
-{#### Simulation random alternation vs observed alternation
-
-
-
-{### simulation alternation and synchrony: shuffling intervals within files where both sex visit at least once
-
-## I think it could be still interesting to remove extreme values of provisioning rate (not normal to have just one visit, or 50...)
-## I kept the time of the first visit of both male and female in each file, and randomized subsequent intervals
-
-RawFeedingVisitsBothSexes <- MY_RawFeedingVisits[,c('DVDRef','TstartFeedVisit','Sex','Interval')]
-RawFeedingVisitsBothSexes$Sex <- as.numeric(RawFeedingVisitsBothSexes$Sex )
-
-
-{# creation of i simulated dataset (and calculation of i Asim) for each j file
-
-sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
-  
-out_Asim_j = list()
-out_Asim_i = list()
-out_Ssim_j = list()
-out_Ssim_i = list()
-out_SsimFemale_j = list()
-out_SsimFemale_i = list()
-
-for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
-
-x <- split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[j]]
-
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[2]] # a normal file
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[1]] # only one male visit
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[13]] # only 2 female visits > screw up the function 'sample'
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[['935']] # no female visits > now removed
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[15]] # only one male and one female visit
-
-x <- x[order(x$TstartFeedVisit),]
-x0 <- x[x$Sex==0,]
-x1 <- x[x$Sex==1,]
-
-
-for (i in 1:100) # to increase up to 1000
-{
-
-x0sim <- x0
-x1sim <- x1
-
-x0sim$Interval <- c(0, sample_vector(x0sim$Interval[-1]))
-#x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1],x0sim$TstartFeedVisit[-nrow(x0sim)]+x0sim$Interval[-1])
-x0sim$TstartFeedVisit <- c(x0sim$TstartFeedVisit[1] + cumsum(x0sim$Interval)) # corrected 20161024 
-
-x1sim$Interval <- c(0, sample_vector(x1sim$Interval[-1]))
-#x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
-x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1] + cumsum(x1sim$Interval)) # corrected 20161024 
-
-
-xsim <- rbind(x0sim,x1sim)
-xsim <- xsim[order(xsim$TstartFeedVisit),]
-xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
-xsim$NextTstartafterhalfminTstart <-  c(xsim$TstartFeedVisit[-1],NA) <= xsim$TstartFeedVisit +0.5 &  c(xsim$TstartFeedVisit[-1],NA) >= xsim$TstartFeedVisit # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
-
-
-Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
-Ssim <- round( (length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
-		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart)]) / (nrow(xsim) -1) ) *100   ,2)
-SsimFemale <- length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame) 
-		& xsim$NextTstartafterhalfminTstart == TRUE & !is.na(xsim$NextTstartafterhalfminTstart) & xsim$Sex == 0])	
-
-out_Asim_i[i] <- Asim
-out_Asim_j[j] <- list(unlist(out_Asim_i))
-
-out_Ssim_i[i] <- Ssim
-out_Ssim_j[j] <- list(unlist(out_Ssim_i))
-
-out_SsimFemale_i[i] <- SsimFemale
-out_SsimFemale_j[j] <- list(unlist(out_SsimFemale_i))
-
-
-		# clean up
-		x0sim <- NULL
-		x1sim <- NULL
-		Asim <- NULL
-		Ssim <- NULL
-		SsimFemale <- NULL
-}
-
-		# clean up
-		x <- NULL
-		x0 <- NULL
-		x1 <- NULL
-
-}
-
-out_Asim <- do.call(rbind, out_Asim_j)
-out_Ssim <- do.call(rbind, out_Ssim_j)
-out_SsimFemale <- do.call(rbind, out_SsimFemale_j)
-
-}
-
-head(out_Asim)
-head(out_Ssim)
-head(out_SsimFemale)
-
-{# out A sim summary
-
-out_Asim_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Asim)
-out_Asim_df <- merge(x=out_Asim_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
-
-out_Asim_df_perDiffVisit1Rate <- split(out_Asim_df,out_Asim_df$DiffVisit1Rate)
-
- # x <-out_Asim_df_perDiffVisit1Rate[[31]]
- # x <-out_Asim_df_perDiffVisit1Rate[[30]] # just one file
-
-
-out_Asim_df_perDiffVisit1Rate_fun <- function(x) {
-
-x <- x[,-1]
-x <- x[,-ncol(x)]
-v <- unlist(list(x))
-
-return(c(
-mean(v), # Amean
-mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower
-mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper
-nrow(x) # NbFiles
-))
-}
-
-out_Asim_df_perDiffVisit1Rate_out1 <- lapply(out_Asim_df_perDiffVisit1Rate,out_Asim_df_perDiffVisit1Rate_fun)
-out_Asim_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asim_df_perDiffVisit1Rate_out1))
-
-nrow(out_Asim_df_perDiffVisit1Rate_out2)	# 33
-rownames(out_Asim_df_perDiffVisit1Rate_out2) <- NULL
-colnames(out_Asim_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
-
-}
-
-head(out_Asim_df_perDiffVisit1Rate_out2)
-
-
-{# out S sim summary
-
-out_Ssim_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Ssim)
-out_Ssim_df <- merge(x=out_Ssim_df, y= MY_tblParentalCare[,c('DVDRef','MFVisit1RateH')], by='DVDRef', all.x =TRUE)
-
-out_Ssim_df_per_MFVisit1RateH <- split(out_Ssim_df,out_Ssim_df$MFVisit1RateH)
-
- # x <-out_Ssim_df_per_MFVisit1RateH[[31]]
- # x <-out_Ssim_df_per_MFVisit1RateH[[30]] # just one file
-
-
-out_Ssim_df_per_MFVisit1RateH_fun <- function(x) {
-
-x <- x[,-1]
-x <- x[,-ncol(x)]
-v <- unlist(list(x))
-
-return(c(
-mean(v), # Smean
-mean(v) - sd(v)/sqrt(length(v))*1.96, # Slower
-mean(v) + sd(v)/sqrt(length(v))*1.96, # Supper
-nrow(x) # NbFiles
-))
-}
-
-out_Ssim_df_per_MFVisit1RateH_out1 <- lapply(out_Ssim_df_per_MFVisit1RateH,out_Ssim_df_per_MFVisit1RateH_fun)
-out_Ssim_df_per_MFVisit1RateH_out2 <- data.frame(rownames(do.call(rbind,out_Ssim_df_per_MFVisit1RateH_out1)),do.call(rbind, out_Ssim_df_per_MFVisit1RateH_out1))
-
-nrow(out_Ssim_df_per_MFVisit1RateH_out2)	# 59
-rownames(out_Ssim_df_per_MFVisit1RateH_out2) <- NULL
-colnames(out_Ssim_df_per_MFVisit1RateH_out2) <- c('TotalProRate','Smean','Slower','Supper','NbFiles')
-
-}
-
-head(out_Ssim_df_per_MFVisit1RateH_out2)
-
-
-
-{# summary Aobserved when both sexes visit
-
-MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare, DiffVisit1Rate)
-
-Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- summarise (MY_tblParentalCare_perVisitRateDiff_bothSexes,
-					Amean = mean(AlternationValue),
-					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
-					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
-					NbFiles = n())
-					
-Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes,VisitRateDifference= DiffVisit1Rate)
-
-}
-
-as.data.frame(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes)
-
-{# summary Sobserved when both sexes visit
-
-MY_tblParentalCare_perTotalProRate_bothSexes <- group_by(MY_tblParentalCare, MFVisit1RateH)
-
-Summary_MY_tblParentalCare_perTotalProRate_bothSexes <- summarise (MY_tblParentalCare_perTotalProRate_bothSexes,
-					Smean = mean(SynchronyFeedValue),
-					Slower = Smean - sd(SynchronyFeedValue)/sqrt(n())*1.96,
-					Supper = Smean + sd(SynchronyFeedValue)/sqrt(n())*1.96,
-					NbFiles = n())
-					
-Summary_MY_tblParentalCare_perTotalProRate_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perTotalProRate_bothSexes,TotalProRate= MFVisit1RateH)
-
-}
-
-as.data.frame(Summary_MY_tblParentalCare_perTotalProRate_bothSexes)
-
-
-
-{# A: for the moment cut at 20 visit rate difference in both randomized and observed, and plot
-
-Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes$Type <- "Observed"
-out_Asim_df_perDiffVisit1Rate_out2$Type <- "Expected"
-
-
-VisitRateDiff_Amean_bis <- as.data.frame(rbind( Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes[1:21,],out_Asim_df_perDiffVisit1Rate_out2[1:21,] ))
-VisitRateDiff_Amean_bis$VisitRateDifference <- as.numeric(VisitRateDiff_Amean_bis$VisitRateDifference)
-
-
-
-Fig1bis <- ggplot(data=VisitRateDiff_Amean_bis, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
-  xlab("Visit rate difference")+
-  ylab("Mean alternation")+
-  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
-  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_bis$VisitRateDifference, n = 12)) +
-  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_bis$Amean, n = 9)) +  
-  theme_classic()
-  
-}
-
-{# S: for the moment cut before 4 and after 40 total pro rate in both randomized and observed, and plot
-
-Summary_MY_tblParentalCare_perTotalProRate_bothSexes$Type <- "Observed"
-out_Ssim_df_per_MFVisit1RateH_out2$Type <- "Expected"
-
-
-TotalProRate_Smean_bis <- as.data.frame(rbind( Summary_MY_tblParentalCare_perTotalProRate_bothSexes[4:39,],out_Ssim_df_per_MFVisit1RateH_out2[4:39,] ))
-TotalProRate_Smean_bis$TotalProRate <- as.numeric(TotalProRate_Smean_bis$TotalProRate)
-
-
-
-FigS <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
-  xlab("Total provisioning rate")+
-  ylab("Mean synchrony")+
-  scale_colour_manual(values=c("orange", "grey"), labels=c("95% Expected", "95% Observed"))+
-  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 20)) +
-  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 20)) +  
-  theme_classic()
-  
- 
-FigSppt_observed <- ggplot(data=TotalProRate_Smean_bis[TotalProRate_Smean_bis$Type == "Observed",], aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
-  xlab("Total provisioning rate")+
-  ylab("Mean synchrony")+
-  scale_colour_manual(values=c("black"), labels=c("95% Observed"))+
-  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 9)) +
-  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
-  theme_classic() + theme(legend.position="none")
-  
-  
-FigS_pptexpected <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
-  xlab("Total provisioning rate")+
-  ylab("Mean synchrony")+
-  scale_colour_manual(values=c("#56B4E9", "white"), labels=c("95% Expected", "95% Observed"))+
-  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 9)) +
-  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
-  theme_classic()+ theme(legend.position="none")
-  
-  
-FigS_pptcomplete <- ggplot(data=TotalProRate_Smean_bis, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
-  xlab("Total provisioning rate")+
-  ylab("Mean synchrony")+
-  scale_colour_manual(values=c("#56B4E9", "black"), labels=c("95% Expected", "95% Observed"))+
-  scale_x_continuous(breaks = pretty(TotalProRate_Smean_bis$TotalProRate, n = 9)) +
-  scale_y_continuous(breaks = pretty(TotalProRate_Smean_bis$Smean, n = 10)) +  
-  theme_classic()+ theme(legend.position="none")
-  
-}
-
-
-
-}
-
-Fig1bis
-
-
-{### comparison both method of randomization
-  
-VisitRateDiff_Amean$TypeSim <- c(rep('ExpectedKat',20),rep('ObservedKat',20))
-VisitRateDiff_Amean_bis$TypeSim <- c(rep('ObservedMalika',21),rep('ExpectedMalika',21))
-VisitRateDiff_Amean_for_comparison <- rbind(VisitRateDiff_Amean[VisitRateDiff_Amean$TypeSim != 'ObservedKat',],VisitRateDiff_Amean_bis[,-5])
-
-
-Fig1comparison <- ggplot(data=VisitRateDiff_Amean_for_comparison, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','grey'), labels=c("95% Expected Kat", "95% Expected Malika","95% Observed"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
-theme_classic()
-}  
-  
-Fig1comparison 
-
-
-{### simulation alternation keeping some temporal autocorrelation: shuffling consecutives intervals within one individual 
-
-head(RawFeedingVisitsBothSexes)
-
-{# creation of i simulated dataset (and calculation of i Asim) for each j file
-
-is.even <- function(x) x %% 2 == 0 
-
-out_Ashift_j = list()
-
-for (j in 1:length(unique(RawFeedingVisitsBothSexes$DVDRef))){
-
-x <- split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[j]]
-
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[2]] # a normal file
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[1]] # only one male visit
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[13]] # only 2 female visits > screw up the function 'sample'
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[['935']] # no female visits > now removed
-		# split(RawFeedingVisitsBothSexes,RawFeedingVisitsBothSexes$DVDRef)[[15]] # only one male and one female visit
-
-x <- x[order(x$TstartFeedVisit),]
-x0 <- x[x$Sex==0,]
-x1 <- x[x$Sex==1,]
-
-
-
-x1sim <- x1
-
-if (nrow(x1) > 1){
-
-x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)])
-
-for (i in 2:nrow(x1sim))
-{ if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
-else {x1sim$Interval[i] <- x1simInterval[i-1]}
-}
-
-x1sim$TstartFeedVisit <- c(x1sim$TstartFeedVisit[1],x1sim$TstartFeedVisit[-nrow(x1sim)]+x1sim$Interval[-1])
-
-}
-
-
-xsim <- rbind(x0,x1sim)
-xsim <- xsim[order(xsim$TstartFeedVisit),]
-
-Asim <- round( ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100   ,2)
-
-out_Ashift_j[j] <- Asim
-
-		# clean up
-		x1sim <- NULL
-		Asim <- NULL
-		x <- NULL
-		x0 <- NULL
-		x1 <- NULL
-
-}
-
-out_Ashift <- do.call(rbind, out_Ashift_j)
-
-}
-
-head(out_Ashift)
-
-{# out A sim summary
-
-out_Ashift_df <- data.frame(DVDRef = unique(RawFeedingVisitsBothSexes$DVDRef), out_Ashift)
-out_Ashift_df <- merge(x=out_Ashift_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
-
-out_Ashift_df_perDiffVisit1Rate <- split(out_Ashift_df,out_Ashift_df$DiffVisit1Rate)
-x <- out_Ashift_df_perDiffVisit1Rate[[1]]
-
-out_Ashift_df_perDiffVisit1Rate <- split(out_Ashift_df,out_Ashift_df$DiffVisit1Rate)
-x <- out_Ashift_df_perDiffVisit1Rate[[1]]
-
-out_Ashift_df_perDiffVisit1Rate_fun <- function(x) {
-
-x <- x[,-1]
-v <- x[,-ncol(x)]
-
-
-return(c(
-mean(v), # Amean
-mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower
-mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper
-nrow(x) # NbFiles
-))
-}
-
-out_Ashift_df_perDiffVisit1Rate_out1 <- lapply(out_Ashift_df_perDiffVisit1Rate,out_Ashift_df_perDiffVisit1Rate_fun)
-out_Ashift_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Ashift_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Ashift_df_perDiffVisit1Rate_out1))
-
-nrow(out_Ashift_df_perDiffVisit1Rate_out2)	# 33
-rownames(out_Ashift_df_perDiffVisit1Rate_out2) <- NULL
-colnames(out_Ashift_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
-
-}
-
-head(out_Ashift_df_perDiffVisit1Rate_out2)
-
-{### comparison both method of randomization
-
-out_Ashift_df_perDiffVisit1Rate_out2_forcomparison <- out_Ashift_df_perDiffVisit1Rate_out2[1:21,-5]
-out_Ashift_df_perDiffVisit1Rate_out2_forcomparison$Type <- 'Expected'
-out_Ashift_df_perDiffVisit1Rate_out2_forcomparison$TypeSim <- 'ExpectedTempoAuto'
-VisitRateDiff_Amean_for_comparison_ter <- rbind(VisitRateDiff_Amean_for_comparison,out_Ashift_df_perDiffVisit1Rate_out2_forcomparison)
-VisitRateDiff_Amean_for_comparison_ter$VisitRateDifference <- as.numeric(as.character(VisitRateDiff_Amean_for_comparison_ter$VisitRateDifference))
-
-Fig1comparisonbis <- ggplot(data=VisitRateDiff_Amean_for_comparison_ter, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','green','grey'), labels=c("95% Expected Kat (100 random.)", "95% Expected Malika (100 random.)", "95% Expected Autocor (1 random.)","95% Observed"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
-theme_classic()
-}  
-  
-
-
-}
-
- 
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#### Simulation 
-
-## the Functions used several times
-
-Summarise_A_perVisitRateDifference <- function(DataSummary) {
-
-return(data.frame(summarise (group_by(DataSummary, VisitRateDifference),
-				Amean = mean(AlternationValue),
-				Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
-				Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
-				NbFiles = n())))
-}
-
-
-{## the Data
+{## the raw Data
 
 RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
 colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
 head(RawInterfeeds)
 
-RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','DiffVisit1Rate')])
+RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','VisitRateDifference')])
 
 FRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 0,])
 MRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 1,])
@@ -682,10 +206,69 @@ FData_to_Shuffle <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-
 MData_to_Shuffle <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
 }
 
+head(RawInterfeeds)
 
-### among nest watch, within individual with same provisioning rate and same sex
+{## the observed and maximum scores
 
-NreplicatesAmongFileRandomization = 100
+# observed scores
+
+Summarise_A_S_perVisitRateDifference <- function(DataSummary, AS) {
+
+if (AS == 'A'){
+return(data.frame(summarise (group_by(DataSummary, VisitRateDifference),
+				Amean = mean(AlternationValue),
+				Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
+				Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
+				NbFiles = n())))
+				}
+				
+if (AS == 'S') {
+return(data.frame(summarise (group_by(DataSummary, TotalProRate),
+				Smean = mean(SynchronyFeedValue),
+				Slower = Smean - sd(SynchronyFeedValue)/sqrt(n())*1.96,
+				Supper = Smean + sd(SynchronyFeedValue)/sqrt(n())*1.96,
+				NbFiles = n())))				
+				}
+}
+
+summary_Observed_A <- Summarise_A_S_perVisitRateDifference (MY_tblParentalCare, 'A')
+summary_Observed_S <- Summarise_A_S_perVisitRateDifference (MY_tblParentalCare, 'S')
+
+# A max and S max
+
+MY_tblParentalCare$AMax <- NA
+
+for (i in 1:nrow(MY_tblParentalCare))
+{
+if((MY_tblParentalCare$FVisit1RateH[i] - MY_tblParentalCare$MVisit1RateH[i])==0)
+{
+MY_tblParentalCare$AMax[i] <- 
+round((((min(MY_tblParentalCare$FVisit1RateH[i],MY_tblParentalCare$MVisit1RateH[i]))*2-1) / (MY_tblParentalCare$FVisit1RateH[i] + MY_tblParentalCare$MVisit1RateH[i] -1))*100,2) }
+
+else{
+MY_tblParentalCare$AMax[i] <- 
+round((((min(MY_tblParentalCare$FVisit1RateH[i],MY_tblParentalCare$MVisit1RateH[i]))*2) / (MY_tblParentalCare$FVisit1RateH[i] + MY_tblParentalCare$MVisit1RateH[i] -1))*100,2) 
+}
+}
+
+summary_Amax <- data.frame(summarise (group_by(MY_tblParentalCare, VisitRateDifference),
+				Amean = mean(AMax),
+				Alower = Amean - sd(AMax)/sqrt(n())*1.96,
+				Aupper = Amean + sd(AMax)/sqrt(n())*1.96,
+				NbFiles = n()))
+				
+summary_Smax <- data.frame(summarise (group_by(MY_tblParentalCare, TotalProRate),
+				Smean = mean(AMax),
+				Slower = Smean - sd(AMax)/sqrt(n())*1.96,
+				Supper = Smean + sd(AMax)/sqrt(n())*1.96,
+				NbFiles = n()))
+				
+}
+
+
+NreplicatesAmongFileRandomization <- 100
+
+{### Randomization among nest watch, within individual with same provisioning rate and same sex
 
 randomization_among_nest_watch_and_calculate_A_S_fun <- function(FData_to_Shuffle, MData_to_Shuffle){ # function that simulate all nest watches once with identical first Tstarts and shuffled interval among individual of same sex and same visit rate
 
@@ -720,7 +303,7 @@ rownames(SimData) <- NULL
 SimData_Calculate_A <- function(x){
 x <- x[order(x$Tstart),]
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
-Asim <- round(length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)])/(nrow(x) -1) *100,1) # AlternationValue
+Asim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)])/(nrow(x) -1) *100 # AlternationValue
 return(Asim)
 }
 
@@ -732,8 +315,8 @@ SimData_Calculate_S <- function(x){
 x <- x[order(x$Tstart),]
 x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
 x$NextTstartafterhalfminTstart <-  c(x$Tstart[-1],NA) <= x$Tstart +0.5 &  c(x$Tstart[-1],NA) >= x$Tstart # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
-Ssim <- round( (length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
-		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)]) / (nrow(x) -1) ) *100   ,2)
+Ssim <- (length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)]) / (nrow(x) -1) ) *100
 return(Ssim)
 }
 
@@ -747,17 +330,17 @@ Out_A_S_sim_Among <- do.call(cbind,replicate(NreplicatesAmongFileRandomization,r
 
 # first half are A sim
 out_Asim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
-out_Asim_among_df <- merge(x=out_Asim_among_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+out_Asim_among_df <- merge(x=out_Asim_among_df, y= MY_tblParentalCare[,c('DVDRef','VisitRateDifference')], by='DVDRef', all.x =TRUE)
 
 # second Half are S sim
 out_Ssim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
-out_Ssim_among_df <- merge(x=out_Asim_among_df, y= MY_tblParentalCare[,c('DVDRef','DiffVisit1Rate')], by='DVDRef', all.x =TRUE)
+out_Ssim_among_df <- merge(x=out_Ssim_among_df, y= MY_tblParentalCare[,c('DVDRef','TotalProRate')], by='DVDRef', all.x =TRUE)
 
-# Summarise A ans S sim per visit rate difference
+# Summarise A ans S sim (NreplicatesAmongFileRandomization per file) per visit rate difference (A) or total pro rate (S)
 
 summarise_Sim_Among <- function(out_sim_among_df, AS){
 
-out_A_or_S_among_sim_df_perDiffVisit1Rate_fun <- function(x) {
+out_A_or_S_among_sim_df_per_VisitRateDifference_fun <- function(x) {
 
 x <- x[,-1]
 x <- x[,-ncol(x)]
@@ -771,139 +354,42 @@ nrow(x) # NbFiles
 ))
 }
 
-out_among_df_perDiffVisit1Rate_out1 <- lapply(split(out_sim_among_df,out_sim_among_df$DiffVisit1Rate),out_A_or_S_among_sim_df_perDiffVisit1Rate_fun)
-out_among_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_among_df_perDiffVisit1Rate_out1)),do.call(rbind, out_among_df_perDiffVisit1Rate_out1))
-
-nrow(out_among_df_perDiffVisit1Rate_out2)	# 33
-rownames(out_among_df_perDiffVisit1Rate_out2) <- NULL
-
 if (AS == "A")
 {
-colnames(out_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+out1_among_df <- lapply(split(out_sim_among_df,out_sim_among_df$VisitRateDifference),out_A_or_S_among_sim_df_per_VisitRateDifference_fun)
+out2_among_df <- data.frame(rownames(do.call(rbind,out1_among_df)),do.call(rbind, out1_among_df))
+rownames(out2_among_df) <- NULL
+colnames(out2_among_df) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
 }
 
 if (AS == "S")
 {
-colnames(out_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Smean','Slower','Supper','NbFiles')
+out1_among_df <- lapply(split(out_sim_among_df,out_sim_among_df$TotalProRate),out_A_or_S_among_sim_df_per_VisitRateDifference_fun)
+out2_among_df <- data.frame(rownames(do.call(rbind,out1_among_df)),do.call(rbind, out1_among_df))
+rownames(out2_among_df) <- NULL
+colnames(out2_among_df) <- c('TotalProRate','Smean','Slower','Supper','NbFiles')
 }
 
 
-return(out_among_df_perDiffVisit1Rate_out2)
+return(out2_among_df)
 
 }
 
-
-summarise_Aim_Among(out_Asim_among_df,'A')
-summarise_Sim_Among(out_Ssim_among_df,'S')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-{# out A and S sim Among summary
-out_Asim_among_df_perDiffVisit1Rate_out1 <- lapply(split(out_Asim_among_df,out_Asim_among_df$DiffVisit1Rate),out_A_or_S_among_sim_df_perDiffVisit1Rate_fun)
-out_Asim_among_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim_among_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asim_among_df_perDiffVisit1Rate_out1))
-
-nrow(out_Asim_among_df_perDiffVisit1Rate_out2)	# 33
-rownames(out_Asim_among_df_perDiffVisit1Rate_out2) <- NULL
-colnames(out_Asim_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
-
-summary_out_Asim_Among <- out_Asim_among_df_perDiffVisit1Rate_out2
-
-out_Asim_among_df_perDiffVisit1Rate_out1 <- lapply(split(out_Asim_among_df,out_Asim_among_df$DiffVisit1Rate),out_A_or_S_among_sim_df_perDiffVisit1Rate_fun)
-out_Asim_among_df_perDiffVisit1Rate_out2 <- data.frame(rownames(do.call(rbind,out_Asim_among_df_perDiffVisit1Rate_out1)),do.call(rbind, out_Asim_among_df_perDiffVisit1Rate_out1))
-
-nrow(out_Asim_among_df_perDiffVisit1Rate_out2)	# 33
-rownames(out_Asim_among_df_perDiffVisit1Rate_out2) <- NULL
-colnames(out_Asim_among_df_perDiffVisit1Rate_out2) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
-
-summary_out_Asim_Among <- out_Asim_among_df_perDiffVisit1Rate_out2
+summary_out_Asim_among_df <- summarise_Sim_Among(out_Asim_among_df,'A')
+summary_out_Ssim_among_df <- summarise_Sim_Among(out_Ssim_among_df,'S')
 
 }
 
 
+NreplicatesWithinFileRandomization <- 100
 
-{# A observed summary
+{### Randomization Within nest watch, within individual
 
-MY_tblParentalCare_perVisitRateDiff_bothSexes <- group_by(MY_tblParentalCare, DiffVisit1Rate)
-
-Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- summarise (MY_tblParentalCare_perVisitRateDiff_bothSexes,
-					Amean = mean(AlternationValue),
-					Alower = Amean - sd(AlternationValue)/sqrt(n())*1.96,
-					Aupper = Amean + sd(AlternationValue)/sqrt(n())*1.96,
-					NbFiles = n())
-					
-Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes <- dplyr::rename(Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes,VisitRateDifference= DiffVisit1Rate)
-
-}
-
-
-{# A: for the moment cut at 20 visit rate difference in both randomized and observed, and plot
-
-Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes$Type <- "Observed"
-out_Asim_among_df_perDiffVisit1Rate_out2$Type <- "Expected"
-
-
-VisitRateDiff_Amean_ter <- as.data.frame(rbind( Summary_MY_tblParentalCare_perVisitRateDiff_bothSexes[1:21,],out_Asim_among_df_perDiffVisit1Rate_out2[1:21,] ))
-VisitRateDiff_Amean_ter$VisitRateDifference <- as.numeric(VisitRateDiff_Amean_ter$VisitRateDifference)
-
-
-
-Fig1bis <- ggplot(data=VisitRateDiff_Amean_ter, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
-  xlab("Visit rate difference")+
-  ylab("Mean alternation")+
-  scale_colour_manual(values=c("black", "grey"), labels=c("95% Expected", "95% Observed"))+
-  scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_ter$VisitRateDifference, n = 12)) +
-  scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_ter$Amean, n = 9)) +  
-  theme_classic()
-  
-}
-
-{### comparison both method of randomization
-  
-VisitRateDiff_Amean_bis$TypeSim <- c(rep('ObservedWithin',21),rep('ExpectedWithin',21))
-VisitRateDiff_Amean_ter$TypeSim <- c(rep('Observed',21),rep('ExpectedAmong',21))
-VisitRateDiff_Amean_for_comparison <- rbind(VisitRateDiff_Amean_bis[VisitRateDiff_Amean_bis$TypeSim != 'ObservedWithin',],VisitRateDiff_Amean_ter)
-
-
-Fig1comparison <- ggplot(data=VisitRateDiff_Amean_for_comparison, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper))+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','grey'), labels=c("95% Expected Among", "95% Expected Within","95% Observed"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison$Amean, n = 9)) +  
-theme_classic()
-}  
-  
-Fig1comparison 
-
-
-
-
-Randomize_Data_WithinFile_and_Calculate_AlternationValue <- function(Data, Type) {
+sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
+ 
+Randomize_Data_WithinFile_and_Calculate_A_S_fun <- function(RawData) { 
 
 RandomizeData_oneSplit <-  function(x){
-
-if (Type == 'Scaled'){
-x <- x[,c('DVDRef','Sex','splitID','ScaledInterval','ScaledTstart')]
-names(x)[names(x) == 'ScaledTstart'] <- 'Tstart'
-names(x)[names(x) == 'ScaledInterval'] <- 'Interval'
-}
 
 x <- x[order(x$Tstart),]
 x0 <- x[x$Sex==0,]
@@ -917,23 +403,295 @@ x1$Tstart <- x1$Tstart[1] + cumsum(x1$Interval)
 
 xsim <- rbind(x0,x1)
 xsim <- xsim[order(xsim$Tstart),] 
-xsim$NextSexSame <- c(xsim$Sex[-1],NA) == xsim$Sex
+}
 
-return(round(length(xsim$NextSexSame[xsim$NextSexSame == FALSE & !is.na(xsim$NextSexSame)])/(nrow(xsim) -1) *100,1)) # AlternationValue
+SimData <- do.call(rbind,lapply(split(RawData, RawData$DVDRef),RandomizeData_oneSplit))
+rownames(SimData) <- NULL
+
+## Calculate Alternation value within each DVD
+
+SimData_Calculate_A <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+Asim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)])/(nrow(x) -1) *100 # AlternationValue
+return(Asim)
+}
+
+SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
+
+## Calculate Synchrony value within each DVD
+
+SimData_Calculate_S <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+x$NextTstartafterhalfminTstart <-  c(x$Tstart[-1],NA) <= x$Tstart +0.5 &  c(x$Tstart[-1],NA) >= x$Tstart # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+Ssim <- (length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)]) / (nrow(x) -1) ) *100
+return(Ssim)
+}
+
+SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
+
+# output: Asim of each DVD (first hald of the rows, Ssim of each DVD, second half of the rows)
+return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
+}
+
+A_S_within_randomization <- do.call(cbind,replicate(NreplicatesWithinFileRandomization,Randomize_Data_WithinFile_and_Calculate_A_S_fun(RawInterfeeds),simplify=FALSE ) )
+
+# first half are A sim
+out_Asim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
+out_Asim_within_df <- merge(x=out_Asim_within_df, y= MY_tblParentalCare[,c('DVDRef','VisitRateDifference')], by='DVDRef', all.x =TRUE)
+
+# second Half are S sim
+out_Ssim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
+out_Ssim_within_df <- merge(x=out_Ssim_within_df, y= MY_tblParentalCare[,c('DVDRef','TotalProRate')], by='DVDRef', all.x =TRUE)
+
+# Summarise A ans S sim (NreplicateswithinFileRandomization per file) per visit rate difference
+
+summarise_Sim_within <- function(out_sim_within_df, AS){
+
+out_A_or_S_within_sim_df_fun <- function(x) {
+
+x <- x[,-1]
+x <- x[,-ncol(x)]
+v <- unlist(list(x))
+
+return(c(
+mean(v), # Amean OR Smean
+mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower OR Slower
+mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper OR Supper
+nrow(x) # NbFiles
+))
+}
+
+if (AS == "A")
+{
+out1_within_df <- lapply(split(out_sim_within_df,out_sim_within_df$VisitRateDifference),out_A_or_S_within_sim_df_fun)
+out2_within_df <- data.frame(rownames(do.call(rbind,out1_within_df)),do.call(rbind, out1_within_df))
+rownames(out2_within_df) <- NULL
+colnames(out2_within_df) <- c('VisitRateDifference','Amean','Alower','Aupper','NbFiles')
+}
+
+if (AS == "S")
+{
+out1_within_df <- lapply(split(out_sim_within_df,out_sim_within_df$TotalProRate),out_A_or_S_within_sim_df_fun)
+out2_within_df <- data.frame(rownames(do.call(rbind,out1_within_df)),do.call(rbind, out1_within_df))
+rownames(out2_within_df) <- NULL
+colnames(out2_within_df) <- c('TotalProRate','Smean','Slower','Supper','NbFiles')
+}
+
+
+return(out2_within_df)
+
+}
+
+summary_out_Asim_within_df <- summarise_Sim_within(out_Asim_within_df,'A')
+summary_out_Ssim_within_df <- summarise_Sim_within(out_Ssim_within_df,'S')
+
 
 }
 
 
-Asim <- data.frame(splitID = unique(Data$splitID), 
-do.call(cbind, replicate(NreplicatesWithinFileRandomization,do.call(rbind,lapply(split(Data,Data$splitID),RandomizeData_oneSplit)),simplify=FALSE)))
+{### Shuffling consecutives intervals within one individual to keep some autocorrelation within nest watch
+
+is.even <- function(x) x %% 2 == 0 
+
+Switch_Consecutive_intervals_onesplit_fun <- function(x){
+
+x <- x[order(x$Tstart),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+x1sim <- x1 # only shuffle intervals for one sex
+
+if (nrow(x1) > 1){
+
+x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)])
+
+for (i in 2:nrow(x1sim))
+{ if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
+else {x1sim$Interval[i] <- x1simInterval[i-1]}
+}
+
+x1sim$Tstart <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval))
+
+}
+
+
+xsim <- rbind(x0,x1sim)
+xsim <- xsim[order(xsim$Tstart),]
+
+Asim <- ( sum(diff(xsim$Sex)!=0) / (nrow(xsim) -1) ) *100
 
 return(Asim)
 
 }
 
+Switch_Consecutive_intervals_onesplit <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Aswitch=
+														do.call(rbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun)))
+
+# summarise per visit rate difference
+
+Switch_Consecutive_intervals_onesplit <- merge(x=Switch_Consecutive_intervals_onesplit, y=MY_tblParentalCare[c('DVDRef','VisitRateDifference')])
+
+summary_Aswitch <- data.frame(summarise (group_by(Switch_Consecutive_intervals_onesplit, VisitRateDifference),
+				Amean = mean(Aswitch),
+				Alower = Amean - sd(Aswitch)/sqrt(n())*1.96,
+				Aupper = Amean + sd(Aswitch)/sqrt(n())*1.96,
+				NbFiles = n()))
+
+}
 
 
+{## plot the output
 
+{# Alternation
+
+summary_Amax$Type <- '1_Maximum' 
+summary_Observed_A$Type <- '2_Observed' 
+summary_Aswitch$Type <- '3_Switch' 
+summary_out_Asim_within_df$Type <-'4_Within'
+summary_out_Asim_among_df$Type <- '5_Among'
+
+maxline <- 21
+
+summary_A <- do.call(rbind, 
+list(summary_Observed_A[1:maxline,],
+summary_Amax[1:maxline,], 
+summary_out_Asim_among_df[1:maxline,],
+summary_out_Asim_within_df[1:maxline,],
+summary_Aswitch[1:maxline,]))
+
+summary_A$VisitRateDifference <- as.numeric(summary_A$VisitRateDifference)
+
+{my_labels <- c(
+"maximum possible",
+"observed" , 
+"after exchanging consecutive intervals to keep some autocorrelation",
+"after 100 randomizations among nest watches", 
+"after 100 randomizations within nest watches")}
+
+{my_colors <- c(
+'grey',
+'black',
+'#009E73', # turquoise
+'#56B4E9', # sky blue
+'#0072B2')} # king blue
+
+{my_shapes <- c(
+21, #circle
+21,
+24, # triangle up
+22, # square
+25)} # triangle down
+
+
+Fig_A <- {ggplot(data=summary_A, aes(x=VisitRateDifference, y=Amean, group=Type, colour=Type, shape = Type, fill = Type))+
+xlab("Visit rate difference between partners")+
+ylab("Mean alternation")+
+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+
+scale_colour_manual(values=my_colors,labels= my_labels)+ 
+
+geom_point(size = 1.5, aes(fill = NULL)) +
+geom_point(aes(shape=Type), size=1.5) +
+scale_shape_manual(values=my_shapes,labels=my_labels)+  
+
+scale_fill_manual(values = my_colors,labels=my_labels)+ 
+
+scale_x_continuous(breaks = pretty(summary_A$VisitRateDifference, n = 12)) +
+scale_y_continuous(breaks = pretty(summary_A$Amean, n = 9)) +
+
+theme_classic()+
+theme(
+legend.justification= c(1,1),
+legend.position = c(1,1), 
+legend.title = element_blank(),
+legend.background = element_rect(colour = "black"),
+panel.border = element_rect(colour = "black", fill=NA),
+axis.title=element_text(size=14,face="bold"))
+
+}
+
+}
+ 
+Fig_A
+
+{# Synchrony
+
+summary_Smax$Type <- '1_Maximum' 
+summary_Observed_S$Type <- '2_Observed' 
+summary_out_Ssim_within_df$Type <-'4_Within'
+summary_out_Ssim_among_df$Type <- '5_Among'
+
+
+summary_S <- do.call(rbind, 
+list(
+#summary_Smax[4:39,],
+summary_Observed_S[4:39,],
+summary_out_Ssim_among_df[4:39,],
+summary_out_Ssim_within_df[4:39,]
+))
+
+summary_S$TotalProRate <- as.numeric(summary_S$TotalProRate)
+
+{my_labelsS <- c(
+#"maximum possible",
+"observed" , 
+"after 100 randomizations among nest watches", 
+"after 100 randomizations within nest watches")}
+
+{my_colorsS <- c(
+#'grey',
+'black',
+'#56B4E9', # sky blue
+'#0072B2')} # king blue
+
+{my_shapesS <- c(
+#21, #circle
+21,
+22, # square
+25)} # triangle down
+
+Fig_S <- {ggplot(data=summary_S, aes(x=TotalProRate, y=Smean, group=Type, colour=Type, shape = Type, fill = Type))+
+xlab("Total provisioning rate from both partners")+
+ylab("Mean synchrony")+
+
+geom_line()+
+geom_errorbar(aes(ymin=Slower, ymax=Supper),na.rm=TRUE)+
+
+scale_colour_manual(values=my_colorsS,labels= my_labelsS)+ 
+
+geom_point(size = 1.5, aes(fill = NULL)) +
+geom_point(aes(shape=Type), size=1.5) +
+scale_shape_manual(values=my_shapesS,labels=my_labelsS)+  
+
+scale_fill_manual(values = my_colorsS,labels=my_labelsS)+ 
+
+scale_x_continuous(breaks = pretty(summary_S$TotalProRate, n = 8)) +
+scale_y_continuous(breaks = pretty(summary_S$Smean, n = 10)) +
+
+theme_classic()+
+theme(
+legend.justification= c(0,1),
+legend.position = c(0,1), 
+legend.title = element_blank(),
+legend.background = element_rect(colour = "black"),
+panel.border = element_rect(colour = "black", fill=NA),
+axis.title=element_text(size=14,face="bold"))
+
+}
+
+}
+
+dev.new()
+Fig_S
+
+}
+
+}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -985,231 +743,6 @@ MY_TABLE_perDVD$Sdev <-  MY_TABLE_perDVD$SynchronyFeedValue - MY_TABLE_perDVD$Me
 
 #hist(MY_TABLE_perDVD$Sdev, breaks=50)
 
-}
-
-
-{# add Max A possible considering both birds provisioning rate - create figures with it
-MY_TABLE_perDVD$AMax <- NA
-
-for (i in 1:nrow(MY_TABLE_perDVD))
-{
-if((MY_TABLE_perDVD$FVisit1RateH[i] - MY_TABLE_perDVD$MVisit1RateH[i])==0)
-{
-MY_TABLE_perDVD$AMax[i] <- 
-round((((min(MY_TABLE_perDVD$FVisit1RateH[i],MY_TABLE_perDVD$MVisit1RateH[i]))*2-1) / (MY_TABLE_perDVD$FVisit1RateH[i] + MY_TABLE_perDVD$MVisit1RateH[i] -1))*100,2) }
-
-else{
-MY_TABLE_perDVD$AMax[i] <- 
-round((((min(MY_TABLE_perDVD$FVisit1RateH[i],MY_TABLE_perDVD$MVisit1RateH[i]))*2) / (MY_TABLE_perDVD$FVisit1RateH[i] + MY_TABLE_perDVD$MVisit1RateH[i] -1))*100,2) 
-}
-}
-
-MY_TABLE_perDVD$RatioObsvMax <- round(MY_TABLE_perDVD$AlternationValue / MY_TABLE_perDVD$AMax *100)
-
-
-{# add AMax to Figure 1
-
-MY_TABLE_perDVD_perVisitRateDiff <- group_by(MY_TABLE_perDVD, DiffVisit1Rate)
-Summary_MY_TABLE_perDVD_perVisitRateDiff <- summarise (MY_TABLE_perDVD_perVisitRateDiff, AMaxmean = mean(AMax))
-
-Summary_MY_TABLE_perDVD_perVisitRateDiff <- cbind(as.data.frame(Summary_MY_TABLE_perDVD_perVisitRateDiff), rep("ZMaximum Alternation", nrow(Summary_MY_TABLE_perDVD_perVisitRateDiff)))
-colnames(Summary_MY_TABLE_perDVD_perVisitRateDiff) <- c("VisitRateDifference","Amean","TypeSim")
-
-VisitRateDiff_Amean_for_comparison_withAMax <- bind_rows(VisitRateDiff_Amean_for_comparison,as.data.frame(Summary_MY_TABLE_perDVD_perVisitRateDiff[1:21,]) )
-as.data.frame(VisitRateDiff_Amean_for_comparison_withAMax)
-
-Fig1comparison_withMax <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','grey', "black"), labels=c("95% Expected Kat", "95% Expected Malika","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax$Amean, n = 9)) +  
-theme_classic()
-
-
-}
-
-Fig1comparison_withMax
-
-{# add AMax to Figure 1 comparison bis
-
-VisitRateDiff_Amean_for_comparison_withAMax_bis <- bind_rows(VisitRateDiff_Amean_for_comparison_ter,as.data.frame(Summary_MY_TABLE_perDVD_perVisitRateDiff[1:21,]) )
-as.data.frame(VisitRateDiff_Amean_for_comparison_withAMax_bis)
-
-Fig1comparison_withMax_bis <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("red", 'orange','green','grey', "black"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="bottom",legend.direction="vertical")
-
-
-}
-
-Fig1comparison_withMax_bis
-
-{# create figures for ppt
-
-# observed
-
-Fig1comparison_withMax_bis_0 <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ObservedMalika" |VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ZMaximum Alternation" | VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ExpectedKat" ,],
- aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c( "white",'black', "white"), labels=c("bla", "95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-# observed and maximum
-
-Fig1comparison_withMax_bis_a <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ObservedMalika" |VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ZMaximum Alternation" | VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ExpectedKat"  ,],
- aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c('white','black', "grey"), labels=c("bla","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-# among files > does take into account the interdependency of the intervals of a nest watch
-
-Fig1comparison_withMax_bis_b <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ObservedMalika" |VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ZMaximum Alternation" | VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim == "ExpectedKat" ,],
-aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("#0072B2", "black","grey"), labels=c("95% sim among watch (100 random.)", "95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-# within files > does not take into account the autocorrelation to environment variables
-
-Fig1comparison_withMax_bis_c <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim != "ExpectedTempoAuto",], 
-aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("#0072B2", '#56B4E9',"black","grey"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-# switching two by two intervals, to keep some autocorrelation and not having to assume a relevant time window 
-# > not a randomisation per see, just one created nest watch to compare with
-
-Fig1comparison_withMax_bis_d <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("#0072B2", '#56B4E9','#009E73','black', "grey"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-# what will be used
-
-Fig1comparison_withMax_bis_e <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis[VisitRateDiff_Amean_for_comparison_withAMax_bis$TypeSim != "ExpectedTempoAuto",], 
-aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("white", '#56B4E9',"black","white"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-# what will be used + autocorrelation
-
-Fig1comparison_withMax_bis_f <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("white", '#56B4E9','#009E73','black', "white"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-# among + within + autocorrelation + observed
-
-Fig1comparison_withMax_bis_g <- ggplot(data=VisitRateDiff_Amean_for_comparison_withAMax_bis, aes(x=VisitRateDifference, y=Amean, group=TypeSim, colour=TypeSim))+
-geom_point()+
-geom_line()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-xlab("Visit rate difference")+
-ylab("Mean alternation")+
-scale_colour_manual(values=c("#0072B2", '#56B4E9','#009E73','black', "white"), labels=c("95% sim among watch (100 random.)", "95% sim within watch(100 random.)","95% sim within watch with autocor (1 random.)","95% Observed" ,"Maximum Alternation possible"))+
-scale_x_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$VisitRateDifference, n = 12)) +
-scale_y_continuous(breaks = pretty(VisitRateDiff_Amean_for_comparison_withAMax_bis$Amean, n = 9)) +  
-theme_classic()+
-theme(legend.position="none")
-
-
-}
-
-
-
-}
-
-{# add Smax to FigS
-
-MY_TABLE_perDVD_perTotalProRate <- group_by(MY_TABLE_perDVD, MFVisit1RateH)
-Summary_MY_TABLE_perDVD_perTotalProRate <- summarise (MY_TABLE_perDVD_perTotalProRate, SMaxmean = mean(AlternationValue))
-
-Summary_MY_TABLE_perDVD_perTotalProRate <- cbind(as.data.frame(Summary_MY_TABLE_perDVD_perTotalProRate), rep("ZMaximum Synchrony", nrow(Summary_MY_TABLE_perDVD_perTotalProRate)))
-colnames(Summary_MY_TABLE_perDVD_perTotalProRate) <- c("TotalProRate","Smean","Type")
-
-TotalProRate_Smean_for_comparison_withSMax <- bind_rows(TotalProRate_Smean_bis,as.data.frame(Summary_MY_TABLE_perDVD_perTotalProRate[4:39,]) )
-as.data.frame(TotalProRate_Smean_for_comparison_withSMax)
-
-FigScomparison_withMax <- ggplot(data=TotalProRate_Smean_for_comparison_withSMax, aes(x=TotalProRate, y=Smean, group=Type, colour=Type))+
-  geom_point()+
-  geom_line()+
-  geom_errorbar(aes(ymin=Slower, ymax=Supper))+
-  xlab("Total provisioning rate")+
-  ylab("Mean synchrony")+
-  scale_colour_manual(values=c("orange", "grey", "black"), labels=c("95% Expected", "95% Observed", "Maximum"))+
-  scale_x_continuous(breaks = pretty(TotalProRate_Smean_for_comparison_withSMax$TotalProRate, n = 20)) +
-  scale_y_continuous(breaks = pretty(TotalProRate_Smean_for_comparison_withSMax$Smean, n = 20)) +  
-  theme_classic()
 }
 
 
