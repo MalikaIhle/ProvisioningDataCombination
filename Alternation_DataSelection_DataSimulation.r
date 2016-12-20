@@ -18,9 +18,8 @@ rm(list = ls(all = TRUE))
 
 {### packages
 
-library(dplyr) # for some part of the extraction of the data written by Andrew for the simulation 
+library(dplyr) 
 library(ggplot2)
-library(boot) # for Kat's simulation
 
 }
 
@@ -348,8 +347,8 @@ v <- unlist(list(x))
 
 return(c(
 mean(v), # Amean OR Smean
-mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower OR Slower
-mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper OR Supper
+mean(v) - sd(v)*1.96, # Alower OR Slower
+mean(v) + sd(v)*1.96, # Aupper OR Supper
 nrow(x) # NbFiles
 ))
 }
@@ -458,8 +457,8 @@ v <- unlist(list(x))
 
 return(c(
 mean(v), # Amean OR Smean
-mean(v) - sd(v)/sqrt(length(v))*1.96, # Alower OR Slower
-mean(v) + sd(v)/sqrt(length(v))*1.96, # Aupper OR Supper
+mean(v) - sd(v)/sqrt(length(v)/NreplicatesWithinFileRandomization)*1.96, # Alower OR Slower
+mean(v) + sd(v)/sqrt(length(v)/NreplicatesWithinFileRandomization)*1.96, # Aupper OR Supper
 nrow(x) # NbFiles
 ))
 }
@@ -617,8 +616,6 @@ axis.title=element_text(size=14,face="bold"))
 
 }
  
-Fig_A
-
 {# Synchrony
 
 summary_Smax$Type <- '1_Maximum' 
@@ -686,12 +683,14 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
+}
+
+}
+
+Fig_A
 dev.new()
 Fig_S
 
-}
-
-}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
