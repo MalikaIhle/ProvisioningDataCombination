@@ -185,7 +185,9 @@ head(MY_tblChicks_byRearingBrood)
 
 {#### Simulations
 
-{## the raw Data
+{## the raw Data, observed and maximum scores
+
+{# raw data
 
 RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
 colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
@@ -205,11 +207,7 @@ FData_to_Shuffle <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-
 MData_to_Shuffle <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
 }
 
-head(RawInterfeeds)
-
-{## the observed and maximum scores
-
-# observed scores
+{# observed scores
 
 Summarise_A_S_perVisitRateDifference <- function(DataSummary, AS) {
 
@@ -232,8 +230,9 @@ return(data.frame(summarise (group_by(DataSummary, TotalProRate),
 
 summary_Observed_A <- Summarise_A_S_perVisitRateDifference (MY_tblParentalCare, 'A')
 summary_Observed_S <- Summarise_A_S_perVisitRateDifference (MY_tblParentalCare, 'S')
+}
 
-# A max and S max
+{# A max and S max
 
 MY_tblParentalCare$AMax <- NA
 
@@ -261,8 +260,11 @@ summary_Smax <- data.frame(summarise (group_by(MY_tblParentalCare, TotalProRate)
 				Slower = Smean - sd(AMax)/sqrt(n())*1.96,
 				Supper = Smean + sd(AMax)/sqrt(n())*1.96,
 				NbFiles = n()))
+}
 				
 }
+
+head(RawInterfeeds_with_ProRate)
 
 
 NreplicatesAmongFileRandomization <- 100
@@ -327,6 +329,46 @@ return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are A
 
 Out_A_S_sim_Among <- do.call(cbind,replicate(NreplicatesAmongFileRandomization,randomization_among_nest_watch_and_calculate_A_S_fun(FData_to_Shuffle, MData_to_Shuffle),simplify=FALSE ) )
 
+
+
+
+
+
+
+
+# hist(apply(Out_A_S_sim_Among[1:(nrow(Out_A_S_sim_Among)/2),],2,mean))
+
+# library(tidyr)
+# dd<-gather(out_Asim_among_df, "simNo", "alternation", 2:101)
+# head(dd)
+
+# dd2<-aggregate(alternation ~ VisitRateDifference + simNo, dd, mean )
+
+# ddmean<-aggregate(alternation ~ VisitRateDifference, dd2, mean )
+# ddsd<-aggregate(alternation ~ VisitRateDifference, dd2, sd)
+
+# plot(alternation ~ VisitRateDifference, ddmean, ylim=c(0,100))
+# arrows(ddmean$VisitRateDifference, ddmean$alternation + ddsd$alternation*1.96, ddmean$VisitRateDifference, ddmean$alternation - ddsd$alternation*1.96, code=3, length=0.01)
+
+# library(lattice)
+# xyplot(alternation ~ VisitRateDifference | simNo, dd2[1:330,])
+# xyplot(alternation ~ VisitRateDifference , dd2)
+
+
+# ddlower <- ddmean$alternation - ddsd$alternation*1.96
+# summary_A$Alower[summary_A$Type =="5_Among"]
+# plot(summary_A$Alower[summary_A$Type =="5_Among"], ddlower[1:21])
+# abline(0,1)
+# ddupper <- ddmean$alternation + ddsd$alternation*1.96
+# summary_A$Aupper[summary_A$Type =="5_Among"]
+# plot(summary_A$Aupper[summary_A$Type =="5_Among"], ddupper[1:21])
+
+# dev.new()
+
+
+
+
+
 # first half are A sim
 out_Asim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
 out_Asim_among_df <- merge(x=out_Asim_among_df, y= MY_tblParentalCare[,c('DVDRef','VisitRateDifference')], by='DVDRef', all.x =TRUE)
@@ -347,8 +389,8 @@ v <- unlist(list(x))
 
 return(c(
 mean(v), # Amean OR Smean
-mean(v) - sd(v)*1.96, # Alower OR Slower
-mean(v) + sd(v)*1.96, # Aupper OR Supper
+mean(v) - sd(v)/sqrt(length(v)/NreplicatesAmongFileRandomization)*1.96, # Alower OR Slower
+mean(v) + sd(v)/sqrt(length(v)/NreplicatesAmongFileRandomization)*1.96, # Aupper OR Supper
 nrow(x) # NbFiles
 ))
 }
@@ -567,8 +609,8 @@ summary_A$VisitRateDifference <- as.numeric(summary_A$VisitRateDifference)
 "maximum possible",
 "observed" , 
 "after exchanging consecutive intervals to keep some autocorrelation",
-"after 100 randomizations among nest watches", 
-"after 100 randomizations within nest watches")}
+"after 100 randomizations within nest watches", 
+"after 100 randomizations among nest watches")}
 
 {my_colors <- c(
 'grey',
@@ -637,8 +679,8 @@ summary_S$TotalProRate <- as.numeric(summary_S$TotalProRate)
 {my_labelsS <- c(
 #"maximum possible",
 "observed" , 
-"after 100 randomizations among nest watches", 
-"after 100 randomizations within nest watches")}
+"after 100 randomizations within nest watches", 
+"after 100 randomizations among nest watches")}
 
 {my_colorsS <- c(
 #'grey',
@@ -687,6 +729,7 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
+dev.new()
 Fig_A
 dev.new()
 Fig_S
