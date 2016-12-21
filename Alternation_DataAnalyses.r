@@ -397,7 +397,7 @@ summary(modFitnessAsProRate) # Number of obs: 919, groups:  PairID, 453; SocialM
 
 
 summary(lmer(MeanAdev~TotalProRate+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear), data = MY_TABLE_perBrood))
-summary(lmer(Adev~MFVisit1RateH+(1|BroodRef)+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear), data = MY_TABLE_perDVD))
+summary(lmer(Adev~TotalProRate+(1|BroodRef)+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear), data = MY_TABLE_perDVD))
 
 
 
@@ -506,7 +506,7 @@ scatter.smooth(MY_TABLE_perBrood$MeanAdev, MY_TABLE_perBrood$TotalProRate)
 }
 
 
-modFitnessAsProRate_poly_onDVD <- lmer(MFVisit1RateH^0.45 ~  DVDInfoChickNb +
+modFitnessAsProRate_poly_onDVD <- lmer(TotalProRate^0.45 ~  DVDInfoChickNb +
 											poly(Adev,2) +
 											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 											# + (1|PairIDYear) # explain 0% of the variance
@@ -782,7 +782,6 @@ mean(unlist(ranef(modFitnessAsNbRinged_ADev)$BreedingYear))
 
 
 hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
-hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
 
 
 modPercSurvivedChick <- lmer(RatioNbRingedNbHatched ~ MeanA + 
@@ -823,247 +822,6 @@ scatter.smooth(MY_TABLE_perBrood$RatioNbRingedNbHatched~MY_TABLE_perBrood$MeanAd
 
 
 
-
-}
-
-{## Parent survival
-
-{# check dependent and explanatory variables
-summary(MY_TABLE_perBirdYear$AliveNextYear)
-scatter.smooth(MY_TABLE_perBirdYear$MeanAYear, MY_TABLE_perBirdYear$Age)
-scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 1])
-scatter.smooth(MY_TABLE_perBirdYear$MeanAYear[MY_TABLE_perBirdYear$Sex == 1], MY_TABLE_perBirdYear$Age[MY_TABLE_perBirdYear$Sex == 0])
-table( MY_TABLE_perBirdYear$AliveNextYear[MY_TABLE_perBirdYear$Sex == 0])
-table( MY_TABLE_perBirdYear$AliveNextYear[MY_TABLE_perBirdYear$Sex == 1])
-
-
-}
-
-modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
-									(1|BirdID) +
-									#(1|PairID) + 
-									(1|BreedingYear)
-									, data = MY_TABLE_perBirdYear, family = "binomial" )
-									
-summary(modSurvival) # Number of obs: 1006, groups:  BirdID, 543; BreedingYear, 11
-
-
-modSurvivalMale <- glmer(AliveNextYear ~ scale(MeanAYear, scale=FALSE) + Age +
-									(1|BirdID) +
-									#(1|PairID) + 
-									(1|BreedingYear)
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 1,], family = "binomial" )
-									
-summary(modSurvivalMale) # Number of obs: 503, groups:  BirdID, 268; BreedingYear, 11
-# birdID explains a lot of variance 
-
-modSurvivalFemale <- glmer(AliveNextYear ~ MeanAYear + Age +
-									(1|BirdID) +
-									#(1|PairID) + 
-									(1|BreedingYear)
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$Sex == 0,], family = "binomial" )
-									
-summary(modSurvivalFemale) # Number of obs: 503, groups:  BirdID, 275; BreedingYear, 11
-# birdID do not explains a lot of variance
-
-
-modSurvival_SexAgeInteraction <- glmer(AliveNextYear ~ MeanAYear + Sex*Age +
-									(1|BirdID) +
-									#(1|PairID) + 
-									(1|BreedingYear)
-									, data = MY_TABLE_perBirdYear, family = "binomial" )
-									
-summary(modSurvival_SexAgeInteraction) #Number of obs: 1006, groups:  BirdID, 543; BreedingYear, 11
-
-
-
-
-
-{# model assumptions checking >> residuals not normal !!!!!!
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modSurvival), resid(modSurvival))	# awful !
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modSurvival))# not quite normal !
-qqline(resid(modSurvival))
-
-{# get our qqplot within others:
-N <- length(resid(modSurvival))
-sigma <- summary(modSurvival)$sigma # Extract the estimated standard deviation of the errors
-par(mfrow=c(3,3))  
-rnum<-sample(1:9, 1)
-for(i in 1:(rnum-1)){
-  x<-rnorm(N, 0, sigma)
-  qqnorm(x, main=i)
-  qqline(x)
-  }
-qqnorm(resid(modSurvival), main=rnum)
-qqline(resid(modSurvival))
-for(i in (rnum+1):9){
-  x<-rnorm(N, 0, sigma)
-  qqnorm(x, main=i)
-  qqline(x)
-  }
-  }
-# can we see our plot ? solution is:
-rnum
-
-qqnorm(unlist(ranef(modSurvival))) 
-qqline(unlist(ranef(modSurvival)))
-
-
-#check for overdispersion
-# modSurvival_withOverdispersionAccounted <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
-									# (1|BirdID) +
-									# (1|BreedingYear)+
-									# (1|BirdIDYear) # overdispersion parameter
-									# , data = MY_TABLE_perBirdYear, family = "binomial" )
-# summary(modSurvival_withOverdispersionAccounted)
-# anova(modSurvival, modSurvival_withOverdispersionAccounted) # p = 0.6037
-
-
-# Mean of ranefs: should be zero
-mean(unlist(ranef(modSurvival)$BirdID))
-mean(unlist(ranef(modSurvival)$BreedingYear))
-
-# residuals vs predictors
-d <- MY_TABLE_perBirdYear
-plot(d$MeanAYear, resid(modSurvival))
-abline(h=0, lty=2)
-plot(d$Sex, resid(modSurvival))
-abline(h=0, lty=2)
-plot(d$Age, resid(modSurvival))
-abline(h=0, lty=2)
-
-# dependent variable vs fitted
-d$fitted <- fitted(modSurvival)
-plot(d$fitted, d$AliveNextYear,ylim=c(0, 1))
-abline(0,1)	
-
-# fitted vs all predictors
-plot(d$MeanAYear,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AliveNextYear", xlab="MeanAYear")
-plot(d$Sex,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AliveNextYear", xlab="Sex")
-plot(d$Age,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AliveNextYear", xlab="Age")
-
-}
-
-
-{# survival analysis per year >> residuals not normal !!!!!!
-
-modSurvival2004 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2004,], family = "binomial" )
-summary(modSurvival2004)
-
-modSurvival2005 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2005,], family = "binomial" )
-summary(modSurvival2005)
-
-modSurvival2006 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2006,], family = "binomial" )
-summary(modSurvival2006)
-
-modSurvival2007 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2007,], family = "binomial" )
-summary(modSurvival2007)
-
-# modSurvival2008 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									# , data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2008,], family = "binomial" )
-# summary(modSurvival2008)
-
-modSurvival2009 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2009,], family = "binomial" )
-summary(modSurvival2009)
-
-modSurvival2010 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2010,], family = "binomial" )
-summary(modSurvival2010)
-
-modSurvival2011 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2011,], family = "binomial" )
-summary(modSurvival2011)
-
-modSurvival2012 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2012,], family = "binomial" )
-summary(modSurvival2012)
-
-modSurvival2013 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2013,], family = "binomial" )
-summary(modSurvival2013)
-
-modSurvival2014 <- glm(AliveNextYear ~ MeanAYear + Sex + Age
-									, data = MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2014,], family = "binomial" )
-summary(modSurvival2014)
-
-
-{# model assumptions checking >> residuals aweful !
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modSurvival2004), resid(modSurvival2004))	# aweful
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modSurvival2004))# terrible !
-qqline(resid(modSurvival2004))
-
-# residuals vs predictors
-d <- MY_TABLE_perBirdYear[MY_TABLE_perBirdYear$BreedingYear == 2004,]
-scatter.smooth(d$MeanAYear, resid(modSurvival2004))
-abline(h=0, lty=2)
-plot(d$Sex, resid(modSurvival2004))
-abline(h=0, lty=2)
-plot(d$Age, resid(modSurvival2004))
-abline(h=0, lty=2)
-
-# dependent variable vs fitted
-d$fitted <- fitted(modSurvival2004)
-plot(d$fitted, d$AliveNextYear,ylim=c(0, 1))
-
-# fitted vs all predictors
-plot(d$Sex,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="Survival", xlab="Sex")
-plot(d$MeanAYear,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="Survival", xlab="MeanAYear")
-plot(d$Age,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="Survival", xlab="Age")
-
-}
-
-
-
-}
-
-{# using the survival package and the cox proportional hazard > NOT DONE !!!!
-# library(survival)
-
-# MY_TABLE_perBirdYear$DeadNextYearYN[MY_TABLE_perBirdYear$AliveNextYear == TRUE] <- 0
-# MY_TABLE_perBirdYear$DeadNextYearYN[MY_TABLE_perBirdYear$AliveNextYear == FALSE] <- 1
-# head(MY_TABLE_perBirdYear)
-
-
-# modSurvival <- glmer(AliveNextYear ~ MeanAYear + Sex + Age +
-									# (1|BirdID) +
-									# #(1|PairID) + 
-									# (1|BreedingYear)
-									# , data = MY_TABLE_perBirdYear, family = "binomial" )
-									
-# coxph(Surv(BreedingYear, DeadNextYearYN) ~ MeanAYear + strata(Sex) + Age, MY_TABLE_perBirdYear) 
-
-	
-# test1 <- list(time=c(4,3,1,1,2,2,3), 
-# status=c(1,1,1,0,1,1,0), 
-# x=c(0,2,1,1,1,0,0), 
-# sex=c(0,0,0,0,1,1,1)) 
-# # Fit a stratified model 
-# coxph(Surv(time, status) ~ x + strata(sex), test1) 
-# # Create a simple data set for a time-dependent model 
-# test2 <- list(start=c(1,2,5,2,1,7,3,4,8,8), 
-              # stop=c(2,3,6,7,8,9,9,9,14,17), 
-              # event=c(1,1,1,1,1,1,1,0,0,0), 
-              # x=c(1,0,0,1,0,1,1,1,0,0)) 
-# summary(coxph(Surv(start, stop, event) ~ x, test2)) \
-# bladder1 <- bladder[bladder$enum < 5, ] 
-# coxph(Surv(stop, event) ~ (rx + size + number) * strata(enum) + 
-      # cluster(id), bladder1)
-}
 
 }
 
@@ -1130,8 +888,8 @@ cor.test(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$DiffVisit1Rate)
 
 # summary when synchro 0 vs non-zero
 
-summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue == 0,c("MVisit1","FVisit1","DiffVisit1Rate","MFVisit1RateH","NbAlternation","DVDInfoChickNb")])
-summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue != 0,c("MVisit1","FVisit1","DiffVisit1Rate","MFVisit1RateH","NbAlternation","DVDInfoChickNb")])
+summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue == 0,c("MVisit1","FVisit1","DiffVisit1Rate","TotalProRate","NbAlternation","DVDInfoChickNb")])
+summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue != 0,c("MVisit1","FVisit1","DiffVisit1Rate","TotalProRate","NbAlternation","DVDInfoChickNb")])
 
 }
 
@@ -1400,10 +1158,10 @@ summary(modSdev) # in ppt 20160707
 # mathematical negative correlation between number of synchronous provisioning/ total nb of provisioning and total nb of provisioning / time
 # conceptual positive correlation between number of synchronous provisioning and pro rate, as synchrony becomes more likely if interfeed interval are shorter.
 
-{# MeanSynchroFeed
+{# MeanS
 mod_Sync_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # strongly correlated with Synchrony
 														HatchingDayAfter0401 + 
-														scale(MeanSynchroFeed, scale=FALSE)
+														scale(MeanS, scale=FALSE)
 														+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
 														 , data = MY_TABLE_perBrood)
 
@@ -1434,7 +1192,7 @@ mean(unlist(ranef(mod_Sync_FitnessAsProRate)$BreedingYear))
 # residuals vs predictors
 plot(MY_TABLE_perBrood$NbRinged, resid(mod_Sync_FitnessAsProRate))
 abline(h=0, lty=2)
-scatter.smooth(MY_TABLE_perBrood$MeanSynchroFeed, resid(mod_Sync_FitnessAsProRate))
+scatter.smooth(MY_TABLE_perBrood$MeanS, resid(mod_Sync_FitnessAsProRate))
 abline(h=0, lty=2)
 
 # dependent variable vs fitted
@@ -1444,7 +1202,7 @@ scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
 
 # fitted vs all predictors
 plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
-scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="MeanSynchroFeed")
+scatter.smooth(d$MeanS,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="MeanS")
 
 }
 
@@ -1504,11 +1262,11 @@ scatter.smooth(d$MeanSynchroFeed_nb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2,
 
 {# Nb ringed
 
-{# MeanSynchroFeed (highly correlated to TotalProRate)
-cor.test(MY_TABLE_perBrood$MeanSynchroFeed,MY_TABLE_perBrood$TotalProRate) # 0.66 !
+{# MeanS (highly correlated to TotalProRate)
+cor.test(MY_TABLE_perBrood$MeanS,MY_TABLE_perBrood$TotalProRate) # 0.66 !
 
 
-mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) + 
+mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanS, scale=FALSE) + 
 												scale(TotalProRate, scale=FALSE) +
 												#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 												(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
@@ -1516,7 +1274,7 @@ mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALS
 summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
 
-mod_Sync_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanSynchroFeed, scale=FALSE) + 
+mod_Sync_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanS, scale=FALSE) + 
 												scale(TotalProRate, scale=FALSE) +
 												scale(PairBroodNb, scale=FALSE) +
 												#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
@@ -1546,7 +1304,7 @@ mean(unlist(ranef(mod_Sync_FitnessAsNbRinged)$BreedingYear))
 d <- MY_TABLE_perBrood
 scatter.smooth(d$TotalProRate, resid(mod_Sync_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
 abline(h=0, lty=2)
-scatter.smooth(d$MeanSynchroFeed, resid(mod_Sync_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
+scatter.smooth(d$MeanS, resid(mod_Sync_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
 abline(h=0, lty=2)
 
 # dependent variable vs fitted
@@ -1556,7 +1314,7 @@ abline(0,1)
 
 # fitted vs all predictors
 scatter.smooth(d$TotalProRate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="TotalProRate")
-scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanSynchroFeed")
+scatter.smooth(d$MeanS,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanS")
 
 }
 
@@ -1632,7 +1390,7 @@ summary(mod_Sync_FitnessAsNbRinged)
 
 {#### proportion of synchronous visits where female enters first > repeatability within pair could induce alternation
 
-mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ #MFmeanDuration+MFVisit1RateH + 
+mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ #MFmeanDuration+TotalProRate + 
 													(1|BroodRef) +
 													(1|PairID)
 													 #+(1|DVDRef) 
@@ -1641,7 +1399,7 @@ mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleS
 summary(mod_proportionSexStartSynchro)
 
 mod_proportionSexStartSynchro <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~  
-													#MFmeanDuration+MFVisit1RateH + 
+													#MFmeanDuration+TotalProRate + 
 													(1|BroodRef) +
 													(1|PairID)
 													 #+(1|DVDRef) 
@@ -1654,7 +1412,7 @@ summary(mod_proportionSexStartSynchro)
 {# model assumptions checking
 
 # # check for overdispersion
-# mod_proportionSexStartSynchro_overdisp <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+MFVisit1RateH + 
+# mod_proportionSexStartSynchro_overdisp <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+TotalProRate + 
 												# (1|BroodRef) +
 												# (1|PairID)
 												 # +(1|DVDRef) 
@@ -1663,7 +1421,7 @@ summary(mod_proportionSexStartSynchro)
 # anova(mod_proportionSexStartSynchro_overdisp,mod_proportionSexStartSynchro)
 
 ## check for overdispersion
-# mod_proportionSexStartSynchro_overdisp <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+MFVisit1RateH + 
+# mod_proportionSexStartSynchro_overdisp <- glmer(cbind(NbSynchroFemaleStart,NbSynchroMaleStart) ~ MFmeanDuration+TotalProRate + 
 												# (1|BroodRef) +
 												# (1|PairID)
 												 # +(1|DVDRef) 
@@ -1684,7 +1442,7 @@ abline(h=0, lty=2)
 # # residuals vs predictors		
 # scatter.smooth(MY_TABLE_perDVD$MFmeanDuration[MY_TABLE_perDVD$SynchronyFeedValue >0], resid(mod_proportionSexStartSynchro))
 # abline(h=0, lty=2)
-# scatter.smooth(MY_TABLE_perDVD$MFVisit1RateH[MY_TABLE_perDVD$SynchronyFeedValue >0], resid(mod_proportionSexStartSynchro))
+# scatter.smooth(MY_TABLE_perDVD$TotalProRate[MY_TABLE_perDVD$SynchronyFeedValue >0], resid(mod_proportionSexStartSynchro))
 # abline(h=0, lty=2)
 
 # # data vs. fitted ?							
@@ -1695,7 +1453,7 @@ abline(h=0, lty=2)
 
 # # data and fitted against all predictors
 # scatter.smooth(d$MFmeanDuration,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="proportion of synchronous visits where female enters first", xlab="MFmeanDuration")	
-# scatter.smooth(d$MFVisit1RateH,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="proportion of synchronous visits where female enters first", xlab="MFVisit1RateH")	
+# scatter.smooth(d$TotalProRate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="proportion of synchronous visits where female enters first", xlab="TotalProRate")	
 
 }
 
