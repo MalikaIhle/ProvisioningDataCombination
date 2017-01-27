@@ -324,7 +324,7 @@ return(Ssim)
 
 SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
 
-# output: Asim of each DVD (first hald of the rows, Ssim of each DVD, second half of the rows)
+# output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
 return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
 }
 
@@ -397,7 +397,7 @@ return(Ssim)
 
 SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
 
-# output: Asim of each DVD (first hald of the rows, Ssim of each DVD, second half of the rows)
+# output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
 return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
 }
 
@@ -457,6 +457,9 @@ summary_out_Ssim_within_df <- summarise_sim(out_Ssim_within_df, 'S')
 
 is.even <- function(x) x %% 2 == 0 
 
+x <- split(RawInterfeeds,RawInterfeeds$DVDRef)[[3]]
+
+
 Switch_Consecutive_intervals_onesplit_fun <- function(x){
 
 x <- x[order(x$Tstart),]
@@ -467,7 +470,7 @@ x1sim <- x1 # only shuffle intervals for one sex
 
 if (nrow(x1) > 1){
 
-x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)])
+x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)]) # repeat the last one when uneven number of rows (see below)
 
 for (i in 2:nrow(x1sim))
 { if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
