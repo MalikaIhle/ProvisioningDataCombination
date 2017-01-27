@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 21/12/2016
-#	 commit: clean up simulation script: summary randomization among file, redone by Joel so that confidence interval correct
+#	 last modif : 27/01/2017
+#	 commit: changed summarize Asim per visit rate difference and Ssim per TotalProRate > SD on an average of all simulations per nest
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -418,31 +418,25 @@ out_Ssim_within_df <- merge(x=out_Ssim_within_df, y= MY_tblParentalCare[,c('DVDR
 
 summarise_sim <- function(out_sim_df, AS){
 
-out_sim_column <- gather(out_sim_df, "simNo", "Mean", 2:(NreplicatesAmongFileRandomization+1))
+out_sim_df$SimMean <- rowMeans(out_sim_df[,2:(NreplicatesAmongFileRandomization)])
 
-if (AS == 'A')
-{
-out_sim_column_per_X <- aggregate(Mean ~ VisitRateDifference + simNo, out_sim_column, mean )
-summary_out_sim <- aggregate(Mean ~ VisitRateDifference, out_sim_column_per_X, mean) # this gives the MEAN of al means calculated per simulation per visit rate difference
-summary_out_sim_SD <- aggregate(Mean ~ VisitRateDifference, out_sim_column_per_X, sd) # this gives SD of all means calculated per simulation per visit rate difference
-}
+if (AS == 'A'){
+return(data.frame(summarise (group_by(out_sim_df, VisitRateDifference),
+				Amean = mean(SimMean),
+				Alower = Amean - sd(SimMean)/sqrt(n())*1.96,
+				Aupper = Amean + sd(SimMean)/sqrt(n())*1.96,
+				NbFiles = n())))
+				}
+				
+if (AS == 'S') {
+return(data.frame(summarise (group_by(out_sim_df, TotalProRate),
+				Smean = mean(SimMean),
+				Slower = Smean - sd(SimMean)/sqrt(n())*1.96,
+				Supper = Smean + sd(SimMean)/sqrt(n())*1.96,
+				NbFiles = n())))				
+				}
 
-if (AS == 'S')
-{
-out_sim_column_per_X <- aggregate(Mean ~ TotalProRate + simNo, out_sim_column, mean )
-summary_out_sim <- aggregate(Mean ~ TotalProRate, out_sim_column_per_X, mean)
-summary_out_sim_SD <- aggregate(Mean ~ TotalProRate, out_sim_column_per_X, sd)
-}
-
-summary_out_sim$lower <- summary_out_sim$Mean - summary_out_sim_SD$Mean*1.96 # MEAN(means)-SD(means)*1.96
-summary_out_sim$upper <- summary_out_sim$Mean + summary_out_sim_SD$Mean*1.96 
-summary_out_sim$NbFiles <- NA
-
-if (AS== 'A') {colnames(summary_out_sim) <- c("VisitRateDifference", "Amean", "Alower", "Aupper", "NbFiles")}
-if (AS== 'S') {colnames(summary_out_sim) <- c("TotalProRate", "Smean", "Slower", "Supper", "NbFiles")}
-
-return(summary_out_sim)
-}
+}				
 
 summary_out_Asim_among_df <- summarise_sim(out_Asim_among_df, 'A')
 summary_out_Ssim_among_df <- summarise_sim(out_Ssim_among_df, 'S')
@@ -668,7 +662,7 @@ Fig_S
 {# merge tables
 MY_TABLE_perDVD <- merge(
 MY_tblParentalCare[,c("DVDRef","FVisit1", "MVisit1","EffectiveTime","FVisit1RateH", "MVisit1RateH","VisitRateDifference","TotalProRate",
-"AlternationValue", "SynchronyFeedValue", "PropSynchroFemaleStart")], 
+"AlternationValue", "SynchronyFeedValue", "PropSynchroFemaleStart", "AMax")], 
 MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAgeCat","RelTimeHrs")], by="DVDRef")
 MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
 
@@ -837,6 +831,7 @@ head(MY_TABLE_perBrood)
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD.csv", sep="/"), row.names = FALSE) 
 # 20161215
 # 20161221
+# 20170127 added AMax
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
