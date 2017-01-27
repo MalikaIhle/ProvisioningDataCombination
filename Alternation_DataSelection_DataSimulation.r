@@ -239,16 +239,31 @@ MY_tblParentalCare$AMax <- NA
 
 for (i in 1:nrow(MY_tblParentalCare))
 {
-if((MY_tblParentalCare$FVisit1RateH[i] - MY_tblParentalCare$MVisit1RateH[i])==0)
+if((MY_tblParentalCare$FVisit1[i] - MY_tblParentalCare$MVisit1[i])==0)
 {
 MY_tblParentalCare$AMax[i] <- 
-round((((min(MY_tblParentalCare$FVisit1RateH[i],MY_tblParentalCare$MVisit1RateH[i]))*2-1) / (MY_tblParentalCare$FVisit1RateH[i] + MY_tblParentalCare$MVisit1RateH[i] -1))*100,2) }
+round((((min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i]))*2-1) / (MY_tblParentalCare$FVisit1[i] + MY_tblParentalCare$MVisit1[i] -1))*100,2) }
 
 else{
 MY_tblParentalCare$AMax[i] <- 
-round((((min(MY_tblParentalCare$FVisit1RateH[i],MY_tblParentalCare$MVisit1RateH[i]))*2) / (MY_tblParentalCare$FVisit1RateH[i] + MY_tblParentalCare$MVisit1RateH[i] -1))*100,2) 
+round((((min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i]))*2) / (MY_tblParentalCare$FVisit1[i] + MY_tblParentalCare$MVisit1[i] -1))*100,2) 
 }
 }
+
+MY_tblParentalCare$NbAMax <- NA
+
+for (i in 1:nrow(MY_tblParentalCare))
+{
+if((MY_tblParentalCare$FVisit1[i] - MY_tblParentalCare$MVisit1[i])==0)
+{
+MY_tblParentalCare$NbAMax[i] <- min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i])*2-1}
+
+else{
+MY_tblParentalCare$NbAMax[i] <- min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i])*2 
+}
+
+}
+
 
 summary_Amax <- data.frame(summarise (group_by(MY_tblParentalCare, VisitRateDifference),
 				Amean = mean(AMax),
