@@ -2,7 +2,7 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 07/12/2016
+#	 last modif : 01/02/2017
 #	 commit: clean up DataAnalyses script
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -10,8 +10,6 @@
 # LastSeenAlive information needs to be updated manually when DB updated
 # MY_tblBrood$Nb3 is the number of post fledgling
 # MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
-# MY_TABLE_perDVD has one line per file
-# MY_TABLE_perBrood has one line per brood, averaging the summary accross files
 }
 
 rm(list = ls(all = TRUE))
@@ -21,28 +19,26 @@ rm(list = ls(all = TRUE))
 library(dplyr) 
 library(ggplot2)
 library(lme4)
+library(arm)
 
 }
 
 {### Get raw data from R_Selected&SimulatedData folder
-
-{# output csv files
 
 # source('Alternation_DataSelection_DataSimulation.R')
 # or :
 
 SelectedData_folder <- "R_Selected&SimulatedData"
 
-MY_TABLE_perDVD
-MY_TABLE_perBrood
-MY_TABLE_perChick
-MY_TABLE_perBirdYear
+MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD.csv", sep="/")) # summary stats for all analyzed videos where both parents known and with expected alternation from simulation
+MY_TABLE_perBrood <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
+MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
+#MY_TABLE_perBirdYear
 
 
 }
 
-
-}
+head(MY_TABLE_perDVD)
 
 
 
@@ -56,29 +52,21 @@ MY_TABLE_perBirdYear
 
 cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.08, p<0.001 
 cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged) # cor = 0.06, p=0.01 
-cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable
-cor.test(MY_TABLE_perDVD$DiffVisit1Rate, MY_TABLE_perDVD$MFVisit1RateH) # r=0.46
-#scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate, MY_TABLE_perDVD$MFVisit1RateH)
-#sunflowerplot(MY_TABLE_perDVD$DiffVisit1Rate, MY_TABLE_perDVD$MFVisit1RateH)
-
-#scatter.smooth(MY_TABLE_perDVD$MFVisit1RateH~ MY_TABLE_perDVD$DVDInfoChickNb)
-#sunflowerplot(MY_TABLE_perDVD$MFVisit1RateH~ MY_TABLE_perDVD$DVDInfoChickNb)
-
-#cor.test(MY_TABLE_perDVD$MFVisit1RateH,MY_TABLE_perDVD$DVDInfoChickNb)
+cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable ?
+cor.test(MY_TABLE_perDVD$VisitRateDifference, MY_TABLE_perDVD$MFVisit1RateH) # r=0.46
 
 summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
 #scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
 #scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$AlternationValue)# linear ? >linear enough to keep it as it is ?
+
 #hist(MY_TABLE_perDVD$AlternationValue)
-
-
 boxcoxAlternationValue <- boxcox(lm(AlternationValue ~  
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
 	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	DiffVisit1Rate +  
+	VisitRateDifference +  
 	scale(RelTimeHrs, scale=FALSE), data = MY_TABLE_perDVD))
 
 boxcoxAlternationValue$x[boxcoxAlternationValue$y == max(boxcoxAlternationValue$y)] # 1.23
@@ -87,14 +75,45 @@ boxcoxAlternationValue$x[boxcoxAlternationValue$y == max(boxcoxAlternationValue$
 
 {# modA
 
+modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~  
+	scale(ParentsAge) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	VisitRateDifference +  
+	TotalProRate+
+	scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	# M or F PriorResidence NS
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	+ (1|DVDRef) # for overdispersion
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),], family = 'binomial',control=glmerControl(optimizer = "bobyqa"))
+
+summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+hist(invlogit(ranef(modA)$BroodRef[,1]) )
+
+coef(summary(modA))[1,1] # intercept
+
+	## why is visit rate diff and totalprorate still hyper signi ?? NbAMax = TotalProRate - DifferenceProRate (in fact calculate as TotalNbVisit-DifferenceNbVisits)
+
+
+
+
+
+
+
 modA <- lmer(AlternationValue^1.2~  
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
 	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	DiffVisit1Rate +  
-	#MFVisit1RateH+
+	#VisitRateDifference +  
+	#TotalProRate+
 	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 	# M or F PriorResidence NS
 	(1|BroodRef) + 
@@ -103,6 +122,42 @@ modA <- lmer(AlternationValue^1.2~
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
 
 summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
+
+
+
+
+
+modA <- lmer(AlternationValue^1.2~  
+	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	#VisitRateDifference +  
+	#TotalProRate+
+	
+	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	# M or F PriorResidence NS
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
+
+summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+
+
+
+
+
+
+
+
+
+
 
 
 {# model assumptions checking
@@ -136,11 +191,11 @@ plot(MY_TABLE_perDVD$DVDInfoChickNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(m
 abline(h=0, lty=2)	
 plot(MY_TABLE_perDVD$ChickAgeCat[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
 abline(h=0, lty=2)	
-scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA)) # one influential data point
+scatter.smooth(MY_TABLE_perDVD$VisitRateDifference[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA)) # one influential data point
 abline(h=0, lty=2)	
 
-	# MY_TABLE_perDVD[MY_TABLE_perDVD$DiffVisit1Rate > 40,] # DVDRef == 2337
-	# scatter.smooth(MY_TABLE_perDVD$DiffVisit1Rate[!is.na(MY_TABLE_perDVD$RelTimeHrs) & MY_TABLE_perDVD$DVDRef != 2337], resid(modA)) # when modA made witghout this datapoint
+	# MY_TABLE_perDVD[MY_TABLE_perDVD$VisitRateDifference > 40,] # DVDRef == 2337
+	# scatter.smooth(MY_TABLE_perDVD$VisitRateDifference[!is.na(MY_TABLE_perDVD$RelTimeHrs) & MY_TABLE_perDVD$DVDRef != 2337], resid(modA)) # when modA made witghout this datapoint
 	# abline(h=0, lty=2)	
 
 scatter.smooth(MY_TABLE_perDVD$RelTimeHrs[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
@@ -157,7 +212,7 @@ scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
 boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
 plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
-scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$VisitRateDifference,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="VisitRateDifference") # strongly correlated
 scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")
 
 }
@@ -184,7 +239,7 @@ modA_withinIndAgeEffect <- lmer(AlternationValue^1.2~
 	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	DiffVisit1Rate +  
+	VisitRateDifference +  
 	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
@@ -212,7 +267,7 @@ modAdev <- lmer(Adev~ 	#scale(ParentsAge, scale=FALSE) + # this is strongly corr
 						scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 						scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 						ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-						DiffVisit1Rate +  
+						VisitRateDifference +  
 						MFVisit1RateH+
 						scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 						MPriorResidence+
@@ -229,7 +284,7 @@ summary(modAdev) # in ppt 20160707
 
 hist(MY_TABLE_perDVD$RatioObsvMax)
 scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$MFVisit1RateH)
-scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$DiffVisit1Rate)
+scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$VisitRateDifference)
 
 
 modRatioObsvMax <- lmer(RatioObsvMax~  MFVisit1RateH+
@@ -238,7 +293,7 @@ modRatioObsvMax <- lmer(RatioObsvMax~  MFVisit1RateH+
 	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	DiffVisit1Rate +  
+	VisitRateDifference +  
 	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 	# M or F PriorResidence NS
 	(1|BroodRef) + 
@@ -314,7 +369,7 @@ prior_modA_MCMCglmm<-list(G=list(
 					  G5=list(V=matrix(p.var/6),n=1)),
                       R=list(V=matrix(p.var/6),n=1))
 
-modA_MCMCglmm <- MCMCglmm(AlternationValue^1.2~1+ParentsAge+HatchingDayAfter0401+PairBroodNb+DVDInfoChickNb+ChickAgeCat+DiffVisit1Rate+RelTimeHrs,
+modA_MCMCglmm <- MCMCglmm(AlternationValue^1.2~1+ParentsAge+HatchingDayAfter0401+PairBroodNb+DVDInfoChickNb+ChickAgeCat+VisitRateDifference+RelTimeHrs,
 												random = ~BroodRef+SocialMumID+SocialDadID+PairID+BreedingYear,
 												data=MY_TABLE_perDVD_wihoutNA,
 												prior = prior_modA_MCMCglmm)
@@ -879,8 +934,8 @@ hist(MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim, breaks =length(unique(MY_TAB
 
 table(MY_TABLE_perDVD$SynchronyFeedValue)
 
-#scatter.smooth(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$DiffVisit1Rate )
-cor.test(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$DiffVisit1Rate)
+#scatter.smooth(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$VisitRateDifference )
+cor.test(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$VisitRateDifference)
 
 #scatter.smooth(MY_TABLE_perDVD$SynchronyFeedValue~MY_TABLE_perDVD$MFVisit1 )
 
@@ -888,21 +943,21 @@ cor.test(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$DiffVisit1Rate)
 
 # summary when synchro 0 vs non-zero
 
-summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue == 0,c("MVisit1","FVisit1","DiffVisit1Rate","TotalProRate","NbAlternation","DVDInfoChickNb")])
-summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue != 0,c("MVisit1","FVisit1","DiffVisit1Rate","TotalProRate","NbAlternation","DVDInfoChickNb")])
+summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue == 0,c("MVisit1","FVisit1","VisitRateDifference","TotalProRate","NbAlternation","DVDInfoChickNb")])
+summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue != 0,c("MVisit1","FVisit1","VisitRateDifference","TotalProRate","NbAlternation","DVDInfoChickNb")])
 
 }
 
 {# synchrony score > assumptions model weird
 
 modS <- lmer(SynchronyFeedValue~  
-	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to DiffVisit1Rate and with chickNb and this is mathematically linked to Sync score
+	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to VisitRateDifference and with chickNb and this is mathematically linked to Sync score
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 	scale(HatchingDayAfter0401, scale=FALSE) + 
 	scale(PairBroodNb, scale=FALSE) + 
 	scale(DVDInfoChickNb, scale=FALSE) + 
 	ChickAgeCat + 
-	DiffVisit1Rate +  
+	VisitRateDifference +  
 	scale(RelTimeHrs, scale=FALSE) + 
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
@@ -943,7 +998,7 @@ plot(d$DVDInfoChickNb, resid(modS))
 abline(h=0, lty=2)	
 plot(d$ChickAgeCat, resid(modS))
 abline(h=0, lty=2)	
-scatter.smooth(d$DiffVisit1Rate, resid(modS))
+scatter.smooth(d$VisitRateDifference, resid(modS))
 abline(h=0, lty=2)	
 scatter.smooth(d$RelTimeHrs, resid(modS))
 abline(h=0, lty=2)		
@@ -957,7 +1012,7 @@ scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="S
 scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="HatchingDayAfter0401")
 boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="ChickAgeCat")
 plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="DVDInfoChickNb")
-scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$VisitRateDifference,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="VisitRateDifference") # strongly correlated
 scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="RelTimeHrs")
 
 }
@@ -967,13 +1022,13 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="S
 {# synchrony Feed Nb > assumption model awful
 
 modS_nb <- lmer(NbSynchro_ChickFeedingEquanim~  
-	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to DiffVisit1Rate and with chickNb
+	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to VisitRateDifference and with chickNb
 	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 	#scale(HatchingDayAfter0401, scale=FALSE) + 
 	#scale(PairBroodNb, scale=FALSE) + 
 	scale(DVDInfoChickNb, scale=FALSE) + 
 	ChickAgeCat + 
-	DiffVisit1Rate +  
+	VisitRateDifference +  
 	# scale(RelTimeHrs, scale=FALSE) + 
 	#(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) 
@@ -1016,7 +1071,7 @@ plot(d$DVDInfoChickNb, resid(modS_nb))
 abline(h=0, lty=2)	
 plot(d$ChickAgeCat, resid(modS_nb))
 abline(h=0, lty=2)	
-scatter.smooth(d$DiffVisit1Rate, resid(modS_nb))
+scatter.smooth(d$VisitRateDifference, resid(modS_nb))
 abline(h=0, lty=2)	
 scatter.smooth(d$RelTimeHrs, resid(modS_nb))
 abline(h=0, lty=2)		
@@ -1030,7 +1085,7 @@ scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="N
 scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="HatchingDayAfter0401")
 boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="ChickAgeCat")
 plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="DVDInfoChickNb")
-scatter.smooth(d$DiffVisit1Rate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="DiffVisit1Rate") # strongly correlated
+scatter.smooth(d$VisitRateDifference,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="VisitRateDifference") # strongly correlated
 scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="RelTimeHrs")
 
 }
@@ -1045,13 +1100,13 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="N
 
 
 
-modS_nb_glmmadmb <- glmmadmb(NbSynchro_ChickFeedingEquanim~scale(MFVisit1, scale=FALSE) +# this is strongly correlated to DiffVisit1Rate and with chickNb
+modS_nb_glmmadmb <- glmmadmb(NbSynchro_ChickFeedingEquanim~scale(MFVisit1, scale=FALSE) +# this is strongly correlated to VisitRateDifference and with chickNb
 														scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
 														# scale(HatchingDayAfter0401, scale=FALSE) + 
 														# scale(PairBroodNb, scale=FALSE) + 
 														scale(DVDInfoChickNb, scale=FALSE) + 
 														ChickAgeCat + 
-														DiffVisit1Rate +  
+														VisitRateDifference +  
 														# scale(RelTimeHrs, scale=FALSE) + 
 														#(1|BroodRef) + 
 														(1|SocialMumID)+ (1|SocialDadID) 
@@ -1088,13 +1143,13 @@ ggplot(ranefs_modS_nb_glmmadmb_PairID, aes(PairID,ranefs, colour = as.factor(Pai
 # MY_TABLE_perDVD$SynchroFeed_non_zero <- ifelse(MY_TABLE_perDVD$SynchronyFeedValue > 0, 1, 0)
 # ggplot(MY_TABLE_perDVD, aes(DVDRef, SynchronyFeedValue, colour = as.factor(SynchroFeed_non_zero))) + geom_point()
 
-# modS1_Logistic <- glmer(SynchroFeed_non_zero ~ MFVisit1 +# this is strongly correlated to DiffVisit1Rate
+# modS1_Logistic <- glmer(SynchroFeed_non_zero ~ MFVisit1 +# this is strongly correlated to VisitRateDifference
 												# ParentsAge + # this is strongly correlated to PairBroodNb
 												##HatchingDayAfter0401 + 
 												##PairBroodNb + 
 												# DVDInfoChickNb + 
 												# ChickAgeCat + 
-												# DiffVisit1Rate +  
+												# VisitRateDifference +  
 												##RelTimeHrs + 
 												##(1|BroodRef) + 
 												##(1|SocialMumID)+ 
@@ -1105,13 +1160,13 @@ ggplot(ranefs_modS_nb_glmmadmb_PairID, aes(PairID,ranefs, colour = as.factor(Pai
 
 # summary(modS1_Logistic)
 
-# modS2_Gamma <- glm(SynchronyFeedValue ~ # MFVisit1 +# this is strongly correlated to DiffVisit1Rate and this is mathematically linked to Sync score
+# modS2_Gamma <- glm(SynchronyFeedValue ~ # MFVisit1 +# this is strongly correlated to VisitRateDifference and this is mathematically linked to Sync score
 										# ParentsAge + # this is strongly correlated to PairBroodNb
 										##HatchingDayAfter0401 + 
 										##PairBroodNb + 
 										# DVDInfoChickNb + 
 										# ChickAgeCat + 
-										# DiffVisit1Rate 
+										# VisitRateDifference 
 										##scale(RelTimeHrs, scale=FALSE) + 
 										##(1|BroodRef) + 
 										##(1|SocialMumID)+ (1|SocialDadID) 
@@ -1132,7 +1187,7 @@ scatter.smooth(MY_TABLE_perDVD$SynchronyFeedValue, MY_TABLE_perDVD$Sdev)
 
 
 modSdev <- lmer(Sdev~  
-	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to DiffVisit1Rate and with chickNb and this is mathematically linked to Sync score
+	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to VisitRateDifference and with chickNb and this is mathematically linked to Sync score
 	MumAge + 
 	DadAge +
 	scale(HatchingDayAfter0401, scale=FALSE) + 
@@ -1141,7 +1196,7 @@ modSdev <- lmer(Sdev~
 	FPriorResidence +
 	MPriorResidence+
 	ChickAgeCat + 
-	DiffVisit1Rate +  
+	VisitRateDifference +  
 	scale(RelTimeHrs, scale=FALSE) + 
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
@@ -1533,6 +1588,8 @@ summary(mod_Sdev_sdResMassTarsus) # Number of obs: 680, groups:  PairID, 378; So
 summary(mod_Sync_sdResMassTarsus)
 
 
+
+
 ###########
 # DIVORCE #
 ###########
@@ -1603,7 +1660,7 @@ qqline(unlist(ranef(mod_MaleDivorce)))
 									##MeanA	+
 									# scale(DadAge, scale=FALSE) + 
 									# scale(PairBroodNb, scale=FALSE) +
-									##MeanDiffVisit1Rate +  
+									##MeanVisitRateDifference +  
 									# MPriorResidence + 
 									##MPrevNbRinged +
 									 # (1|SocialDadID) + (1|BreedingYear) +(1|BroodRef)
@@ -1696,7 +1753,7 @@ qqline(unlist(ranef(mod_FemaleDivorce)))
 									# # MeanA	+
 									# #scale(DadAge, scale=FALSE) + 
 									# scale(PairBroodNb, scale=FALSE) +
-									# # MeanDiffVisit1Rate +  
+									# # MeanVisitRateDifference +  
 									# FPriorResidence + FPrevNbRinged +
 									 # (1|SocialMumID) + (1|BreedingYear) +(1|BroodRef)
 									# , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FDivorce),], family="binomial")
