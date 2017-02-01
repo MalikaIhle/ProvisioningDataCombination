@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 27/01/2017
-#	 commit: changed summarize Asim per visit rate difference and Ssim per TotalProRate > SD on an average of all simulations per nest
+#	 last modif : 01/02/2017
+#	 commit: change Alternation value to NbAlternation for output simulation and Table DVD and Brood
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
