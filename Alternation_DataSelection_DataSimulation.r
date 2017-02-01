@@ -184,7 +184,7 @@ head(MY_tblChicks_byRearingBrood)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-{#### Simulations
+{#### Simulations to get A = NbAlternation / TotalProRate-1 (use visiteRATEdiff and totalproRATE)
 
 {## the raw Data, observed and maximum scores
 
@@ -239,14 +239,14 @@ MY_tblParentalCare$AMax <- NA
 
 for (i in 1:nrow(MY_tblParentalCare))
 {
-if((MY_tblParentalCare$FVisit1[i] - MY_tblParentalCare$MVisit1[i])==0)
+if((MY_tblParentalCare$FVisit1RateH[i] - MY_tblParentalCare$MVisit1RateH[i])==0)
 {
 MY_tblParentalCare$AMax[i] <- 
-round((((min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i]))*2-1) / (MY_tblParentalCare$FVisit1[i] + MY_tblParentalCare$MVisit1[i] -1))*100,2) }
+round((((min(MY_tblParentalCare$FVisit1RateH[i],MY_tblParentalCare$MVisit1RateH[i]))*2-1) / (MY_tblParentalCare$FVisit1RateH[i] + MY_tblParentalCare$MVisit1RateH[i] -1))*100,2) }
 
 else{
 MY_tblParentalCare$AMax[i] <- 
-round((((min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i]))*2) / (MY_tblParentalCare$FVisit1[i] + MY_tblParentalCare$MVisit1[i] -1))*100,2) 
+round((((min(MY_tblParentalCare$FVisit1RateH[i],MY_tblParentalCare$MVisit1RateH[i]))*2) / (MY_tblParentalCare$FVisit1RateH[i] + MY_tblParentalCare$MVisit1RateH[i] -1))*100,2) 
 }
 }
 
@@ -668,7 +668,483 @@ dev.new()
 Fig_S
 
 
+{#### Simulations to get NbAlternation/NbAMax
+
+{## the raw Data, observed and maximum scores
+
+{# raw data
+
+RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
+colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
+head(RawInterfeeds)
+
+RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','VisitRateDifference')]) # this will only be used for shuffling within prorate
+
+FRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 0,])
+MRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 1,])
+
+# save first Tstart of each file and each sex  (with interval = 0)
+F_FirstTstart <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1)
+M_FirstTstart <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1)
+
+# remove the first line with interval (=0) from each file for each sex before shuffling interval
+FData_to_Shuffle <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
+MData_to_Shuffle <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
+
+# add NbAMax
+
+MY_tblParentalCare$NbAMax <- NA
+
+for (i in 1:nrow(MY_tblParentalCare))
+{
+if((MY_tblParentalCare$FVisit1[i] - MY_tblParentalCare$MVisit1[i])==0)
+{
+MY_tblParentalCare$NbAMax[i] <- min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i])*2-1}
+
+else{
+MY_tblParentalCare$NbAMax[i] <- min(MY_tblParentalCare$FVisit1[i],MY_tblParentalCare$MVisit1[i])*2 
+}
+
+}
+
+}
+
+{# observation
+
+	# Summarise_A_S_onAMax <- function(DataSummary, AS) {
+
+	# if (AS == 'A') {
+	# return(data.frame(summarise (DataSummary,
+				# Amean = mean(NbAlternation/NbAMax),
+				# Alower = Amean - sd(NbAlternation/NbAMax)/sqrt(n())*1.96,
+				# Aupper = Amean + sd(NbAlternation/NbAMax)/sqrt(n())*1.96,
+				# NbFiles = n())))
+				# }
+				
+	# if (AS == 'S') {
+	# return(data.frame(summarise (DataSummary,
+				# Smean = mean(NbSynchro_ChickFeedingEquanim/NbAMax),
+				# Slower = Smean - sd(NbSynchro_ChickFeedingEquanim/NbAMax)/sqrt(n())*1.96,
+				# Supper = Smean + sd(NbSynchro_ChickFeedingEquanim/NbAMax)/sqrt(n())*1.96,
+				# NbFiles = n())))				
+				# }
+	# }
+
+	# summary_Observed_A_ratioAMax <- Summarise_A_S_onAMax (MY_tblParentalCare, 'A')
+	# summary_Observed_S_ratioAMax <- Summarise_A_S_onAMax (MY_tblParentalCare, 'S')
+
+Summarise_A_S <- function(DataSummary, AS) {
+
+if (AS == 'A') {
+return(data.frame(summarise (DataSummary,
+				Amean = mean(NbAlternation),
+				Alower = Amean - sd(NbAlternation)/sqrt(n())*1.96,
+				Aupper = Amean + sd(NbAlternation)/sqrt(n())*1.96,
+				NbFiles = n())))
+				}
+				
+if (AS == 'S') {
+return(data.frame(summarise (DataSummary,
+				Smean = mean(NbSynchro_ChickFeedingEquanim),
+				Slower = Smean - sd(NbSynchro_ChickFeedingEquanim)/sqrt(n())*1.96,
+				Supper = Smean + sd(NbSynchro_ChickFeedingEquanim)/sqrt(n())*1.96,
+				NbFiles = n())))				
+				}
+}
+
+summary_Observed_A <- Summarise_A_S (MY_tblParentalCare, 'A')
+summary_Observed_S <- Summarise_A_S (MY_tblParentalCare, 'S')
+}
+
+{# A max 
+
+
+summary_Amax <- data.frame(summarise (MY_tblParentalCare,
+				Amean = mean(NbAMax),
+				Alower = Amean - sd(NbAMax)/sqrt(n())*1.96,
+				Aupper = Amean + sd(NbAMax)/sqrt(n())*1.96,
+				NbFiles = n()))
+
+}
+
+}
+
+head(RawInterfeeds_with_ProRate)
+
+
+NreplicatesAmongFileRandomization <- 100
+
+{### Randomization among nest watch, within individual with same provisioning rate (this is only fare) and same sex
+
+randomization_among_nest_watch_and_calculate_A_S_fun <- function(FData_to_Shuffle, MData_to_Shuffle){ # function that simulate all nest watches once with identical first Tstarts and shuffled interval among individual of same sex and same visit rate
+
+## shuffled intervals among individuals of the same sex that have the same visit rate
+FShuffled <- data.frame(FData_to_Shuffle %>% group_by(FVisit1RateH) %>% mutate(Interval=base::sample(Interval)))
+MShuffled <- data.frame(MData_to_Shuffle %>% group_by(MVisit1RateH) %>% mutate(Interval=base::sample(Interval)))
+
+# add first Tstart
+SimFemale <- rbind(F_FirstTstart,FShuffled) # this set the order: the first Tstart from the original file is above the visits with shuffled intervals
+SimFemale <- SimFemale[order(SimFemale$DVDRef),]
+
+SimMale <- rbind(M_FirstTstart,MShuffled)
+SimMale <- SimMale[order(SimMale$DVDRef),]
+
+# recalculate new Tstarts (cumulative sum of sheffuled intervals)
+SimFemale <- do.call(rbind,lapply(X=split(SimFemale,SimFemale$DVDRef), FUN=function(x){x$Tstart <- x$Tstart[1] + cumsum(x$Interval)
+return(x)}))
+rownames(SimFemale) <- NULL
+
+SimMale <- do.call(rbind,lapply(X=split(SimMale,SimMale$DVDRef), FUN=function(x){x$Tstart <- x$Tstart[1] + cumsum(x$Interval)
+return(x)}))
+rownames(SimMale) <- NULL
+
+# bind both sexes together
+SimData <- data.frame(bind_rows(SimMale, SimFemale)) # different from rbind as it binds two df with different columns, adding NAs
+SimData[is.na(SimData)] <- 0
+SimData <- SimData[order(SimData$DVDRef,SimData$Tstart),]
+rownames(SimData) <- NULL
+
+## Calculate NbAlternation within each DVD
+
+SimData_Calculate_A <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+Asim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]) # NbAlternation
+return(Asim)
+}
+
+SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
+
+## Calculate Synchrony value within each DVD
+
+SimData_Calculate_S <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+x$NextTstartafterhalfminTstart <-  c(x$Tstart[-1],NA) <= x$Tstart +0.5 &  c(x$Tstart[-1],NA) >= x$Tstart # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+Ssim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)])
+return(Ssim)
+}
+
+SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
+
+# output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
+return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
+}
+
+Out_A_S_sim_Among <- do.call(cbind,replicate(NreplicatesAmongFileRandomization,randomization_among_nest_watch_and_calculate_A_S_fun(FData_to_Shuffle, MData_to_Shuffle),simplify=FALSE ) )
+
+# first half are A sim
+out_Asim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
+
+# second Half are S sim
+out_Ssim_among_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))))
+
+
+
+}
+
+
+NreplicatesWithinFileRandomization <- 100
+
+{### Randomization Within nest watch, within individual
+
+sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
+ 
+Randomize_Data_WithinFile_and_Calculate_A_S_fun <- function(RawData) { 
+
+RandomizeData_oneSplit <-  function(x){
+
+x <- x[order(x$Tstart),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+x0$Interval <- c(0, sample_vector(x0$Interval[-1]))
+x0$Tstart <- x0$Tstart[1] + cumsum(x0$Interval) 
+
+x1$Interval <- c(0, sample_vector(x1$Interval[-1]))
+x1$Tstart <- x1$Tstart[1] + cumsum(x1$Interval) 
+
+xsim <- rbind(x0,x1)
+xsim <- xsim[order(xsim$Tstart),] 
+}
+
+SimData <- do.call(rbind,lapply(split(RawData, RawData$DVDRef),RandomizeData_oneSplit))
+rownames(SimData) <- NULL
+
+## Calculate Alternation value within each DVD
+
+SimData_Calculate_A <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+Asim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]) # NbAlternation
+return(Asim)
+}
+
+SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
+
+## Calculate Synchrony value within each DVD
+
+SimData_Calculate_S <- function(x){
+x <- x[order(x$Tstart),]
+x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
+x$NextTstartafterhalfminTstart <-  c(x$Tstart[-1],NA) <= x$Tstart +0.5 &  c(x$Tstart[-1],NA) >= x$Tstart # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
+Ssim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
+		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)])
+return(Ssim)
+}
+
+SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
+
+# output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
+return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
+}
+
+A_S_within_randomization <- do.call(cbind,replicate(NreplicatesWithinFileRandomization,Randomize_Data_WithinFile_and_Calculate_A_S_fun(RawInterfeeds),simplify=FALSE ) )
+
+# first half are A sim
+out_Asim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
+
+# second Half are S sim
+out_Ssim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
+
+}
+
+
+{## summarize Asim and Ssim 
+
+summarise_sim <- function(out_sim_df, AS){
+
+out_sim_df$SimMean <- rowMeans(out_sim_df[,2:(NreplicatesAmongFileRandomization)])
+
+if (AS == 'A'){
+return(data.frame(summarise (out_sim_df,
+				Amean = mean(SimMean),
+				Alower = Amean - sd(SimMean)/sqrt(n())*1.96,
+				Aupper = Amean + sd(SimMean)/sqrt(n())*1.96,
+				NbFiles = n())))
+				}
+				
+if (AS == 'S') {
+return(data.frame(summarise (out_sim_df,
+				Smean = mean(SimMean),
+				Slower = Smean - sd(SimMean)/sqrt(n())*1.96,
+				Supper = Smean + sd(SimMean)/sqrt(n())*1.96,
+				NbFiles = n())))				
+				}
+
+}				
+
+summary_out_Asim_among_df <- summarise_sim(out_Asim_among_df, 'A')
+summary_out_Ssim_among_df <- summarise_sim(out_Ssim_among_df, 'S')
+
+summary_out_Asim_within_df <- summarise_sim(out_Asim_within_df, 'A')
+summary_out_Ssim_within_df <- summarise_sim(out_Ssim_within_df, 'S')
+
+}
+
+
+{### Shuffling consecutives intervals within one individual to keep some autocorrelation within nest watch
+
+is.even <- function(x) x %% 2 == 0 
+
+x <- split(RawInterfeeds,RawInterfeeds$DVDRef)[[3]]
+
+
+Switch_Consecutive_intervals_onesplit_fun <- function(x){
+
+x <- x[order(x$Tstart),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+x1sim <- x1 # only shuffle intervals for one sex
+
+if (nrow(x1) > 1){
+
+x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)]) # repeat the last one when uneven number of rows (see below)
+
+for (i in 2:nrow(x1sim))
+{ if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
+else {x1sim$Interval[i] <- x1simInterval[i-1]}
+}
+
+x1sim$Tstart <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval))
+
+}
+
+
+xsim <- rbind(x0,x1sim)
+xsim <- xsim[order(xsim$Tstart),]
+
+Asim <- sum(diff(xsim$Sex)!=0)
+
+return(Asim)
+
+}
+
+Switch_Consecutive_intervals_out_A <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Aswitch=
+														do.call(rbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun)))
+
+# summarise
+
+summary_Aswitch <- data.frame(summarise (Switch_Consecutive_intervals_out_A,
+				Amean = mean(Aswitch),
+				Alower = Amean - sd(Aswitch)/sqrt(n())*1.96,
+				Aupper = Amean + sd(Aswitch)/sqrt(n())*1.96,
+				NbFiles = n()))
+
+}
+
+
+{## plot the output
+
+{# Alternation
+
+summary_Amax$Type <- '1_Maximum' 
+summary_Observed_A$Type <- '2_Observed' 
+summary_Aswitch$Type <- '3_Switch' 
+summary_out_Asim_within_df$Type <-'4_Within'
+summary_out_Asim_among_df$Type <- '5_Among'
+
+summary_A <- do.call(rbind, 
+list(summary_Observed_A,
+summary_Amax, 
+summary_out_Asim_among_df,
+summary_out_Asim_within_df,
+summary_Aswitch))
+
+
+{my_labels <- c(
+"maximum possible",
+"observed" , 
+"after exchanging consecutive intervals once",
+"after 100 randomizations within nest watches", 
+"after 100 randomizations among nest watches")}
+
+{my_colors <- c(
+'grey',
+'black',
+'#009E73', # turquoise
+'#56B4E9', # sky blue
+'#0072B2')} # king blue
+
+{my_shapes <- c(
+21, #circle
+21,
+24, # triangle up
+22, # square
+25)} # triangle down
+
+
+Fig_A <- {ggplot(data=summary_A, aes(x=Type, y=Amean, group=Type, colour=Type, shape = Type, fill = Type))+
+xlab("Type")+
+ylab("Mean alternation")+
+
+geom_line()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+
+scale_colour_manual(values=my_colors,labels= my_labels)+ 
+
+geom_point(size = 1.5, aes(fill = NULL)) +
+geom_point(aes(shape=Type), size=1.5) +
+scale_shape_manual(values=my_shapes,labels=my_labels)+  
+
+scale_fill_manual(values = my_colors,labels=my_labels)+ 
+
+scale_y_continuous(breaks = pretty(summary_A$Amean, n = 9)) +
+
+theme_classic()+
+theme(
+legend.justification= c(1,1),
+legend.position = c(1,1), 
+legend.title = element_blank(),
+legend.background = element_rect(colour = "black"),
+panel.border = element_rect(colour = "black", fill=NA),
+axis.title=element_text(size=14,face="bold"))
+
+}
+
+}
+ 
+{# Synchrony
+
+summary_Smax <- summary_Amax
+colnames(summary_Smax) <- c('Smean', 'Slower', 'Supper', 'NbFiles', 'Type')
+#summary_Smax$Type <- '1_Maximum' 
+summary_Observed_S$Type <- '2_Observed' 
+summary_out_Ssim_within_df$Type <-'4_Within'
+summary_out_Ssim_among_df$Type <- '5_Among'
+
+
+summary_S <- do.call(rbind, 
+list(
+summary_Smax,
+summary_Observed_S,
+summary_out_Ssim_among_df,
+summary_out_Ssim_within_df
+))
+
+
+{my_labelsS <- c(
+"maximum possible",
+"observed" , 
+"after 100 randomizations within nest watches", 
+"after 100 randomizations among nest watches")}
+
+{my_colorsS <- c(
+'grey',
+'black',
+'#56B4E9', # sky blue
+'#0072B2')} # king blue
+
+{my_shapesS <- c(
+21, #circle
+21,
+22, # square
+25)} # triangle down
+
+Fig_S <- {ggplot(data=summary_S, aes(x=Type, y=Smean, group=Type, colour=Type, shape = Type, fill = Type))+
+xlab("Type")+
+ylab("Mean synchrony")+
+
+geom_line()+
+geom_errorbar(aes(ymin=Slower, ymax=Supper),na.rm=TRUE)+
+
+scale_colour_manual(values=my_colorsS,labels= my_labelsS)+ 
+
+geom_point(size = 1.5, aes(fill = NULL)) +
+geom_point(aes(shape=Type), size=1.5) +
+scale_shape_manual(values=my_shapesS,labels=my_labelsS)+  
+
+scale_fill_manual(values = my_colorsS,labels=my_labelsS)+ 
+
+scale_y_continuous(breaks = pretty(summary_S$Smean, n = 10)) +
+
+theme_classic()+
+theme(
+legend.justification= c(1,1),
+legend.position = c(1,1), 
+legend.title = element_blank(),
+legend.background = element_rect(colour = "black"),
+panel.border = element_rect(colour = "black", fill=NA),
+axis.title=element_text(size=14,face="bold"))
+
+}
+
+}
+
+
+}
+
+}
+
+dev.new()
+Fig_A
+dev.new()
+Fig_S
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 {### create MY_TABLE_perDVD: select those where both parents known + add expected alternation from simulation
 # one line is a valid DVDRef, with the summary of the DVD, its metadata, and the brood characteristics.
@@ -676,7 +1152,7 @@ Fig_S
 
 {# merge tables
 MY_TABLE_perDVD <- merge(
-MY_tblParentalCare[,c("DVDRef","FVisit1", "MVisit1","EffectiveTime","FVisit1RateH", "MVisit1RateH","VisitRateDifference","TotalProRate",
+MY_tblParentalCare[,c("DVDRef","FVisit1", "MVisit1", "NbAlternation", "NbAMax","EffectiveTime","FVisit1RateH", "MVisit1RateH","VisitRateDifference","TotalProRate",
 "AlternationValue", "SynchronyFeedValue", "PropSynchroFemaleStart", "AMax")], 
 MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAgeCat","RelTimeHrs")], by="DVDRef")
 MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
@@ -846,15 +1322,14 @@ head(MY_TABLE_perBrood)
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD.csv", sep="/"), row.names = FALSE) 
 # 20161215
 # 20161221
-# 20170127 added AMax
+# 20170127 added AMax, NbAlternation, NbAMax
+
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
-
-
 
 
 
