@@ -81,15 +81,20 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 	scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	VisitRateDifference +  
-	TotalProRate+
+	#VisitRateDifference+
+	#I(VisitRateDifference/TotalProRate) +  
+	#TotalProRate+
 	scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 	# M or F PriorResidence NS
+	#+ offset(MeanAsim)+
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
 	+ (1|DVDRef) # for overdispersion
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),], family = 'binomial',control=glmerControl(optimizer = "bobyqa"))
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+	, family = 'binomial'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
 
 summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
@@ -101,9 +106,34 @@ coef(summary(modA))[1,1] # intercept
 	## why is visit rate diff and totalprorate still hyper signi ?? NbAMax = TotalProRate - DifferenceProRate (in fact calculate as TotalNbVisit-DifferenceNbVisits)
 
 
+	
+modAoff <- glmer(NbAlternation~  
+	scale(ParentsAge) + # this is strongly correlated to PairBroodNb
+	scale(HatchingDayAfter0401) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+	scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+	scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
+	#VisitRateDifference+
+	#I(VisitRateDifference/TotalProRate) +  
+	#TotalProRate+
+	scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
+	# M or F PriorResidence NS
+	offset(log(I(NbAMax-NbAlternation)))+
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
+	# + (1|PairIDYear) # explain 0% of the variance
+	+ (1|DVDRef) # for overdispersion
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+	, family = 'poisson'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
 
+summary(modAoff) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
-
+options(scipen=999)
+options(scipen=0)
+summary(modA)$coef
+data.frame(summary(modAoff)$coef[,1])
 
 
 modA <- lmer(AlternationValue^1.2~  
@@ -422,6 +452,11 @@ HPDinterval(R_Alternation_BreedingYear)
 }
 
 summary(modA)
+
+
+modArandomvsexp <- lmer (NbAlternation ~ MeanASim + ()
+
+
 
 
 {#### fitness correlate of alternation
