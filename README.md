@@ -69,6 +69,8 @@ set all its intervisit intervals to its mean
 rescaled the other bird intervisit intervals according to the standardizing bird
 calculate observed and expected alternation (after randomization) in those scaled nest watches
 
+## simulation correlation between the number of alternation and the total number of visit as well as the difference between the number of visit of both partners
+to understand mathematical and necessary relationships between variables
 
 
 # ErrorChecking Folder: relative to data extraction
