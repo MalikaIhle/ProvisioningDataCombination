@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 01/02/2017
-#	 commit: clean up DataAnalyses script
+#	 last modif : 03/02/2017
+#	 commit: upgrade analyses with Joel (cbind NbA, NbAmissed) + use of BLUPs
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
@@ -14,12 +14,15 @@
 
 rm(list = ls(all = TRUE))
 
-{### packages
+{### packages and options
 
 library(dplyr) 
 library(ggplot2)
 library(lme4)
 library(arm)
+
+options(scipen=999) # remove scientific notation e-
+#options(scipen=0)
 
 }
 
@@ -39,8 +42,7 @@ MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv
 }
 
 head(MY_TABLE_perDVD)
-
-
+head(MY_TABLE_perBrood)
 
 ###############
 # ALTERNATION #
@@ -59,18 +61,6 @@ summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce 
 #scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
 #scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$AlternationValue)# linear ? >linear enough to keep it as it is ?
 
-#hist(MY_TABLE_perDVD$AlternationValue)
-boxcoxAlternationValue <- boxcox(lm(AlternationValue ~  
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	VisitRateDifference +  
-	scale(RelTimeHrs, scale=FALSE), data = MY_TABLE_perDVD))
-
-boxcoxAlternationValue$x[boxcoxAlternationValue$y == max(boxcoxAlternationValue$y)] # 1.23
-
 }
 
 {# modA
@@ -81,12 +71,8 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 	scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	#VisitRateDifference+
-	#I(VisitRateDifference/TotalProRate) +  
-	#TotalProRate+
 	scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 	# M or F PriorResidence NS
-	#+ offset(MeanAsim)+
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
@@ -101,24 +87,17 @@ summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; Social
 
 hist(invlogit(ranef(modA)$BroodRef[,1]) )
 
-coef(summary(modA))[1,1] # intercept
 
-	## why is visit rate diff and totalprorate still hyper signi ?? NbAMax = TotalProRate - DifferenceProRate (in fact calculate as TotalNbVisit-DifferenceNbVisits)
-
-
-	
+	# this should give similar results
 modAoff <- glmer(NbAlternation~  
 	scale(ParentsAge) + # this is strongly correlated to PairBroodNb
 	scale(HatchingDayAfter0401) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
 	scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
 	scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	#VisitRateDifference+
-	#I(VisitRateDifference/TotalProRate) +  
-	#TotalProRate+
 	scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
 	# M or F PriorResidence NS
-	offset(log(I(NbAMax-NbAlternation)))+
+	offset(log(NbAMax))+
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 	# + (1|PairIDYear) # explain 0% of the variance
@@ -130,64 +109,9 @@ modAoff <- glmer(NbAlternation~
 
 summary(modAoff) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
-options(scipen=999)
-options(scipen=0)
+
 summary(modA)$coef
-data.frame(summary(modAoff)$coef[,1])
-
-
-modA <- lmer(AlternationValue^1.2~  
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	#VisitRateDifference +  
-	#TotalProRate+
-	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-	# M or F PriorResidence NS
-	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
-
-summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
-
-
-
-
-
-
-
-
-modA <- lmer(AlternationValue^1.2~  
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	#VisitRateDifference +  
-	#TotalProRate+
-	
-	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-	# M or F PriorResidence NS
-	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
-
-summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
-
-
-
-
-
-
-
-
-
-
-
+summary(modAoff)$coef
 
 
 {# model assumptions checking
@@ -249,92 +173,31 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 
 }
 
-{# modA_withinIndAgeEffect
-
-modA_withinIndAgeEffect <- lmer(AlternationValue^1.2~  
-
-	scale(meanMumAge, scale=FALSE) + 
-	scale(DeltaMumAge, scale=FALSE) +
-	scale(meanDadAge, scale=FALSE) + 
-	scale(DeltaDadAge, scale=FALSE) +
-	#scale(MumAge, scale=FALSE)+
-	#scale(DadAge, scale=FALSE)+
-	#scale(LastMumReproAge, scale=FALSE) +
-	#scale(LastDadReproAge, scale=FALSE) +
-	#scale(FirstMumReproAge, scale=FALSE) +
-	#scale(FirstDadReproAge, scale=FALSE) +
-	
-
-	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	VisitRateDifference +  
-	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE_perDVD)
-	
-summary(modA_withinIndAgeEffect)
-# removing all Age covariate > hatching date become NS
-
-# see graph in paragraph 'create MY_TABLE_perBirdYear', 'get mean Alternation per year per BirdID'
-
-}
-
 }
 
 summary(modA)
 
 {### predictors Adev
 
-scatter.smooth(MY_TABLE_perDVD$AlternationValue, MY_TABLE_perDVD$Adev)
+scatter.smooth(MY_TABLE_perDVD$NbAlternation, MY_TABLE_perDVD$Adev)
 
-modAdev <- lmer(Adev~ 	#scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-						MumAge+ DadAge+
-						scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-						scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-						scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
+modAdev <- lmer(Adev~ 	scale(ParentsAge) + # this is strongly correlated to PairBroodNb
+						scale(HatchingDayAfter0401) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
+						scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
+						scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
 						ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-						VisitRateDifference +  
-						MFVisit1RateH+
 						scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-						MPriorResidence+
-						FPriorResidence +
+						#MPriorResidence+
+						#FPriorResidence +
 						(1|BroodRef) + 
 						(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
 						# + (1|PairIDYear) # explain 0% of the variance
 						, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
 
-summary(modAdev) # in ppt 20160707
+summary(modAdev)
 }
 
-{### predictors ratioObsvMax
-
-hist(MY_TABLE_perDVD$RatioObsvMax)
-scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$MFVisit1RateH)
-scatter.smooth(MY_TABLE_perDVD$RatioObsvMax~MY_TABLE_perDVD$VisitRateDifference)
-
-
-modRatioObsvMax <- lmer(RatioObsvMax~  MFVisit1RateH+
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-	scale(PairBroodNb, scale=FALSE) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-	scale(DVDInfoChickNb, scale=FALSE) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	VisitRateDifference +  
-	scale(RelTimeHrs, scale=FALSE) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-	# M or F PriorResidence NS
-	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-	# + (1|PairIDYear) # explain 0% of the variance
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
-
-summary(modRatioObsvMax)
-}
-
-{#### repeatability of Alternation 
+{#### repeatability of AlternationValue 
 
 VarianceRandomEffectsAlternation <- as.data.frame(VarCorr(modA),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
 
@@ -451,10 +314,6 @@ HPDinterval(R_Alternation_BreedingYear)
 
 }
 
-summary(modA)
-
-
-modArandomvsexp <- lmer (NbAlternation ~ MeanASim + ()
 
 
 
@@ -869,49 +728,6 @@ mean(unlist(ranef(modFitnessAsNbRinged_ADev)$BreedingYear))
 # scatter.smooth(d$MeanAdev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanAdev")
 
 }
-
-
-hist(MY_TABLE_perBrood$RatioNbRingedNbHatched)
-
-
-modPercSurvivedChick <- lmer(RatioNbRingedNbHatched ~ MeanA + 
-										TotalProRate+
-										PairBroodNb+
-										DadAge +
-										MumAge +
-										HatchingDayAfter0401 +
-										MBroodNb+
-										FBroodNb +
-										MPriorResidence +
-										FPriorResidence +
-										(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-										(1|BreedingYear) , data = MY_TABLE_perBrood)
-										
-summary(modPercSurvivedChick)
-
-scatter.smooth(MY_TABLE_perBrood$RatioNbRingedNbHatched~MY_TABLE_perBrood$MeanA)
-
-
-modPercSurvivedChick_ADev <- lmer(RatioNbRingedNbHatched ~ TotalProRate+
-										MeanAdev+
-										MeanSdev+
-										PairBroodNb+
-										DadAge +
-										MumAge +
-										HatchingDayAfter0401 +
-										#MBroodNb+
-										#FBroodNb +
-										MPriorResidence +
-										FPriorResidence +
-										 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-										(1|BreedingYear) , data = MY_TABLE_perBrood)
-										
-summary(modPercSurvivedChick_ADev) # in ppt 20160707
-
-scatter.smooth(MY_TABLE_perBrood$RatioNbRingedNbHatched~MY_TABLE_perBrood$MeanAdev)
-
-
-
 
 }
 

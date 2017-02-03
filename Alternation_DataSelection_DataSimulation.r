@@ -769,7 +769,7 @@ MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401",
 "SocialMumID","SocialDadID","DadAge","MumAge","ParentsAge",
 "MBroodNb","MPriorResidence","MnextNBsame", "MwillDivorce",
 "FBroodNb","FPriorResidence","FnextNBsame","FwillDivorce",
-"PairID","PairBroodNb","PairIDYear", "NbRinged","AvgMass", "MinMass", "AvgTarsus")], by= "BroodRef")
+"PairID","PairBroodNb","PairIDYear", "NbHatched","NbRinged","AvgMass", "MinMass", "AvgTarsus")], by= "BroodRef")
 
 MY_TABLE_perBrood <- merge(MY_TABLE_perBrood, 
 MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MixedBroodYN")], 
@@ -788,13 +788,6 @@ colnames(ResMassTarsus) <- c("BroodRef" , "ResMassTarsus")
 
 MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by = "BroodRef")
 
-}
-
-{# add ratioRingedHatched
-BroodPercSurvived <- MY_tblBroods %>% group_by(BroodRef) %>% summarize(round(NbRinged/NbHatched*100,2))
-colnames(BroodPercSurvived) <- c("BroodRef", "RatioNbRingedNbHatched")
-MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=BroodPercSurvived, all.x=TRUE)
-MY_TABLE_perBrood$RatioNbRingedNbHatched <- as.numeric(as.character(MY_TABLE_perBrood$RatioNbRingedNbHatched))
 }
 
 }
@@ -852,7 +845,7 @@ head(MY_TABLE_perBrood)
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
-
+# 20170203 replace ratioRingedHatched by Nb Hatched (to have cbind(Ringed,Hatched))
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
