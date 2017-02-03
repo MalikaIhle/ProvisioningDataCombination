@@ -41,6 +41,24 @@ sum(simOutSign2)/1000
 
 
 
+MaleP <- rpois(1000, 10)
+FemaleP <- rpois(1000, 10)
+TotalP <- MaleP + FemaleP
+DiffP <- abs(MaleP-FemaleP)
+MaxA <- TotalP - DiffP
+A <- rbinom(1000,MaxA,0.5)
+mod <- glm(cbind(A,MaxA-A) ~ TotalP + DiffP, family = 'binomial')
+modoff <- glm(A~TotalP + DiffP + offset(log(MaxA)), family = 'quasipoisson')
+
+summary(mod)$coef
+summary(modoff)$coef
+ 
+
+exp(-0.002)
+library(arm)
+invlogit(-0.004)
+
+
 
 
 
