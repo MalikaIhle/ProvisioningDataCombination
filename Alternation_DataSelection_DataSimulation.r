@@ -649,9 +649,40 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
+# Alternation as NbAlternation/NbAMax
+
+summary_A_AMax <- summary_A
+summary_A_AMax$Diff <- (summary_A_AMax$Aupper-summary_A_AMax$Amean)/summary_A_AMax$Amean[summary_A_AMax$Type == '1_Maximum']*100
+summary_A_AMax$Amean <- summary_A_AMax$Amean/summary_A_AMax$Amean[summary_A_AMax$Type == '1_Maximum']*100
+summary_A_AMax$Alower <- summary_A_AMax$Amean-summary_A_AMax$Diff
+summary_A_AMax$Aupper <- summary_A_AMax$Amean+summary_A_AMax$Diff
+summary_A_AMax <- summary_A_AMax[summary_A_AMax$Type != '1_Maximum',-ncol(summary_A_AMax)]
+
+Fig_A_AMax <- {ggplot(data=summary_A_AMax, aes(x=Type, y=Amean))+
+xlab(NULL)+
+ylab("Number of alternations realized out of the maximum possible (%)\n")+
+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+geom_point(size = 3) +
+
+scale_y_continuous(breaks =seq(60,80, by = 5),limits = c(60,80)) +
+scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 
 }
 
+
+}
+
+{## save the output
 
 SimulationOutput <- cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')],
 							Aswitch = Switch_Consecutive_intervals_out_A$Aswitch,
@@ -665,8 +696,12 @@ SimulationOutputRow <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation
 			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))), Type = '4_Among')))
 }
 
+}
+
 dev.new()
 Fig_A
+dev.new()
+Fig_A_AMax
 dev.new()
 Fig_S
 
@@ -841,6 +876,7 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=ResMassTarsus_perChick_perBrood
 
 head(MY_TABLE_perChick)
 head(MY_TABLE_perBrood)
+
 
 
 # output_folder <- "R_Selected&SimulatedData"
