@@ -37,6 +37,9 @@ MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD.csv", s
 MY_TABLE_perBrood <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
 MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
 #MY_TABLE_perBirdYear
+SimulationOutput <- read.csv(paste(SelectedData_folder,"R_SimulationOutput.csv", sep="/"))
+SimulationOutputRow <- read.csv(paste(SelectedData_folder,"R_SimulationOutputRow.csv", sep="/"))
+
 
 
 }
@@ -44,9 +47,103 @@ MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
 
+
 ###############
 # ALTERNATION #
 ###############
+
+{#### comparison random and observed - HETEROSCEDASTICITY PROBLEM BECAUSE COUNTs BUT NOT INTEGER
+ 
+{# paired t.test
+ 
+SimulationOutput$DVDRef <- as.character(as.numeric(SimulationOutput$DVDRef))
+
+hist(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
+boxplot(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
+qqnorm(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
+qqline(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
+shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
+
+t.test(SimulationOutput$NbAlternation,SimulationOutput$Aswitch, paired=TRUE)
+
+
+hist(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
+boxplot(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
+qqnorm(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
+qqline(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
+shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
+
+t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimWithin, paired=TRUE)
+
+
+hist(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
+boxplot(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
+qqnorm(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
+qqline(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
+shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
+
+t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimAmong, paired=TRUE)
+
+}
+
+{# lmer
+
+SimulationOutputRow$LineID <- as.character(1:nrow(SimulationOutputRow))
+SimulationOutputRow$NbAlternation <- as.numeric(as.character(SimulationOutputRow$NbAlternation))
+
+
+modRandomVsObs <- lmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutputRow)
+summary(modRandomVsObs)
+
+
+modRandomVsObs_without_intercept <- lmer( NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutputRow)
+summary(modRandomVsObs_without_intercept)
+
+}
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modRandomVsObs), resid(modRandomVsObs))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modRandomVsObs))
+qqline(resid(modRandomVsObs))
+qqnorm(unlist(ranef(modRandomVsObs))) 
+qqline(unlist(ranef(modRandomVsObs)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # quite not !!!!!!!
+
+	#library(nlme)
+	#modRandomVsObsnlme <- lme(NbAlternation ~ Type, random  =  ~1|DVDRef, data = SimulationOutputRow) # give the same output > heteroscedasticity no solved
+
+	#modRandomVsObsglm <- glmer(NbAlternation ~ Type+ (1|DVDRef), family = 'poisson', data = SimulationOutputRow) does not run because NbA not integers
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modRandomVsObs)$DVDRef))
+
+
+# residuals vs predictors
+plot(SimulationOutputRow$Type, resid(modRandomVsObs))
+abline(h=0, lty=2)
+
+# dependent variable vs fitted
+d <- SimulationOutputRow
+d$fitted <- fitted(modRandomVsObs)
+scatter.smooth(d$fitted, jitter(d$NbAlternation, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbAlternation", xlab="Type")
+
+}
+
+}
+
+summary(modRandomVsObs)
+
 
 {#### Predictors of alternation
 

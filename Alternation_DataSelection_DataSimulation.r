@@ -652,109 +652,23 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
+
+SimulationOutput <- cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')],
+							Aswitch = Switch_Consecutive_intervals_out_A$Aswitch,
+							MeanAsimWithin = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), 
+							MeanAsimAmong = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))))
+							
+
+SimulationOutputRow <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
+			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
+			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), Type = '3_Within')), 
+			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))), Type = '4_Among')))
 }
 
 dev.new()
 Fig_A
 dev.new()
 Fig_S
-
-{# comparison random and observed
- 
-{# paired t.test
- 
-SimulationOutput <- cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')],
-							Aswitch = Switch_Consecutive_intervals_out_A$Aswitch,
-							MeanAsimWithin = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), 
-							MeanAsimAmong = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))))
-
-
-head(SimulationOutput)
-
-
-hist(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-boxplot(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-qqnorm(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-qqline(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-
-t.test(SimulationOutput$NbAlternation,SimulationOutput$Aswitch, paired=TRUE)
-
-
-hist(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-boxplot(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-qqnorm(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-qqline(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-
-t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimWithin, paired=TRUE)
-
-
-hist(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-boxplot(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-qqnorm(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-qqline(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-
-t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimAmong, paired=TRUE)
-
-}
-
-# lmer
-
-SimulationOutputRow <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = 'Observed'),
-			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = 'Switch')),
-			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), Type = 'Within')), 
-			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))), Type = 'Among')))
-
-SimulationOutputRow$LineID <- as.character(1:nrow(SimulationOutputRow))
-SimulationOutputRow$NbAlternation <- as.numeric(as.character(SimulationOutputRow$NbAlternation))
-
-
-modRandomVsObs <- lmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutputRow)
-summary(modRandomVsObs)
-
-{# model assumptions checking
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modRandomVsObs), resid(modRandomVsObs))	
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modRandomVsObs))
-qqline(resid(modRandomVsObs))
-qqnorm(unlist(ranef(modRandomVsObs))) 
-qqline(unlist(ranef(modRandomVsObs)))
-
-# homogeneity of variance
-scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # quite not !
-
-# Mean of ranefs: should be zero
-mean(unlist(ranef(modRandomVsObs)$DVDRef))
-
-
-# residuals vs predictors
-plot(SimulationOutputRow$Type, resid(modRandomVsObs))
-abline(h=0, lty=2)
-
-# dependent variable vs fitted
-d <- SimulationOutputRow
-d$fitted <- fitted(modRandomVsObs)
-scatter.smooth(d$fitted, jitter(d$NbAlternation, 0.05),ylim=c(0, 100))
-abline(0,1)	
-
-# fitted vs all predictors
-boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbAlternation", xlab="Type")
-
-}
-
-
-}
-
-
-
-
-
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -947,9 +861,11 @@ head(MY_TABLE_perBrood)
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
 
+# write.csv(SimulationOutput, file = paste(output_folder,"R_SimulationOutput.csv", sep="/"), row.names = FALSE) 
+# 20170206
 
-
-
+# write.csv(SimulationOutputRow, file = paste(output_folder,"R_SimulationOutputRow.csv", sep="/"), row.names = FALSE) 
+# 20170206
 
 
 
