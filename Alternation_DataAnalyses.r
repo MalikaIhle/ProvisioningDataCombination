@@ -181,8 +181,8 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 
 summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
-BlupsBroodRefMod1 <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modA)$BroodRef[,1])) 
-
+BlupsBroodRefModA <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modA)$BroodRef[,1])) 
+colnames(BlupsBroodRefModA) <- c('BroodRef','blups')
 
 {# model assumptions checking
 
@@ -208,6 +208,8 @@ scatter.smooth(MY_TABLE_perDVD$ParentsAge[!is.na(MY_TABLE_perDVD$RelTimeHrs)], r
 abline(h=0, lty=2)
 scatter.smooth(MY_TABLE_perDVD$HatchingDayAfter0401[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
 abline(h=0, lty=2)
+plot(MY_TABLE_perDVD$PairBroodNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
+abline(h=0, lty=2)
 plot(MY_TABLE_perDVD$DVDInfoChickNb[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
 abline(h=0, lty=2)	
 plot(MY_TABLE_perDVD$ChickAgeCat[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
@@ -223,6 +225,7 @@ abline(h=0, lty=2)
 }
 
 summary(modA)
+MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModA, by='BroodRef', all.x=TRUE)
 
 {### predictors Adev
 
@@ -246,7 +249,7 @@ summary(modAdev)
 
 {# model assumptions checking
 
-# residuals vs fitted: mean should constantly be zero: NOT AT ALL ! <<<<<<<<<<<<<<<<<
+# residuals vs fitted: mean should constantly be zero: not quite
 scatter.smooth(fitted(modAdev), resid(modAdev))
 abline(h=0, lty=2)
 
@@ -347,6 +350,7 @@ cor.test(MY_TABLE_perDVD_perBroodRef_out2$Ay, MY_TABLE_perDVD_perBroodRef_out2$A
 
 {# repeatability using MCMCglmm
 
+
 MY_TABLE_perDVD_wihoutNA <-MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
 
 # http://www.wildanimalmodels.org/tiki-index.php?page=repeated%20measures
@@ -371,6 +375,7 @@ modA_MCMCglmm <- MCMCglmm(AlternationValue^1.2~1+ParentsAge+HatchingDayAfter0401
 												#burnin = 20000,
 												#nitt   = 120000) # for 100 models (add one zero to nitt to get 1000 models)
 
+																								
 summary(modA_MCMCglmm)
 # plot(modA_MCMCglmm$VCV)
 # autocorr(modA_MCMCglmm$VCV)
@@ -433,9 +438,39 @@ boxcox(lm(TotalProRate ~  NbRinged + poly(MeanAdev,1), data = MY_TABLE_perBrood)
 hist(MY_TABLE_perBrood$TotalProRate^0.45)
 shapiro.test(MY_TABLE_perBrood$TotalProRate^0.45) 
 
-summary(MY_TABLE_perBrood$NbRinged)
-
+summary(MY_TABLE_perDVD$NbRinged)
+summary(scale(MY_TABLE_perDVD$Adev))
+summary(MY_TABLE_perDVD$EffectiveTime)
+summary(MY_TABLE_perDVD$MFVisit1)
+summary(scale(MY_TABLE_perDVD$NbRinged))
 }
+
+
+
+
+
+
+
+
+modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
+											+ scale(Adev) 
+											#+ offset(NbAMax)
+											+ offset(EffectiveTime)
+											#+ (1|SocialMumID)+ (1|SocialDadID) 
+											+ (1|PairID) + (1|BreedingYear)
+											# + (1|PairIDYear) # explain 0% of the variance
+											, data = MY_TABLE_perDVD
+											, family = 'poisson'
+											#,control=glmerControl(optimizer = "bobyqa")										
+											)
+											
+summary(modFitnessAsTotalProvisioning)
+
+
+
+
+
+
 
 modFitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + 
 											poly(MeanAdev,1) 
@@ -630,7 +665,7 @@ scatter.smooth(d$MeanA,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AvgMas
 }
 
 
-modFitnessAsResChickMass <- lmer(ResMassTarsus ~ NbRinged +
+modFitnessAsResChickMass <- lmer(ResMassTarsus ~ NbRinged + MeanTotalProRate +
 												 MeanA + 
 												 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
 												 data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$ResMassTarsus),])
@@ -639,7 +674,7 @@ summary(modFitnessAsResChickMass) # Number of obs: 805, groups:  PairID, 426; So
 # identical results as model above
 
 
-modFitnessAsResChickMass_Adev <- lmer(ResMassTarsus ~ NbRinged + TotalProRate +
+modFitnessAsResChickMass_Adev <- lmer(ResMassTarsus ~ NbRinged + MeanTotalProRate +
 												MeanAdev + 
 												#HatchingDayAfter0401 +
 												#PairBroodNb +
@@ -647,6 +682,27 @@ modFitnessAsResChickMass_Adev <- lmer(ResMassTarsus ~ NbRinged + TotalProRate +
 												 data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$ResMassTarsus),])
 										
 summary(modFitnessAsResChickMass_Adev) 
+
+
+
+
+
+
+
+
+
+
+modFitnessAsResChickMass_A_blups <- lmer(ResMassTarsus ~ NbRinged + MeanTotalProRate +
+												blups + 
+												 (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) ,
+												 data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$ResMassTarsus) &!is.na(MY_TABLE_perBrood$blups),])
+
+summary(modFitnessAsResChickMass_A_blups)
+
+
+
+
+
 
 
 {# model on MY_TABLE_perChick
@@ -715,6 +771,10 @@ summary(modFitnessAsChickMassRedidualswithGenParents_ADev) # added to ppt 201607
 
 {## number of chicks ringed
 
+
+
+summary(MY_TABLE_perBrood$MixedBroodYN)
+
 modFitnessAsNbRinged <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
 															MeanA+
 															HatchingDayAfter0401 +
@@ -723,11 +783,28 @@ modFitnessAsNbRinged <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
 															FBroodNb +
 															MPriorResidence +
 															FPriorResidence +
-															MixedBroodYN +
+															# MixedBroodYN + is NA if not chicked measured...
 															# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 															(1|BreedingYear) , data = MY_TABLE_perBrood, family = 'binomial')
 										
-summary(modFitnessAsNbRinged)                                                                      
+summary(modFitnessAsNbRinged)  
+
+  
+
+modFitnessAsNbRinged_blups <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
+															blups+
+															HatchingDayAfter0401 +
+															PairBroodNb +
+															MBroodNb+
+															FBroodNb +
+															MPriorResidence +
+															FPriorResidence +
+															# MixedBroodYN + is NA if not chicked measured...
+															# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+															(1|BreedingYear) , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$blups),], family = 'binomial')
+										
+summary(modFitnessAsNbRinged_blups)  
+                                                                  
 
 
 
