@@ -805,6 +805,7 @@ MY_TABLE_perBrood <- data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef),
 							MeanMFVisit1 = mean(MFVisit1), # to delete ?
 							#MeanSdev = mean(SynchronyFeedValue) - mean(MeanSsim), 
 							MeanSdev = mean(NbSynchro_ChickFeedingEquanim) - mean(MeanSsim),
+							MeanEffectiveTime = mean(EffectiveTime),
 							MeanMVisit1RateH = mean(MVisit1RateH), 
 							MeanFVisit1RateH = mean(FVisit1RateH),
 							MeanDVDInfoChickNb = mean(DVDInfoChickNb)))
@@ -893,6 +894,7 @@ head(MY_TABLE_perBrood)
 # 20161221
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
 # 20170203 replace ratioRingedHatched by Nb Hatched (to have cbind(Ringed,Hatched))
+#20170203 add MeanEffectiveTime
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
