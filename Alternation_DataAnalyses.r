@@ -96,7 +96,7 @@ modRandomVsObs <- lmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOut
 summary(modRandomVsObs)
 
 
-modRandomVsObs_without_intercept <- lmer( NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutputRow)
+modRandomVsObs_without_intercept <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutputRow)
 summary(modRandomVsObs_without_intercept)
 
 }
@@ -183,6 +183,7 @@ summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; Social
 
 BlupsBroodRefModA <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modA)$BroodRef[,1])) 
 colnames(BlupsBroodRefModA) <- c('BroodRef','blups')
+}
 
 {# model assumptions checking
 
@@ -217,8 +218,6 @@ abline(h=0, lty=2)
 scatter.smooth(MY_TABLE_perDVD$RelTimeHrs[!is.na(MY_TABLE_perDVD$RelTimeHrs)], resid(modA))
 abline(h=0, lty=2)		
 
-
-}
 
 }
 
@@ -310,46 +309,10 @@ VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='Soc
 VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='PairID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by PairID
 VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='BroodRef'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by BroodRef
 
-{# correlation of provisioning rate accross two randomly picked nestwatches (among those that have 2 or 3 nest watches) within a brood - like Kat & Ben
-	# this does not take into account the pseudoreplication of pairs having several broods together
-	# nor that individual have several broods with different partner
-	# nor that this happen in different years
-	
-MY_TABLE_perDVD_perBroodRef <-  split(MY_TABLE_perDVD,MY_TABLE_perDVD$BroodRef)
-
-# x <- MY_TABLE_perDVD_perBroodRef[['1398']]
-# x <- MY_TABLE_perDVD_perBroodRef[['5']]
-
-MY_TABLE_perDVD_perBroodRef_fun <- function(x,A){
-
-if(nrow(x)>1)
-{
-A <-sample(x$AlternationValue,2)
-}
-
-if(nrow(x)==1)
-{
-A <-NA
-}
-
-return(A)
-
-}
-
-MY_TABLE_perDVD_perBroodRef_out1 <- lapply(MY_TABLE_perDVD_perBroodRef, FUN=MY_TABLE_perDVD_perBroodRef_fun)
-MY_TABLE_perDVD_perBroodRef_out2 <- data.frame(rownames(do.call(rbind,MY_TABLE_perDVD_perBroodRef_out1)),do.call(rbind, MY_TABLE_perDVD_perBroodRef_out1))
-
-nrow(MY_TABLE_perDVD_perBroodRef_out2)	# 872
-rownames(MY_TABLE_perDVD_perBroodRef_out2) <- NULL
-colnames(MY_TABLE_perDVD_perBroodRef_out2) <- c('BroodRef','Ay','Ax')
-
-scatter.smooth(MY_TABLE_perDVD_perBroodRef_out2$Ay~ MY_TABLE_perDVD_perBroodRef_out2$Ax)
-abline(0,1)
-cor.test(MY_TABLE_perDVD_perBroodRef_out2$Ay, MY_TABLE_perDVD_perBroodRef_out2$Ax)
-}
 
 {# repeatability using MCMCglmm
 
+library(MCMCglmm)
 
 MY_TABLE_perDVD_wihoutNA <-MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
 
@@ -453,18 +416,52 @@ summary(scale(MY_TABLE_perDVD$NbRinged))
 
 
 modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
-											+ scale(Adev) 
-											#+ offset(NbAMax)
-											+ offset(EffectiveTime)
-											#+ (1|SocialMumID)+ (1|SocialDadID) 
-											+ (1|PairID) + (1|BreedingYear)
-											# + (1|PairIDYear) # explain 0% of the variance
-											, data = MY_TABLE_perDVD
-											, family = 'poisson'
-											#,control=glmerControl(optimizer = "bobyqa")										
-											)
+												#+ I(MeanAsim/NbAMax)
+												#+ NbAMax
+												+ MeanAsim
+												+ offset(log(EffectiveTime))
+												+ (1|SocialMumID)+ (1|SocialDadID) 
+												+ (1|PairID) + (1|BreedingYear)
+												+ (1|PairIDYear)
+												, data = MY_TABLE_perDVD
+												, family = 'poisson'
+												#,control=glmerControl(optimizer = "bobyqa")										
+												)
 											
 summary(modFitnessAsTotalProvisioning)
+
+
+
+
+head(MY_TABLE_perDVD)
+nrow(MY_TABLE_perDVD)
+MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
+nrow(MY_TABLE_perDVD_Sim_long)
+MY_TABLE_perDVD_Sim_long$Type <- c(rep("Obsv", nrow(MY_TABLE_perDVD)),rep("Sim", nrow(MY_TABLE_perDVD)))
+MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'Sim'] <- MY_TABLE_perDVD_Sim_long$MeanAsim[MY_TABLE_perDVD_Sim_long$Type == 'Sim']
+MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
+
+modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
+												+ I(NbAlternation/NbAMax)*Type
+												+ offset(log(EffectiveTime))
+												+ (1|SocialMumID)+ (1|SocialDadID) 
+												+ (1|PairID) + (1|BreedingYear)
+												#+ (1|PairIDYear)
+												#+ (1|rowID) # overdispersion
+												+(1|DVDRef) # each DVD twice: once with alternaiton observed, once with simulated alternation (averaged)
+												, data = MY_TABLE_perDVD_Sim_long
+												, family = 'poisson'
+												#,control=glmerControl(optimizer = "bobyqa")										
+												)
+											
+summary(modFitnessAsTotalProvisioning) # interaction not signi.
+
+
+
+
+
+
+
 
 
 
@@ -688,7 +685,7 @@ summary(modFitnessAsResChickMass_Adev)
 
 
 
-
+scatter.smooth(MY_TABLE_perBrood$MeanTotalProRate,MY_TABLE_perBrood$blups)
 
 
 
@@ -911,6 +908,17 @@ summary(modSurvival)
 
 
 
+
+head(MY_TABLE_perDVD)
+sqrt(var(MY_TABLE_perDVD$MVisit1)-mean(MY_TABLE_perDVD$MVisit1)) # 8.189705 SD for simulation
+
+mean(MY_TABLE_perDVD$MVisit1) #15.10069
+sd(MY_TABLE_perDVD$MVisit1)# 9.064875
+
+
+sqrt(var(MY_TABLE_perDVD$FVisit1)-mean(MY_TABLE_perDVD$FVisit1)) # 7.855277
+mean(MY_TABLE_perDVD$FVisit1) #16.44403
+sd(MY_TABLE_perDVD$FVisit1)# 8.840215
 
 
 #############
@@ -1817,6 +1825,7 @@ plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xl
 
 summary(mod_MaleDivorce)	
 summary(mod_FemaleDivorce)		
+
 
 
 

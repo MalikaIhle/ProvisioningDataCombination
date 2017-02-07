@@ -62,6 +62,32 @@ invlogit(-0.004)
 
 
 
+# to analyse provisioning rate as the fitness trait
+simProRate <- function(){
+MaleP <- rpois(1000, 10)
+FemaleP <- rpois(1000, 10)
+TotalP <- MaleP + FemaleP
+DiffP <- abs(MaleP-FemaleP)
+MaxA <- TotalP - DiffP
+A <- rbinom(1000,MaxA,0.6) # observed = random
+#mod <- glm(cbind(A,MaxA-A) ~TotalP + DiffP, family = 'binomial')
+#summary(mod)$coef[2:3,4]
+modreverse <- glm(TotalP ~ I(A/MaxA), family = 'poisson')
+summary(modreverse)$coef[2,4]
+}
+
+
+simProRateOut <- replicate(10000, simProRate())
+simProRateOutSign <- simProRateOut<0.05
+sum(simProRateOutSign)/10000
+
+
+
+
+
+
+
+
 
 
 
