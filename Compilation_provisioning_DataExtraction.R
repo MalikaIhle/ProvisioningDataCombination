@@ -2667,7 +2667,7 @@ DurationScript # ~ 14 min
  # 20160603 add synchrony score (divided by t-1 unlike Ben's paper)
  # 20160615 add proportion of synchronous visit where female enters first
  # 20160616 add mean duration of feeding visit per individual
- # 20170207 recalculated TotalProRate (MFVisit1RateH) directly with Nb visits and effective time to not have it rounded.
+ # 20170207 recalculated TotalProRate (MFVisit1RateH) directly with Nb visits and effective time to not have it rounded. (not ran)
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415

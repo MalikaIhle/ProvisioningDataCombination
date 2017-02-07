@@ -88,6 +88,45 @@ sum(simProRateOutSign)/10000
 
 
 
+n <- 1000
+
+# to analyse provisioning rate as the fitness trait
+simProRate <- function(n=1000){
+
+meanlog <- log(15)
+MalePexp <- rlnorm(n, meanlog=log(15), sdlog=sqrt(log(1 + 8^2/15^2)) )
+FemalePexp <- rlnorm(n, meanlog=log(15), sdlog=sqrt(log(1 + 8^2/15^2)))
+MaleP <- rpois(n, MalePexp)
+FemaleP <- rpois(n, FemalePexp)
+TotalP <- MaleP + FemaleP
+DiffP <- abs(MaleP-FemaleP)
+MaxA <- TotalP - DiffP
+A <- rbinom(n,MaxA,0.6) # observed = random
+#mod <- glm(cbind(A,MaxA-A) ~TotalP + DiffP, family = 'binomial')
+#summary(mod)$coef[2:3,4]
+modreverse <- glm(TotalP ~ A/MaxA, family = 'poisson')
+summary(modreverse)$coef[2,4]
+}
+
+library(pbapply)
+
+simProRateOut <- pbreplicate(1000, simProRate())
+
+simProRateOutSign <- simProRateOut < 0.05
+sum(simProRateOutSign)/1000
+
+
+hist(MaleP)
+mean(MaleP)
+sd(MaleP)
+
+
+
+
+
+
+
+
 
 
 

@@ -38,7 +38,8 @@ MY_TABLE_perBrood <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perBrood.csv
 MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
 #MY_TABLE_perBirdYear
 SimulationOutput <- read.csv(paste(SelectedData_folder,"R_SimulationOutput.csv", sep="/"))
-SimulationOutputRow <- read.csv(paste(SelectedData_folder,"R_SimulationOutputRow.csv", sep="/"))
+SimulationOutput_long <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_long.csv", sep="/"))
+SimulationOutput_long_median <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_long_median.csv", sep="/"))
 
 
 
@@ -88,18 +89,17 @@ t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimAmong, paired=TRU
 
 {# lmer
 
-SimulationOutputRow$LineID <- as.character(1:nrow(SimulationOutputRow))
-SimulationOutputRow$NbAlternation <- as.numeric(as.character(SimulationOutputRow$NbAlternation))
+SimulationOutput_long$LineID <- as.character(1:nrow(SimulationOutput_long))
+SimulationOutput_long$NbAlternation <- as.numeric(as.character(SimulationOutput_long$NbAlternation))
 
 
-modRandomVsObs <- lmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutputRow)
+modRandomVsObs <- lmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutput_long)
 summary(modRandomVsObs)
 
 
-modRandomVsObs_without_intercept <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutputRow)
+modRandomVsObs_without_intercept <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long)
 summary(modRandomVsObs_without_intercept)
 
-}
 
 {# model assumptions checking
 
@@ -117,26 +117,90 @@ qqline(unlist(ranef(modRandomVsObs)))
 scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # quite not !!!!!!!
 
 	#library(nlme)
-	#modRandomVsObsnlme <- lme(NbAlternation ~ Type, random  =  ~1|DVDRef, data = SimulationOutputRow) # give the same output > heteroscedasticity no solved
+	#modRandomVsObsnlme <- lme(NbAlternation ~ Type, random  =  ~1|DVDRef, data = SimulationOutput_long) # give the same output > heteroscedasticity no solved
 
-	#modRandomVsObsglm <- glmer(NbAlternation ~ Type+ (1|DVDRef), family = 'poisson', data = SimulationOutputRow) does not run because NbA not integers
+	#modRandomVsObsglm <- glmer(NbAlternation ~ Type+ (1|DVDRef), family = 'poisson', data = SimulationOutput_long) does not run because NbA not integers
 
 # Mean of ranefs: should be zero
 mean(unlist(ranef(modRandomVsObs)$DVDRef))
 
 
 # residuals vs predictors
-plot(SimulationOutputRow$Type, resid(modRandomVsObs))
+plot(SimulationOutput_long$Type, resid(modRandomVsObs))
 abline(h=0, lty=2)
 
 # dependent variable vs fitted
-d <- SimulationOutputRow
+d <- SimulationOutput_long
 d$fitted <- fitted(modRandomVsObs)
 scatter.smooth(d$fitted, jitter(d$NbAlternation, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
 # fitted vs all predictors
 boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbAlternation", xlab="Type")
+
+}
+
+}
+
+{# glmer > the best one I think
+
+SimulationOutput_long_median$LineID <- as.character(1:nrow(SimulationOutput_long_median))
+
+summary(SimulationOutput_long_median$NbAlternation)
+summary(SimulationOutput_long$NbAlternation)
+
+
+modRandomVsObs_glmer <- glmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
+summary(modRandomVsObs_glmer)
+
+modRandomVsObs_glmer_without_intercept <- glmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
+summary(modRandomVsObs_glmer_without_intercept)
+
+modRandomVsObs_glmer_without_intercept_lmer <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median)
+summary(modRandomVsObs_glmer_without_intercept_lmer)
+
+exp(summary(modRandomVsObs_glmer_without_intercept)$coeff[,1])
+
+head(SimulationOutput_long_median)
+
+modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(I(NbAlternation/NbAMax) ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
+summary(modRandomVsObs_outofAmax_glmer_without_intercept)
+
+
+
+
+{# model assumption checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modRandomVsObs), resid(modRandomVsObs))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modRandomVsObs))
+qqline(resid(modRandomVsObs))
+qqnorm(unlist(ranef(modRandomVsObs))) 
+qqline(unlist(ranef(modRandomVsObs)))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # ok-ish ?
+
+	
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modRandomVsObs)$DVDRef))
+
+# residuals vs predictors
+plot(SimulationOutput_long$Type, resid(modRandomVsObs))
+abline(h=0, lty=2)
+
+# dependent variable vs fitted
+d <- SimulationOutput_long
+d$fitted <- fitted(modRandomVsObs)
+scatter.smooth(d$fitted, jitter(d$NbAlternation, 0.05),ylim=c(0, 100))
+abline(0,1)	
+
+# fitted vs all predictors
+boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbAlternation", xlab="Type")
+}
 
 }
 
