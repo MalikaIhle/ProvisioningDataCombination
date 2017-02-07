@@ -690,10 +690,33 @@ SimulationOutput <- cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')],
 							MeanAsimAmong = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))))
 							
 
-SimulationOutputRow <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
+SimulationOutput_long <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
 			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
 			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), Type = '3_Within')), 
 			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))), Type = '4_Among')))
+
+
+# some median are .5 : randomly round up or down.
+# example:
+as.integer(median(tail(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),2)[1,])+sample(c(0.5,-0.5),1))
+median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
+			
+			
+SimulationOutput_long_median <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '3_Within')), 
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '4_Among')))
+
+# median and mean are extremely well correlated.
+cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'])),
+as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])))
+plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])
+
+cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'])),
+as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])))
+plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])
+
+
 }
 
 }
@@ -902,8 +925,8 @@ head(MY_TABLE_perBrood)
 # write.csv(SimulationOutput, file = paste(output_folder,"R_SimulationOutput.csv", sep="/"), row.names = FALSE) 
 # 20170206
 
-# write.csv(SimulationOutputRow, file = paste(output_folder,"R_SimulationOutputRow.csv", sep="/"), row.names = FALSE) 
+# write.csv(SimulationOutput_long, file = paste(output_folder,"R_SimulationOutput_long.csv", sep="/"), row.names = FALSE) 
 # 20170206
 
-
-
+# write.csv(SimulationOutput_long_median, file = paste(output_folder,"R_SimulationOutput_long_median.csv", sep="/"), row.names = FALSE) 
+# 20170207
