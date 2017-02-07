@@ -1530,10 +1530,12 @@ if (combinedprovisioningALL$Filename[i] %in% missingDVDFilenames$Filename)
 
 combinedprovisioningALLforDB <- combinedprovisioningALL[,c('DVDRef','Tstart', 'Tend','State', 'Sex', 'Protocol')]
 
-
 }
 
 }
+
+# or
+# combinedprovisioningALL <- read.csv(paste("R_ExtractedData","R_RawAllVisits_forDB.csv", sep="/")) 
 
 head(combinedprovisioningALLforDB)
 head(combinedprovisioningALL)
@@ -2616,7 +2618,7 @@ MY_tblParentalCare$MFTime2 <- round(MY_tblParentalCare$MTime2 + MY_tblParentalCa
 MY_tblParentalCare$FVisit1RateH <- round(60*MY_tblParentalCare$FVisit1/MY_tblParentalCare$EffectiveTime)
 MY_tblParentalCare$MVisit1RateH <- round(60*MY_tblParentalCare$MVisit1/MY_tblParentalCare$EffectiveTime)
 MY_tblParentalCare$DiffVisit1Rate <- abs(round(MY_tblParentalCare$FVisit1RateH - MY_tblParentalCare$MVisit1RateH))
-MY_tblParentalCare$MFVisit1RateH <- MY_tblParentalCare$FVisit1RateH + MY_tblParentalCare$MVisit1RateH
+MY_tblParentalCare$MFVisit1RateH <- 60*MY_tblParentalCare$FVisit1/MY_tblParentalCare$EffectiveTime + 60*MY_tblParentalCare$MVisit1/MY_tblParentalCare$EffectiveTime
 
 MY_tblParentalCare$FTime1RateH <- round(60*MY_tblParentalCare$FTime1/MY_tblParentalCare$EffectiveTime,2)
 MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParentalCare$EffectiveTime,2)
@@ -2665,6 +2667,7 @@ DurationScript # ~ 14 min
  # 20160603 add synchrony score (divided by t-1 unlike Ben's paper)
  # 20160615 add proportion of synchronous visit where female enters first
  # 20160616 add mean duration of feeding visit per individual
+ # 20170207 recalculated TotalProRate (MFVisit1RateH) directly with Nb visits and effective time to not have it rounded.
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
