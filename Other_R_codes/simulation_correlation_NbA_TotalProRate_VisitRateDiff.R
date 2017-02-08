@@ -88,7 +88,17 @@ sum(simProRateOutSign)/10000
 
 
 
-n <- 1000
+head(MY_TABLE_perDVD)
+sqrt(var(MY_TABLE_perDVD$MVisit1)-mean(MY_TABLE_perDVD$MVisit1)) # 8.189705 SD for simulation
+
+mean(MY_TABLE_perDVD$MVisit1) #15.10069
+sd(MY_TABLE_perDVD$MVisit1)# 9.064875
+
+
+sqrt(var(MY_TABLE_perDVD$FVisit1)-mean(MY_TABLE_perDVD$FVisit1)) # 7.855277
+mean(MY_TABLE_perDVD$FVisit1) #16.44403
+sd(MY_TABLE_perDVD$FVisit1)# 8.840215
+
 
 # to analyse provisioning rate as the fitness trait
 simProRate <- function(n=1000){

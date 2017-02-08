@@ -759,7 +759,8 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 
 }
 
-# summary_A_outof_AMax
+# or 
+# summary_A_outof_AMax <- read.csv(paste(SelectedData_folder,"R_summary_A_outof_AMax.csv", sep="/"))
 
 dev.new()
 Fig_A

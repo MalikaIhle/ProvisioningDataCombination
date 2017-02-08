@@ -47,6 +47,7 @@ head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
 head(SimulationOutput_long_median)
 
+
 ###############
 # ALTERNATION #
 ###############
@@ -199,7 +200,7 @@ summary(modRandomVsObs_outofAmax_glmer)
 modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ -1+Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'binomial')
 summary(modRandomVsObs_outofAmax_glmer_without_intercept)
 
-{# model assumption checking : 
+{# model assumption checking : ok-ish ?
 
 # residuals vs fitted: mean should constantly be zero: not quite ?
 scatter.smooth(fitted(modRandomVsObs_outofAmax_glmer), resid(modRandomVsObs_outofAmax_glmer))	
@@ -259,11 +260,12 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 }
 
 }
-invlogit(estimatesNbAoutofNbAMax[,1])*23.6
 
-Fig_A_AMax_est # these are not the row data like in Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI
+summary(modRandomVsObs_outofAmax_glmer)
+Fig_A_AMax_est # these are not the row data like in Selection/Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI > Joel says it's wrong (one would need to use delta method to back transform variance)
 
-{#### Predictors of alternation
+
+{#### predictors of alternation
 
 {# check dependent and explanatory variables
 
@@ -284,7 +286,7 @@ scatter.smooth(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$NbAlternation/MY_TABLE
 {# modA
 
 modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~  
-	poly(ParentsAge,2) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
 	scale(HatchingDayAfter0401) +
 	scale(PairBroodNb) + 
 	scale(DVDInfoChickNb) + 
@@ -309,7 +311,7 @@ BlupsBroodRefModA <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDV
 colnames(BlupsBroodRefModA) <- c('BroodRef','blups')
 }
 
-{# model assumptions checking
+{# model assumptions checking: residuals vs fitted not good at all
 
 # residuals vs fitted: mean should constantly be zero: NOT AT ALL ! <<<<<<<<<<<<<<<<<
 scatter.smooth(fitted(modA), resid(modA))
@@ -346,8 +348,7 @@ abline(h=0, lty=2)
 
 }
 
-
-
+{# modA_withinIndAgeEffect
 
 modA_withinIndAgeEffect <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~  
 
@@ -375,32 +376,37 @@ modA_withinIndAgeEffect <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 	)
 	
 summary(modA_withinIndAgeEffect)
-	
+
+}
 
 }
 
 summary(modA)
 MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModA, by='BroodRef', all.x=TRUE)
 
-{### predictors Adev
+
+{#### predictors of the deviation from random within
 
 scatter.smooth(MY_TABLE_perDVD$NbAlternation, MY_TABLE_perDVD$Adev)
 
-modAdev <- lmer(Adev~ 	scale(ParentsAge) + # this is strongly correlated to PairBroodNb
-						scale(HatchingDayAfter0401) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-						scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-						scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-						ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-						scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-						#MPriorResidence+
-						#FPriorResidence +
+modAdev <- lmer( Adev ~ scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+						scale(HatchingDayAfter0401) +
+						scale(PairBroodNb) + 
+						scale(DVDInfoChickNb) + 
+						ChickAgeCat +
+						scale(RelTimeHrs) + 
+						MPriorResidence +
+						FPriorResidence +
 						(1|BroodRef) + 
-						(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-						# + (1|PairIDYear) # explain 0% of the variance
+						(1|SocialMumID)+ (1|SocialDadID) + 
+						#(1|PairID) +  # explained 0% of the variance
+						(1|BreedingYear)  
+						# + (1|PairIDYear) # explained 0% of the variance
 						, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
-
 summary(modAdev)
 
+BlupsBroodRefModAdev <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modAdev)$BroodRef[,1])) 
+colnames(BlupsBroodRefModAdev) <- c('BroodRef','blupsAdev')
 
 {# model assumptions checking
 
@@ -447,100 +453,15 @@ scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="HatchingDayAfter0401")
 boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="ChickAgeCat")
 plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="DVDInfoChickNb")
-scatter.smooth(d$VisitRateDifference,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="VisitRateDifference") # strongly correlated
 scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="AlternationValue", xlab="RelTimeHrs")	
 
 
 }
 
-
 }
 
-{#### repeatability of AlternationValue 
-
-VarianceRandomEffectsAlternation <- as.data.frame(VarCorr(modA),comp=c("Variance","Std.Dev."))[,c(1,4,5)]
-
-VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='SocialDadID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by MID
-VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='SocialMumID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by FID
-VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='PairID'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by PairID
-VarianceRandomEffectsAlternation$vcov[VarianceRandomEffectsAlternation$grp=='BroodRef'] / sum(VarianceRandomEffectsAlternation$vcov) *100 # % variance explained by BroodRef
-
-
-{# repeatability using MCMCglmm
-
-library(MCMCglmm)
-
-MY_TABLE_perDVD_wihoutNA <-MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
-
-# http://www.wildanimalmodels.org/tiki-index.php?page=repeated%20measures
-# here we are just using weak priors where the 
-# phenotypic variation is split among the various
-# factors:
-p.var<-var(MY_TABLE_perDVD_wihoutNA$AlternationValue,na.rm=TRUE)
-
-prior_modA_MCMCglmm<-list(G=list(
-					  G1=list(V=matrix(p.var/6),n=1),
-                      G2=list(V=matrix(p.var/6),n=1),
-                      G3=list(V=matrix(p.var/6),n=1),
-                      G4=list(V=matrix(p.var/6),n=1),
-					  G5=list(V=matrix(p.var/6),n=1)),
-                      R=list(V=matrix(p.var/6),n=1))
-
-modA_MCMCglmm <- MCMCglmm(AlternationValue^1.2~1+ParentsAge+HatchingDayAfter0401+PairBroodNb+DVDInfoChickNb+ChickAgeCat+VisitRateDifference+RelTimeHrs,
-												random = ~BroodRef+SocialMumID+SocialDadID+PairID+BreedingYear,
-												data=MY_TABLE_perDVD_wihoutNA,
-												prior = prior_modA_MCMCglmm)
-												#thin   = 1000,
-												#burnin = 20000,
-												#nitt   = 120000) # for 100 models (add one zero to nitt to get 1000 models)
-
-																								
-summary(modA_MCMCglmm)
-# plot(modA_MCMCglmm$VCV)
-# autocorr(modA_MCMCglmm$VCV)
-# plot(modA_MCMCglmm$Sol)
-
-# plot.acfs <- function(x) {
-  # n <- dim(x)[2]
-  # par(mfrow=c(ceiling(n/2),2), mar=c(3,2,3,0))
-  # for (i in 1:n) {
-    # acf(x[,i], lag.max=100, main=colnames(x)[i])
-    # grid()
-  # }
-# }
-# plot.acfs(modA_MCMCglmm$VCV)
-
-
-posterior.mode(modA_MCMCglmm$VCV)											
-												
-VP_Alternation <-  modA_MCMCglmm$VCV[,"BroodRef"]+ modA_MCMCglmm$VCV[,"SocialMumID"]+ modA_MCMCglmm$VCV[,"SocialDadID"]+ modA_MCMCglmm$VCV[,"PairID"]+ modA_MCMCglmm$VCV[,"BreedingYear"]+modA_MCMCglmm$VCV[,"units"]
-
-R_Alternation_BroodRef <- modA_MCMCglmm$VCV[,"BroodRef"]/VP_Alternation
-posterior.mode(R_Alternation_BroodRef)
-HPDinterval(R_Alternation_BroodRef)
-
-R_Alternation_SocialMumID <- modA_MCMCglmm$VCV[,"SocialMumID"]/VP_Alternation
-posterior.mode(R_Alternation_SocialMumID)
-HPDinterval(R_Alternation_SocialMumID)
-
-R_Alternation_SocialDadID <- modA_MCMCglmm$VCV[,"SocialDadID"]/VP_Alternation
-posterior.mode(R_Alternation_SocialDadID)
-HPDinterval(R_Alternation_SocialDadID)
-
-R_Alternation_PairID <- modA_MCMCglmm$VCV[,"PairID"]/VP_Alternation
-posterior.mode(R_Alternation_PairID)
-HPDinterval(R_Alternation_PairID)
-
-R_Alternation_BreedingYear <- modA_MCMCglmm$VCV[,"BreedingYear"]/VP_Alternation
-posterior.mode(R_Alternation_BreedingYear)
-HPDinterval(R_Alternation_BreedingYear)
-
-}
-
-}
-
-
-
+summary(modAdev)
+MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModAdev, by='BroodRef', all.x=TRUE)
 
 
 {#### fitness correlate of alternation
@@ -906,7 +827,7 @@ modFitnessAsChickMassRedidualswithGenParents_ADev <- lmer(ResMassTarsus_perChick
 												HatchingDayAfter0401+
 												PairBroodNb+
 												NbRinged + 
-												TotalProRate +
+												MeanTotalProRate +
 												MeanAdev + 
 												MeanSdev+
 												(1|RearingBrood)+
@@ -1065,16 +986,7 @@ summary(modSurvival)
 
 
 
-head(MY_TABLE_perDVD)
-sqrt(var(MY_TABLE_perDVD$MVisit1)-mean(MY_TABLE_perDVD$MVisit1)) # 8.189705 SD for simulation
 
-mean(MY_TABLE_perDVD$MVisit1) #15.10069
-sd(MY_TABLE_perDVD$MVisit1)# 9.064875
-
-
-sqrt(var(MY_TABLE_perDVD$FVisit1)-mean(MY_TABLE_perDVD$FVisit1)) # 7.855277
-mean(MY_TABLE_perDVD$FVisit1) #16.44403
-sd(MY_TABLE_perDVD$FVisit1)# 8.840215
 
 
 #############
