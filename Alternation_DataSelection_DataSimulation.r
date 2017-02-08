@@ -649,37 +649,6 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
-# Alternation as NbAlternation/NbAMax
-
-summary_A_AMax <- summary_A
-summary_A_AMax$Diff <- (summary_A_AMax$Aupper-summary_A_AMax$Amean)/summary_A_AMax$Amean[summary_A_AMax$Type == '1_Maximum']*100
-summary_A_AMax$Amean <- summary_A_AMax$Amean/summary_A_AMax$Amean[summary_A_AMax$Type == '1_Maximum']*100
-summary_A_AMax$Alower <- summary_A_AMax$Amean-summary_A_AMax$Diff
-summary_A_AMax$Aupper <- summary_A_AMax$Amean+summary_A_AMax$Diff
-summary_A_AMax <- summary_A_AMax[summary_A_AMax$Type != '1_Maximum',-ncol(summary_A_AMax)]
-
-Fig_A_AMax <- {ggplot(data=summary_A_AMax, aes(x=Type, y=Amean))+
-xlab(NULL)+
-ylab("Number of alternations realized out of the maximum possible (%)\n")+
-
-geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
-geom_point(size = 3) +
-
-scale_y_continuous(breaks =seq(60,80, by = 5),limits = c(60,80)) +
-scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
-
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
-axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
-axis.title.x = NULL,
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
-
-}
-
-
 }
 
 {## save the output
@@ -712,12 +681,87 @@ SimulationOutput_long_median$LineID <- as.character(1:nrow(SimulationOutput_long
 
 }
 
+
+{## summarize Asim/AMax
+
+{# summarize the ratio Asim/AMax made on each DVD and averaged accross the dataset
+
+summary_Aobsv_outof_AMax <- data.frame(summarise (MY_tblParentalCare,
+				Amean = mean(NbAlternation/NbAMax*100),
+				Alower = Amean - sd(NbAlternation/NbAMax*100)/sqrt(n())*1.96,
+				Aupper = Amean + sd(NbAlternation/NbAMax*100)/sqrt(n())*1.96,
+				NbFiles = n()))
+
+
+summarise_sim_outof_AMax <- function(out_sim_df, AS){
+
+out_sim_df$SimMean <- rowMeans(out_sim_df[,2:(NreplicatesAmongFileRandomization)])
+out_sim_df <- merge(x=out_sim_df, y= MY_tblParentalCare[,c('DVDRef','NbAMax')], all.x=TRUE)
+out_sim_df$SimMean_outof_AMax <- out_sim_df$SimMean/out_sim_df$NbAMax*100
+
+if (AS == 'A'){
+return(data.frame(summarise (out_sim_df,
+				Amean = mean(SimMean_outof_AMax),
+				Alower = Amean - sd(SimMean_outof_AMax)/sqrt(n())*1.96,
+				Aupper = Amean + sd(SimMean_outof_AMax)/sqrt(n())*1.96,
+				NbFiles = n())))
+				}
+				
+}				
+
+summary_out_Asim_outof_AMax_among_df <- summarise_sim_outof_AMax(out_Asim_among_df, 'A')
+summary_out_Asim_outof_AMax_within_df <- summarise_sim_outof_AMax(out_Asim_within_df, 'A')
+
+Switch_Consecutive_intervals_out_A <- merge(x=Switch_Consecutive_intervals_out_A, y= MY_tblParentalCare[,c('DVDRef','NbAMax')], all.x=TRUE)
+summary_Aswitch_outof_AMax <- data.frame(summarise (Switch_Consecutive_intervals_out_A,
+				Amean = mean(Aswitch/NbAMax*100),
+				Alower = Amean - sd(Aswitch/NbAMax*100)/sqrt(n())*1.96,
+				Aupper = Amean + sd(Aswitch/NbAMax*100)/sqrt(n())*1.96,
+				NbFiles = n()))
+				
+summary_Aobsv_outof_AMax$Type <- '2_Observed' 
+summary_Aswitch_outof_AMax$Type <- '3_Switch' 
+summary_out_Asim_outof_AMax_within_df$Type <-'4_Within'
+summary_out_Asim_outof_AMax_among_df$Type <- '5_Among'
+
+summary_A_outof_AMax <- do.call(rbind, 
+list(summary_Aobsv_outof_AMax,
+summary_out_Asim_outof_AMax_among_df,
+summary_out_Asim_outof_AMax_within_df,
+summary_Aswitch_outof_AMax))
+}
+
+# plot 
+
+Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean))+
+xlab(NULL)+
+ylab("Number of alternations realized out of the maximum possible (%)\n")+
+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
+geom_point(size = 3) +
+
+scale_y_continuous(breaks =seq(60,80, by = 5),limits = c(60,80)) +
+scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+}
+
+}
+
+
 }
 
 dev.new()
 Fig_A
 dev.new()
-Fig_A_AMax
+Fig_A_A
 dev.new()
 Fig_S
 
@@ -733,7 +777,7 @@ MY_TABLE_perDVD <- merge(
 MY_tblParentalCare[,c("DVDRef","FVisit1", "MVisit1", "NbAlternation", "NbAMax","EffectiveTime","FVisit1RateH", "MVisit1RateH","VisitRateDifference","TotalProRate",
 #"AlternationValue", "SynchronyFeedValue", "AMax",
 "NbSynchro_ChickFeedingEquanim", "PropSynchroFemaleStart")], 
-MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","ChickAgeCat","RelTimeHrs")], by="DVDRef")
+MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb","DVDInfoAge", "ChickAgeCat","RelTimeHrs")], by="DVDRef")
 MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
 
 
@@ -904,7 +948,7 @@ head(MY_TABLE_perBrood)
 # 20161221
 # 20170127 added AMax, NbAlternation, NbAMax
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
-
+# 20170208 added DVDInfoAge just for hist of variation in chick age (although Age cat used in model)
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -924,3 +968,4 @@ head(MY_TABLE_perBrood)
 # write.csv(SimulationOutput_long_median, file = paste(output_folder,"R_SimulationOutput_long_median.csv", sep="/"), row.names = FALSE) 
 # 20170207
 # 20170208 with AMax and lineID
+

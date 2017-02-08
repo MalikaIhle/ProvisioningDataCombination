@@ -152,8 +152,6 @@ plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'
 
 {# glmer poisson > fine
 
-
-
 modRandomVsObs_glmer <- glmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
 summary(modRandomVsObs_glmer)
 
@@ -163,7 +161,7 @@ exp(summary(modRandomVsObs_glmer_without_intercept)$coeff[,1])
 
 	# gaussian for comparison
 	modRandomVsObs_glmer_without_intercept_lmer <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median)
-	summary(modRandomVsObs_glmer_without_intercept_lmer)
+	summary(modRandomVsObs_glmer_without_intercept_lmer)$coeff[,1]
 
 {# model assumption checking : all ok
 
@@ -195,15 +193,15 @@ abline(h=0, lty=2)
 
 {# glmer binomial > the best one for plotting
 
-modRandomVsObs_outofAmax_glmer <- glmer(cbind(NbAlternation,NbAMax) ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
+modRandomVsObs_outofAmax_glmer <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
 summary(modRandomVsObs_outofAmax_glmer)
 	
-modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax) ~ -1+Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
+modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ -1+Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'binomial')
 summary(modRandomVsObs_outofAmax_glmer_without_intercept)
 
-{# model assumption checking : all ok (first: weird but fine ?)
+{# model assumption checking : 
 
-# residuals vs fitted: mean should constantly be zero: weird but fine ??
+# residuals vs fitted: mean should constantly be zero: not quite ?
 scatter.smooth(fitted(modRandomVsObs_outofAmax_glmer), resid(modRandomVsObs_outofAmax_glmer))	
 abline(h=0, lty=2)
 
@@ -231,20 +229,20 @@ abline(h=0, lty=2)
 estimatesNbAoutofNbAMax <- summary(modRandomVsObs_outofAmax_glmer_without_intercept)$coeff
 estimatesNbAoutofNbAMax
 
-summary_A_AMax <- cbind(Type = rownames(data.frame(est = invlogit(estimatesNbAoutofNbAMax[,1])*100)),
+summary_A_AMax_est <- cbind(Type = rownames(data.frame(est = invlogit(estimatesNbAoutofNbAMax[,1])*100)),
 data.frame(est = invlogit(estimatesNbAoutofNbAMax[,1])*100),
 data.frame(selow = invlogit(estimatesNbAoutofNbAMax[,1]-estimatesNbAoutofNbAMax[,2]*1.96)*100),
 data.frame(seup = invlogit(estimatesNbAoutofNbAMax[,1]+estimatesNbAoutofNbAMax[,2]*1.96)*100))
 
 
-Fig_A_AMax <- {ggplot(data=summary_A_AMax, aes(x=Type, y=est))+
+Fig_A_AMax_est <- {ggplot(data=summary_A_AMax_est, aes(x=Type, y=est))+
 xlab(NULL)+
 ylab("Number of alternations realized out of the maximum possible (%)\n")+
 
 geom_errorbar(aes(ymin=selow, ymax=seup),na.rm=TRUE)+
 geom_point(size = 3) +
 
-scale_y_continuous(breaks =seq(37,44, by = 1),limits = c(37,44)) +
+scale_y_continuous(breaks =seq(60,80, by = 2),limits = c(60,80)) +
 scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
 
 theme_classic()+
@@ -261,8 +259,9 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 }
 
 }
+invlogit(estimatesNbAoutofNbAMax[,1])*23.6
 
-Fig_A_AMax # these are not the row data like in Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI
+Fig_A_AMax_est # these are not the row data like in Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI
 
 {#### Predictors of alternation
 
@@ -274,32 +273,37 @@ cor.test(MY_TABLE_perDVD$MumAge,MY_TABLE_perDVD$DadAge) # cor = 0.34, p *****   
 cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable ?
 cor.test(MY_TABLE_perDVD$VisitRateDifference, MY_TABLE_perDVD$MFVisit1RateH) # r=0.46
 
+#hist(MY_TABLE_perDVD$DVDInfoAge) # very bimodal as the protocol is to measure d7 and d11, in between is when they "miss"
+
 summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
 #scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
 #scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$AlternationValue)# linear ? >linear enough to keep it as it is ?
-
+scatter.smooth(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
 }
 
 {# modA
 
 modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~  
-	scale(ParentsAge) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401) + # Kat&Ben's paper: date (how was it transformed to be numeric?)
-	scale(PairBroodNb) + # Kat&Ben's paper: pbdur in years (but long-tailed tits have one brood a year, sparrows, several)
-	scale(DVDInfoChickNb) + # Kat&Ben's paper: use brood size d11, maybe they didn't check nest on day of recording ?
-	ChickAgeCat + # rather than continuous because field protocol > measure d7 and d11, in between is when they "miss"
-	scale(RelTimeHrs) + # Kat&Ben's paper: time to nearest minute (how was it transformed to be numeric?)
-	# M or F PriorResidence NS
+	poly(ParentsAge,2) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	scale(HatchingDayAfter0401) +
+	scale(PairBroodNb) + 
+	scale(DVDInfoChickNb) + 
+	ChickAgeCat +
+	scale(RelTimeHrs) + 
+	MPriorResidence +
+    FPriorResidence +
 	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) # this is additional compared to  Kat&Ben's paper
-	# + (1|PairIDYear) # explain 0% of the variance
-	+ (1|DVDRef) # for overdispersion
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)+
+	(1|DVDRef) # for overdispersion
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
 	, family = 'binomial'
 	,control=glmerControl(optimizer = "bobyqa")
 	)
 
-summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairIDYear: 546 ; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
 BlupsBroodRefModA <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modA)$BroodRef[,1])) 
 colnames(BlupsBroodRefModA) <- c('BroodRef','blups')
@@ -310,6 +314,7 @@ colnames(BlupsBroodRefModA) <- c('BroodRef','blups')
 # residuals vs fitted: mean should constantly be zero: NOT AT ALL ! <<<<<<<<<<<<<<<<<
 scatter.smooth(fitted(modA), resid(modA))
 abline(h=0, lty=2)
+
 
 # qqplots of residuals and ranefs: should be normally distributed
 qqnorm(resid(modA))
@@ -340,6 +345,37 @@ abline(h=0, lty=2)
 
 
 }
+
+
+
+
+modA_withinIndAgeEffect <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~  
+
+	#scale(meanMumAge, scale=FALSE) + 
+	#scale(DeltaMumAge, scale=FALSE) +
+	scale(meanDadAge, scale=FALSE) + 
+	scale(DeltaDadAge, scale=FALSE) +
+	
+	scale(HatchingDayAfter0401) +
+	#scale(PairBroodNb) + 
+	scale(DVDInfoChickNb) + 
+	ChickAgeCat +
+	scale(RelTimeHrs) + 
+	MPriorResidence +
+    FPriorResidence +
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)+
+	(1|DVDRef) # for overdispersion
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+	, family = 'binomial'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
+	
+summary(modA_withinIndAgeEffect)
+	
 
 }
 
