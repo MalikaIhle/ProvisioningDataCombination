@@ -1535,7 +1535,9 @@ combinedprovisioningALLforDB <- combinedprovisioningALL[,c('DVDRef','Tstart', 'T
 }
 
 # or
-# combinedprovisioningALL <- read.csv(paste("R_ExtractedData","R_RawAllVisits_forDB.csv", sep="/")) 
+# combinedprovisioningALLforDB <- read.csv(paste("R_ExtractedData","R_RawAllVisits_forDB.csv", sep="/")) 
+# combinedprovisioningALL <- read.csv(paste("R_ExtractedData","combinedprovisioningALL.csv", sep="/")) # 20170208
+
 
 head(combinedprovisioningALLforDB)
 head(combinedprovisioningALL)
@@ -1621,7 +1623,7 @@ combinedprovisioningALL_listperFilenameperSex1 <- split(combinedprovisioningALL[
 	# x <- combinedprovisioningALL_listperFilenameperSex0[['2015\\VO0170.xlsx']]
 	# x <- combinedprovisioningALL_listperFilenameperSex0[[1543]]
 	# x <- combinedprovisioningALL_listperFilenameperSex0[['2013\\VM0540.xlsx']]
-	
+
 combinedprovisioningALL_listperFilenameperSex_fun = function(x)  {
 x <- x[order(x$Tstart, -x$Tend),]
 
@@ -1656,12 +1658,47 @@ length(x$Visit1[!is.na(x$Visit2) & x$Visit2 == TRUE])	# Visit2
 
 }
 
+
 combinedprovisioningALL_listperFilenameperSex0_out1 <- lapply(combinedprovisioningALL_listperFilenameperSex0, FUN=combinedprovisioningALL_listperFilenameperSex_fun)
 combinedprovisioningALL_listperFilenameperSex0_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameperSex0_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameperSex0_out1))
 
 nrow(combinedprovisioningALL_listperFilenameperSex0_out2)
 rownames(combinedprovisioningALL_listperFilenameperSex0_out2) <- NULL
 colnames(combinedprovisioningALL_listperFilenameperSex0_out2) <- c('Filename','FVisit1', 'FVisit2')
+
+combinedprovisioningALL_listperFilenameperSex_fun = function(x)  {
+x <- x[order(x$Tstart, -x$Tend),]
+
+x$NextTime <-  c(x$Tstart[-1],NA)
+x$NextTimeSame <-  x$Tend == x$NextTime
+
+x$PrevTime <-  c(NA, x$Tend[-nrow(x)])
+x$PrevTimeSame <-  x$Tstart == x$PrevTime
+
+x$NextState <- c(as.character(x$State[-1]),NA)
+
+x$Visit1 <- 0
+x$Visit2 <- 0
+
+
+x$Visit2 <- (x$State == 'A' & 
+			(is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE')) & 
+			(is.na(x$PrevTimeSame) | (!is.na(x$PrevTimeSame) & x$PrevTimeSame == 'FALSE'))) == TRUE # when all conditions are met, i.e. 'A' T start and Tend are both different from state above (if exist) or below (if exist) > this remove 'S' time in shinishi's protocol for when arrive and stay before entering, or leave the NB but stick around, also remove those specific 'A' time in Malik's protocol
+
+		
+x$Visit1 <- ((x$State == 'INorOF') | (x$State == 'IN') 
+				|
+				((x$State == 'OF') & (is.na(x$NextTimeSame) | (!is.na(x$NextTimeSame) & x$NextTimeSame == 'FALSE' )))
+				|
+				((x$State == 'OF') & (!is.na(x$NextTimeSame) & x$NextTimeSame == 'TRUE') & (!is.na(x$NextState) & x$NextState != 'IN' ))) == TRUE
+				
+
+return(c(
+length(x$Visit1[!is.na(x$Visit1) & x$Visit1 == TRUE]),	# Visit1
+length(x$Visit1[!is.na(x$Visit2) & x$Visit2 == TRUE])	# Visit2
+))
+
+}
 
 combinedprovisioningALL_listperFilenameperSex1_out1 <- lapply(combinedprovisioningALL_listperFilenameperSex1, FUN=combinedprovisioningALL_listperFilenameperSex_fun)
 combinedprovisioningALL_listperFilenameperSex1_out2 <- data.frame(rownames(do.call(rbind,combinedprovisioningALL_listperFilenameperSex1_out1)),do.call(rbind, combinedprovisioningALL_listperFilenameperSex1_out1))
@@ -1673,7 +1710,7 @@ colnames(combinedprovisioningALL_listperFilenameperSex1_out2) <- c('Filename','M
 combinedprovisioningALL_listperFilenameperSex_out2 <- merge (x= combinedprovisioningALL_listperFilenameperSex0_out2, y = combinedprovisioningALL_listperFilenameperSex1_out2, all.x =TRUE, all.y = TRUE, by='Filename')
 combinedprovisioningALL_listperFilenameperSex_out2[is.na(combinedprovisioningALL_listperFilenameperSex_out2)] <- 0
 
-# write.table(combinedprovisioningALL_listperFilenameperSex_out2, file = "R_Compare_tblParentalCareNewVisitNbCalculation.xls", col.names=TRUE, sep='\t') # 20160331
+# write.table(combinedprovisioningALL_listperFilenameperSex_out2, file = "R_Compare_tblParentalCareNewVisitNbCalculation.xls", col.names=TRUE, sep='\t') # 20160331 # 20170208
 
 }
 
@@ -1781,7 +1818,7 @@ colnames(combinedprovisioningALL_listperFilenameFeedY_out2) <- c('Filename','Sha
 head(combinedprovisioningALL_listperFilenameFeedY_out2) # files with no feeding visits by either sex have been removed... 
 
 
-{# create MY_tblParentalCareforComparison and Compare_tblParentalCare
+{# create MY_tblParentalCareforComparison and Compare_tblParentalCare # files with no visits by either sex are back !
 MY_tblParentalCareforComparison <- merge(x=combinedprovisioningALL_listperFilename_out2,y=combinedprovisioningALL_listperFilenameperSex_out2,all.x=TRUE, by='Filename')# files with no visits by either sex are back !
 MY_tblParentalCareforComparison <- merge(x=MY_tblParentalCareforComparison,y=combinedprovisioningALL_listperFilenameFeedY_out2,all.x=TRUE, by='Filename')# files with no feeding visits by either sex are back !
 MY_tblParentalCareforComparison <- merge(x=MY_tblParentalCareforComparison,y=unique(combinedprovisioningALL[,c('Filename','DVDRef')]),all.x=TRUE, by='Filename')
@@ -2647,15 +2684,18 @@ DurationScript # ~ 14 min
 # 20160322
 # 20160516 because was deleted
 
+## write.csv(combinedprovisioningALL, file = paste(output_folder,"combinedprovisioningALL.csv", sep="/"), row.names = FALSE) 
+# 20170208 to avoid reextracting excel file to run end of script
 
 ## write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/"), row.names = FALSE) 
- # 20160324 20160331 20160426 
+ # 20160324 20160331 20160426 20170208 rerun
  
 ## write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) 
  # 20160415
  # 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
  # 20160504 with new dummy variables
  # 20160516 save the 2112 lines (had saved the selection of 1768 lines last time...)
+ # 20170208 rerun
  
 ## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
  # 20160415
@@ -2668,6 +2708,7 @@ DurationScript # ~ 14 min
  # 20160615 add proportion of synchronous visit where female enters first
  # 20160616 add mean duration of feeding visit per individual
  # 20170207 recalculated TotalProRate (MFVisit1RateH) directly with Nb visits and effective time to not have it rounded. (not ran)
+ # 20170208 rerun
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
@@ -2677,7 +2718,8 @@ DurationScript # ~ 14 min
  # 20160509 reextract BreedingYear and BroodNb by BroodName
  # 20160707 set Prior residence of male and female to FALSE instead of NA for first breeding event
  # 20160712 change the way of deducting divorce: will divorce happen AFTER the brood/line considered
- 
+ # 20170208 rerun
  
 ## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
  # 20161207 moved from Alternation_Synchrony_DataAnalyses (not to have SQL code there)
+ # 20170208 rerun
