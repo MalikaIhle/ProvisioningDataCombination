@@ -41,21 +41,19 @@ SimulationOutput <- read.csv(paste(SelectedData_folder,"R_SimulationOutput.csv",
 SimulationOutput_long <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_long.csv", sep="/"))
 SimulationOutput_long_median <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_long_median.csv", sep="/"))
 
-
-
 }
 
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
-
+head(SimulationOutput_long_median)
 
 ###############
 # ALTERNATION #
 ###############
 
-{#### comparison random and observed - HETEROSCEDASTICITY PROBLEM BECAUSE COUNTs BUT NOT INTEGER
+{#### comparison random and observed
  
-{# paired t.test
+{# paired t.test > non-normality of the difference
  
 SimulationOutput$DVDRef <- as.character(as.numeric(SimulationOutput$DVDRef))
 
@@ -87,7 +85,7 @@ t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimAmong, paired=TRU
 
 }
 
-{# lmer
+{# lmer > heteroscedasticity
 
 SimulationOutput_long$LineID <- as.character(1:nrow(SimulationOutput_long))
 SimulationOutput_long$NbAlternation <- as.numeric(as.character(SimulationOutput_long$NbAlternation))
@@ -142,12 +140,18 @@ boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="
 
 }
 
-{# glmer > the best one I think
+{# median and mean are extremely well correlated.
+cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'])),
+as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])))
+plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])
 
-SimulationOutput_long_median$LineID <- as.character(1:nrow(SimulationOutput_long_median))
+cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'])),
+as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])))
+plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])
+}
 
-summary(SimulationOutput_long_median$NbAlternation)
-summary(SimulationOutput_long$NbAlternation)
+{# glmer poisson > fine
+
 
 
 modRandomVsObs_glmer <- glmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
@@ -155,59 +159,110 @@ summary(modRandomVsObs_glmer)
 
 modRandomVsObs_glmer_without_intercept <- glmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
 summary(modRandomVsObs_glmer_without_intercept)
-
-modRandomVsObs_glmer_without_intercept_lmer <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median)
-summary(modRandomVsObs_glmer_without_intercept_lmer)
-
 exp(summary(modRandomVsObs_glmer_without_intercept)$coeff[,1])
 
-head(SimulationOutput_long_median)
+	# gaussian for comparison
+	modRandomVsObs_glmer_without_intercept_lmer <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median)
+	summary(modRandomVsObs_glmer_without_intercept_lmer)
 
-modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(I(NbAlternation/NbAMax) ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
-summary(modRandomVsObs_outofAmax_glmer_without_intercept)
-
-
-
-
-{# model assumption checking
+{# model assumption checking : all ok
 
 # residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modRandomVsObs), resid(modRandomVsObs))	
+scatter.smooth(fitted(modRandomVsObs_glmer), resid(modRandomVsObs_glmer))	
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modRandomVsObs))
-qqline(resid(modRandomVsObs))
-qqnorm(unlist(ranef(modRandomVsObs))) 
-qqline(unlist(ranef(modRandomVsObs)))
+qqnorm(resid(modRandomVsObs_glmer))
+qqline(resid(modRandomVsObs_glmer))
+qqnorm(unlist(ranef(modRandomVsObs_glmer))) 
+qqline(unlist(ranef(modRandomVsObs_glmer)))
 
-# homogeneity of variance
-scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # ok-ish ?
+# qq-plot of deviance-residuals: should be normally distributed
+qqnorm(residuals(modRandomVsObs_glmer, type="deviance"))
+qqline(residuals(modRandomVsObs_glmer, type="deviance"))
 
-	
 # Mean of ranefs: should be zero
-mean(unlist(ranef(modRandomVsObs)$DVDRef))
+mean(unlist(ranef(modRandomVsObs_glmer)$DVDRef))
 
 # residuals vs predictors
-plot(SimulationOutput_long$Type, resid(modRandomVsObs))
+plot(SimulationOutput_long_median$Type, resid(modRandomVsObs_glmer))
 abline(h=0, lty=2)
 
-# dependent variable vs fitted
-d <- SimulationOutput_long
-d$fitted <- fitted(modRandomVsObs)
-scatter.smooth(d$fitted, jitter(d$NbAlternation, 0.05),ylim=c(0, 100))
-abline(0,1)	
 
-# fitted vs all predictors
-boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbAlternation", xlab="Type")
+}
+
+}
+
+{# glmer binomial > the best one for plotting
+
+modRandomVsObs_outofAmax_glmer <- glmer(cbind(NbAlternation,NbAMax) ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
+summary(modRandomVsObs_outofAmax_glmer)
+	
+modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax) ~ -1+Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
+summary(modRandomVsObs_outofAmax_glmer_without_intercept)
+
+{# model assumption checking : all ok (first: weird but fine ?)
+
+# residuals vs fitted: mean should constantly be zero: weird but fine ??
+scatter.smooth(fitted(modRandomVsObs_outofAmax_glmer), resid(modRandomVsObs_outofAmax_glmer))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modRandomVsObs_outofAmax_glmer))
+qqline(resid(modRandomVsObs_outofAmax_glmer))
+qqnorm(unlist(ranef(modRandomVsObs_outofAmax_glmer))) 
+qqline(unlist(ranef(modRandomVsObs_outofAmax_glmer)))
+
+# qq-plot of deviance-residuals: should be normally distributed
+qqnorm(residuals(modRandomVsObs_outofAmax_glmer, type="deviance"))
+qqline(residuals(modRandomVsObs_outofAmax_glmer, type="deviance"))
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(modRandomVsObs_outofAmax_glmer)$DVDRef))
+
+# residuals vs predictors
+plot(SimulationOutput_long_median$Type, resid(modRandomVsObs_outofAmax_glmer))
+abline(h=0, lty=2)
+}
+
+}
+
+{# plot
+estimatesNbAoutofNbAMax <- summary(modRandomVsObs_outofAmax_glmer_without_intercept)$coeff
+estimatesNbAoutofNbAMax
+
+summary_A_AMax <- cbind(Type = rownames(data.frame(est = invlogit(estimatesNbAoutofNbAMax[,1])*100)),
+data.frame(est = invlogit(estimatesNbAoutofNbAMax[,1])*100),
+data.frame(selow = invlogit(estimatesNbAoutofNbAMax[,1]-estimatesNbAoutofNbAMax[,2]*1.96)*100),
+data.frame(seup = invlogit(estimatesNbAoutofNbAMax[,1]+estimatesNbAoutofNbAMax[,2]*1.96)*100))
+
+
+Fig_A_AMax <- {ggplot(data=summary_A_AMax, aes(x=Type, y=est))+
+xlab(NULL)+
+ylab("Number of alternations realized out of the maximum possible (%)\n")+
+
+geom_errorbar(aes(ymin=selow, ymax=seup),na.rm=TRUE)+
+geom_point(size = 3) +
+
+scale_y_continuous(breaks =seq(37,44, by = 1),limits = c(37,44)) +
+scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
 }
 
 }
 
 }
 
-summary(modRandomVsObs)
-
+Fig_A_AMax # these are not the row data like in Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI
 
 {#### Predictors of alternation
 
@@ -215,6 +270,7 @@ summary(modRandomVsObs)
 
 cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.08, p<0.001 
 cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged) # cor = 0.06, p=0.01 
+cor.test(MY_TABLE_perDVD$MumAge,MY_TABLE_perDVD$DadAge) # cor = 0.34, p *****   - assortative mating for age > take the mean of the 2 ?
 cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable ?
 cor.test(MY_TABLE_perDVD$VisitRateDifference, MY_TABLE_perDVD$MFVisit1RateH) # r=0.46
 

@@ -707,15 +707,8 @@ SimulationOutput_long_median <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAl
 	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '3_Within')), 
 	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '4_Among')))
 
-# median and mean are extremely well correlated.
-cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'])),
-as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])))
-plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])
-
-cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'])),
-as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])))
-plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])
-
+SimulationOutput_long_median <- merge(x=SimulationOutput_long_median, y = MY_tblParentalCare[,c('DVDRef','NbAMax')], by = 'DVDRef', all.x=TRUE)
+SimulationOutput_long_median$LineID <- as.character(1:nrow(SimulationOutput_long_median))
 
 }
 
@@ -930,3 +923,4 @@ head(MY_TABLE_perBrood)
 
 # write.csv(SimulationOutput_long_median, file = paste(output_folder,"R_SimulationOutput_long_median.csv", sep="/"), row.names = FALSE) 
 # 20170207
+# 20170208 with AMax and lineID
