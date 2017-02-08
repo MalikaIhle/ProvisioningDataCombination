@@ -194,7 +194,7 @@ RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interv
 colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
 head(RawInterfeeds)
 
-RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH','VisitRateDifference')]) # this will only be used for shuffling within prorate
+RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH')]) # this will only be used for shuffling within prorate
 
 FRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 0,])
 MRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 1,])
@@ -731,7 +731,7 @@ summary_out_Asim_outof_AMax_within_df,
 summary_Aswitch_outof_AMax))
 }
 
-# plot 
+{# plot 
 
 Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean))+
 xlab(NULL)+
@@ -755,13 +755,16 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 
 }
 
+}
 
 }
+
+# summary_A_outof_AMax
 
 dev.new()
 Fig_A
 dev.new()
-Fig_A_A
+Fig_A_AMax
 dev.new()
 Fig_S
 
@@ -949,23 +952,31 @@ head(MY_TABLE_perBrood)
 # 20170127 added AMax, NbAlternation, NbAMax
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
 # 20170208 added DVDInfoAge just for hist of variation in chick age (although Age cat used in model)
+# 20170208 after rerunning data extraction (should be the same)
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
 # 20170203 replace ratioRingedHatched by Nb Hatched (to have cbind(Ringed,Hatched))
-#20170203 add MeanEffectiveTime
+# 20170203 add MeanEffectiveTime
+# 20170208 after rerunning data extraction (should be the same)
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
+# 20170208 after rerunning data extraction (should be the same)
 
 # write.csv(SimulationOutput, file = paste(output_folder,"R_SimulationOutput.csv", sep="/"), row.names = FALSE) 
 # 20170206
+# 20170208 after rerunning data extraction (should be the same)
 
 # write.csv(SimulationOutput_long, file = paste(output_folder,"R_SimulationOutput_long.csv", sep="/"), row.names = FALSE) 
 # 20170206
+# 20170208 after rerunning data extraction (should be the same)
 
 # write.csv(SimulationOutput_long_median, file = paste(output_folder,"R_SimulationOutput_long_median.csv", sep="/"), row.names = FALSE) 
 # 20170207
 # 20170208 with AMax and lineID
+# 20170208 after rerunning data extraction (should be the same)
 
+# write.csv(summary_A_outof_AMax, file = paste(output_folder,"R_summary_A_outof_AMax.csv", sep="/"), row.names = FALSE) 
+#  20180208 to save data for plot without need to rerun simulation for checking it.
