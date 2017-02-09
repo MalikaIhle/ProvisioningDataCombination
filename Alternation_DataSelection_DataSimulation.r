@@ -184,7 +184,7 @@ head(MY_tblChicks_byRearingBrood)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-{#### Simulations to get NbAlternation
+{#### Simulations to get NbAlternation and Nb of synchronous visits
 
 {## the raw Data, observed and maximum scores
 
@@ -226,28 +226,6 @@ MY_tblParentalCare$NbAMax[i] <- min(MY_tblParentalCare$FVisit1[i],MY_tblParental
 }
 
 {# observation
-
-	# Summarise_A_S_onAMax <- function(DataSummary, AS) {
-
-	# if (AS == 'A') {
-	# return(data.frame(summarise (DataSummary,
-				# Amean = mean(NbAlternation/NbAMax),
-				# Alower = Amean - sd(NbAlternation/NbAMax)/sqrt(n())*1.96,
-				# Aupper = Amean + sd(NbAlternation/NbAMax)/sqrt(n())*1.96,
-				# NbFiles = n())))
-				# }
-				
-	# if (AS == 'S') {
-	# return(data.frame(summarise (DataSummary,
-				# Smean = mean(NbSynchro_ChickFeedingEquanim/NbAMax),
-				# Slower = Smean - sd(NbSynchro_ChickFeedingEquanim/NbAMax)/sqrt(n())*1.96,
-				# Supper = Smean + sd(NbSynchro_ChickFeedingEquanim/NbAMax)/sqrt(n())*1.96,
-				# NbFiles = n())))				
-				# }
-	# }
-
-	# summary_Observed_A_ratioAMax <- Summarise_A_S_onAMax (MY_tblParentalCare, 'A')
-	# summary_Observed_S_ratioAMax <- Summarise_A_S_onAMax (MY_tblParentalCare, 'S')
 
 Summarise_A_S <- function(DataSummary, AS) {
 
@@ -388,7 +366,7 @@ xsim <- xsim[order(xsim$Tstart),]
 SimData <- do.call(rbind,lapply(split(RawData, RawData$DVDRef),RandomizeData_oneSplit))
 rownames(SimData) <- NULL
 
-## Calculate Alternation value within each DVD
+## Calculate Alternation within each DVD
 
 SimData_Calculate_A <- function(x){
 x <- x[order(x$Tstart),]
@@ -399,7 +377,7 @@ return(Asim)
 
 SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
 
-## Calculate Synchrony value within each DVD
+## Calculate Synchrony within each DVD
 
 SimData_Calculate_S <- function(x){
 x <- x[order(x$Tstart),]
@@ -512,7 +490,50 @@ summary_Aswitch <- data.frame(summarise (Switch_Consecutive_intervals_out_A,
 }
 
 
-{## plot the output
+{## save the output
+
+SimulationOutput <- cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')],
+							Aswitch = Switch_Consecutive_intervals_out_A$Aswitch,
+							MeanAsimWithin = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), 
+							MeanAsimAmong = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))))
+							
+
+SimulationOutput_long <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
+			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
+			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), Type = '3_Within')), 
+			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))), Type = '4_Among')))
+
+
+# some median are .5 : randomly round up or down.
+# example:
+as.integer(median(tail(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),2)[1,])+sample(c(0.5,-0.5),1))
+median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
+			
+			
+SimulationOutput_long_median <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '3_Within')), 
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '4_Among')))
+
+SimulationOutput_long_median <- merge(x=SimulationOutput_long_median, y = MY_tblParentalCare[,c('DVDRef','NbAMax')], by = 'DVDRef', all.x=TRUE)
+SimulationOutput_long_median$LineID <- as.character(1:nrow(SimulationOutput_long_median))
+
+
+
+SimulationOutput_S_long_median <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbSynchro_ChickFeedingEquanim')], Type = '1_Observed'),
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbSynchro_ChickFeedingEquanim = apply(tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '3_Within')), 
+	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbSynchro_ChickFeedingEquanim = apply(tail(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '4_Among')))
+
+colnames(SimulationOutput_S_long_median) <- c("DVDRef","NbS", "Type")
+SimulationOutput_S_long_median$NbS <- as.numeric(as.character(SimulationOutput_S_long_median$NbS))
+SimulationOutput_S_long_median <- merge(x=SimulationOutput_S_long_median, y = MY_tblParentalCare[,c('DVDRef','NbAMax')], by = 'DVDRef', all.x=TRUE)
+SimulationOutput_S_long_median$LineID <- as.character(1:nrow(SimulationOutput_S_long_median))
+
+
+}
+
+
+{## plot Nb Alternation and Nb Synchrony
 
 {# Alternation
 
@@ -586,7 +607,7 @@ axis.title=element_text(size=14,face="bold"))
 
 summary_Smax <- summary_Amax
 colnames(summary_Smax) <- c('Smean', 'Slower', 'Supper', 'NbFiles', 'Type')
-#summary_Smax$Type <- '1_Maximum' 
+summary_Smax$Type <- '1_Maximum' 
 summary_Observed_S$Type <- '2_Observed' 
 summary_out_Ssim_within_df$Type <-'4_Within'
 summary_out_Ssim_among_df$Type <- '5_Among'
@@ -651,38 +672,7 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
-{## save the output
-
-SimulationOutput <- cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')],
-							Aswitch = Switch_Consecutive_intervals_out_A$Aswitch,
-							MeanAsimWithin = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), 
-							MeanAsimAmong = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))))
-							
-
-SimulationOutput_long <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
-			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
-			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef)))), Type = '3_Within')), 
-			data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = rowMeans(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef)))), Type = '4_Among')))
-
-
-# some median are .5 : randomly round up or down.
-# example:
-as.integer(median(tail(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),2)[1,])+sample(c(0.5,-0.5),1))
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
-			
-			
-SimulationOutput_long_median <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
-	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),
-	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '3_Within')), 
-	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = apply(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),1,median_integer), Type = '4_Among')))
-
-SimulationOutput_long_median <- merge(x=SimulationOutput_long_median, y = MY_tblParentalCare[,c('DVDRef','NbAMax')], by = 'DVDRef', all.x=TRUE)
-SimulationOutput_long_median$LineID <- as.character(1:nrow(SimulationOutput_long_median))
-
-}
-
-
-{## summarize Asim/AMax
+{## plot Asim/AMax 
 
 {# summarize the ratio Asim/AMax made on each DVD and averaged accross the dataset
 
@@ -731,7 +721,7 @@ summary_out_Asim_outof_AMax_within_df,
 summary_Aswitch_outof_AMax))
 }
 
-{# plot 
+{# plot Asim/AMax
 
 Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean))+
 xlab(NULL)+
@@ -757,17 +747,85 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 
 }
 
+{## plot Ssim/SMax 
+
+{# summarize the ratio Ssim/AMax made on each DVD and averaged accross the dataset
+
+summary_Sobsv_outof_AMax <- data.frame(summarise (MY_tblParentalCare,
+				Smean = mean(NbSynchro_ChickFeedingEquanim/NbAMax*100),
+				Slower = Smean - sd(NbSynchro_ChickFeedingEquanim/NbAMax*100)/sqrt(n())*1.96,
+				Supper = Smean + sd(NbSynchro_ChickFeedingEquanim/NbAMax*100)/sqrt(n())*1.96,
+				NbFiles = n()))
+
+
+summarise_sim_outof_AMax <- function(out_sim_df, AS){ # Nreplicates needs to be identical in both randomization
+
+out_sim_df$SimMean <- rowMeans(out_sim_df[,2:(NreplicatesAmongFileRandomization)])
+out_sim_df <- merge(x=out_sim_df, y= MY_tblParentalCare[,c('DVDRef','NbAMax')], all.x=TRUE)
+out_sim_df$SimMean_outof_AMax <- out_sim_df$SimMean/out_sim_df$NbAMax*100
+
+if (AS == 'S'){
+return(data.frame(summarise (out_sim_df,
+				Smean = mean(SimMean_outof_AMax),
+				Slower = Smean - sd(SimMean_outof_AMax)/sqrt(n())*1.96,
+				Supper = Smean + sd(SimMean_outof_AMax)/sqrt(n())*1.96,
+				NbFiles = n())))
+				}
+				
+}				
+
+summary_out_Ssim_outof_AMax_among_df <- summarise_sim_outof_AMax(out_Ssim_among_df, 'S')
+summary_out_Ssim_outof_AMax_within_df <- summarise_sim_outof_AMax(out_Ssim_within_df, 'S')
+
+				
+summary_Sobsv_outof_AMax$Type <- '2_Observed' 
+summary_out_Ssim_outof_AMax_within_df$Type <-'4_Within'
+summary_out_Ssim_outof_AMax_among_df$Type <- '5_Among'
+
+summary_S_outof_AMax <- do.call(rbind, 
+list(summary_Sobsv_outof_AMax,
+summary_out_Ssim_outof_AMax_among_df,
+summary_out_Ssim_outof_AMax_within_df))
+
+}
+
+{# plot Ssim/AMax
+
+Fig_S_AMax <- {ggplot(data=summary_S_outof_AMax, aes(x=Type, y=Smean))+
+xlab(NULL)+
+ylab("Number of synchronized visits realized out of the maximum possible (%)\n")+
+
+geom_errorbar(aes(ymin=Slower, ymax=Supper),na.rm=TRUE)+
+geom_point(size = 3) +
+
+scale_y_continuous(breaks =seq(5,15, by = 1),limits = c(5,15)) +
+scale_x_discrete(labels = c('Observed', 'Within', 'Among'))+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+}
+
+}
+
+}
+
+
 }
 
 # or 
 # summary_A_outof_AMax <- read.csv(paste(SelectedData_folder,"R_summary_A_outof_AMax.csv", sep="/"))
+# summary_S_outof_AMax <- read.csv(paste(SelectedData_folder,"R_summary_S_outof_AMax.csv", sep="/"))
 
-dev.new()
-Fig_A
 dev.new()
 Fig_A_AMax
 dev.new()
-Fig_S
+Fig_S_AMax
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -981,3 +1039,19 @@ head(MY_TABLE_perBrood)
 
 # write.csv(summary_A_outof_AMax, file = paste(output_folder,"R_summary_A_outof_AMax.csv", sep="/"), row.names = FALSE) 
 #  20180208 to save data for plot without need to rerun simulation for checking it.
+
+# write.csv(SimulationOutput_S_long_median, file = paste(output_folder,"R_SimulationOutput_S_long_median.csv", sep="/"), row.names = FALSE) 
+# 20170209
+
+# write.csv(summary_S_outof_AMax, file = paste(output_folder,"R_summary_S_outof_AMax.csv", sep="/"), row.names = FALSE) 
+#  20180209 to save data for plot without need to rerun simulation for checking it.
+
+
+
+
+
+
+
+
+
+
