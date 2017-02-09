@@ -1,9 +1,21 @@
-## Joel Pick 20170202
-# how is NbAlternation out of Nb of alternation maximum (NbA observed , Nb A missed)
-# is mathematically linked with Total number of visits and the difference between number of visits
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#	 Joel PICK & Malika IHLE    joel.l.pick@gmail.com   malika_ihle@hotmail.fr
+#	 Simulation to help decide which analyses to perfom on provisioning data sparrows
+#	 Start : 02/02/2017
+#	 last modif : 09/02/2017
+#	 commit: add interaction term
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# mimicking our analysis
+{### Packages
+library(pbapply)
+library(lme4)
+}
+
+{### Predict Alternation
+
+# mimicking our analysis to predict Nb of Alternation
+
 sim <- function(){
 MaleP <- rpois(1000, 10)
 FemaleP <- rpois(1000, 10)
@@ -17,12 +29,12 @@ summary(mod)$coef[2:3,4]
 
 simOut <- replicate(1000, sim())
 simOutSign <- simOut<0.05
-apply(simOutSign, 1, sum)/1000
+apply(simOutSign, 1, sum)/1000 # this doesn't get significant more than by chance
 
 
-hist(A)
 
-# mimicking Ben's analysis
+# mimicking Ben's analysis on alternation score (Nb of alternation / total provisioning rate)
+
 sim2 <- function(){
 MaleP <- rpois(1000, 10)
 FemaleP <- rpois(1000, 10)
@@ -36,99 +48,77 @@ summary(mod)$coef[2,4]
 
 simOut2 <- replicate(1000, sim2())
 simOutSign2 <- simOut2<0.05
-sum(simOutSign2)/1000
+sum(simOutSign2)/1000 # this leads to significant results more than by chance due to mathematical relationship between dependent and explanatory variables
 
-
-
-
-MaleP <- rpois(1000, 10)
-FemaleP <- rpois(1000, 10)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP-FemaleP)
-MaxA <- TotalP - DiffP
-A <- rbinom(1000,MaxA,0.5)
-mod <- glm(cbind(A,MaxA-A) ~ TotalP + DiffP, family = 'binomial')
-modoff <- glm(A~TotalP + DiffP + offset(log(MaxA)), family = 'quasipoisson')
-
-summary(mod)$coef
-summary(modoff)$coef
- 
-
-exp(-0.002)
-library(arm)
-invlogit(-0.004)
-
-
-
-
-
-# to analyse provisioning rate as the fitness trait
-simProRate <- function(){
-MaleP <- rpois(1000, 10)
-FemaleP <- rpois(1000, 10)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP-FemaleP)
-MaxA <- TotalP - DiffP
-A <- rbinom(1000,MaxA,0.6) # observed = random
-#mod <- glm(cbind(A,MaxA-A) ~TotalP + DiffP, family = 'binomial')
-#summary(mod)$coef[2:3,4]
-modreverse <- glm(TotalP ~ I(A/MaxA), family = 'poisson')
-summary(modreverse)$coef[2,4]
 }
 
+{### Predict provisioning rate as the fitness trait, while including variation in provisioning rate
 
-simProRateOut <- replicate(10000, simProRate())
-simProRateOutSign <- simProRateOut<0.05
-sum(simProRateOutSign)/10000
-
-
-
-
-
+n <- 1000
+avPRobs <-15 # this is the average of provisioning rate observed in the data
+sdPRobs <- 8 # it's SD
+meanlog <- log(avPRobs)
+sdlog <-  sqrt(log(1 + sdPRobs^2/avPRobs^2))
 
 
+# mimicking Ben's analysis TotalProRate ~ Ascore or A
 
-head(MY_TABLE_perDVD)
-sqrt(var(MY_TABLE_perDVD$MVisit1)-mean(MY_TABLE_perDVD$MVisit1)) # 8.189705 SD for simulation
+simProRate <- function(){
 
-mean(MY_TABLE_perDVD$MVisit1) #15.10069
-sd(MY_TABLE_perDVD$MVisit1)# 9.064875
-
-
-sqrt(var(MY_TABLE_perDVD$FVisit1)-mean(MY_TABLE_perDVD$FVisit1)) # 7.855277
-mean(MY_TABLE_perDVD$FVisit1) #16.44403
-sd(MY_TABLE_perDVD$FVisit1)# 8.840215
-
-
-# to analyse provisioning rate as the fitness trait
-simProRate <- function(n=1000){
-
-meanlog <- log(15)
-MalePexp <- rlnorm(n, meanlog=log(15), sdlog=sqrt(log(1 + 8^2/15^2)) )
-FemalePexp <- rlnorm(n, meanlog=log(15), sdlog=sqrt(log(1 + 8^2/15^2)))
+MalePexp <- rlnorm(n, meanlog = meanlog, sdlog = sdlog )
+FemalePexp <- rlnorm(n, meanlog = log(avPRobs), sdlog = sqrt(log(1 + sdPRobs^2/avPRobs^2)) )
 MaleP <- rpois(n, MalePexp)
 FemaleP <- rpois(n, FemalePexp)
 TotalP <- MaleP + FemaleP
 DiffP <- abs(MaleP-FemaleP)
 MaxA <- TotalP - DiffP
 A <- rbinom(n,MaxA,0.6) # observed = random
-#mod <- glm(cbind(A,MaxA-A) ~TotalP + DiffP, family = 'binomial')
-#summary(mod)$coef[2:3,4]
 modreverse <- glm(TotalP ~ A/MaxA, family = 'poisson')
 summary(modreverse)$coef[2,4]
-}
 
-library(pbapply)
+}
 
 simProRateOut <- pbreplicate(1000, simProRate())
 
 simProRateOutSign <- simProRateOut < 0.05
-sum(simProRateOutSign)/1000
+sum(simProRateOutSign)/1000 # doing it that way will ALWAYS lead to significant results.
 
 
-hist(MaleP)
-mean(MaleP)
-sd(MaleP)
+# micmicking our analysis: TotalProRate ~ A*Type(sim or obsv)
+
+simProRate <- function(){
+
+MalePexp <- rlnorm(n, meanlog = meanlog, sdlog = sdlog )
+FemalePexp <- rlnorm(n, meanlog = log(avPRobs), sdlog = sqrt(log(1 + sdPRobs^2/avPRobs^2)) )
+MaleP <- rpois(n, MalePexp)
+FemaleP <- rpois(n, FemalePexp)
+TotalP <- MaleP + FemaleP
+DiffP <- abs(MaleP-FemaleP)
+MaxA <- TotalP - DiffP
+A <- rbinom(n,MaxA,0.6) # 'observed' (one random)
+DVDRef <- seq(1:length(A))
+
+dat <- data.frame(cbind(TotalP,A,MaxA, DVDRef))
+dat_long <- rbind(dat, dat)
+dat_long$Type <- c(rep("Obsv", nrow(dat)),rep("Sim", nrow(dat)))
+dat_long$A[dat_long$Type == 'Sim'] <- rbinom(n,MaxA,0.6) # 'simulated' (another one random)
+dat_long$rowID <- seq(1:nrow(dat_long))
+
+modreverse <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=dat_long)
+summary(modreverse)$coef[4,4]
+
+}
+
+simProRateOut <- pbreplicate(1000, simProRate())
+
+simProRateOutSign <- simProRateOut < 0.05
+sum(simProRateOutSign)/1000 # does not get significant ever (A observed and A simulated are both random and therefore 'equal', when comparing their slope they do not differ)
+
+}
+
+
+
+
 
 
 
