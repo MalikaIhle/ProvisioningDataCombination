@@ -19,7 +19,8 @@ rm(list = ls(all = TRUE))
 library(dplyr) 
 library(ggplot2)
 library(lme4)
-library(arm)
+library(arm) # for the function invlogit
+library(blmeco) # to check for overdispersion
 
 options(scipen=999) # remove scientific notation e-
 #options(scipen=0)
@@ -49,27 +50,14 @@ head(MY_TABLE_perBrood)
 head(SimulationOutput_long_median)
 
 
-###############
-# ALTERNATION #
-###############
 
-{#### comparison random and observed
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- SimulationOutput
- 
- 
- 
- 
- 
+######################
+# RANDOM VS OBSERVED #
+######################
+
+
+{#### alternation
+
 {# paired t.test > non-normality of the difference
  
 SimulationOutput$DVDRef <- as.character(as.numeric(SimulationOutput$DVDRef))
@@ -157,7 +145,7 @@ boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="
 
 }
 
-{# median and mean are extremely well correlated.
+{# median and mean are extremely well correlated > use median for glmer
 cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'])),
 as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])))
 plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])
@@ -169,8 +157,10 @@ plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'
 
 {# glmer poisson > fine
 
-modRandomVsObs_glmer <- glmer( NbAlternation ~ Type + (1|DVDRef) + (1|LineID), data = SimulationOutput_long_median, family = 'poisson')
+modRandomVsObs_glmer <- glmer( NbAlternation ~ Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'poisson')
 summary(modRandomVsObs_glmer)
+
+dispersion_glmer(modRandomVsObs_glmer) # 0.63 < 1.4
 
 modRandomVsObs_glmer_without_intercept <- glmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
 summary(modRandomVsObs_glmer_without_intercept)
@@ -180,18 +170,6 @@ exp(summary(modRandomVsObs_glmer_without_intercept)$coeff[,1])
 	modRandomVsObs_glmer_without_intercept_lmer <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median)
 	summary(modRandomVsObs_glmer_without_intercept_lmer)$coeff[,1]
 
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 {# model assumption checking : all ok
 
@@ -221,14 +199,11 @@ abline(h=0, lty=2)
 
 }
 
-{# glmer binomial > the best one for plotting
+{# glmer binomial > the best one for plotting A out of A Max in percentage
 
 modRandomVsObs_outofAmax_glmer <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
 summary(modRandomVsObs_outofAmax_glmer)
 	
-modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ -1+Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'binomial')
-summary(modRandomVsObs_outofAmax_glmer_without_intercept)
-
 {# model assumption checking : ok-ish ?
 
 # residuals vs fitted: mean should constantly be zero: not quite ?
@@ -253,9 +228,10 @@ plot(SimulationOutput_long_median$Type, resid(modRandomVsObs_outofAmax_glmer))
 abline(h=0, lty=2)
 }
 
-}
-
 {# plot
+
+modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ -1+Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'binomial')
+
 estimatesNbAoutofNbAMax <- summary(modRandomVsObs_outofAmax_glmer_without_intercept)$coeff
 estimatesNbAoutofNbAMax
 
@@ -290,8 +266,96 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 
 }
 
+Fig_A_AMax_est 
+# these are not the row data like in Selection/Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI > Joel says it's wrong (one would need to use delta method to back transform variance)
+
+}
+
 summary(modRandomVsObs_outofAmax_glmer)
-Fig_A_AMax_est # these are not the row data like in Selection/Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI > Joel says it's wrong (one would need to use delta method to back transform variance)
+
+{#### synchrony
+
+{# gmer binomial cbind(NbS,NbAMax-NbS)
+	
+mod_S_RandomVsObs_outofAmax_glmer <- glmer( cbind(NbS,NbAMax-NbS) ~ Type
+																	+(1|DVDRef)
+																	, data = SimulationOutput_S_long_median, 
+																	family = 'binomial')
+																	
+summary(mod_S_RandomVsObs_outofAmax_glmer)
+
+dispersion_glmer(mod_S_RandomVsObs_outofAmax_glmer) # 0.8 < 1.6
+
+}
+
+{# model assumption checking : ok-ish ?
+
+# residuals vs fitted: mean should constantly be zero: not quite ?
+scatter.smooth(fitted(mod_S_RandomVsObs_outofAmax_glmer), resid(mod_S_RandomVsObs_outofAmax_glmer))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(mod_S_RandomVsObs_outofAmax_glmer))
+qqline(resid(mod_S_RandomVsObs_outofAmax_glmer))
+qqnorm(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer))) 
+qqline(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer)))
+
+# qq-plot of deviance-residuals: should be normally distributed
+qqnorm(residuals(mod_S_RandomVsObs_outofAmax_glmer, type="deviance"))
+qqline(residuals(mod_S_RandomVsObs_outofAmax_glmer, type="deviance"))
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer)$DVDRef))
+
+# residuals vs predictors
+plot(SimulationOutput_S_long_median$Type, resid(mod_S_RandomVsObs_outofAmax_glmer))
+abline(h=0, lty=2)
+}
+
+{# plot Fig_S_AMax_est
+
+mod_S_RandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbS,NbAMax-NbS) ~ -1+Type + (1|DVDRef) + (1|LineID), data = SimulationOutput_S_long_median, family = 'binomial')
+
+estimatesNbSoutofNbAMax <- summary(mod_S_RandomVsObs_outofAmax_glmer_without_intercept)$coeff
+estimatesNbSoutofNbAMax
+
+summary_S_AMax_est <- cbind(Type = rownames(data.frame(est = invlogit(estimatesNbSoutofNbAMax[,1])*100)),
+data.frame(est = invlogit(estimatesNbSoutofNbAMax[,1])*100),
+data.frame(selow = invlogit(estimatesNbSoutofNbAMax[,1]-estimatesNbSoutofNbAMax[,2]*1.96)*100),
+data.frame(seup = invlogit(estimatesNbSoutofNbAMax[,1]+estimatesNbSoutofNbAMax[,2]*1.96)*100))
+
+Fig_S_AMax_est <- {ggplot(data=summary_S_AMax_est, aes(x=Type, y=est))+
+xlab(NULL)+
+ylab("Number of synchronous visits realized out of the maximum possible (%)\n")+
+
+geom_errorbar(aes(ymin=selow, ymax=seup),na.rm=TRUE)+
+geom_point(size = 3) +
+
+scale_y_continuous(breaks =seq(5,13, by = 2),limits = c(5,13)) +
+scale_x_discrete(labels = c('Observed', 'Within', 'Among'))+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+}
+
+}
+
+}
+
+summary(mod_S_RandomVsObs_outofAmax_glmer)
+
+
+
+##############
+# PREDICTORS #
+##############
 
 
 {#### predictors of alternation
@@ -413,8 +477,7 @@ summary(modA_withinIndAgeEffect)
 summary(modA)
 MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModA, by='BroodRef', all.x=TRUE)
 
-
-{#### predictors of the deviation from random within
+{#### predictors of the deviation in alternation from randomization within file
 
 scatter.smooth(MY_TABLE_perDVD$NbAlternation, MY_TABLE_perDVD$Adev)
 
@@ -491,388 +554,6 @@ scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="A
 
 summary(modAdev)
 MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModAdev, by='BroodRef', all.x=TRUE)
-
-
-{#### fitness correlate of alternation
-
-{## total provisioning rate
-
-{# create a repeated table per DVD, with the column NbAlternation having observed values in first half, and sim values in second half
-MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
-MY_TABLE_perDVD_Sim_long$Type <- c(rep("Obsv", nrow(MY_TABLE_perDVD)),rep("Sim", nrow(MY_TABLE_perDVD)))
-MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'Sim'] <- MY_TABLE_perDVD_Sim_long$MeanAsim[MY_TABLE_perDVD_Sim_long$Type == 'Sim']
-MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
-}
-
-head(MY_TABLE_perDVD_Sim_long)
-
-
-modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
-												+ I(NbAlternation/NbAMax)*Type # the deviation to max, isn't different between observed and sim (random) values
-												+ offset(log(EffectiveTime))
-												+ (1|SocialMumID)+ (1|SocialDadID) 
-												+ (1|PairID) + (1|BreedingYear)
-												#+ (1|PairIDYear)
-												#+ (1|rowID) # overdispersion
-												+ (1|DVDRef) # each DVD twice: once with alternation observed, once with simulated alternation (averaged)
-												, data = MY_TABLE_perDVD_Sim_long
-												, family = 'poisson'
-												,control=glmerControl(optimizer = "bobyqa")										
-												)
-											
-summary(modFitnessAsTotalProvisioning) # interaction not signi.
-
-
-{# model assumptions checking
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modFitnessAsTotalProvisioning), resid(modFitnessAsTotalProvisioning))	# not quite ??
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modFitnessAsTotalProvisioning))
-qqline(resid(modFitnessAsTotalProvisioning))
-qqnorm(unlist(ranef(modFitnessAsTotalProvisioning)))
-qqline(unlist(ranef(modFitnessAsTotalProvisioning)))
-
-# qq-plot of deviance-residuals: should be normally distributed
-qqnorm(residuals(modFitnessAsTotalProvisioning, type="deviance"))
-qqline(residuals(modFitnessAsTotalProvisioning, type="deviance"))
-
-# Mean of ranefs: should be zero
-mean(unlist(ranef(modFitnessAsTotalProvisioning)$SocialMumID))
-mean(unlist(ranef(modFitnessAsTotalProvisioning)$SocialDadID))
-mean(unlist(ranef(modFitnessAsTotalProvisioning)$PairID))
-mean(unlist(ranef(modFitnessAsTotalProvisioning)$BreedingYear))
-
-# residuals vs predictors
-plot(MY_TABLE_perDVD_Sim_long$NbRinged, resid(modFitnessAsTotalProvisioning))
-abline(h=0, lty=2)
-scatter.smooth(MY_TABLE_perDVD_Sim_long$NbAlternation, resid(modFitnessAsTotalProvisioning))
-abline(h=0, lty=2)
-
-# dependent variable vs fitted
-d <- MY_TABLE_perDVD_Sim_long
-d$fitted <- fitted(modFitnessAsTotalProvisioning)
-scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
-abline(0,1)	
-
-# fitted vs all predictors
-plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
-scatter.smooth(d$NbAlternation,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbAlternation")
-
-}
-
-
-}
-
-{## mean chick mass
-
-{# check dependent and explanatory variables
-nrow(MY_TABLE_perBrood[ MY_TABLE_perBrood$NbRinged == 0 ,]) # 44 broods with no ringed chicks
-nrow(MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,]) # 21 broods where ringed chicks but no mass nor tarsus: for some reasons were ringed not at the rigth age for comparable measurements)
-MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,] # 2 broods with ringed with mass but not tarsus
-
-scatter.smooth(MY_TABLE_perBrood$AvgMass~ MY_TABLE_perBrood$AvgTarsus)
-scatter.smooth(MY_TABLE_perBrood$MeanTotalProRate,MY_TABLE_perBrood$blups)
-
-head(MY_TABLE_perChick)
-head(MY_TABLE_perBrood)
-}
-
-# RQ: in MY_TABLE_perChick 'AvgOf' are not averages but simply the Mass and Tarsus of the chick as the minimum age (between 11 and 14) he was measured
-
-modFitnessAsChickMasswithGenParents_Dev <- lmer(AvgOfMass ~ AvgOfTarsus +
-															HatchingDayAfter0401+
-															PairBroodNb+
-															NbRinged + 
-															MeanTotalProRate +
-															MeanAdev + 
-															MeanSdev+
-															(1|RearingBrood)+
-															#(1|SocialMumID)+ (1|SocialDadID) + 
-															(1|PairID) + (1|BreedingYear) 
-															+ (1|dam) + (1|sire) + (1|GenPairID)
-															, data = MY_TABLE_perChick)
-												
-
-summary(modFitnessAsChickMasswithGenParents_Dev) 
-
-
-modFitnessAsChickMasswithGenParents_blups <- lmer(AvgOfMass ~ AvgOfTarsus +
-															HatchingDayAfter0401+
-															PairBroodNb+
-															NbRinged + 
-															MeanTotalProRate +
-															MeanAdev + 
-															MeanSdev+
-															(1|RearingBrood)+
-															#(1|SocialMumID)+ (1|SocialDadID) + 
-															(1|PairID) + (1|BreedingYear) 
-															+ (1|dam) + (1|sire) + (1|GenPairID)
-															, data = MY_TABLE_perChick)
-
-}
-
-}
-
-{## number of chicks ringed
-
-
-
-summary(MY_TABLE_perBrood$MixedBroodYN)
-
-modFitnessAsNbRinged <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
-															MeanA+
-															HatchingDayAfter0401 +
-															PairBroodNb +
-															MBroodNb+
-															FBroodNb +
-															MPriorResidence +
-															FPriorResidence +
-															# MixedBroodYN + is NA if not chicked measured...
-															# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-															(1|BreedingYear) , data = MY_TABLE_perBrood, family = 'binomial')
-										
-summary(modFitnessAsNbRinged)  
-
-  
-
-modFitnessAsNbRinged_blups <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
-															blups+
-															HatchingDayAfter0401 +
-															PairBroodNb +
-															MBroodNb+
-															FBroodNb +
-															MPriorResidence +
-															FPriorResidence +
-															# MixedBroodYN + is NA if not chicked measured...
-															# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-															(1|BreedingYear) , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$blups),], family = 'binomial')
-										
-summary(modFitnessAsNbRinged_blups)  
-                                                                  
-
-
-
-{# model assumptions checking
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modFitnessAsNbRinged), resid(modFitnessAsNbRinged))	
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modFitnessAsNbRinged))
-qqline(resid(modFitnessAsNbRinged))
-qqnorm(unlist(ranef(modFitnessAsNbRinged))) 
-qqline(unlist(ranef(modFitnessAsNbRinged)))
-
-# Mean of ranefs: should be zero
-# mean(unlist(ranef(modFitnessAsNbRinged)$SocialMumID))
-# mean(unlist(ranef(modFitnessAsNbRinged)$SocialDadID))
-# mean(unlist(ranef(modFitnessAsNbRinged)$PairID))
-mean(unlist(ranef(modFitnessAsNbRinged)$BreedingYear))
-
-# residuals vs predictors
-d <- MY_TABLE_perBrood
-scatter.smooth(d$MeanA, resid(modFitnessAsNbRinged)) # not linear !! > add poly term to model ?
-abline(h=0, lty=2)
-
-summary(MY_TABLE_perBrood$MeanMFVisit1[MY_TABLE_perBrood$MeanA >80])
-summary(MY_TABLE_perBrood$MeanMFVisit1[MY_TABLE_perBrood$MeanA <=80])
-
-# dependent variable vs fitted
-d$fitted <- fitted(modFitnessAsNbRinged)
-scatter.smooth(d$fitted, jitter(d$NbRinged, 0.05),ylim=c(0, 10))
-abline(0,1)	
-
-# fitted vs all predictors
-scatter.smooth(d$MeanA,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanA")
-
-}
-
-
-
-modFitnessAsNbRinged_ADev <- lmer(NbRinged ~ TotalProRate+
-											MeanAdev+
-											MeanSdev+
-											PairBroodNb+
-											DadAge +
-											MumAge +
-											HatchingDayAfter0401 +
-											#MBroodNb+
-											#FBroodNb +
-											MPriorResidence +
-											FPriorResidence +
-											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-											(1|BreedingYear) , data = MY_TABLE_perBrood)
-										
-summary(modFitnessAsNbRinged_ADev) # in ppt 20160707
-
-sunflowerplot(MY_TABLE_perBrood$MumAge, MY_TABLE_perBrood$DadAge)
-cor.test(MY_TABLE_perBrood$MumAge,MY_TABLE_perBrood$DadAge) # r=0.34 *****
-scatter.smooth(MY_TABLE_perBrood$NbRinged~MY_TABLE_perBrood$HatchingDayAfter0401)
-
-
-
-{# model assumptions checking
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modFitnessAsNbRinged_ADev), resid(modFitnessAsNbRinged_ADev))	
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modFitnessAsNbRinged_ADev))
-qqline(resid(modFitnessAsNbRinged_ADev))
-qqnorm(unlist(ranef(modFitnessAsNbRinged_ADev))) 
-qqline(unlist(ranef(modFitnessAsNbRinged_ADev)))
-
-# Mean of ranefs: should be zero
-# mean(unlist(ranef(modFitnessAsNbRinged_ADev)$SocialMumID))
-# mean(unlist(ranef(modFitnessAsNbRinged_ADev)$SocialDadID))
-# mean(unlist(ranef(modFitnessAsNbRinged_ADev)$PairID))
-mean(unlist(ranef(modFitnessAsNbRinged_ADev)$BreedingYear))
-
-##residuals vs predictors
-# d <- MY_TABLE_perBrood
-# scatter.smooth(d$MeanAdev, resid(modFitnessAsNbRinged_ADev)) # not linear !! > add poly term to model ?
-# abline(h=0, lty=2)
-
-##dependent variable vs fitted
-# d$fitted <- fitted(modFitnessAsNbRinged_ADev)
-# scatter.smooth(d$fitted, jitter(d$NbRinged, 0.05),ylim=c(0, 10))
-# abline(0,1)	
-
-##fitted vs all predictors
-# scatter.smooth(d$MeanAdev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanAdev")
-
-}
-
-}
-
-
-
-summary(modFitnessAsProRate)
-summary(modFitnessAsChickMass)
-summary(modSurvival)
-
-
-
-
-
-
-
-#############
-# SYNCHRONY #
-#############
-
-{#### comparison random and observed
-
-# gmer binomial cbind(NbS,NbAMax-NbS)
-	
-mod_S_RandomVsObs_outofAmax_glmer <- glmer( cbind(NbS,NbAMax-NbS) ~ 1 
-																	#+(1|DVDRef)
-																	+ (1|LineID)
-																	, data = SimulationOutput_S_long_median, 
-																	family = 'binomial')
-
-summary(mod_S_RandomVsObs_outofAmax_glmer)
-	
-mod_S_RandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbS,NbAMax-NbS) ~ -1+Type + (1|DVDRef) + (1|LineID), data = SimulationOutput_S_long_median, family = 'binomial')
-summary(mod_S_RandomVsObs_outofAmax_glmer_without_intercept)
-
-{# model assumption checking : ok-ish ?
-
-# residuals vs fitted: mean should constantly be zero: not quite ?
-scatter.smooth(fitted(mod_S_RandomVsObs_outofAmax_glmer), resid(mod_S_RandomVsObs_outofAmax_glmer))	
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_S_RandomVsObs_outofAmax_glmer))
-qqline(resid(mod_S_RandomVsObs_outofAmax_glmer))
-qqnorm(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer))) 
-qqline(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer)))
-
-# qq-plot of deviance-residuals: should be normally distributed
-qqnorm(residuals(mod_S_RandomVsObs_outofAmax_glmer, type="deviance"))
-qqline(residuals(mod_S_RandomVsObs_outofAmax_glmer, type="deviance"))
-
-# Mean of ranefs: should be zero
-mean(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer)$DVDRef))
-
-# residuals vs predictors
-plot(SimulationOutput_S_long_median$Type, resid(mod_S_RandomVsObs_outofAmax_glmer))
-abline(h=0, lty=2)
-}
-
-{# plot Fig_S_AMax_est
-
-estimatesNbSoutofNbAMax <- summary(mod_S_RandomVsObs_outofAmax_glmer_without_intercept)$coeff
-estimatesNbSoutofNbAMax
-
-summary_S_AMax_est <- cbind(Type = rownames(data.frame(est = invlogit(estimatesNbSoutofNbAMax[,1])*100)),
-data.frame(est = invlogit(estimatesNbSoutofNbAMax[,1])*100),
-data.frame(selow = invlogit(estimatesNbSoutofNbAMax[,1]-estimatesNbSoutofNbAMax[,2]*1.96)*100),
-data.frame(seup = invlogit(estimatesNbSoutofNbAMax[,1]+estimatesNbSoutofNbAMax[,2]*1.96)*100))
-
-Fig_S_AMax_est <- {ggplot(data=summary_S_AMax_est, aes(x=Type, y=est))+
-xlab(NULL)+
-ylab("Number of synchronous visits realized out of the maximum possible (%)\n")+
-
-geom_errorbar(aes(ymin=selow, ymax=seup),na.rm=TRUE)+
-geom_point(size = 3) +
-
-scale_y_continuous(breaks =seq(5,13, by = 2),limits = c(5,13)) +
-scale_x_discrete(labels = c('Observed', 'Within', 'Among'))+
-
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
-axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
-axis.title.x = NULL,
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
-
-}
-
-}
-
-}
-
-
-{# compare to simulation correlation A-S
-
-# ggplot(data=MY_TABLE_perDVD, aes(y=NbSynchro_ChickFeedingEquanim,x=NbAlternation) ) + 
-							# geom_point() + 
-							# geom_smooth(method = "lm") +
-							# geom_abline(intercept=0,slope=0.5)+
-							# geom_abline(intercept=0,slope=1)
-							
-							
-# ggplot(data=MY_TABLE_perDVD, aes(y=NbSynchro_LessConspicuous,x=NbAlternation) ) + 
-							# geom_point() + 
-							# geom_smooth(method = "lm") +
-							# geom_abline(intercept=0,slope=0.5)+
-							# geom_abline(intercept=0,slope=1)	
-
-# ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyFeedValue,x=AlternationValue) ) + 
-							# geom_point() + 
-							# geom_smooth(method = "lm") +
-							# geom_abline(intercept=0,slope=0.5)+
-							# geom_abline(intercept=0,slope=1)
-							
-							
-# ggplot(data=MY_TABLE_perDVD, aes(y=SynchronyMvtValue,x=AlternationValue) ) + 
-							# geom_point() + 
-							# geom_smooth(method = "lm") +
-							# geom_abline(intercept=0,slope=0.5)+
-							# geom_abline(intercept=0,slope=1)							
-							
-
-# hist(MY_TABLE_perDVD$AlternationValue)
-
-}
 
 
 {#### predictors of synchrony
@@ -1135,7 +816,7 @@ ggplot(ranefs_modS_nb_glmmadmb_PairID, aes(PairID,ranefs, colour = as.factor(Pai
 
 summary(modS_nb_glmmadmb)
 
-{# predictors of Sdev
+{#### predictors of the deviation in synchrony from randomization within file
 
 scatter.smooth(MY_TABLE_perDVD$SynchronyFeedValue, MY_TABLE_perDVD$Sdev)
 
@@ -1161,240 +842,335 @@ summary(modSdev) # in ppt 20160707
 }
 
 
-{#### fitness benefits of synchrony > meaningless ?
 
-{## provisioning rate > do not make sense ?
-# mathematical negative correlation between number of synchronous provisioning/ total nb of provisioning and total nb of provisioning / time
-# conceptual positive correlation between number of synchronous provisioning and pro rate, as synchrony becomes more likely if interfeed interval are shorter.
+######################
+# FITNESS CORRELATES #
+######################
 
-{# MeanS
-mod_Sync_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # strongly correlated with Synchrony
-														HatchingDayAfter0401 + 
-														scale(MeanS, scale=FALSE)
-														+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
-														 , data = MY_TABLE_perBrood)
 
-summary(mod_Sync_FitnessAsProRate) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+{#### total provisioning rate ~ Alternation
 
-{# model assumptions checking > good
+{# create a repeated table per DVD, with the column NbAlternation having observed values in first half, and sim values in second half
+MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
+MY_TABLE_perDVD_Sim_long$Type <- c(rep("Obsv", nrow(MY_TABLE_perDVD)),rep("Sim", nrow(MY_TABLE_perDVD)))
+MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'Sim'] <- MY_TABLE_perDVD_Sim_long$MeanAsim[MY_TABLE_perDVD_Sim_long$Type == 'Sim']
+MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
+}
+
+head(MY_TABLE_perDVD_Sim_long)
+
+
+modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
+												+ I(NbAlternation/NbAMax)*Type # the deviation to max, isn't different between observed and sim (random) values
+												+ offset(log(EffectiveTime))
+												+ (1|SocialMumID)+ (1|SocialDadID) 
+												+ (1|PairID) + (1|BreedingYear)
+												#+ (1|PairIDYear)
+												#+ (1|rowID) # overdispersion
+												+ (1|DVDRef) # each DVD twice: once with alternation observed, once with simulated alternation (averaged)
+												, data = MY_TABLE_perDVD_Sim_long
+												, family = 'poisson'
+												,control=glmerControl(optimizer = "bobyqa")										
+												)
+											
+summary(modFitnessAsTotalProvisioning) # interaction not signi.
+
+
+{# model assumptions checking
 
 # residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(mod_Sync_FitnessAsProRate), resid(mod_Sync_FitnessAsProRate))	
+scatter.smooth(fitted(modFitnessAsTotalProvisioning), resid(modFitnessAsTotalProvisioning))	# not quite ??
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_Sync_FitnessAsProRate))
-qqline(resid(mod_Sync_FitnessAsProRate))
-qqnorm(unlist(ranef(mod_Sync_FitnessAsProRate)))
-qqline(unlist(ranef(mod_Sync_FitnessAsProRate)))
+qqnorm(resid(modFitnessAsTotalProvisioning))
+qqline(resid(modFitnessAsTotalProvisioning))
+qqnorm(unlist(ranef(modFitnessAsTotalProvisioning)))
+qqline(unlist(ranef(modFitnessAsTotalProvisioning)))
 
-# homogeneity of variance
-scatter.smooth(sqrt(abs(resid(mod_Sync_FitnessAsProRate))),fitted(mod_Sync_FitnessAsProRate)) # quite not ! > much nicer if exp 0.45
-	# tried when removing the 5% quantile extreme of provisioning rate, model estimates quite similar, random effect all much much lower
+# qq-plot of deviance-residuals: should be normally distributed
+qqnorm(residuals(modFitnessAsTotalProvisioning, type="deviance"))
+qqline(residuals(modFitnessAsTotalProvisioning, type="deviance"))
 
 # Mean of ranefs: should be zero
-mean(unlist(ranef(mod_Sync_FitnessAsProRate)$SocialMumID))
-mean(unlist(ranef(mod_Sync_FitnessAsProRate)$SocialDadID))
-mean(unlist(ranef(mod_Sync_FitnessAsProRate)$PairID))
-mean(unlist(ranef(mod_Sync_FitnessAsProRate)$BreedingYear))
+mean(unlist(ranef(modFitnessAsTotalProvisioning)$SocialMumID))
+mean(unlist(ranef(modFitnessAsTotalProvisioning)$SocialDadID))
+mean(unlist(ranef(modFitnessAsTotalProvisioning)$PairID))
+mean(unlist(ranef(modFitnessAsTotalProvisioning)$BreedingYear))
 
 # residuals vs predictors
-plot(MY_TABLE_perBrood$NbRinged, resid(mod_Sync_FitnessAsProRate))
+plot(MY_TABLE_perDVD_Sim_long$NbRinged, resid(modFitnessAsTotalProvisioning))
 abline(h=0, lty=2)
-scatter.smooth(MY_TABLE_perBrood$MeanS, resid(mod_Sync_FitnessAsProRate))
+scatter.smooth(MY_TABLE_perDVD_Sim_long$NbAlternation, resid(modFitnessAsTotalProvisioning))
 abline(h=0, lty=2)
 
 # dependent variable vs fitted
-d <- MY_TABLE_perBrood
-d$fitted <- fitted(mod_Sync_FitnessAsProRate)
+d <- MY_TABLE_perDVD_Sim_long
+d$fitted <- fitted(modFitnessAsTotalProvisioning)
 scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
+abline(0,1)	
 
 # fitted vs all predictors
 plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
-scatter.smooth(d$MeanS,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="MeanS")
+scatter.smooth(d$NbAlternation,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbAlternation")
 
 }
 
-}
-
-{# MeanSynchroFeed_nb
-mod_Sync_nb_FitnessAsProRate <- lmer(TotalProRate^0.45 ~  NbRinged + # strongly correlated with Synchrony
-														HatchingDayAfter0401 + 
-														scale(MeanSynchroFeed_nb, scale=FALSE)
-														+(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear)
-														 , data = MY_TABLE_perBrood)
-
-summary(mod_Sync_nb_FitnessAsProRate) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
-
-{# model assumptions checking > not quite good
-
-# residuals vs fitted: mean should constantly be zero	> not quite !
-scatter.smooth(fitted(mod_Sync_nb_FitnessAsProRate), resid(mod_Sync_nb_FitnessAsProRate))	
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_Sync_nb_FitnessAsProRate))
-qqline(resid(mod_Sync_nb_FitnessAsProRate))
-qqnorm(unlist(ranef(mod_Sync_nb_FitnessAsProRate)))
-qqline(unlist(ranef(mod_Sync_nb_FitnessAsProRate)))
-
-# homogeneity of variance
-scatter.smooth(sqrt(abs(resid(mod_Sync_nb_FitnessAsProRate))),fitted(mod_Sync_nb_FitnessAsProRate)) # quite not ! > much nicer if exp 0.45
-	# tried when removing the 5% quantile extreme of provisioning rate, model estimates quite similar, random effect all much much lower
-
-# Mean of ranefs: should be zero
-mean(unlist(ranef(mod_Sync_nb_FitnessAsProRate)$SocialMumID))
-mean(unlist(ranef(mod_Sync_nb_FitnessAsProRate)$SocialDadID))
-mean(unlist(ranef(mod_Sync_nb_FitnessAsProRate)$PairID))
-mean(unlist(ranef(mod_Sync_nb_FitnessAsProRate)$BreedingYear))
-
-# residuals vs predictors
-plot(MY_TABLE_perBrood$NbRinged, resid(mod_Sync_nb_FitnessAsProRate))
-abline(h=0, lty=2)
-scatter.smooth(MY_TABLE_perBrood$MeanSynchroFeed_nb, resid(mod_Sync_nb_FitnessAsProRate))
-abline(h=0, lty=2)
-
-# dependent variable vs fitted
-d <- MY_TABLE_perBrood
-d$fitted <- fitted(mod_Sync_nb_FitnessAsProRate)
-scatter.smooth(d$fitted, jitter(d$TotalProRate, 0.05),ylim=c(0, 100))
-
-# fitted vs all predictors
-plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="NbRinged")
-scatter.smooth(d$MeanSynchroFeed_nb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="TotalProRate", xlab="MeanSynchroFeed_nb")
 
 }
 
+{#### mean chick mass ~ Alternation + Synchrony
+
+{# check dependent and explanatory variables
+nrow(MY_TABLE_perBrood[ MY_TABLE_perBrood$NbRinged == 0 ,]) # 44 broods with no ringed chicks
+nrow(MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,]) # 21 broods where ringed chicks but no mass nor tarsus: for some reasons were ringed not at the rigth age for comparable measurements)
+MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$AvgTarsus) & !is.na(MY_TABLE_perBrood$AvgMass) & MY_TABLE_perBrood$NbRinged != 0 ,] # 2 broods with ringed with mass but not tarsus
+
+scatter.smooth(MY_TABLE_perBrood$AvgMass~ MY_TABLE_perBrood$AvgTarsus)
+scatter.smooth(MY_TABLE_perBrood$MeanTotalProRate,MY_TABLE_perBrood$blups)
+
+head(MY_TABLE_perChick)
+head(MY_TABLE_perBrood)
 }
 
+# RQ: in MY_TABLE_perChick 'AvgOf' are not averages but simply the Mass and Tarsus of the chick as the minimum age (between 11 and 14) he was measured
+
+modFitnessAsChickMasswithGenParents_Dev <- lmer(AvgOfMass ~ AvgOfTarsus +
+															HatchingDayAfter0401+
+															PairBroodNb+
+															NbRinged + 
+															MeanTotalProRate +
+															MeanAdev + 
+															MeanSdev+
+															(1|RearingBrood)+
+															#(1|SocialMumID)+ (1|SocialDadID) + 
+															(1|PairID) + (1|BreedingYear) 
+															+ (1|dam) + (1|sire) + (1|GenPairID)
+															, data = MY_TABLE_perChick)
+												
+
+summary(modFitnessAsChickMasswithGenParents_Dev) 
+
+
+modFitnessAsChickMasswithGenParents_blups <- lmer(AvgOfMass ~ AvgOfTarsus +
+															HatchingDayAfter0401+
+															PairBroodNb+
+															NbRinged + 
+															MeanTotalProRate +
+															MeanAdev + 
+															MeanSdev+
+															(1|RearingBrood)+
+															#(1|SocialMumID)+ (1|SocialDadID) + 
+															(1|PairID) + (1|BreedingYear) 
+															+ (1|dam) + (1|sire) + (1|GenPairID)
+															, data = MY_TABLE_perChick)
+
 }
 
-{# Nb ringed
-
-{# MeanS (highly correlated to TotalProRate)
-cor.test(MY_TABLE_perBrood$MeanS,MY_TABLE_perBrood$TotalProRate) # 0.66 !
+{#### number of chicks ringed ~ Alternation + Synchrony
 
 
-mod_Sync_FitnessAsNbRinged <- glmer(NbRinged ~ scale(MeanS, scale=FALSE) + 
-												scale(TotalProRate, scale=FALSE) +
-												#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-												(1|BreedingYear) , data = MY_TABLE_perBrood, family = "poisson")
+
+summary(MY_TABLE_perBrood$MixedBroodYN)
+
+modFitnessAsNbRinged <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
+															MeanA+
+															HatchingDayAfter0401 +
+															PairBroodNb +
+															MBroodNb+
+															FBroodNb +
+															MPriorResidence +
+															FPriorResidence +
+															# MixedBroodYN + is NA if not chicked measured...
+															# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+															(1|BreedingYear) , data = MY_TABLE_perBrood, family = 'binomial')
 										
-summary(mod_Sync_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+summary(modFitnessAsNbRinged)  
 
+  
 
-mod_Sync_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanS, scale=FALSE) + 
-												scale(TotalProRate, scale=FALSE) +
-												scale(PairBroodNb, scale=FALSE) +
-												#(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-												(1|BreedingYear) , data = MY_TABLE_perBrood)
+modFitnessAsNbRinged_blups <- glmer(cbind(NbRinged, NbHatched) ~ 	MeanTotalProRate+
+															blups+
+															HatchingDayAfter0401 +
+															PairBroodNb +
+															MBroodNb+
+															FBroodNb +
+															MPriorResidence +
+															FPriorResidence +
+															# MixedBroodYN + is NA if not chicked measured...
+															# (1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
+															(1|BreedingYear) , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$blups),], family = 'binomial')
 										
-summary(mod_Sync_FitnessAsNbRinged)
+summary(modFitnessAsNbRinged_blups)  
+                                                                  
 
-{# model assumptions checking > very weird residuals !
+
+
+{# model assumptions checking
 
 # residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(mod_Sync_FitnessAsNbRinged), resid(mod_Sync_FitnessAsNbRinged))	
+scatter.smooth(fitted(modFitnessAsNbRinged), resid(modFitnessAsNbRinged))	
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_Sync_FitnessAsNbRinged))
-qqline(resid(mod_Sync_FitnessAsNbRinged))
-qqnorm(unlist(ranef(mod_Sync_FitnessAsNbRinged))) 
-qqline(unlist(ranef(mod_Sync_FitnessAsNbRinged)))
+qqnorm(resid(modFitnessAsNbRinged))
+qqline(resid(modFitnessAsNbRinged))
+qqnorm(unlist(ranef(modFitnessAsNbRinged))) 
+qqline(unlist(ranef(modFitnessAsNbRinged)))
 
 # Mean of ranefs: should be zero
-# mean(unlist(ranef(mod_Sync_FitnessAsNbRinged)$SocialMumID))
-# mean(unlist(ranef(mod_Sync_FitnessAsNbRinged)$SocialDadID))
-# mean(unlist(ranef(mod_Sync_FitnessAsNbRinged)$PairID))
-mean(unlist(ranef(mod_Sync_FitnessAsNbRinged)$BreedingYear))
+# mean(unlist(ranef(modFitnessAsNbRinged)$SocialMumID))
+# mean(unlist(ranef(modFitnessAsNbRinged)$SocialDadID))
+# mean(unlist(ranef(modFitnessAsNbRinged)$PairID))
+mean(unlist(ranef(modFitnessAsNbRinged)$BreedingYear))
 
 # residuals vs predictors
 d <- MY_TABLE_perBrood
-scatter.smooth(d$TotalProRate, resid(mod_Sync_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
-abline(h=0, lty=2)
-scatter.smooth(d$MeanS, resid(mod_Sync_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
+scatter.smooth(d$MeanA, resid(modFitnessAsNbRinged)) # not linear !! > add poly term to model ?
 abline(h=0, lty=2)
 
+summary(MY_TABLE_perBrood$MeanMFVisit1[MY_TABLE_perBrood$MeanA >80])
+summary(MY_TABLE_perBrood$MeanMFVisit1[MY_TABLE_perBrood$MeanA <=80])
+
 # dependent variable vs fitted
-d$fitted <- fitted(mod_Sync_FitnessAsNbRinged)
+d$fitted <- fitted(modFitnessAsNbRinged)
 scatter.smooth(d$fitted, jitter(d$NbRinged, 0.05),ylim=c(0, 10))
 abline(0,1)	
 
 # fitted vs all predictors
-scatter.smooth(d$TotalProRate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="TotalProRate")
-scatter.smooth(d$MeanS,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanS")
-
-}
-
-}
-
-{# MeanSynchroFeed_nb
-mod_Sync_nb_FitnessAsNbRinged <- lmer(NbRinged ~ scale(MeanSynchroFeed_nb, scale=FALSE) +
-												scale(TotalProRate, scale=FALSE) + 
-												scale(PairBroodNb, scale=FALSE) +
-												(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
-												(1|BreedingYear) , data = MY_TABLE_perBrood)
-										
-summary(mod_Sync_nb_FitnessAsNbRinged) # Number of obs: 872, groups:  PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
-
-{# model assumptions checking >  weird residuals but better than above ?
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(mod_Sync_nb_FitnessAsNbRinged), resid(mod_Sync_nb_FitnessAsNbRinged))	
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_Sync_nb_FitnessAsNbRinged))
-qqline(resid(mod_Sync_nb_FitnessAsNbRinged))
-qqnorm(unlist(ranef(mod_Sync_nb_FitnessAsNbRinged))) 
-qqline(unlist(ranef(mod_Sync_nb_FitnessAsNbRinged)))
-
-# Mean of ranefs: should be zero
-# mean(unlist(ranef(mod_Sync_nb_FitnessAsNbRinged)$SocialMumID))
-# mean(unlist(ranef(mod_Sync_nb_FitnessAsNbRinged)$SocialDadID))
-# mean(unlist(ranef(mod_Sync_nb_FitnessAsNbRinged)$PairID))
-mean(unlist(ranef(mod_Sync_nb_FitnessAsNbRinged)$BreedingYear))
-
-# residuals vs predictors
-d <- MY_TABLE_perBrood
-scatter.smooth(d$TotalProRate, resid(mod_Sync_nb_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
-abline(h=0, lty=2)
-scatter.smooth(d$MeanSynchroFeed_nb, resid(mod_Sync_nb_FitnessAsNbRinged)) # not linear !! > add poly term to model ?
-abline(h=0, lty=2)
-
-# dependent variable vs fitted
-d$fitted <- fitted(mod_Sync_nb_FitnessAsNbRinged)
-scatter.smooth(d$fitted, jitter(d$NbRinged, 0.05),ylim=c(0, 10))
-abline(0,1)	
-
-# fitted vs all predictors
-scatter.smooth(d$TotalProRate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="TotalProRate")
-scatter.smooth(d$MeanSynchroFeed_nb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanSynchroFeed_nb")
-}
+scatter.smooth(d$MeanA,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanA")
 
 }
 
 
-{# Sdev
 
-mod_Sdev_FitnessAsNbRinged <- lmer(NbRinged ~ MeanSdev+
-											scale(TotalProRate, scale=FALSE) + 
-											scale(PairBroodNb, scale=FALSE) +
+modFitnessAsNbRinged_ADev <- lmer(NbRinged ~ TotalProRate+
+											MeanAdev+
+											MeanSdev+
+											PairBroodNb+
+											DadAge +
+											MumAge +
+											HatchingDayAfter0401 +
+											#MBroodNb+
+											#FBroodNb +
+											MPriorResidence +
+											FPriorResidence +
 											(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + 
 											(1|BreedingYear) , data = MY_TABLE_perBrood)
 										
-summary(mod_Sdev_FitnessAsNbRinged)
+summary(modFitnessAsNbRinged_ADev) # in ppt 20160707
+
+sunflowerplot(MY_TABLE_perBrood$MumAge, MY_TABLE_perBrood$DadAge)
+cor.test(MY_TABLE_perBrood$MumAge,MY_TABLE_perBrood$DadAge) # r=0.34 *****
+scatter.smooth(MY_TABLE_perBrood$NbRinged~MY_TABLE_perBrood$HatchingDayAfter0401)
 
 
+
+{# model assumptions checking
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(modFitnessAsNbRinged_ADev), resid(modFitnessAsNbRinged_ADev))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(modFitnessAsNbRinged_ADev))
+qqline(resid(modFitnessAsNbRinged_ADev))
+qqnorm(unlist(ranef(modFitnessAsNbRinged_ADev))) 
+qqline(unlist(ranef(modFitnessAsNbRinged_ADev)))
+
+# Mean of ranefs: should be zero
+# mean(unlist(ranef(modFitnessAsNbRinged_ADev)$SocialMumID))
+# mean(unlist(ranef(modFitnessAsNbRinged_ADev)$SocialDadID))
+# mean(unlist(ranef(modFitnessAsNbRinged_ADev)$PairID))
+mean(unlist(ranef(modFitnessAsNbRinged_ADev)$BreedingYear))
+
+##residuals vs predictors
+# d <- MY_TABLE_perBrood
+# scatter.smooth(d$MeanAdev, resid(modFitnessAsNbRinged_ADev)) # not linear !! > add poly term to model ?
+# abline(h=0, lty=2)
+
+##dependent variable vs fitted
+# d$fitted <- fitted(modFitnessAsNbRinged_ADev)
+# scatter.smooth(d$fitted, jitter(d$NbRinged, 0.05),ylim=c(0, 10))
+# abline(0,1)	
+
+##fitted vs all predictors
+# scatter.smooth(d$MeanAdev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbRinged", xlab="MeanAdev")
 
 }
 
 }
 
+{#### variance in chick mass ~ synchrony
+
+mod_Sync_sdResMassTarsus <- lmer(sdResMassTarsus ~ MixedBroodYN +
+											NbRinged + 
+											MeanSynchroFeed + 
+											#(1|SocialMumID)+ (1|SocialDadID) + 
+											(1|PairID) + (1|BreedingYear) ,data=MY_TABLE_perBrood)
+summary(mod_Sync_sdResMassTarsus) # Number of obs: 680, groups:  PairID, 378; SocialMumID, 263; SocialDadID, 253; BreedingYear, 12
+
+{# model assumptions checking  > not quite but alright ??
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(mod_Sync_sdResMassTarsus), resid(mod_Sync_sdResMassTarsus))	#
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(mod_Sync_sdResMassTarsus))
+qqline(resid(mod_Sync_sdResMassTarsus))
+qqnorm(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear)) 
+qqline(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear))
+
+# homogeneity of variance
+scatter.smooth(sqrt(abs(resid(mod_Sync_sdResMassTarsus))),fitted(mod_Sync_sdResMassTarsus)) 
+
+# Mean of ranefs: should be zero
+#mean(unlist(ranef(mod_Sync_sdResMassTarsus)$SocialMumID))
+#mean(unlist(ranef(mod_Sync_sdResMassTarsus)$SocialDadID))
+mean(unlist(ranef(mod_Sync_sdResMassTarsus)$PairID))
+mean(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear))
+
+# residuals vs predictors
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$sdResMassTarsus),]
+
+boxplot(d$MixedBroodYN, resid(mod_Sync_sdResMassTarsus))
+abline(h=0, lty=2)
+# scatter.smooth(d$NbRinged, resid(mod_Sync_sdResMassTarsus))
+# abline(h=0, lty=2)
+# scatter.smooth(d$MeanSynchroFeed, resid(mod_Sync_sdResMassTarsus))
+# abline(h=0, lty=2)	
+	
+
+# # dependent variable vs fitted
+# d$fitted <- fitted(mod_Sync_sdResMassTarsus)
+# scatter.smooth(d$fitted, jitter(d$sdResMassTarsus, 0.05),ylim=c(0, 5))
+
+# # fitted vs all predictors
+# boxplot(d$MixedBroodYN,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="MixedBroodYN")
+# scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="NbRinged")
+# scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="MeanSynchroFeed")
+
+
 }
 
-summary(mod_Sync_FitnessAsNbRinged)
+
+mod_Sdev_sdResMassTarsus <- lmer(sdResMassTarsus ~ MixedBroodYN +
+											HatchingDayAfter0401+
+											TotalProRate+
+											NbRinged + 
+											MeanAdev+
+											MeanSdev + 
+											PairBroodNb+
+											(1|SocialMumID)+ (1|SocialDadID) + 
+											(1|PairID) + (1|BreedingYear) ,data=MY_TABLE_perBrood)
+summary(mod_Sdev_sdResMassTarsus) # Number of obs: 680, groups:  PairID, 378; SocialMumID, 263; SocialDadID, 253; BreedingYear, 12
+
+
+
+}
+
+summary(mod_Sync_sdResMassTarsus)
 
 
 {#### proportion of synchronous visits where female enters first > repeatability within pair could induce alternation
@@ -1469,78 +1245,6 @@ abline(h=0, lty=2)
 }
 
 summary(mod_proportionSexStartSynchro)
-
-{#### variance in chick mass ~ synchrony
-
-mod_Sync_sdResMassTarsus <- lmer(sdResMassTarsus ~ MixedBroodYN +
-											NbRinged + 
-											MeanSynchroFeed + 
-											#(1|SocialMumID)+ (1|SocialDadID) + 
-											(1|PairID) + (1|BreedingYear) ,data=MY_TABLE_perBrood)
-summary(mod_Sync_sdResMassTarsus) # Number of obs: 680, groups:  PairID, 378; SocialMumID, 263; SocialDadID, 253; BreedingYear, 12
-
-{# model assumptions checking  > not quite but alright ??
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(mod_Sync_sdResMassTarsus), resid(mod_Sync_sdResMassTarsus))	#
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_Sync_sdResMassTarsus))
-qqline(resid(mod_Sync_sdResMassTarsus))
-qqnorm(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear)) 
-qqline(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear))
-
-# homogeneity of variance
-scatter.smooth(sqrt(abs(resid(mod_Sync_sdResMassTarsus))),fitted(mod_Sync_sdResMassTarsus)) 
-
-# Mean of ranefs: should be zero
-#mean(unlist(ranef(mod_Sync_sdResMassTarsus)$SocialMumID))
-#mean(unlist(ranef(mod_Sync_sdResMassTarsus)$SocialDadID))
-mean(unlist(ranef(mod_Sync_sdResMassTarsus)$PairID))
-mean(unlist(ranef(mod_Sync_sdResMassTarsus)$BreedingYear))
-
-# residuals vs predictors
-d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$sdResMassTarsus),]
-
-boxplot(d$MixedBroodYN, resid(mod_Sync_sdResMassTarsus))
-abline(h=0, lty=2)
-# scatter.smooth(d$NbRinged, resid(mod_Sync_sdResMassTarsus))
-# abline(h=0, lty=2)
-# scatter.smooth(d$MeanSynchroFeed, resid(mod_Sync_sdResMassTarsus))
-# abline(h=0, lty=2)	
-	
-
-# # dependent variable vs fitted
-# d$fitted <- fitted(mod_Sync_sdResMassTarsus)
-# scatter.smooth(d$fitted, jitter(d$sdResMassTarsus, 0.05),ylim=c(0, 5))
-
-# # fitted vs all predictors
-# boxplot(d$MixedBroodYN,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="MixedBroodYN")
-# scatter.smooth(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="NbRinged")
-# scatter.smooth(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="sdResMassTarsus", xlab="MeanSynchroFeed")
-
-
-}
-
-
-mod_Sdev_sdResMassTarsus <- lmer(sdResMassTarsus ~ MixedBroodYN +
-											HatchingDayAfter0401+
-											TotalProRate+
-											NbRinged + 
-											MeanAdev+
-											MeanSdev + 
-											PairBroodNb+
-											(1|SocialMumID)+ (1|SocialDadID) + 
-											(1|PairID) + (1|BreedingYear) ,data=MY_TABLE_perBrood)
-summary(mod_Sdev_sdResMassTarsus) # Number of obs: 680, groups:  PairID, 378; SocialMumID, 263; SocialDadID, 253; BreedingYear, 12
-
-
-
-}
-
-summary(mod_Sync_sdResMassTarsus)
-
 
 
 
