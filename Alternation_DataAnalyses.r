@@ -267,7 +267,8 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 }
 
 Fig_A_AMax_est 
-# these are not the row data like in Selection/Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI > Joel says it's wrong (one would need to use delta method to back transform variance)
+# these are not the row data like in Selection/Simulation script, but are the back transformed estimates of the binomial glmer model + 95% CI 
+# > Joel says it's wrong (one would need to use delta method to back transform variance)
 
 }
 
@@ -362,18 +363,18 @@ summary(mod_S_RandomVsObs_outofAmax_glmer)
 
 {# check dependent and explanatory variables
 
-cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.08, p<0.001 
-cor.test(MY_TABLE_perDVD$ChickAge,MY_TABLE_perDVD$NbRinged) # cor = 0.06, p=0.01 
+cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.10, p<0.001 
+cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$NbRinged) # cor = 0.05, p=0.06 
 cor.test(MY_TABLE_perDVD$MumAge,MY_TABLE_perDVD$DadAge) # cor = 0.34, p *****   - assortative mating for age > take the mean of the 2 ?
-cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.63, p < 0.0001 ! > take one or the other variable ?
-cor.test(MY_TABLE_perDVD$VisitRateDifference, MY_TABLE_perDVD$MFVisit1RateH) # r=0.46
+cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.65, p < 0.0001 ! > take one or the other variable ?
 
 #hist(MY_TABLE_perDVD$DVDInfoAge) # very bimodal as the protocol is to measure d7 and d11, in between is when they "miss"
 
 summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
-#scatter.smooth(MY_TABLE_perDVD$AlternationValue,MY_TABLE_perDVD$RelTimeHrs)# linear ? >linear enough to keep it as it is ?
-#scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$AlternationValue)# linear ? >linear enough to keep it as it is ?
-scatter.smooth(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
+#scatter.smooth(MY_TABLE_perDVD$NbAlternation,MY_TABLE_perDVD$RelTimeHrs)# linear 
+#scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$NbAlternation)# linear
+#scatter.smooth(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
+
 }
 
 {# modA
@@ -391,8 +392,8 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 	(1|SocialMumID)+ (1|SocialDadID) + 
 	#(1|PairID) +  # explained 0% of the variance
 	#(1|BreedingYear) + # explained 0% of the variance
-	(1|PairIDYear)+
-	(1|DVDRef) # for overdispersion
+	(1|PairIDYear)
+	+ (1|DVDRef) # for overdispersion
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
 	, family = 'binomial'
 	,control=glmerControl(optimizer = "bobyqa")
@@ -400,8 +401,10 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 
 summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairIDYear: 546 ; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
 
+dispersion_glmer(modA) # 1.2 <1.4, but when DVDRef added, captures quite some variance ?
+
 BlupsBroodRefModA <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modA)$BroodRef[,1])) 
-colnames(BlupsBroodRefModA) <- c('BroodRef','blups')
+colnames(BlupsBroodRefModA) <- c('BroodRef','blupsA')
 }
 
 {# model assumptions checking: residuals vs fitted not good at all
@@ -502,7 +505,7 @@ colnames(BlupsBroodRefModAdev) <- c('BroodRef','blupsAdev')
 
 {# model assumptions checking
 
-# residuals vs fitted: mean should constantly be zero: not quite
+# residuals vs fitted: mean should constantly be zero: ok -ish
 scatter.smooth(fitted(modAdev), resid(modAdev))
 abline(h=0, lty=2)
 
@@ -559,285 +562,74 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModAdev, by='Broo
 {#### predictors of synchrony
 
 {# check dependent and explanatory variables 
-#hist(MY_TABLE_perDVD$SynchronyFeedValue, breaks =length(unique(MY_TABLE_perDVD$SynchronyFeedValue)))
+
+Correl_A_S <-  {ggplot(data=MY_TABLE_perDVD, aes(y=NbSynchro_ChickFeedingEquanim,x=NbAlternation) )+ 
+							geom_point()  +
+							geom_smooth(method = "lm") +
+							geom_abline(intercept=0,slope=0.5)+
+							geom_abline(intercept=0,slope=1)}
+
 hist(MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim, breaks =length(unique(MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim)))
 
-table(MY_TABLE_perDVD$SynchronyFeedValue)
-
-#scatter.smooth(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$VisitRateDifference )
-cor.test(MY_TABLE_perDVD$MFVisit1,MY_TABLE_perDVD$VisitRateDifference)
-
-#scatter.smooth(MY_TABLE_perDVD$SynchronyFeedValue~MY_TABLE_perDVD$MFVisit1 )
-
-
-
 # summary when synchro 0 vs non-zero
-
-summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue == 0,c("MVisit1","FVisit1","VisitRateDifference","TotalProRate","NbAlternation","DVDInfoChickNb")])
-summary(MY_TABLE_perDVD[MY_TABLE_perDVD$SynchronyFeedValue != 0,c("MVisit1","FVisit1","VisitRateDifference","TotalProRate","NbAlternation","DVDInfoChickNb")])
+summary(MY_TABLE_perDVD[MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim == 0,c("MVisit1","FVisit1","VisitRateDifference","TotalProRate","NbAlternation","DVDInfoChickNb")])
+summary(MY_TABLE_perDVD[MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim != 0,c("MVisit1","FVisit1","VisitRateDifference","TotalProRate","NbAlternation","DVDInfoChickNb")])
 
 }
 
-{# synchrony score > assumptions model weird
 
-modS <- lmer(SynchronyFeedValue~  
-	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to VisitRateDifference and with chickNb and this is mathematically linked to Sync score
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	scale(HatchingDayAfter0401, scale=FALSE) + 
-	scale(PairBroodNb, scale=FALSE) + 
-	scale(DVDInfoChickNb, scale=FALSE) + 
-	ChickAgeCat + 
-	VisitRateDifference +  
-	scale(RelTimeHrs, scale=FALSE) + 
+modS <- glmer(cbind(NbSynchro_ChickFeedingEquanim, NbAMax-NbSynchro_ChickFeedingEquanim)~  
+	scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur become signi negative, if PBDur removed, ParentAge even more signi Neg)
+	scale(HatchingDayAfter0401) +
+	scale(PairBroodNb) + 
+	scale(DVDInfoChickNb) + 
+	ChickAgeCat +
+	scale(RelTimeHrs) + 
+	MPriorResidence +
+    FPriorResidence +
+	##offset(I(log(MFVisit1)))+
 	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) # for overdispersion
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+	, family = 'binomial'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
 
-summary(modS) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
-
-{# model assumptions checking > not quite !
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modS), resid(modS))	#
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modS))
-qqline(resid(modS))
-qqnorm(unlist(ranef(modS))) 
-qqline(unlist(ranef(modS)))
-
-# homogeneity of variance
-scatter.smooth(sqrt(abs(resid(modS))),fitted(modS)) 
-
-## Mean of ranefs: should be zero
-#mean(unlist(ranef(modS)$BroodRef))
-mean(unlist(ranef(modS)$SocialMumID))
-mean(unlist(ranef(modS)$SocialDadID))
-mean(unlist(ranef(modS)$PairID))
-mean(unlist(ranef(modS)$BreedingYear))
-
-# residuals vs predictors
-d <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),]
-
-scatter.smooth(d$ParentsAge, resid(modS))
-abline(h=0, lty=2)
-scatter.smooth(d$HatchingDayAfter0401, resid(modS))
-abline(h=0, lty=2)
-plot(d$DVDInfoChickNb, resid(modS))
-abline(h=0, lty=2)	
-plot(d$ChickAgeCat, resid(modS))
-abline(h=0, lty=2)	
-scatter.smooth(d$VisitRateDifference, resid(modS))
-abline(h=0, lty=2)	
-scatter.smooth(d$RelTimeHrs, resid(modS))
-abline(h=0, lty=2)		
-
-# dependent variable vs fitted
-d$fitted <- fitted(modS)
-scatter.smooth(d$fitted, jitter(d$SynchronyFeedValue, 0.05),ylim=c(0, 40))
-
-# fitted vs all predictors
-scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="ParentsAge")
-scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="HatchingDayAfter0401")
-boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="ChickAgeCat")
-plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="DVDInfoChickNb")
-scatter.smooth(d$VisitRateDifference,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="VisitRateDifference") # strongly correlated
-scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="SynchronyFeedValue", xlab="RelTimeHrs")
-
-}
-
-}
-
-{# synchrony Feed Nb > assumption model awful
-
-modS_nb <- lmer(NbSynchro_ChickFeedingEquanim~  
-	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to VisitRateDifference and with chickNb
-	scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-	#scale(HatchingDayAfter0401, scale=FALSE) + 
-	#scale(PairBroodNb, scale=FALSE) + 
-	scale(DVDInfoChickNb, scale=FALSE) + 
-	ChickAgeCat + 
-	VisitRateDifference +  
-	# scale(RelTimeHrs, scale=FALSE) + 
-	#(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) 
-	 +(1|PairID) 
-	+ (1|BreedingYear) 
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
-
-summary(modS_nb) # Nr of obs: 1593, groups:  BroodRef, 869; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
-
-{# model assumptions checking > awful !!!
-
-# residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(modS_nb), resid(modS_nb))	# curved !
-abline(h=0, lty=2)
-
-# qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(modS_nb))
-qqline(resid(modS_nb))
-qqnorm(unlist(ranef(modS_nb))) 
-qqline(unlist(ranef(modS_nb)))
-
-# homogeneity of variance	# awful !!
-scatter.smooth(sqrt(abs(resid(modS_nb))),fitted(modS_nb)) 
-
-# Mean of ranefs: should be zero
-#mean(unlist(ranef(modS_nb)$BroodRef))
-mean(unlist(ranef(modS_nb)$SocialMumID))
-mean(unlist(ranef(modS_nb)$SocialDadID))
-mean(unlist(ranef(modS_nb)$PairID)) # 0 !
-mean(unlist(ranef(modS_nb)$BreedingYear))
-
-# residuals vs predictors
-d <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),]
-
-scatter.smooth(d$ParentsAge, resid(modS_nb))
-abline(h=0, lty=2)
-scatter.smooth(d$HatchingDayAfter0401, resid(modS_nb))
-abline(h=0, lty=2)
-plot(d$DVDInfoChickNb, resid(modS_nb))
-abline(h=0, lty=2)	
-plot(d$ChickAgeCat, resid(modS_nb))
-abline(h=0, lty=2)	
-scatter.smooth(d$VisitRateDifference, resid(modS_nb))
-abline(h=0, lty=2)	
-scatter.smooth(d$RelTimeHrs, resid(modS_nb))
-abline(h=0, lty=2)		
-
-# dependent variable vs fitted
-d$fitted <- fitted(modS_nb)
-scatter.smooth(d$fitted, jitter(d$NbSynchro_ChickFeedingEquanim, 0.05),ylim=c(0, 40))
-
-# fitted vs all predictors
-scatter.smooth(d$ParentsAge,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="ParentsAge")
-scatter.smooth(d$HatchingDayAfter0401,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="HatchingDayAfter0401")
-boxplot(fitted~ChickAgeCat, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="ChickAgeCat")
-plot(d$DVDInfoChickNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="DVDInfoChickNb")
-scatter.smooth(d$VisitRateDifference,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="VisitRateDifference") # strongly correlated
-scatter.smooth(d$RelTimeHrs,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbSynchro_ChickFeedingEquanim", xlab="RelTimeHrs")
-
-}
-
-}
-
-{# with glmmADMB : hurdle model with random effect > predicted variables needs to be a count > use synchrony Feed Nb
-# first analyse the factors that produce zeros (vs.non-zeros) by a logistic regression
-# then use a truncated Poisson-distribution (at y=1) for the non-zero counts
-# http://glmmadmb.r-forge.r-project.org/glmmADMB.pdf
-
-
-
-
-modS_nb_glmmadmb <- glmmadmb(NbSynchro_ChickFeedingEquanim~scale(MFVisit1, scale=FALSE) +# this is strongly correlated to VisitRateDifference and with chickNb
-														scale(ParentsAge, scale=FALSE) + # this is strongly correlated to PairBroodNb
-														# scale(HatchingDayAfter0401, scale=FALSE) + 
-														# scale(PairBroodNb, scale=FALSE) + 
-														scale(DVDInfoChickNb, scale=FALSE) + 
-														ChickAgeCat + 
-														VisitRateDifference +  
-														# scale(RelTimeHrs, scale=FALSE) + 
-														#(1|BroodRef) + 
-														(1|SocialMumID)+ (1|SocialDadID) 
-														 + (1|PairID) 
-														+ (1|BreedingYear) 
-	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),], zeroInflation=TRUE, family="poisson")
-
-summary(modS_nb_glmmadmb) # might have an issue because doesnt give the variance of the random effects in the output thought ranefs available
-
-plot(unlist(ranef(modS_nb_glmmadmb)$SocialMumID),unlist(ranef(modS_nb)$SocialMumID))
-plot(unlist(ranef(modS_nb_glmmadmb)$SocialDadID),unlist(ranef(modS_nb)$SocialDadID))
-plot(unlist(ranef(modS_nb_glmmadmb)$PairID),unlist(ranef(modS_nb)$PairID))
-plot(unlist(ranef(modS_nb_glmmadmb)$BreedingYear),unlist(ranef(modS_nb)$BreedingYear))
-
-ranefs_modS_nb_glmmadmb_PairID <- as.data.frame(cbind(rownames(ranef(modS_nb_glmmadmb)$PairID), unlist(ranef(modS_nb_glmmadmb)$PairID)))
-colnames(ranefs_modS_nb_glmmadmb_PairID) <- c("PairID", "ranefs")
-rownames(ranefs_modS_nb_glmmadmb_PairID) <- NULL
-ranefs_modS_nb_glmmadmb_PairID$ranefs <- as.numeric(as.character(ranefs_modS_nb_glmmadmb_PairID$ranefs))
-
-# pairs that have twice zero for synchrony
-MeanSynchronyFeedValue_perPair <- as.data.frame(MY_TABLE_perDVD %>% group_by(PairID) %>% summarise(mean(SynchronyFeedValue)))
-colnames(MeanSynchronyFeedValue_perPair) <- c("PairID", "MeanSynchronyFeedValue")
-MeanSynchronyFeedValue_perPair[MeanSynchronyFeedValue_perPair$MeanSynchronyFeedValue == 0,]
-
-ranefs_modS_nb_glmmadmb_PairID$PairswithMeanS0 <- ifelse(ranefs_modS_nb_glmmadmb_PairID$PairID %in%  MeanSynchronyFeedValue_perPair$PairID[MeanSynchronyFeedValue_perPair$MeanSynchronyFeedValue == 0], 0, 1)
-ggplot(ranefs_modS_nb_glmmadmb_PairID, aes(PairID,ranefs, colour = as.factor(PairswithMeanS0))) + geom_point()
-
-
-}
-
-{## Gamma hurdle model with continuous data : NOT WORKING
-# http://seananderson.ca/2014/05/18/gamma-hurdle.html
-
-# MY_TABLE_perDVD$SynchroFeed_non_zero <- ifelse(MY_TABLE_perDVD$SynchronyFeedValue > 0, 1, 0)
-# ggplot(MY_TABLE_perDVD, aes(DVDRef, SynchronyFeedValue, colour = as.factor(SynchroFeed_non_zero))) + geom_point()
-
-# modS1_Logistic <- glmer(SynchroFeed_non_zero ~ MFVisit1 +# this is strongly correlated to VisitRateDifference
-												# ParentsAge + # this is strongly correlated to PairBroodNb
-												##HatchingDayAfter0401 + 
-												##PairBroodNb + 
-												# DVDInfoChickNb + 
-												# ChickAgeCat + 
-												# VisitRateDifference +  
-												##RelTimeHrs + 
-												##(1|BroodRef) + 
-												##(1|SocialMumID)+ 
-												# (1|SocialDadID) + 
-												# (1|PairID)
-												#+(1|BreedingYear) 
-												# , data = MY_TABLE_perDVD, family = binomial(link = logit))
-
-# summary(modS1_Logistic)
-
-# modS2_Gamma <- glm(SynchronyFeedValue ~ # MFVisit1 +# this is strongly correlated to VisitRateDifference and this is mathematically linked to Sync score
-										# ParentsAge + # this is strongly correlated to PairBroodNb
-										##HatchingDayAfter0401 + 
-										##PairBroodNb + 
-										# DVDInfoChickNb + 
-										# ChickAgeCat + 
-										# VisitRateDifference 
-										##scale(RelTimeHrs, scale=FALSE) + 
-										##(1|BroodRef) + 
-										##(1|SocialMumID)+ (1|SocialDadID) 
-										##+(1|PairID) 
-										##+ (1|BreedingYear) 
-										# , data = subset(MY_TABLE_perDVD, MY_TABLE_perDVD$SynchroFeed_non_zero == 1), family = Gamma(link = log))
-
-# summary(modS2_Gamma)	# can't make the glmer to converge
-}
-
-
-	
+summary(modS)
 	
 	
 	
 }
 
-summary(modS_nb_glmmadmb)
 
 {#### predictors of the deviation in synchrony from randomization within file
 
-scatter.smooth(MY_TABLE_perDVD$SynchronyFeedValue, MY_TABLE_perDVD$Sdev)
+scatter.smooth(MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim, MY_TABLE_perDVD$Sdev)
 
 
 modSdev <- lmer(Sdev~  
-	scale(MFVisit1, scale=FALSE) + # this is strongly correlated to VisitRateDifference and with chickNb and this is mathematically linked to Sync score
-	MumAge + 
-	DadAge +
-	scale(HatchingDayAfter0401, scale=FALSE) + 
-	scale(PairBroodNb, scale=FALSE) + 
-	scale(DVDInfoChickNb, scale=FALSE) + 
+	#scale(MFVisit1) + # this is strongly correlated to VisitRateDifference and with chickNb and this is mathematically linked to Sync score
+	scale(ParentsAge) +
+	scale(HatchingDayAfter0401) + 
+	scale(PairBroodNb) + 
+	scale(DVDInfoChickNb) + 
 	FPriorResidence +
 	MPriorResidence+
 	ChickAgeCat + 
-	VisitRateDifference +  
-	scale(RelTimeHrs, scale=FALSE) + 
+	scale(RelTimeHrs) + 
 	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + (1|PairID) + (1|BreedingYear) 
+	(1|SocialMumID)+ (1|SocialDadID) +
+	(1|PairID) + 
+	(1|BreedingYear) 
+	# + (1|PairIDYear) # explained 0% of the variance
 	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs) & !is.na(MY_TABLE_perDVD$ParentsAge),])
 
-summary(modSdev) # in ppt 20160707
+summary(modSdev)
+
 
 }
 
