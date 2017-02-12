@@ -14,9 +14,9 @@ library(lme4)
 options(scipen=999)
 }
 
-# avPR observed in data = 15 
-# sdPR observed = 8 
-# VideoLength observed = 90
+# avPR <- 15 
+# sdPR <- 8 
+# VideoLength <- 90
 
 
 create_fulldat_and_analyse <- function(avPR,sdPR,VideoLength, ASP){
@@ -88,6 +88,11 @@ apply(modcoeff_S_Sign, 1, sum)/100
 modcoeff_P <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'P'))
 modcoeff_P_Sign <- modcoeff_P < 0.05
 sum(modcoeff_P_Sign)/1000
+
+
+
+
+
 
 
 

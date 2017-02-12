@@ -672,6 +672,60 @@ axis.title=element_text(size=14,face="bold"))
 
 }
 
+
+{## Generate Data
+
+create_1662_fulldat <- function(avPR,sdPR,VideoLength){
+
+meanlog <- log(avPR)
+sdlog <-  sqrt(log(1 + sdPR^2/avPR^2))
+
+create_DVD <- function(){
+
+MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog )
+MaleP <- rpois(1, MalePexp)
+if (MaleP == 0){MaleP <- rpois(1, MalePexp)}
+
+FemalePexp <- rlnorm(1, meanlog = log(avPR), sdlog = sqrt(log(1 + sdPR^2/avPR^2)) )
+FemaleP <- rpois(1, FemalePexp)
+if (FemaleP == 0){FemaleP <- rpois(1, FemalePexp)}
+
+TotalP <- MaleP + FemaleP
+DiffP <- abs(MaleP - FemaleP)
+
+MaleVisits <- sort(runif(MaleP,0,VideoLength))
+FemaleVisits <- sort(runif(FemaleP,0,VideoLength))
+DVD <- data.frame(rbind(cbind(Visits = MaleVisits, Sex = rep(1, length(MaleVisits))),cbind(Visits = FemaleVisits,Sex = rep(0, length(FemaleVisits)))))
+DVD <- DVD[order(DVD$Visits),]
+
+A <- sum(diff(DVD$Sex)!=0)
+if (MaleP == FemaleP){MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP)) -1} else {MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP))}
+S <- sum(diff(DVD$Sex)!=0 & diff(DVD$Visits) <= 0.5)
+dat <- data.frame(cbind(TotalP,DiffP,MaxA,A,S))
+
+dat
+}
+
+fulldat <- data.frame(matrix(data=unlist(pbreplicate(1662, create_DVD())), 1662,5, byrow = TRUE)) # 1662 DVDs for simulation
+colnames(fulldat) <- c('TotalP','DiffP','MaxA','A','S')
+fulldat$DVDRef <- seq(1:nrow(fulldat))
+fulldat
+}
+
+
+one_generated_fulldat <- create_1662_fulldat(15,8,90)
+head(one_generated_fulldat)
+
+
+sumary_generated <- summarise (one_generated_fulldat,
+				Amean = mean(A/MaxA*100),
+				Alower = Amean - sd(A/MaxA*100)/sqrt(n())*1.96,
+				Aupper = Amean + sd(A/MaxA*100)/sqrt(n())*1.96,
+				NbFiles = n())
+
+sumary_generated$Type <- '6_Generated'
+}
+
 {## plot Asim/AMax 
 
 {# summarize the ratio Asim/AMax made on each DVD and averaged accross the dataset
@@ -718,7 +772,11 @@ summary_A_outof_AMax <- do.call(rbind,
 list(summary_Aobsv_outof_AMax,
 summary_out_Asim_outof_AMax_among_df,
 summary_out_Asim_outof_AMax_within_df,
-summary_Aswitch_outof_AMax))
+summary_Aswitch_outof_AMax,
+sumary_generated)) # not run
+
+# summary_A_outof_AMax <- rbind(summary_A_outof_AMax, sumary_generated)
+
 }
 
 {# plot Asim/AMax
@@ -731,7 +789,16 @@ geom_errorbar(aes(ymin=Alower, ymax=Aupper),na.rm=TRUE)+
 geom_point(size = 3) +
 
 scale_y_continuous(breaks =seq(60,80, by = 5),limits = c(60,80)) +
-scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
+scale_x_discrete(labels = 
+c('Observed
+data', 
+'Switched
+intervals', 'Within
+random.', 
+'Among
+random.',
+'Generated
+data'))+
 
 theme_classic()+
 theme(
@@ -819,8 +886,8 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 }
 
 # or 
-# summary_A_outof_AMax <- read.csv(paste(SelectedData_folder,"R_summary_A_outof_AMax.csv", sep="/"))
-# summary_S_outof_AMax <- read.csv(paste(SelectedData_folder,"R_summary_S_outof_AMax.csv", sep="/"))
+# summary_A_outof_AMax <- read.csv(paste("R_Selected&SimulatedData","R_summary_A_outof_AMax.csv", sep="/"))
+# summary_S_outof_AMax <- read.csv(paste("R_Selected&SimulatedData","R_summary_S_outof_AMax.csv", sep="/"))
 
 dev.new()
 Fig_A_AMax
