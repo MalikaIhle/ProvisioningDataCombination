@@ -2,8 +2,8 @@
 #	 Joel PICK & Malika IHLE    joel.l.pick@gmail.com   malika_ihle@hotmail.fr
 #	 Simulation to help decide which analyses to perfom on provisioning data sparrows
 #	 Start : 02/02/2017
-#	 last modif : 09/02/2017
-#	 commit: add interaction term
+#	 last modif : 11/02/2017
+#	 commit: one function (create fulldataset) to test all analyses
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list = ls(all = TRUE))
@@ -14,130 +14,20 @@ library(lme4)
 options(scipen=999)
 }
 
-{### Predict Alternation
-
-# mimicking our analysis to predict Nb of Alternation
-
-sim <- function(){
-MaleP <- rpois(1000, 10)
-FemaleP <- rpois(1000, 10)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP-FemaleP)
-MaxA <- TotalP - DiffP
-A <- rbinom(1000,MaxA,0.5)
-mod <- glm(cbind(A,MaxA-A) ~TotalP + DiffP, family = 'binomial')
-summary(mod)$coef[2:3,4]
-}
-
-simOut <- replicate(1000, sim())
-simOutSign <- simOut<0.05
-apply(simOutSign, 1, sum)/1000 # this doesn't get significant more than by chance
+# avPR observed in data = 15 
+# sdPR observed = 8 
+# VideoLength observed = 90
 
 
+create_fulldat_and_analyse <- function(avPR,sdPR,VideoLength, ASP){
 
-# mimicking Ben's analysis on alternation score (Nb of alternation / total provisioning rate)
-
-sim2 <- function(){
-MaleP <- rpois(1000, 10)
-FemaleP <- rpois(1000, 10)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP-FemaleP)
-MaxA <- TotalP - DiffP
-A <- rbinom(1000,MaxA,0.5)
-mod <- lm(I(A/(TotalP-1)) ~ DiffP)
-summary(mod)$coef[2,4]
-}
-
-simOut2 <- replicate(1000, sim2())
-simOutSign2 <- simOut2<0.05
-sum(simOutSign2)/1000 # this leads to significant results more than by chance due to mathematical relationship between dependent and explanatory variables
-
-}
-
-{### Predict provisioning rate as the fitness trait, while including variation in provisioning rate
-
-n <- 1000
-avPRobs <-15 # this is the average of provisioning rate observed in the data
-sdPRobs <- 8 # it's SD
-meanlog <- log(avPRobs)
-sdlog <-  sqrt(log(1 + sdPRobs^2/avPRobs^2))
-
-
-# mimicking Ben's analysis TotalProRate ~ Ascore or A
-
-simProRate <- function(){
-
-MalePexp <- rlnorm(n, meanlog = meanlog, sdlog = sdlog )
-FemalePexp <- rlnorm(n, meanlog = log(avPRobs), sdlog = sqrt(log(1 + sdPRobs^2/avPRobs^2)) )
-MaleP <- rpois(n, MalePexp)
-FemaleP <- rpois(n, FemalePexp)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP-FemaleP)
-MaxA <- TotalP - DiffP
-A <- rbinom(n,MaxA,0.6) # observed = random
-modreverse <- glm(TotalP ~ A/MaxA, family = 'poisson')
-summary(modreverse)$coef[2,4]
-
-}
-
-simProRateOut <- pbreplicate(1000, simProRate())
-
-simProRateOutSign <- simProRateOut < 0.05
-sum(simProRateOutSign)/1000 # doing it that way will ALWAYS lead to significant results.
-
-
-# micmicking our analysis: TotalProRate ~ A*Type(sim or obsv)
-
-simProRate <- function(){
-
-MalePexp <- rlnorm(n, meanlog = meanlog, sdlog = sdlog )
-FemalePexp <- rlnorm(n, meanlog = log(avPRobs), sdlog = sqrt(log(1 + sdPRobs^2/avPRobs^2)) )
-MaleP <- rpois(n, MalePexp)
-FemaleP <- rpois(n, FemalePexp)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP-FemaleP)
-MaxA <- TotalP - DiffP
-A <- rbinom(n,MaxA,0.6) # 'observed' (one random)
-DVDRef <- seq(1:length(A))
-
-dat <- data.frame(cbind(TotalP,A,MaxA, DVDRef))
-dat_long <- rbind(dat, dat)
-dat_long$Type <- c(rep("Obsv", nrow(dat)),rep("Sim", nrow(dat)))
-dat_long$A[dat_long$Type == 'Sim'] <- rbinom(n,MaxA,0.6) # 'simulated' (another one random)
-dat_long$rowID <- seq(1:nrow(dat_long))
-
-modreverse <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=dat_long)
-summary(modreverse)$coef[4,4]
-
-}
-
-simProRateOut <- pbreplicate(1000, simProRate())
-
-simProRateOutSign <- simProRateOut < 0.05
-sum(simProRateOutSign)/1000 # does not get significant ever (A observed and A simulated are both random and therefore 'equal', when comparing their slope they do not differ)
-
-}
-
-
-
-
-
-
-
-### Predict Synchrony 
-
-avPRobs <-15 # this is the average of provisioning rate observed in the data
-sdPRobs <- 8 # it's SD
-meanlog <- log(avPRobs)
-sdlog <-  sqrt(log(1 + sdPRobs^2/avPRobs^2))
-VideoLength <- 90
-
-sim_S <- function(){
+meanlog <- log(avPR)
+sdlog <-  sqrt(log(1 + sdPR^2/avPR^2))
 
 create_DVD <- function(){
 
 MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog )
-FemalePexp <- rlnorm(1, meanlog = log(avPRobs), sdlog = sqrt(log(1 + sdPRobs^2/avPRobs^2)) )
+FemalePexp <- rlnorm(1, meanlog = log(avPR), sdlog = sqrt(log(1 + sdPR^2/avPR^2)) )
 MaleP <- rpois(1, MalePexp)
 FemaleP <- rpois(1, FemalePexp)
 TotalP <- MaleP + FemaleP
@@ -160,19 +50,44 @@ fulldat <- data.frame(matrix(data=unlist(pbreplicate(3000, create_DVD())), 3000,
 colnames(fulldat) <- c('TotalP','DiffP','MaxA','A','S')
 fulldat$DVDRef <- seq(1:nrow(fulldat))
 
-modS <- glm(cbind(S, MaxA-S)~ TotalP + DiffP, data=fulldat, family = 'binomial')
-summary(modS)$coeff[2:3,4]
+
+if(ASP == 'A')
+{mod <- glm(cbind(A, MaxA-A)~ TotalP + DiffP, data=fulldat, family = 'binomial')
+return(summary(mod)$coeff[2:3,4])}
+
+if(ASP == 'S')
+{mod <- glm(cbind(S, MaxA-S)~ TotalP + DiffP, data=fulldat, family = 'binomial')
+return(summary(mod)$coeff[2:3,4])}
+
+if(ASP == 'P')
+{
+# A 'simulated' (another one random)
+fulldat2 <- data.frame(matrix(data=unlist(pbreplicate(3000, create_DVD())), 3000,5, byrow = TRUE))
+colnames(fulldat2) <- c('TotalP','DiffP','MaxA','A','S')
+fulldat2$DVDRef <- seq(1:nrow(fulldat2))
+
+fulldat_long <- rbind(fulldat, fulldat2)
+fulldat_long$Type <- c(rep("Obsv", nrow(fulldat)),rep("Sim", nrow(fulldat2)))
+fulldat_long$rowID <- seq(1:nrow(fulldat_long))
+
+mod <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long)
+return(summary(mod)$coef[4,4])}
+
 }
 
-sim_S_Out <- pbreplicate(1000, sim_S())
-sim_S_OutSign <- sim_S_Out < 0.05
-apply(sim_S_OutSign, 1, sum)/1000
+modcoeff_A <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'A'))
+modcoeff_A_Sign <- modcoeff_A < 0.05
+apply(modcoeff_A_Sign, 1, sum)/100
 
 
+modcoeff_S <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'S'))
+modcoeff_S_Sign <- modcoeff_S < 0.05
+apply(modcoeff_S_Sign, 1, sum)/100
 
-head(fulldat)
 
-
+modcoeff_P <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'P'))
+modcoeff_P_Sign <- modcoeff_P < 0.05
+sum(modcoeff_P_Sign)/1000
 
 
 
