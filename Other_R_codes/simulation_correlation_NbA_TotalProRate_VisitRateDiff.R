@@ -96,8 +96,3 @@ sum(modcoeff_P_Sign)/1000
 
 
 
-
-
-
-
-

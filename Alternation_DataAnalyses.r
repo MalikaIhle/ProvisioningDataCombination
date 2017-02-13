@@ -51,6 +51,16 @@ head(SimulationOutput_long_median)
 
 
 
+
+
+
+
+cor.test(MY_TABLE_perDVD$TotalProRate,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
+
+
+
+
+
 ######################
 # RANDOM VS OBSERVED #
 ######################
@@ -388,6 +398,9 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 	scale(RelTimeHrs) + 
 	MPriorResidence +
     FPriorResidence +
+	
+	#+ TotalProRate + VisitRateDifference+
+	
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + 
 	#(1|PairID) +  # explained 0% of the variance
@@ -400,6 +413,9 @@ modA <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 	)
 
 summary(modA) # Number of obs: 1593, groups:  BroodRef, 869; PairIDYear: 546 ; PairID, 443; SocialMumID, 290; SocialDadID, 280; BreedingYear, 12
+
+summary(modA)$coeff
+summary(modA2)$coeff
 
 dispersion_glmer(modA) # 1.2 <1.4, but when DVDRef added, captures quite some variance ?
 
@@ -474,6 +490,48 @@ modA_withinIndAgeEffect <- glmer(cbind(NbAlternation, NbAMax-NbAlternation)~
 summary(modA_withinIndAgeEffect)
 
 }
+
+
+
+# mod A_long
+
+{# create a repeated table per DVD, with the column NbAlternation having observed values in first half, and sim values in second half
+MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
+MY_TABLE_perDVD_Sim_long$Type <- c(rep("Obsv", nrow(MY_TABLE_perDVD)),rep("Sim", nrow(MY_TABLE_perDVD)))
+MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'Sim'] <- MY_TABLE_perDVD_Sim_long$MeanAsim[MY_TABLE_perDVD_Sim_long$Type == 'Sim']
+MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
+}
+
+head(MY_TABLE_perDVD_Sim_long)
+
+modA_long <- glmer(I(round(NbAlternation,0))~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	, family = 'poisson'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long)
+
 
 }
 
