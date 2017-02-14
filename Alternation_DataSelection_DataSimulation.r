@@ -21,6 +21,7 @@ rm(list = ls(all = TRUE))
 library(tidyr)
 library(dplyr) 
 library(ggplot2)
+library(pbapply)
 
 }
 
@@ -717,13 +718,22 @@ one_generated_fulldat <- create_1662_fulldat(15,8,90)
 head(one_generated_fulldat)
 
 
-sumary_generated <- summarise (one_generated_fulldat,
+sumary_A_generated <- summarise (one_generated_fulldat,
 				Amean = mean(A/MaxA*100),
 				Alower = Amean - sd(A/MaxA*100)/sqrt(n())*1.96,
 				Aupper = Amean + sd(A/MaxA*100)/sqrt(n())*1.96,
 				NbFiles = n())
 
-sumary_generated$Type <- '6_Generated'
+sumary_A_generated$Type <- '6_Generated'
+
+sumary_S_generated <- summarise (one_generated_fulldat,
+				Smean = mean(S/MaxA*100),
+				Slower = Smean - sd(S/MaxA*100)/sqrt(n())*1.96,
+				Supper = Smean + sd(S/MaxA*100)/sqrt(n())*1.96,
+				NbFiles = n())
+
+sumary_S_generated$Type <- '6_Generated'
+
 }
 
 {## plot Asim/AMax 
@@ -773,9 +783,9 @@ list(summary_Aobsv_outof_AMax,
 summary_out_Asim_outof_AMax_among_df,
 summary_out_Asim_outof_AMax_within_df,
 summary_Aswitch_outof_AMax,
-sumary_generated)) # not run
+sumary_A_generated)) # not run
 
-# summary_A_outof_AMax <- rbind(summary_A_outof_AMax, sumary_generated)
+# summary_A_outof_AMax <- rbind(summary_A_outof_AMax, sumary_A_generated)
 
 }
 
@@ -849,10 +859,12 @@ summary_Sobsv_outof_AMax$Type <- '2_Observed'
 summary_out_Ssim_outof_AMax_within_df$Type <-'4_Within'
 summary_out_Ssim_outof_AMax_among_df$Type <- '5_Among'
 
+
 summary_S_outof_AMax <- do.call(rbind, 
 list(summary_Sobsv_outof_AMax,
 summary_out_Ssim_outof_AMax_among_df,
-summary_out_Ssim_outof_AMax_within_df))
+summary_out_Ssim_outof_AMax_within_df,
+sumary_S_generated))
 
 }
 
@@ -860,13 +872,22 @@ summary_out_Ssim_outof_AMax_within_df))
 
 Fig_S_AMax <- {ggplot(data=summary_S_outof_AMax, aes(x=Type, y=Smean))+
 xlab(NULL)+
-ylab("Number of synchronized visits realized out of the maximum possible (%)\n")+
+ylab("Number of synchronized visits realized 
+out of the maximum possible (%)\n")+
 
 geom_errorbar(aes(ymin=Slower, ymax=Supper),na.rm=TRUE)+
 geom_point(size = 3) +
 
 scale_y_continuous(breaks =seq(5,15, by = 1),limits = c(5,15)) +
-scale_x_discrete(labels = c('Observed', 'Within', 'Among'))+
+scale_x_discrete(labels = 
+c('Observed
+data', 
+'Within
+random.', 
+'Among
+random.',
+'Generated
+data'))+
 
 theme_classic()+
 theme(
