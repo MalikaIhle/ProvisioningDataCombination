@@ -939,13 +939,17 @@ MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(
 
 nrow(MY_TABLE_perDVD) # 1599 files
 
-{# add MeanAsim and Adev
+{# add MeanAsim and Adev + MedAsim !
 
 MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawInterfeeds$DVDRef),MeanAsim = rowMeans(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))), 
 				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
 
 #MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$AlternationValue - MY_TABLE_perDVD$MeanAsim # reversed 22/06/2016
 MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$NbAlternation - MY_TABLE_perDVD$MeanAsim # reversed 22/06/2016 # changed to NbAlternation 01/02/2017
+
+MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawInterfeeds$DVDRef),MedAsim = apply(head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer)), 
+				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
+
 
 }
 
@@ -957,6 +961,8 @@ MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawInterfeeds$DVDRef),Mean
 #MY_TABLE_perDVD$Sdev <-  MY_TABLE_perDVD$SynchronyFeedValue - MY_TABLE_perDVD$MeanSsim 
 MY_TABLE_perDVD$Sdev <-  MY_TABLE_perDVD$NbSynchro_ChickFeedingEquanim - MY_TABLE_perDVD$MeanSsim # changed to NbSynchro_ChickFeedingEquanim on 01/02/2017
 
+MY_TABLE_perDVD <- merge(y=data.frame(DVDRef = unique(RawInterfeeds$DVDRef),MedSsim = apply(tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))),1,median_integer)), 
+				  x= MY_TABLE_perDVD, by='DVDRef', all.x =TRUE)
 }
 
 {# add meanAge and DeltaAge for testing within and between individual effect of age
@@ -988,12 +994,14 @@ MY_TABLE_perBrood <- data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef),
 							#MeanAdev = mean(AlternationValue)-mean(MeanAsim),  # reversed 22/06/2016
 							MeanA = mean(NbAlternation), 
 							MeanAdev = mean(NbAlternation)-mean(MeanAsim),
+							MeanAsim = mean(MeanAsim),
 							MeanVisitRateDifference = mean(VisitRateDifference), # to delete ?
 							#MeanS = mean(SynchronyFeedValue),
 							MeanS = mean(NbSynchro_ChickFeedingEquanim),
 							MeanMFVisit1 = mean(MFVisit1), # to delete ?
 							#MeanSdev = mean(SynchronyFeedValue) - mean(MeanSsim), 
 							MeanSdev = mean(NbSynchro_ChickFeedingEquanim) - mean(MeanSsim),
+							MeanSsim = mean(MeanSsim),
 							MeanEffectiveTime = mean(EffectiveTime),
 							MeanMVisit1RateH = mean(MVisit1RateH), 
 							MeanFVisit1RateH = mean(FVisit1RateH),
@@ -1035,7 +1043,7 @@ nrow(MY_tblChicks[is.na(MY_tblChicks$AvgOfMass),]) # 0
 nrow(MY_tblChicks[is.na(MY_tblChicks$AvgOfTarsus),]) # 40
 
 MY_TABLE_perChick <- merge(x= MY_tblChicks , 
-y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanTotalProRate","MeanS","MeanSdev",
+y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
 "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb")],
 by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
 
@@ -1079,6 +1087,7 @@ head(MY_TABLE_perBrood)
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
 # 20170208 added DVDInfoAge just for hist of variation in chick age (although Age cat used in model)
 # 20170208 after rerunning data extraction (should be the same)
+# 20170214 add MedAsim
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1086,10 +1095,12 @@ head(MY_TABLE_perBrood)
 # 20170203 replace ratioRingedHatched by Nb Hatched (to have cbind(Ringed,Hatched))
 # 20170203 add MeanEffectiveTime
 # 20170208 after rerunning data extraction (should be the same)
+# 20170214 add MeanAsim 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170208 after rerunning data extraction (should be the same)
+# 20170214 add MeanAsim 
 
 # write.csv(SimulationOutput, file = paste(output_folder,"R_SimulationOutput.csv", sep="/"), row.names = FALSE) 
 # 20170206
