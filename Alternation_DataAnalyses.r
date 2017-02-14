@@ -49,17 +49,26 @@ head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
 head(SimulationOutput_long_median)
 
+{# create a repeated table per DVD, with the column NbAlternation and NbS having observed values in first half, and sim values in second half
+MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
+
+MY_TABLE_perDVD_Sim_long$Type <- c(rep("z_Obsv", nrow(MY_TABLE_perDVD)),rep("a_Sim", nrow(MY_TABLE_perDVD)))
+
+MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim'] <- MY_TABLE_perDVD_Sim_long$MedAsim[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim']
+MY_TABLE_perDVD_Sim_long$NbSynchro_ChickFeedingEquanim[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim'] <- MY_TABLE_perDVD_Sim_long$MedSsim[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim']
+
+
+
+MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
+}
+
+head(MY_TABLE_perDVD_Sim_long)
 
 
 
 
-
-
-cor.test(MY_TABLE_perDVD$TotalProRate,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
-
-
-
-
+cor.test(MY_TABLE_perDVD$NbAlternation, MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
+ 
 
 ######################
 # RANDOM VS OBSERVED #
@@ -493,18 +502,10 @@ summary(modA_withinIndAgeEffect)
 
 
 
-# mod A_long
+{# mod A_long
 
-{# create a repeated table per DVD, with the column NbAlternation having observed values in first half, and sim values in second half
-MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
-MY_TABLE_perDVD_Sim_long$Type <- c(rep("Obsv", nrow(MY_TABLE_perDVD)),rep("Sim", nrow(MY_TABLE_perDVD)))
-MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'Sim'] <- MY_TABLE_perDVD_Sim_long$MeanAsim[MY_TABLE_perDVD_Sim_long$Type == 'Sim']
-MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
-}
 
-head(MY_TABLE_perDVD_Sim_long)
-
-modA_long <- glmer(I(round(NbAlternation,0))~  
+modA_long <- glmer(NbAlternation ~  
 	
 	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
 	Type*scale(HatchingDayAfter0401) +
@@ -530,11 +531,259 @@ modA_long <- glmer(I(round(NbAlternation,0))~
 	,control=glmerControl(optimizer = "bobyqa")
 	)
 
-summary(modA_long)
+summary(modA_long)$coef[c(2,13:22),]
 
+
+{# exploration of similarity of models
+
+MY_TABLE_perDVD$MedAsim2 <- with(MY_TABLE_perDVD, ifelse(MedAsim==0,1,MedAsim))
+MY_TABLE_perDVD_Sim_long$NbAlternation2 <- with(MY_TABLE_perDVD_Sim_long, ifelse(NbAlternation==0,1,NbAlternation))
+
+
+
+modA_long_log <- lmer(log(NbAlternation2) ~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+#	+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+#	, family = 'poisson'
+#	,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long_log)$coef[c(2,13:22),]
+
+
+plot(summary(modA_long)$coef[c(2,13:22),1], summary(modA_long_log)$coef[c(2,13:22),1],col=0)
+abline(0,1)
+text(summary(modA_long)$coef[c(2,13:22),1], summary(modA_long_log)$coef[c(2,13:22),1], 1:11)
+abline(0,1)
+
+
+modA_off_med_log <- lmer(log(NbAlternation)~  
+	scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	scale(HatchingDayAfter0401) +
+	scale(PairBroodNb) + 
+	scale(DVDInfoChickNb) + 
+	ChickAgeCat +
+	scale(RelTimeHrs) + 
+	MPriorResidence +
+    FPriorResidence +
+	
+	scale(TotalProRate) + 
+	scale(VisitRateDifference)+
+
+	offset(log(MedAsim2))+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	#+ (1|DVDRef) # for overdispersion
+	, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),]
+	#, family = 'poisson'
+	#,control=glmerControl(optimizer = "bobyqa")
+	#, offset=log(MedAsim2)
+	)
+
+summary(modA_off_med_log)$coef
+
+
+sunflowerplot(NbAlternation~MedAsim, MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
+
+
+
+modA_long_gauss <- lmer(NbAlternation ~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	#+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	#, family = 'poisson'
+	#,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long_gauss)
+
+
+
+modA_long_ratio <- lmer((NbAlternation/NbAMax)) ~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	#+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	#, family = 'poisson'
+	#,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long_ratio)
+
+
+
+
+
+modA_long_ratio_off <- lmer(I(NbAlternation/NbAMax) ~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	offset(log(NbAMax))+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	#+ (1|rowID) # for overdispersion
+	, weights= MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]$NbAMax
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	#, family = 'poisson'
+	#,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long_ratio_off)
+
+
+
+
+
+
+
+modA_long_off <- glmer(NbAlternation ~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	offset(log(NbAMax))+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	, family = 'poisson'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long_off)
+
+
+
+
+
+
+
+modA_long_cbind <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~  
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	, family = 'binomial'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modA_long_cbind)
+
+summary(modA_long_cbind)$coef[13:22,]
+summary(modA_long_ratio_off)$coef[13:22,]
 
 }
 
+}
+
+}
+
+
+##http://stats.stackexchange.com/questions/189115/fitting-a-binomial-glmm-glmer-to-a-response-variable-that-is-a-proportion-or-f
 summary(modA)
 MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=BlupsBroodRefModA, by='BroodRef', all.x=TRUE)
 
@@ -550,6 +799,11 @@ modAdev <- lmer( Adev ~ scale(ParentsAge) + # this is strongly correlated to Pai
 						scale(RelTimeHrs) + 
 						MPriorResidence +
 						FPriorResidence +
+						
+						scale(TotalProRate)+
+						scale(VisitRateDifference)+
+						
+						
 						(1|BroodRef) + 
 						(1|SocialMumID)+ (1|SocialDadID) + 
 						#(1|PairID) +  # explained 0% of the variance
@@ -557,6 +811,10 @@ modAdev <- lmer( Adev ~ scale(ParentsAge) + # this is strongly correlated to Pai
 						# + (1|PairIDYear) # explained 0% of the variance
 						, data = MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$RelTimeHrs),])
 summary(modAdev)
+
+summary(modAdev)
+summary(modA_long_gauss)$coef[c(2,13:22),]
+
 
 BlupsBroodRefModAdev <- cbind(unique(MY_TABLE_perDVD$BroodRef[!is.na(MY_TABLE_perDVD$RelTimeHrs)]), invlogit(ranef(modAdev)$BroodRef[,1])) 
 colnames(BlupsBroodRefModAdev) <- c('BroodRef','blupsAdev')
@@ -661,6 +919,37 @@ summary(modS)
 	
 	
 	
+modS_long <- glmer(NbSynchro_ChickFeedingEquanim ~ 
+	
+	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(HatchingDayAfter0401) +
+	Type*scale(PairBroodNb) + 
+	Type*scale(DVDInfoChickNb) + 
+	Type*ChickAgeCat +
+	Type*scale(RelTimeHrs) + 
+	Type*MPriorResidence +
+    Type*FPriorResidence +
+	
+	Type*scale(TotalProRate) +
+	Type*scale(VisitRateDifference)+
+	
+	(1|BroodRef) + 
+	(1|SocialMumID)+ (1|SocialDadID) + 
+	#(1|PairID) +  # explained 0% of the variance
+	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairIDYear)
+	+ (1|DVDRef) 
+	+ (1|rowID) # for overdispersion
+	, data = MY_TABLE_perDVD_Sim_long[!is.na(MY_TABLE_perDVD_Sim_long$RelTimeHrs),]
+	, family = 'poisson'
+	,control=glmerControl(optimizer = "bobyqa")
+	)
+
+summary(modS_long)
+
+	
+	
+	
 }
 
 
@@ -700,18 +989,8 @@ summary(modSdev)
 
 {#### total provisioning rate ~ Alternation
 
-{# create a repeated table per DVD, with the column NbAlternation having observed values in first half, and sim values in second half
-MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
-MY_TABLE_perDVD_Sim_long$Type <- c(rep("Obsv", nrow(MY_TABLE_perDVD)),rep("Sim", nrow(MY_TABLE_perDVD)))
-MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'Sim'] <- MY_TABLE_perDVD_Sim_long$MeanAsim[MY_TABLE_perDVD_Sim_long$Type == 'Sim']
-MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
-}
-
-head(MY_TABLE_perDVD_Sim_long)
-
-
 modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
-												+ I(NbAlternation/NbAMax)*Type # the deviation to max, isn't different between observed and sim (random) values
+												+ scale(NbAlternation/NbAMax)*Type # the deviation to max, isn't different between observed and sim (random) values
 												+ offset(log(EffectiveTime))
 												+ (1|SocialMumID)+ (1|SocialDadID) 
 												+ (1|PairID) + (1|BreedingYear)
@@ -725,6 +1004,22 @@ modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged)
 											
 summary(modFitnessAsTotalProvisioning) # interaction not signi.
 
+
+
+modFitnessAsTotalProvisioning <- glmer(MFVisit1 ~ scale(NbRinged) 
+												+ scale(Adev) # the deviation to max, isn't different between observed and sim (random) values
+												+ offset(log(EffectiveTime))
+												+ (1|SocialMumID)+ (1|SocialDadID) 
+												+ (1|PairID) + (1|BreedingYear)
+												#+ (1|PairIDYear)
+												#+ (1|rowID) # overdispersion
+												+ (1|DVDRef) # each DVD twice: once with alternation observed, once with simulated alternation (averaged)
+												, data = MY_TABLE_perDVD
+												, family = 'poisson'
+												,control=glmerControl(optimizer = "bobyqa")										
+												)
+											
+summary(modFitnessAsTotalProvisioning) # interaction not signi.
 
 {# model assumptions checking
 
