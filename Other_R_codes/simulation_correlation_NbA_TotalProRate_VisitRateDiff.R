@@ -236,7 +236,7 @@ fulldat_long$rowID <- seq(1:nrow(fulldat_long))
 
 }
 
-# analyse 
+{# analyse 
 
 if (model == 'A')
 {
@@ -249,6 +249,19 @@ modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_l
 return(summary(modAoutofAmax)$coef[5:6,4])
 }
 
+if (model == 'TotalP_AMaxA')
+{
+modTotalP <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long)
+return(summary(modTotalP)$coef[4,4])
+}
+
+if (model == 'TotalP_A')
+{
+modTotalP <- glmer(TotalP ~ A*Type + (1|DVDRef), family = 'poisson', data=fulldat_long)
+return(summary(modTotalP)$coef[4,4])
+}
+}
+
 }
 
 
@@ -258,9 +271,37 @@ apply(modcoeff_A_Sign, 1, sum)/100
 # Typez_Obsv:TotalP  Typez_Obsv:DiffP 
 #             0.08              0.00
 
-modcoeff_A <- pbreplicate(10,Generate_data_randomize_them_and_analyse('cbindA'))
-modcoeff_A_Sign <- modcoeff_A < 0.05
-apply(modcoeff_A_Sign, 1, sum)/10
+modcoeff_cbindA <- pbreplicate(10,Generate_data_randomize_them_and_analyse('cbindA'))
+modcoeff_cbindA_Sign <- modcoeff_cbindA < 0.05
+apply(modcoeff_cbindA_Sign, 1, sum)/10
+#Typez_Obsv:TotalP  Typez_Obsv:DiffP 
+#              0.9               0.4
+
+
+
+
+# did not run
+
+modcoeff_TotalP_AMaxA <- pbreplicate(10,Generate_data_randomize_them_and_analyse('TotalP_AMaxA'))
+modcoeff_TotalP_AMaxA_Sign <- modcoeff_TotalP_AMaxA < 0.05
+apply(modcoeff_TotalP_AMaxA_Sign, 1, sum)/10
+
+
+modcoeff_A_TotalP_A <- pbreplicate(10,Generate_data_randomize_them_and_analyse('TotalP_A'))
+modcoeff_A_TotalP_A_Sign <- modcoeff_A_TotalP_A < 0.05
+apply(modcoeff_A_TotalP_A_Sign, 1, sum)/10
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
