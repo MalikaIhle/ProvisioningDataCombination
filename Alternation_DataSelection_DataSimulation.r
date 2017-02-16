@@ -193,7 +193,7 @@ head(MY_tblChicks_byRearingBrood)
 
 RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
 colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
-head(RawInterfeeds)
+head(RawInterfeeds,40)
 
 RawInterfeeds_with_ProRate <- merge(x=RawInterfeeds, y=MY_tblParentalCare[c('DVDRef','FVisit1RateH','MVisit1RateH')]) # this will only be used for shuffling within prorate
 
