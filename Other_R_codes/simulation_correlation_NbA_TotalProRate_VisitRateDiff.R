@@ -14,91 +14,12 @@ library(lme4)
 options(scipen=999)
 }
 
-# avPR <- 15 
-# sdPR <- 8 
-# VideoLength <- 90
 
 
-create_fulldat_and_analyse <- function(avPR,sdPR,VideoLength, ASP){
-
-meanlog <- log(avPR)
-sdlog <-  sqrt(log(1 + sdPR^2/avPR^2))
-
-create_DVD <- function(){
-
-MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog )
-FemalePexp <- rlnorm(1, meanlog = log(avPR), sdlog = sqrt(log(1 + sdPR^2/avPR^2)) )
-MaleP <- rpois(1, MalePexp)
-FemaleP <- rpois(1, FemalePexp)
-TotalP <- MaleP + FemaleP
-DiffP <- abs(MaleP - FemaleP)
-
-MaleVisits <- sort(runif(MaleP,0,VideoLength))
-FemaleVisits <- sort(runif(FemaleP,0,VideoLength))
-DVD <- data.frame(rbind(cbind(Visits = MaleVisits, Sex = rep(1, length(MaleVisits))),cbind(Visits = FemaleVisits,Sex = rep(0, length(FemaleVisits)))))
-DVD <- DVD[order(DVD$Visits),]
-
-A <- sum(diff(DVD$Sex)!=0)
-if (MaleP == FemaleP){MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP)) -1} else {MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP))}
-S <- sum(diff(DVD$Sex)!=0 & diff(DVD$Visits) <= 0.5)
-dat <- data.frame(cbind(TotalP,DiffP,MaxA,A,S))
-
-dat
-}
-
-fulldat <- data.frame(matrix(data=unlist(pbreplicate(3000, create_DVD())), 3000,5, byrow = TRUE))
-colnames(fulldat) <- c('TotalP','DiffP','MaxA','A','S')
-fulldat$DVDRef <- seq(1:nrow(fulldat))
+# run each test at each generation and randomization of data
 
 
-if(ASP == 'A')
-{mod <- glm(cbind(A, MaxA-A)~ TotalP + DiffP, data=fulldat, family = 'binomial')
-return(summary(mod)$coeff[2:3,4])}
-
-if(ASP == 'S')
-{mod <- glm(cbind(S, MaxA-S)~ TotalP + DiffP, data=fulldat, family = 'binomial')
-return(summary(mod)$coeff[2:3,4])}
-
-if(ASP == 'P')
-{
-# A 'simulated' (another one random)
-fulldat2 <- data.frame(matrix(data=unlist(pbreplicate(3000, create_DVD())), 3000,5, byrow = TRUE))
-colnames(fulldat2) <- c('TotalP','DiffP','MaxA','A','S')
-fulldat2$DVDRef <- seq(1:nrow(fulldat2))
-
-fulldat_long <- rbind(fulldat, fulldat2)
-fulldat_long$Type <- c(rep("Obsv", nrow(fulldat)),rep("Sim", nrow(fulldat2)))
-fulldat_long$rowID <- seq(1:nrow(fulldat_long))
-
-mod <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long)
-return(summary(mod)$coef[4,4])}
-
-}
-
-modcoeff_A <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'A'))
-modcoeff_A_Sign <- modcoeff_A < 0.05
-apply(modcoeff_A_Sign, 1, sum)/100
-
-
-modcoeff_S <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'S'))
-modcoeff_S_Sign <- modcoeff_S < 0.05
-apply(modcoeff_S_Sign, 1, sum)/100
-
-
-modcoeff_P <- pbreplicate(100,create_fulldat_and_analyse(15,8,90,'P'))
-modcoeff_P_Sign <- modcoeff_P < 0.05
-sum(modcoeff_P_Sign)/1000
-
-
-
-
-
-
-
-
-# as poisson with type* rather than cbind
-
-Generate_data_randomize_them_and_analyse <-function(model){
+Generate_data_randomize_them_and_analyse <-function(){
 
 {# generate data
 
@@ -238,68 +159,52 @@ fulldat_long$rowID <- seq(1:nrow(fulldat_long))
 
 {# analyse 
 
-if (model == 'A')
+modA <- glm(A~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'poisson') # [,1] 
+modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'binomial') # [,2] 
+modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,3] 
+modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,4] 
+
+}
+
+
+return(cbind(summary(modA)$coef[5:6,4], # [,1] 
+summary(modAoutofAmax)$coef[5:6,4], # [,2] 
+rbind(summary(modTotalP_AMax)$coef[4,4], NA), # [,3] 
+rbind(summary(modTotalP)$coef[4,4], NA))) # [,4] 
+
+# should look like this: 
+                       # [,1]       [,2]      [,3]         [,4]
+# Typez_Obsv:TotalP 0.4103925 0.05045313 0.2873707 0.0004660565
+# Typez_Obsv:DiffP  0.7379561 0.03139404        NA           NA
+
+}
+
+
+n <- 100
+
+modcoeff <- pbreplicate(n,Generate_data_randomize_them_and_analyse())
+modcoeff_Sign <- modcoeff < 0.05
+
+Typez_Obsv_TotalP <- NULL
+Typez_Obsv_DiffP <- NULL
+
+for (i in 1:n)
 {
-modA <- glm(A~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'poisson')
-return(summary(modA)$coef[5:6,4])
-}
-if(model=='cbindA')
-{
-modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'binomial')
-return(summary(modAoutofAmax)$coef[5:6,4])
-}
+Typez_Obsv_TotalP[1] <- sum(modcoeff_Sign[1,1,1],modcoeff_Sign[1,1,2])/n
+Typez_Obsv_TotalP[2] <- sum(modcoeff_Sign[1,2,1],modcoeff_Sign[1,2,2])/n
+Typez_Obsv_TotalP[3] <- sum(modcoeff_Sign[1,3,1],modcoeff_Sign[1,3,2])/n
+Typez_Obsv_TotalP[4] <- sum(modcoeff_Sign[1,4,1],modcoeff_Sign[1,4,2])/n
 
-if (model == 'TotalP_AMaxA')
-{
-modTotalP <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long)
-return(summary(modTotalP)$coef[4,4])
-}
+Typez_Obsv_DiffP[1] <- sum(modcoeff_Sign[2,1,1],modcoeff_Sign[2,1,2])/n
+Typez_Obsv_DiffP[2] <- sum(modcoeff_Sign[2,2,1],modcoeff_Sign[2,2,2])/n
+Typez_Obsv_DiffP[3] <- NA
+Typez_Obsv_DiffP[4] <- NA
 
-if (model == 'TotalP_A')
-{
-modTotalP <- glmer(TotalP ~ A*Type + (1|DVDRef), family = 'poisson', data=fulldat_long)
-return(summary(modTotalP)$coef[4,4])
-}
-}
+out <- rbind(Typez_Obsv_TotalP,Typez_Obsv_DiffP)
 
 }
 
-
-modcoeff_A <- pbreplicate(100,Generate_data_randomize_them_and_analyse('A'))
-modcoeff_A_Sign <- modcoeff_A < 0.05
-apply(modcoeff_A_Sign, 1, sum)/100 
-# Typez_Obsv:TotalP  Typez_Obsv:DiffP 
-#             0.08              0.00
-
-modcoeff_cbindA <- pbreplicate(10,Generate_data_randomize_them_and_analyse('cbindA'))
-modcoeff_cbindA_Sign <- modcoeff_cbindA < 0.05
-apply(modcoeff_cbindA_Sign, 1, sum)/10
-#Typez_Obsv:TotalP  Typez_Obsv:DiffP 
-#              0.9               0.4
-
-
-
-
-# did not run
-
-modcoeff_TotalP_AMaxA <- pbreplicate(10,Generate_data_randomize_them_and_analyse('TotalP_AMaxA'))
-modcoeff_TotalP_AMaxA_Sign <- modcoeff_TotalP_AMaxA < 0.05
-apply(modcoeff_TotalP_AMaxA_Sign, 1, sum)/10
-
-
-modcoeff_A_TotalP_A <- pbreplicate(10,Generate_data_randomize_them_and_analyse('TotalP_A'))
-modcoeff_A_TotalP_A_Sign <- modcoeff_A_TotalP_A < 0.05
-apply(modcoeff_A_TotalP_A_Sign, 1, sum)/10
-
-
-
-
-
-
-
-
-
-
+out # percentage of time where effect is significant. should be < 0.05 to be acceptably significant by chance.
 
 
 
