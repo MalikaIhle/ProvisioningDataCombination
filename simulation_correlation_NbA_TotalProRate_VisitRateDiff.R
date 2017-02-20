@@ -16,17 +16,18 @@ options(scipen=999)
 
 
 
-# run each test at each generation and randomization of data
+## to test the link between alternation and total provisioning rate
 
 
 Generate_data_randomize_them_and_analyse <-function(){
 
 {# generate data
 
-avPR <- 15 
+avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
 sdPR <- 8
 VideoLength <- 90
 
+# Joel suggested to pass on the log scale to be able to add Poisson distributed error, I assume (??)
 meanlog <- log(avPR)
 sdlog <-  sqrt(log(1 + sdPR^2/avPR^2))
 
@@ -34,11 +35,11 @@ full_dat <- list()
 
 for (i in 1:1662){
 
-MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog )
+MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog ) # expected number of visits
 FemalePexp <- rlnorm(1, meanlog = log(avPR), sdlog = sqrt(log(1 + sdPR^2/avPR^2)) )
-MaleP <- rpois(1, MalePexp)
+MaleP <- rpois(1, MalePexp) # realized number of visits including the poisson distributed error
 FemaleP <- rpois(1, FemalePexp)
-TotalP <- MaleP + FemaleP
+TotalP <- MaleP + FemaleP # total number of visits for that video
 DiffP <- abs(MaleP - FemaleP)
 
 MaleVisits <- sort(runif(MaleP,0,VideoLength))
@@ -205,6 +206,13 @@ out <- rbind(Typez_Obsv_TotalP,Typez_Obsv_DiffP)
 }
 
 out # percentage of time where effect is significant. should be < 0.05 to be acceptably significant by chance.
+
+# with n = 100
+                  # [,1] [,2] [,3] [,4]
+# Typez_Obsv_TotalP    0 0.02    0 0.02
+# Typez_Obsv_DiffP     0 0.00   NA   NA
+
+
 
 
 
