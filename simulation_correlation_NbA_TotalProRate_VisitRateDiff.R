@@ -136,7 +136,7 @@ DiffP <- abs(MaleP-FemaleP)
 
 A <- sum(diff(x$Sex)!=0)
 if (MaleP == FemaleP){MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP)) -1} else {MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP))}
-#S <- sum(diff(xxxx$Sex)!=0 & diff(x$Visits) <= 0.5)
+#S <- sum(diff(x$Sex)!=0 & diff(x$Visits) <= 0.5)
 
 summary_DVD <- data.frame(cbind(DVDRef=unique(x$DVDRef),TotalP,DiffP,MaxA,A))
 
@@ -161,11 +161,11 @@ fulldat_long$rowID <- seq(1:nrow(fulldat_long))
 
 {# analyse 
 
-modA <- glm(A~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'poisson') # [,1] 
-modA_off <- glm(A~ Type*TotalP + Type*DiffP + offset(log(MaxA)), data=fulldat_long, family = 'poisson')
-modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'binomial') # [,2] 
-modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,3] 
-modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,4] 
+modA <- glm(A~ Type*scale(TotalP) + Type*scale(DiffP), data=fulldat_long, family = 'poisson') 
+modA_off <- glm(A~ Type*scale(TotalP) + Type*scale(DiffP) + offset(log(MaxA)), data=fulldat_long, family = 'poisson')
+modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP), data=fulldat_long, family = 'binomial') 
+modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
+modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
 
 }
 
@@ -174,7 +174,7 @@ results <- data.frame(Factor = c('Type*TotalP', 'Type*DiffP', 'Type*A'), modA = 
 results$modA[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
 results$modA[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
 results$modA_off[results$Factor=='Type*TotalP'] <- round(summary(modA_off)$coef[5,4],3)
-results$modA_off[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
+results$modA_off[results$Factor=='Type*DiffP'] <- round(summary(modA_off)$coef[6,4],3)
 results$modAoutofAmax[results$Factor=='Type*TotalP'] <- round(summary(modAoutofAmax)$coef[5,4],3)
 results$modAoutofAmax[results$Factor=='Type*DiffP'] <- round(summary(modAoutofAmax)$coef[6,4],3)
 results$modP[results$Factor=='Type*A'] <- round(summary(modTotalP)$coef[4,4],3)
@@ -186,7 +186,7 @@ return(list(results))
 }
 
 
-n <- 100
+n <- 20
 all_results_A <- pbreplicate(n,Generate_data_randomize_them_and_analyse_A())
 all_results_A_Sign <- lapply(all_results_A, function(x){x[,-1] <0.05})
 all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n*100
@@ -196,13 +196,22 @@ results_A_PercentageFactorSignificant
 # modA <- glm(A~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'poisson') # [,1] 
 # modA_off <- glm(A~ Type*TotalP + Type*DiffP + offset(log(MaxA)), data=fulldat_long, family = 'poisson')
 # modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'binomial') # [,2] 
-# modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,3] 
 # modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,4] 
+# modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,3] 
 
+# n <- 100
        # Factor modA modA_off modAoutofAmax modP modP_AMax
 # 1 Type*TotalP   13       22            90   NA        NA
-# 2  Type*DiffP    0        0            68   NA        NA
+# 2  Type*DiffP    0       wrong         68   NA        NA
 # 3      Type*A   NA       NA            NA   73         0
+
+# n <- 20
+       # Factor modA modA_off modAoutofAmax modP modP_AMax
+# 1 Type*TotalP    0       10            80   NA        NA
+# 2  Type*DiffP    0        0            45   NA        NA
+# 3      Type*A   NA       NA            NA   90         0
+
+
 
 }
 
@@ -286,7 +295,7 @@ Generate_data_withCN_randomize_them_and_analyse <-function(){
 # simulate 2 normally distributed variables TP and CN with mean, variance, covariance specified
 mean_TP_CN <- c(31,2.8) # average total provisioning visits , average chick number
 Var_Covar_TP_CN <- matrix(c(204,8,8,1.1),2,2) # var TP ,cov(CN,TP), var(CN)
-rawvars <- mvrnorm(n=4000, mu=mean_TP_CN, Sigma=Var_Covar_TP_CN) # simulate a lot to be able to remove those with zeros
+rawvars <- mvrnorm(n=4000, mu=mean_TP_CN, Sigma=Var_Covar_TP_CN) # simulate a lot of observartions to be able to remove those that aren;t strictly positive
 rawvars <- rawvars[rawvars[,1]>0 & rawvars[,2]>0,] 
 
 # change those continuous variables into count, adding poisson distributed error to TP
@@ -297,12 +306,12 @@ poissonvars[i,1] <- rpois(1, rawvars[i,1]) # this overdisperse the data (like in
 poissonvars[i,2] <- round(rawvars[i,2]) # this does not overdisperse the data (observed data are underdispersed)
 }
 
-# excluded videos where no chicks or less than 2 visits (at least one per parents; like with observed data, needed to calculate alternation)
+# excludes videos where no chicks or less than 2 visits (at least one per parents; like with observed data, which is needed to calculate alternation)
 full_dat <- as.data.frame(poissonvars[poissonvars[,1]>1 & poissonvars[,2]>0,])
 colnames(full_dat) <- c("TotalP","ChickNb")
 
 # create a large pool of potential Male Nb of visits
-MalePexp <- rlnorm(2*nrow(full_dat), meanlog = log(15), sdlog = sqrt(log(1 + 8^2/15^2)) ) # expected number of visits, in observed data, average per indiv is 15, sd is 8
+MalePexp <- rlnorm(2*nrow(full_dat), meanlog = log(15), sdlog = sqrt(log(1 + 8^2/15^2)) ) # expected number of visits, in observed data, average per indiv is 15, sd is 8 (on the expected scale)
 
 # realized number of visit with poisson distributed error
 MaleP <- NULL
@@ -320,7 +329,7 @@ full_dat$MaleP[i] <- sample(MaleP[MaleP < full_dat$TotalP[i] & MaleP > 0],1)
 full_dat$FemaleP <- full_dat$TotalP - full_dat$MaleP
 full_dat$DiffP <- abs(full_dat$MaleP - full_dat$FemaleP)
 
-full_dat <- head(full_dat,2000)
+full_dat <- head(full_dat,2000) # select the first 2000 observations that meet criteria of the observed data
 
 for (i in 1:nrow(full_dat)){
 if (full_dat$MaleP[i] == full_dat$FemaleP[i]) {full_dat$MaxA[i] <- full_dat$TotalP[i] - full_dat$DiffP[i] -1} 
@@ -445,38 +454,38 @@ out_Ssim_within_df <- data.frame(DVDRef = unique(raw_dat$DVDRef), tail(A_S_withi
 median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
 SimOut <- data.frame(DVDRef = out_Asim_within_df[,1], A = apply(out_Asim_within_df[,-1],1,median_integer))
 
-SimOut <- merge (x=SimOut, y= full_dat[,c('DVDRef','TotalP', 'DiffP','ChickNb', 'MaleP', 'FemaleP', 'MaxA')], by='DVDRef', all.x=TRUE)
+SimOut <- merge (x=SimOut, y= full_dat[,c('DVDRef','TotalP', 'DiffP','ChickNb', 'MaleP', 'FemaleP', 'MaxA')], by='DVDRef', all.x=TRUE) # all meta data from full_dat but the data 'A'
 SimOut$Type <- 'a_Sim'
 full_dat$Type <- 'z_Obsv'
 
-fulldat_long <- rbind(full_dat,SimOut)
+fulldat_long <- rbind(full_dat,SimOut) # first half: A is observed, second half, A is from randomization
 fulldat_long$rowID <- seq(1:nrow(fulldat_long))
 
 }
 
 {# analyse 
 
-modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb) + (1|DVDRef), data=fulldat_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) # [,1] 
+modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb) + (1|DVDRef), data=fulldat_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
 modA_off <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb) + offset(log(MaxA)) + (1|DVDRef), data=fulldat_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa"))
-modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb), data=fulldat_long, family = 'binomial') # [,2] 
-modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + scale(ChickNb) + (1|DVDRef) , family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) # [,3] 
-modTotalP <- glmer(TotalP ~ scale(A)*Type + scale(ChickNb) + (1|DVDRef), family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) # [,4] 
+modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb), data=fulldat_long, family = 'binomial') 
+modTotalP <- glmer(TotalP ~ scale(A)*Type + scale(ChickNb) + (1|DVDRef), family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) 
+modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + scale(ChickNb) + (1|DVDRef) , family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) 
 
 }
 
 {# results
 results <- data.frame(Factor = c('Type*TotalP', 'Type*DiffP', 'Type*ChickNb', 'Type*A'), modA = rep(NA,4),modA_off= rep(NA,4), modAoutofAmax = rep(NA,4),modP=rep(NA,4), modP_AMax= rep(NA,4))
-results$modA[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[6,4],3)
-results$modA[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[7,4],3)
-results$modA[results$Factor=='Type*ChickNb'] <- round(summary(modA)$coef[8,4],3)
-results$modA_off[results$Factor=='Type*TotalP'] <- round(summary(modA_off)$coef[6,4],3)
-results$modA_off[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[7,4],3)
-results$modA_off[results$Factor=='Type*ChickNb'] <- round(summary(modA)$coef[8,4],3)
-results$modAoutofAmax[results$Factor=='Type*TotalP'] <- round(summary(modAoutofAmax)$coef[6,4],3)
-results$modAoutofAmax[results$Factor=='Type*DiffP'] <- round(summary(modAoutofAmax)$coef[7,4],3)
-results$modAoutofAmax[results$Factor=='Type*ChickNb'] <- round(summary(modAoutofAmax)$coef[8,4],3)
-results$modP[results$Factor=='Type*A'] <- round(summary(modTotalP)$coef[5,4],3)
-results$modP_AMax[results$Factor=='Type*A'] <- round(summary(modTotalP_AMax)$coef[5,4],3)
+results$modA[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[6,4],4)
+results$modA[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[7,4],4)
+results$modA[results$Factor=='Type*ChickNb'] <- round(summary(modA)$coef[8,4],4)
+results$modA_off[results$Factor=='Type*TotalP'] <- round(summary(modA_off)$coef[6,4],4)
+results$modA_off[results$Factor=='Type*DiffP'] <- round(summary(modA_off)$coef[7,4],4)
+results$modA_off[results$Factor=='Type*ChickNb'] <- round(summary(modA_off)$coef[8,4],4)
+results$modAoutofAmax[results$Factor=='Type*TotalP'] <- round(summary(modAoutofAmax)$coef[6,4],4)
+results$modAoutofAmax[results$Factor=='Type*DiffP'] <- round(summary(modAoutofAmax)$coef[7,4],4)
+results$modAoutofAmax[results$Factor=='Type*ChickNb'] <- round(summary(modAoutofAmax)$coef[8,4],4)
+results$modP[results$Factor=='Type*A'] <- round(summary(modTotalP)$coef[5,4],4)
+results$modP_AMax[results$Factor=='Type*A'] <- round(summary(modTotalP_AMax)$coef[5,4],4)
 
 }
 
@@ -485,7 +494,7 @@ return(list(results))
 }
 
 
-n <-100
+n <-20
 
 all_results <- pbreplicate(n,Generate_data_withCN_randomize_them_and_analyse())
 all_results_Sign <- lapply(all_results, function(x){x[,-1] <0.05})
@@ -497,15 +506,24 @@ results_PercentageFactorSignificant
 # modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb) + (1|DVDRef), data=fulldat_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) # [,1] 
 # modA_off <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb) + offset(log(MaxA)) + (1|DVDRef), data=fulldat_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa"))
 # modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP) + Type*scale(ChickNb), data=fulldat_long, family = 'binomial') # [,2] 
-# modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + scale(ChickNb) + (1|DVDRef) , family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) # [,3] 
 # modTotalP <- glmer(TotalP ~ scale(A)*Type + scale(ChickNb) + (1|DVDRef), family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) # [,4] 
+# modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + scale(ChickNb) + (1|DVDRef) , family = 'poisson', data=fulldat_long,control=glmerControl(optimizer = "bobyqa")) # [,3] 
 
 
-        # Factor modA modA_off modAoutofAmax modP modP_AMax
+#n <- 100
+		# Factor modA modA_off modAoutofAmax modP modP_AMax
 # 1  Type*TotalP   59       76            99   NA        NA
-# 2   Type*DiffP    0        0            99   NA        NA
-# 3 Type*ChickNb    0        0             0   NA        NA
+# 2   Type*DiffP    0       wrong         99   NA        NA
+# 3 Type*ChickNb    0       wrong          0   NA        NA
 # 4       Type*A   NA       NA            NA   46        18
+
+
+#n <- 20
+        # Factor modA modA_off modAoutofAmax modP modP_AMax
+# 1  Type*TotalP   60       80           100   NA        NA
+# 2   Type*DiffP    0        0           100   NA        NA
+# 3 Type*ChickNb    0        0             0   NA        NA
+# 4       Type*A   NA       NA            NA   50        10
 
 }
 
