@@ -186,24 +186,32 @@ return(list(results))
 }
 
 
-n <- 20
+n <- 100
 all_results_A <- pbreplicate(n,Generate_data_randomize_them_and_analyse_A())
 all_results_A_Sign <- lapply(all_results_A, function(x){x[,-1] <0.05})
 all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n*100
 results_A_PercentageFactorSignificant <- data.frame(Factor=all_results_A[[1]]$Factor,all_results_A_Sign_compiled)
 results_A_PercentageFactorSignificant
 
-# modA <- glm(A~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'poisson') # [,1] 
+# modA <- glm(A~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'poisson')
 # modA_off <- glm(A~ Type*TotalP + Type*DiffP + offset(log(MaxA)), data=fulldat_long, family = 'poisson')
-# modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'binomial') # [,2] 
-# modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,4] 
-# modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) # [,3] 
+# modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*TotalP + Type*DiffP, data=fulldat_long, family = 'binomial') 
+# modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
+# modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
 
 # n <- 100
        # Factor modA modA_off modAoutofAmax modP modP_AMax
 # 1 Type*TotalP   13       22            90   NA        NA
 # 2  Type*DiffP    0       wrong         68   NA        NA
 # 3      Type*A   NA       NA            NA   73         0
+
+
+# n <- 100
+       # Factor modA modA_off modAoutofAmax modP modP_AMax
+# 1 Type*TotalP    4       13            91   NA        NA
+# 2  Type*DiffP    0        0            63   NA        NA
+# 3      Type*A   NA       NA            NA   83         0
+
 
 # n <- 20
        # Factor modA modA_off modAoutofAmax modP modP_AMax
@@ -494,7 +502,7 @@ return(list(results))
 }
 
 
-n <-20
+n <-100
 
 all_results <- pbreplicate(n,Generate_data_withCN_randomize_them_and_analyse())
 all_results_Sign <- lapply(all_results, function(x){x[,-1] <0.05})
@@ -518,6 +526,14 @@ results_PercentageFactorSignificant
 # 4       Type*A   NA       NA            NA   46        18
 
 
+#n <- 100
+       # Factor modA modA_off modAoutofAmax modP modP_AMax
+# 1  Type*TotalP   54       72           100   NA        NA
+# 2   Type*DiffP    1        1            98   NA        NA
+# 3 Type*ChickNb    0        0             0   NA        NA
+# 4       Type*A   NA       NA            NA   46        14
+
+
 #n <- 20
         # Factor modA modA_off modAoutofAmax modP modP_AMax
 # 1  Type*TotalP   60       80           100   NA        NA
@@ -527,11 +543,7 @@ results_PercentageFactorSignificant
 
 }
 
-
-
-
-
-{## Bebbington & Hatchwell 2015 analyses on A/(TP-1)
+{## Bebbington & Hatchwell 2015 analyses on A/(TP-1), while having CN correlated to TP
 
 Generate_data_randomize_them_and_analyse_ben <-function(){
 
@@ -710,8 +722,8 @@ full_dat$Adev <- full_dat$Ascore - full_dat$MeanASim
 
 {# analyse 
 
-modA <- lm(Ascore~ scale(TotalP) + scale(DiffP) + scale(ChickNb), data=full_dat) # [,1] 
-modTotalP <- lm(TotalP ~ scale(Adev) + scale(ChickNb), data=full_dat) # [,4] 
+modA <- lm(Ascore~ scale(TotalP) + scale(DiffP) + scale(ChickNb), data=full_dat) 
+modTotalP <- lm(TotalP ~ scale(Adev) + scale(ChickNb), data=full_dat) 
 modS <- glm(round(Sscore) ~ scale(TotalP)+ scale(Ascore) + scale(ChickNb), data=full_dat, family='poisson')
 
 }
@@ -739,19 +751,29 @@ all_results_ben <- pbreplicate(n,Generate_data_randomize_them_and_analyse_ben())
 all_results_ben_Sign <- lapply(all_results_ben, function(x){x[,-1] <0.05})
 all_results_ben_Sign_compiled <- Reduce('+',all_results_ben_Sign)/n*100
 results_PercentageFactorSignificant <- data.frame(Factor=all_results_ben[[1]]$Factor,all_results_ben_Sign_compiled)
+results_PercentageFactorSignificant
 
-
-# modA <- lm(Ascore~ scale(TotalP) + scale(DiffP) + scale(ChickNb), data=full_dat) # [,1] 
-# modTotalP <- lm(TotalP ~ scale(Adev) + scale(ChickNb), data=full_dat) # [,4] 
+# modA <- lm(Ascore~ scale(TotalP) + scale(DiffP) + scale(ChickNb), data=full_dat) 
+# modTotalP <- lm(TotalP ~ scale(Adev) + scale(ChickNb), data=full_dat) 
 # modS <- glm(round(Sscore) ~ scale(TotalP)+ scale(Ascore) + scale(ChickNb), data=full_dat, family='poisson')
 
-
+# n <- 100
    # Factor modA modP modS
 # 1  TotalP  100   NA  100
 # 2   DiffP  100   NA   NA
 # 3 ChickNb    3  100   17
 # 4    Adev   NA    3   NA
 # 5       A   NA   NA  100
+
+# n <- 100
+   # Factor modA modP modS
+# 1  TotalP  100   NA  100
+# 2   DiffP  100   NA   NA
+# 3 ChickNb    5  100   22
+# 4    Adev   NA    7   NA
+# 5       A   NA   NA  100
+
+
 
 
 }
