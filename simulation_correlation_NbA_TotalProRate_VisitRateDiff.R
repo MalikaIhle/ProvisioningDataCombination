@@ -49,8 +49,8 @@ DiffP <- abs(MaleP - FemaleP)
 
 MaleVisits <- sort(runif(MaleP,0,VideoLength))
 FemaleVisits <- sort(runif(FemaleP,0,VideoLength))
-MaleIntervals <- c(diff(MaleVisits),90-MaleVisits[length(MaleVisits)])
-FemaleIntervals <- c(diff(FemaleVisits),90-FemaleVisits[length(FemaleVisits)])
+MaleIntervals <- c(0,diff(MaleVisits))
+FemaleIntervals <- c(0,diff(FemaleVisits))
 
 dat <- data.frame(rbind(cbind(Tstart = MaleVisits, Sex = rep(1, length(MaleVisits)),Interval=MaleIntervals),cbind(Tstart = FemaleVisits,Sex = rep(0, length(FemaleVisits)), Interval=FemaleIntervals)))
 dat <- dat[order(dat$Tstart),]
@@ -173,10 +173,10 @@ head(fulldat_long)
 
 {# analyse 
 
-modA <- glm(A~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulldat_long, family = 'poisson') 
-#modA_off <- glm(A~ Type*scale(TotalP) + Type*scale(DiffP) + offset(log(MaxA))+ (1|DVDRef), data=fulldat_long, family = 'poisson')
-#modAoutofAmax <- glm(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP)+ (1|DVDRef), data=fulldat_long, family = 'binomial') 
-modS <- glm(S~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulldat_long, family = 'poisson') 
+modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulldat_long, family = 'poisson') 
+#modA_off <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + offset(log(MaxA))+ (1|DVDRef), data=fulldat_long, family = 'poisson')
+#modAoutofAmax <- glmer(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP)+ (1|DVDRef), data=fulldat_long, family = 'binomial') 
+modS <- glmer(S~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulldat_long, family = 'poisson') 
 #modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
 #modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
 modAdev <- lm(Adev~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
@@ -254,9 +254,6 @@ results_A_PercentageFactorSignificant
 # 2       DiffP    NA   NA       3     100
 # 3 Type*TotalP    6    0      NA      NA
 # 4  Type*DiffP    0    0      NA      NA
-
-
-
 
 # n <- 100
   # Factor modAdev modSdev
@@ -402,8 +399,8 @@ create_rawData_perDVD <- function (x) {
 
 MaleVisits <- sort(runif(x$MaleP,0,VideoLength))
 FemaleVisits <- sort(runif(x$FemaleP,0,VideoLength))
-MaleIntervals <- c(diff(MaleVisits),90-MaleVisits[length(MaleVisits)])
-FemaleIntervals <- c(diff(FemaleVisits),90-FemaleVisits[length(FemaleVisits)])
+MaleIntervals <- c(0,diff(MaleVisits))
+FemaleIntervals <- c(0,diff(FemaleVisits))
 
 if (length(MaleVisits) > 0 & length(FemaleVisits) >0){
 dat <- data.frame(rbind(cbind(Tstart = MaleVisits, 
@@ -661,8 +658,8 @@ create_rawData_perDVD <- function (x) {
 
 MaleVisits <- sort(runif(x$MaleP,0,VideoLength))
 FemaleVisits <- sort(runif(x$FemaleP,0,VideoLength))
-MaleIntervals <- c(diff(MaleVisits),90-MaleVisits[length(MaleVisits)])
-FemaleIntervals <- c(diff(FemaleVisits),90-FemaleVisits[length(FemaleVisits)])
+MaleIntervals <- c(0,diff(MaleVisits))
+FemaleIntervals <- c(0,diff(FemaleVisits))
 
 if (length(MaleVisits) > 0 & length(FemaleVisits) >0){
 dat <- data.frame(rbind(cbind(Tstart = MaleVisits, 
@@ -937,53 +934,6 @@ MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
 
 
 
-}
-
-}
-
-{### Descriptive statistics
-
-{### sample sizes
-nrow(MY_tblParentalCare) # 1662 DVD files ; = length(unique(MY_RawFeedingVisits$DVDRef)) = nrow(MY_tblDVDInfo) 
-length(unique(MY_tblDVDInfo$BroodRef)) # 910 broods videotaped at least once
-range(table(MY_tblDVDInfo$BroodRef)) # range from 1 to 3
-mean(table(MY_tblDVDInfo$BroodRef)) # on average 1.8 videos per brood watched
-
-
-}
-
-{# the typical sparrow
-
-cor.test(MY_tblBroods$ParentsAge,MY_tblBroods$PairBroodNb) # cor = 0.54, p < 0.0001 
-summary(MY_tblBroods$MBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
-summary(MY_tblBroods$FBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
-summary(MY_tblBroods$PairBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
-
-summary(MY_tblBroods$ParentsAge[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
-
-
-Mums <- MY_tblBroods %>% group_by(SocialMumID)%>% summarise(n_distinct(SocialDadID))
-Dads <- MY_tblBroods %>% group_by(SocialDadID)%>% summarise(n_distinct(SocialMumID))
-summary(Mums[!is.na(Mums$SocialMumID),2])
-summary(Dads[!is.na(Dads$SocialDadID),2])
-table(unlist(Mums[!is.na(Mums$SocialMumID),2]))
-table(unlist(Dads[!is.na(Dads$SocialDadID),2]))
-
-
-# female divorce more than male, in majority for the Exes ??? polyandrous females ?
-summary(MY_tblBroods$FwillDivorce)
-summary(MY_tblBroods$FwillDivorceforEx)
-summary(MY_tblBroods$MwillDivorce)
-summary(MY_tblBroods$MwillDivorceforEx)
-
-
-}
-
-{# first interval after setting up camera
-outTsartMin <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[which.min(x$TstartFeedVisit), c('DVDRef','TstartFeedVisit')] ))
-summary(outTsartMin$TstartFeedVisit)
-
-t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
 }
 
 }
@@ -1844,7 +1794,7 @@ results_PercentageFactorSignificant_realrandom_realtest_dev
 
 }
 
-## keep observed CN and TP and generate visits
+{## keep observed CN and TP and generate visits
 
 {# Get real data
 
@@ -2142,7 +2092,7 @@ all_results_Generate_real_sign_compiled <- Reduce('+',all_results_Generate_real_
 results_PercentageFactorSignificant_Generate_real <- data.frame(Factor=all_results_Generate_real[[1]]$Factor,all_results_Generate_real_sign_compiled)
 results_PercentageFactorSignificant_Generate_real
 
-
+}
 
 
 
