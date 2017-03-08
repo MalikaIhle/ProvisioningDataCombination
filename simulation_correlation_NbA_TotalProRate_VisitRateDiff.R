@@ -210,7 +210,7 @@ rownames(SimData) <- NULL
 ## Calculate Alternation within each DVD
 
 SimData_Calculate_A <- function(x){
-A <- sum(diff(x$Sex)!=0) # NbAlternation
+Asim <- sum(diff(x$Sex)!=0) # NbAlternation
 return(Asim)
 }
 
@@ -219,7 +219,7 @@ SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_C
 ## Calculate Synchrony within each DVD
 
 SimData_Calculate_S <- function(x){
-Ssim <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 0.5)
+Ssim <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 2)
 return(Ssim)
 }
 
@@ -254,7 +254,7 @@ DiffP <- abs(MaleP-FemaleP)
 
 A <- sum(diff(x$Sex)!=0)
 if (MaleP == FemaleP){MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP)) -1} else {MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP))}
-S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 0.5)
+S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 2)
 
 summary_DVD <- data.frame(cbind(DVDRef=unique(x$DVDRef),TotalP,DiffP,MaxA,A,S))
 
@@ -335,7 +335,7 @@ return(list(results))
 }
 
 
-n <- 100
+n <- 200
 all_results_A <- pbreplicate(n,Generate_data_randomize_them_and_analyse_A())
 all_results_A_Sign <- lapply(all_results_A, function(x){x[,-1] <0.05})
 all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n*100
@@ -349,6 +349,12 @@ results_A_PercentageFactorSignificant
 # 3 Type*TotalP   15  100      NA      NA         NA         NA
 # 4  Type*DiffP    0   13      NA      NA         NA         NA
 
+# n <- 200 with interval for synchorny set to 2 instead of 0.5
+       # Factor modA  modS modAdev modSdev modLogAoAr modLogSoSr
+# 1      TotalP  100 100.0      10    10.5        7.0      100.0
+# 2       DiffP  100 100.0       6     7.0        3.5       77.5
+# 3 Type*TotalP    7  78.5      NA      NA         NA         NA
+# 4  Type*DiffP    0   0.0      NA      NA         NA         NA
 
 }
 
