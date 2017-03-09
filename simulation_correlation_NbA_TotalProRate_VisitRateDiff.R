@@ -366,6 +366,9 @@ return(list(results))
 
 
 n <- 100
+
+{# shape the results
+
 all_results_A <- pbreplicate(n,Generate_data_randomize_them_and_analyse_A())
 
 all_results_A_Sign <- lapply(all_results_A, function(x){
@@ -379,8 +382,23 @@ all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n
 all_results_A_Sign_compiled <- cbind(all_results_A_Sign_compiled[,c(-(((ncol(all_results_A_Sign_compiled))/2+1):ncol(all_results_A_Sign_compiled)))]*100,
 										all_results_A_Sign_compiled[,-(1:((ncol(all_results_A_Sign_compiled))/2))])
 results_A_PercentageFactorSignificant <- data.frame(Factor=all_results_A[[1]]$Factor,all_results_A_Sign_compiled)
-results_A_PercentageFactorSignificant
 
+
+Signi_results_Sign_est <- lapply(all_results_A,function(x){
+
+x <- x[1:2,c('modAdev_p', 'modSdev_p','modAdev_e','modSdev_e')]
+Adev_pos_est <-x$modAdev_p<0.05 & x$modAdev_e >0
+Sdev_pos_est <-x$modSdev_p<0.05 & x$modSdev_e >0
+
+cbind(Adev_pos_est,Sdev_pos_est)
+})
+
+Signi_results_Sign_est_compiled <- Reduce('+',Signi_results_Sign_est)
+
+}
+
+results_A_PercentageFactorSignificant
+Signi_results_Sign_est_compiled
 
 # n <- 100
        # Factor modA modS modAdev modSdev modLogAoAr modLogSoSr
@@ -410,6 +428,12 @@ results_A_PercentageFactorSignificant
 # 2       DiffP    100    100        15         5 -0.19787 -0.20969  -0.05109  -0.01160
 # 3 Type*TotalP      0      0        NA        NA  0.00067 -0.00317        NA        NA
 # 4  Type*DiffP      0      0        NA        NA -0.00247 -0.00020        NA        NA
+
+# out of the 14 significant result for modAdev effect TP, 10 were positive estimates
+     # Adev_pos_est Sdev_pos_est
+# [1,]           10            2
+# [2,]            0            1
+
 
 }
 
