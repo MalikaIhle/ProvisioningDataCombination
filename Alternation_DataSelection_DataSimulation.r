@@ -506,10 +506,9 @@ SimulationOutput_long <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternati
 
 
 # some median are .5 : randomly round up or down.
-# example:
-as.integer(median(tail(head(Out_A_S_sim_Among,length(unique(RawInterfeeds$DVDRef))),2)[1,])+sample(c(0.5,-0.5),1))
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
-			
+check.integer <- function(x) {x == round(x)}
+median_integer <- function(x) {if (check.integer(median(x)) == TRUE) {return(median(x))} else {return(as.integer(median(x) +sample(c(0.5,-0.5),1)))}}
+		
 			
 SimulationOutput_long_median <- rbind(cbind(MY_tblParentalCare[,c('DVDRef','NbAlternation')], Type = '1_Observed'),
 	data.frame(cbind(DVDRef = MY_tblParentalCare$DVDRef, NbAlternation = Switch_Consecutive_intervals_out_A$Aswitch,Type = '2_Switch')),

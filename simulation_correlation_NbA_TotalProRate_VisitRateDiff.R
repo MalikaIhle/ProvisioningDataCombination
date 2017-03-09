@@ -241,8 +241,12 @@ out_Ssim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), tail(A_S_with
 
 {# create table long
 
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
+check.integer <- function(x) {x == round(x)}
+median_integer <- function(x) {if (check.integer(median(x)) == TRUE) {return(median(x))} else {return(as.integer(median(x) +sample(c(0.5,-0.5),1)))}}
+
 SimOutMed <- data.frame(DVDRef = out_Asim_within_df[,1], A = apply(out_Asim_within_df[,-1],1,median_integer), S= apply(out_Ssim_within_df[,-1],1,median_integer))
+SimOutMed2 <- data.frame(DVDRef = out_Asim_within_df[,1], MedAsim = apply(out_Asim_within_df[,-1],1,median_integer), MedSsim= apply(out_Ssim_within_df[,-1],1,median_integer))
+
 SimOutMean <- 	data.frame(DVDRef = out_Asim_within_df[,1], MeanAsim = apply(out_Asim_within_df[,-1],1,mean), MeanSsim= apply(out_Ssim_within_df[,-1],1,mean))		
 
 sumarize_one_DVD <- function(x){
@@ -266,10 +270,15 @@ summary_all_DVD <- do.call(rbind,lapply(split(full_dat,full_dat$DVDRef),FUN=suma
 
 # short table
 summary_full_dat <- merge(summary_all_DVD,SimOutMean, by='DVDRef' )
-summary_full_dat$Adev <- summary_full_dat$A - summary_full_dat$MeanAsim
-summary_full_dat$Sdev <- summary_full_dat$S - summary_full_dat$MeanSsim 
-summary_full_dat$Log_Aobs_Arand <- log((summary_full_dat$A+0.00001)/(summary_full_dat$MeanAsim+0.00001))
-summary_full_dat$Log_Sobs_Srand <- log((summary_full_dat$S+0.00001)/(summary_full_dat$MeanSsim+0.00001))
+summary_full_dat <- merge(summary_all_DVD,SimOutMed2, by='DVDRef' )
+# summary_full_dat$Adev <- summary_full_dat$A - summary_full_dat$MeanAsim
+# summary_full_dat$Sdev <- summary_full_dat$S - summary_full_dat$MeanSsim 
+# summary_full_dat$Log_Aobs_Arand <- log((summary_full_dat$A+0.00001)/(summary_full_dat$MeanAsim+0.00001))
+# summary_full_dat$Log_Sobs_Srand <- log((summary_full_dat$S+0.00001)/(summary_full_dat$MeanSsim+0.00001))
+summary_full_dat$Adev <- summary_full_dat$A - summary_full_dat$MedAsim
+summary_full_dat$Sdev <- summary_full_dat$S - summary_full_dat$MedSsim 
+#summary_full_dat$Log_Aobs_Arand <- log((summary_full_dat$A+1)/(summary_full_dat$MedAsim+1))
+#summary_full_dat$Log_Sobs_Srand <- log((summary_full_dat$S+1)/(summary_full_dat$MedSsim+1))
 head(summary_full_dat)
 
 # long table
@@ -295,38 +304,59 @@ modS <- glmer(S~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulld
 #modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
 modAdev <- lm(Adev~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
 modSdev <- lm(Sdev~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
-modLogAoAr <- lm(Log_Aobs_Arand~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
-modLogSoSr <- lm(Log_Sobs_Srand~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
+#modLogAoAr <- lm(Log_Aobs_Arand~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
+#modLogSoSr <- lm(Log_Sobs_Srand~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
 
 
 }
 
 {# results
 #results <- data.frame(Factor = c('Type*TotalP', 'Type*DiffP', 'Type*A'), modA = rep(NA,3),modA_off= rep(NA,3), modAoutofAmax = rep(NA,3),modS = rep(NA,3), modP=rep(NA,3), modP_AMax= rep(NA,3))
-results <- data.frame(Factor = c('TotalP','DiffP','Type*TotalP', 'Type*DiffP'), modA = rep(NA,4),modS = rep(NA,4), modAdev=rep(NA,4), modSdev= rep(NA,4),modLogAoAr=rep(NA,4),modLogSoSr=rep(NA,4))
+results <- data.frame(Factor = c('TotalP','DiffP','Type*TotalP', 'Type*DiffP'), 
+					modA_p = rep(NA,4), modS_p = rep(NA,4), modAdev_p=rep(NA,4), modSdev_p= rep(NA,4),#modLogAoAr_p=rep(NA,4),modLogSoSr_p=rep(NA,4),
+					modA_e = rep(NA,4),modS_e = rep(NA,4), modAdev_e=rep(NA,4), modSdev_e= rep(NA,4)#,modLogAoAr_e=rep(NA,4),modLogSoSr_e=rep(NA,4)
+					)	
 
-results$modA[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,4],3)
-results$modA[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,4],3)
-results$modA[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
-results$modA[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
+results$modA_p[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,4],3)
+results$modA_p[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,4],3)
+results$modA_p[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
+results$modA_p[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
 #results$modA_off[results$Factor=='Type*TotalP'] <- round(summary(modA_off)$coef[5,4],3)
 #results$modA_off[results$Factor=='Type*DiffP'] <- round(summary(modA_off)$coef[6,4],3)
 #results$modAoutofAmax[results$Factor=='Type*TotalP'] <- round(summary(modAoutofAmax)$coef[5,4],3)
 #results$modAoutofAmax[results$Factor=='Type*DiffP'] <- round(summary(modAoutofAmax)$coef[6,4],3)
-results$modS[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,4],3)
-results$modS[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,4],3)
-results$modS[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,4],3)
-results$modS[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,4],3)
+results$modS_p[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,4],3)
+results$modS_p[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,4],3)
+results$modS_p[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,4],3)
+results$modS_p[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,4],3)
 #results$modP[results$Factor=='Type*A'] <- round(summary(modTotalP)$coef[4,4],3)
 #results$modP_AMax[results$Factor=='Type*A'] <- round(summary(modTotalP_AMax)$coef[4,4],3)
-results$modAdev[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,4],4)
-results$modAdev[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,4],4)
-results$modSdev[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,4],4)
-results$modSdev[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,4],4)
-results$modLogAoAr[results$Factor=='TotalP'] <- round(summary(modLogAoAr)$coef[2,4],4)
-results$modLogAoAr[results$Factor=='DiffP'] <- round(summary(modLogAoAr)$coef[3,4],4)
-results$modLogSoSr[results$Factor=='TotalP'] <- round(summary(modLogSoSr)$coef[2,4],4)
-results$modLogSoSr[results$Factor=='DiffP'] <- round(summary(modLogSoSr)$coef[3,4],4)
+results$modAdev_p[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,4],4)
+results$modAdev_p[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,4],4)
+results$modSdev_p[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,4],4)
+results$modSdev_p[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,4],4)
+# results$modLogAoAr_p[results$Factor=='TotalP'] <- round(summary(modLogAoAr)$coef[2,4],4)
+# results$modLogAoAr_p[results$Factor=='DiffP'] <- round(summary(modLogAoAr)$coef[3,4],4)
+# results$modLogSoSr_p[results$Factor=='TotalP'] <- round(summary(modLogSoSr)$coef[2,4],4)
+# results$modLogSoSr_p[results$Factor=='DiffP'] <- round(summary(modLogSoSr)$coef[3,4],4)
+
+results$modA_e[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,1],3)
+results$modA_e[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,1],3)
+results$modA_e[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,1],3)
+results$modA_e[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,1],3)
+results$modS_e[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,1],3)
+results$modS_e[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,1],3)
+results$modS_e[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,1],3)
+results$modS_e[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,1],3)
+results$modAdev_e[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,1],3)
+results$modAdev_e[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,1],3)
+results$modSdev_e[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,1],3)
+results$modSdev_e[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,1],3)
+# results$modLogAoAr_e[results$Factor=='TotalP'] <- round(summary(modLogAoAr)$coef[2,1],3)
+# results$modLogAoAr_e[results$Factor=='DiffP'] <- round(summary(modLogAoAr)$coef[3,1],3)
+# results$modLogSoSr_e[results$Factor=='TotalP'] <- round(summary(modLogSoSr)$coef[2,1],3)
+# results$modLogSoSr_e[results$Factor=='DiffP'] <- round(summary(modLogSoSr)$coef[3,1],3)
+
 
 }
 
@@ -335,12 +365,22 @@ return(list(results))
 }
 
 
-n <- 200
+n <- 100
 all_results_A <- pbreplicate(n,Generate_data_randomize_them_and_analyse_A())
-all_results_A_Sign <- lapply(all_results_A, function(x){x[,-1] <0.05})
-all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n*100
+
+all_results_A_Sign <- lapply(all_results_A, function(x){
+x_p <- x[,c(-1,-(((ncol(x)-1)/2+2):ncol(x)))]
+x_e <- x[,-(1:((ncol(x)+1)/2))]
+
+cbind(x_p < 0.05, x_e)
+})
+
+all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n
+all_results_A_Sign_compiled <- cbind(all_results_A_Sign_compiled[,c(-(((ncol(all_results_A_Sign_compiled))/2+1):ncol(all_results_A_Sign_compiled)))]*100,
+										all_results_A_Sign_compiled[,-(1:((ncol(all_results_A_Sign_compiled))/2))])
 results_A_PercentageFactorSignificant <- data.frame(Factor=all_results_A[[1]]$Factor,all_results_A_Sign_compiled)
 results_A_PercentageFactorSignificant
+
 
 # n <- 100
        # Factor modA modS modAdev modSdev modLogAoAr modLogSoSr
@@ -356,7 +396,23 @@ results_A_PercentageFactorSignificant
 # 3 Type*TotalP    7  78.5      NA      NA         NA         NA
 # 4  Type*DiffP    0   0.0      NA      NA         NA         NA
 
+
+# n <- 200 p = sum of significant p value ; e = estimates, averaged accross n sim
+       # Factor modA_p modS_p modAdev_p modSdev_p modLogAoAr_p modLogSoSr_p    modA_e    modS_e modAdev_e modSdev_e modLogAoAr_e modLogSoSr_e
+# 1      TotalP    100  100.0      10.5      11.5          9.5          100  0.455680  0.678050 -0.004200 -0.004245      0.00278     0.339605
+# 2       DiffP    100  100.0       5.0       5.5          2.0           80 -0.205590 -0.220310  0.004185  0.007720      0.00050    -0.108185
+# 3 Type*TotalP     10   82.0        NA        NA           NA           NA -0.012615 -0.024925        NA        NA           NA           NA
+# 4  Type*DiffP      0    0.5        NA        NA           NA           NA  0.003680  0.007585        NA        NA           NA           NA
+
+# n <- 100 change the function median_integer to see whether this created a systematic bias for the random outcome influencing S specifically
+       # Factor modA_p modS_p modAdev_p modSdev_p   modA_e   modS_e modAdev_e modSdev_e
+# 1      TotalP    100    100        14         7  0.43731  0.64456   0.02815  -0.00311
+# 2       DiffP    100    100        15         5 -0.19787 -0.20969  -0.05109  -0.01160
+# 3 Type*TotalP      0      0        NA        NA  0.00067 -0.00317        NA        NA
+# 4  Type*DiffP      0      0        NA        NA -0.00247 -0.00020        NA        NA
+
 }
+
 
 {## Take observed CN, generate correlated TP
 
