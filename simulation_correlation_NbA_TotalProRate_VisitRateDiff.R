@@ -2,25 +2,24 @@
 #	 Joel PICK & Malika IHLE    joel.l.pick@gmail.com   malika_ihle@hotmail.fr
 #	 Simulation to help decide which analyses to perfom on provisioning data sparrows
 #	 Start : 02/02/2017
-#	 last modif : 07/03/2017
+#	 last modif : 10/03/2017 start to write script based on set of simil;ar function for all simulations
 #	 commit: simulations from generated, half generated, or randomized datasets
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list = ls(all = TRUE))
 
-{### Packages
+{# Packages
 library(pbapply)
 library(lme4)
 library(MASS)
-options(scipen=999)
-
+options(scipen=999) # to remove scientific notation e-
+# options(scipen=0) # to put it back
 library(tidyr)
 library(dplyr) 
 library(ggplot2)
-
 }
 
-{### Get real data
+{# Get real data as selected for DataAnalyses.R
 
 {### Get raw data from R_ExtractedData
 
@@ -125,375 +124,26 @@ MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
 
 }
 
-head(MY_tblBroods) # even those where one parent unknown, needed divorce question
 head(MY_tblDVDInfo) 
 head(MY_tblParentalCare)
 head(MY_RawFeedingVisits) # even those where one parent unknown, needed for simulation
-head(MY_tblChicks)
-head(MY_tblChicks_byRearingBrood)
 
 RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
 colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
 
 }
 
+{# Functions
 
-{## Generate TP from poisson process
-
-
-Generate_data_randomize_them_and_analyse_A <-function(){
-
-{# generate data
-
-avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
-sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var))
-VideoLength <- 90
-
-# Joel suggested to pass on the log scale to be able to add Poisson distributed error, I assume (??)
-meanlog <- log(avPR)
-sdlog <-  sqrt(log(1 + sdPR^2/avPR^2))
-
-full_dat <- list()
-
-for (i in 1:2000){
-
-MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog ) # expected number of visits
-FemalePexp <- rlnorm(1, meanlog = log(avPR), sdlog = sqrt(log(1 + sdPR^2/avPR^2)) )
-MaleP5 <- rpois(5, MalePexp) # potential realized number of visits including the poisson distributed error
-MaleP <- sample(MaleP5[MaleP5>0],1) # picking one potential MaleP that is not zero (excluded in observed data)
-FemaleP5 <- rpois(5, FemalePexp)
-FemaleP <- sample(FemaleP5[FemaleP5>0],1)
-TotalP <- MaleP + FemaleP # total number of visits for that video
-DiffP <- abs(MaleP - FemaleP)
-
-MaleVisits <- sort(runif(MaleP,0,VideoLength))
-FemaleVisits <- sort(runif(FemaleP,0,VideoLength))
-MaleIntervals <- c(0,diff(MaleVisits))
-FemaleIntervals <- c(0,diff(FemaleVisits))
-
-dat <- data.frame(rbind(cbind(Tstart = MaleVisits, Sex = rep(1, length(MaleVisits)),Interval=MaleIntervals),cbind(Tstart = FemaleVisits,Sex = rep(0, length(FemaleVisits)), Interval=FemaleIntervals)))
-dat <- dat[order(dat$Tstart),]
-dat$DVDRef <- i
-if (TotalP - DiffP >1) {full_dat[[i]] <- dat} # for my analyses I selected videos where both partners visited at least once
-
-}
-
-full_dat <- do.call(rbind,full_dat)
-
-}
-
-{# Randomization Within nest watch, within individual
+check_integer <- function(x) {x == round(x)}
+median_integer <- function(x) {if (check_integer(median(x)) == TRUE) {return(median(x))} else {return(as.integer(median(x) +sample(c(0.5,-0.5),1)))}}
 
 sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
- 
-Randomize_Data_WithinFile_and_Calculate_A_S_fun <- function(RawData) { 
 
-RandomizeData_oneSplit <-  function(x){
+Create_one_nest_watch <- function (x){
 
-x <- x[order(x$Tstart),]
-x0 <- x[x$Sex==0,]
-x1 <- x[x$Sex==1,]
-
-x0$Interval <- c(0, sample_vector(x0$Interval[-1]))
-x0$Tstart <- x0$Tstart[1] + cumsum(x0$Interval) 
-
-x1$Interval <- c(0, sample_vector(x1$Interval[-1]))
-x1$Tstart <- x1$Tstart[1] + cumsum(x1$Interval) 
-
-xsim <- rbind(x0,x1)
-xsim <- xsim[order(xsim$Tstart),] 
-}
-
-SimData <- do.call(rbind,lapply(split(RawData, RawData$DVDRef),RandomizeData_oneSplit))
-rownames(SimData) <- NULL
-
-## Calculate Alternation within each DVD
-
-SimData_Calculate_A <- function(x){
-Asim <- sum(diff(x$Sex)!=0) # NbAlternation
-return(Asim)
-}
-
-SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
-
-## Calculate Synchrony within each DVD
-
-SimData_Calculate_S <- function(x){
-Ssim <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 2)
-return(Ssim)
-}
-
-SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
-
-# output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
-return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
-}
-
-A_S_within_randomization <- do.call(cbind,replicate(10,Randomize_Data_WithinFile_and_Calculate_A_S_fun(full_dat),simplify=FALSE ) )
-
-# first half are A sim
-out_Asim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), head(A_S_within_randomization,length(unique(full_dat$DVDRef))))
-
-# second Half are S sim
-out_Ssim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), tail(A_S_within_randomization,length(unique(full_dat$DVDRef))))
-
-}
-
-{# create table long
-
-check.integer <- function(x) {x == round(x)}
-median_integer <- function(x) {if (check.integer(median(x)) == TRUE) {return(median(x))} else {return(as.integer(median(x) +sample(c(0.5,-0.5),1)))}}
-
-SimOutMed <- data.frame(DVDRef = out_Asim_within_df[,1], A = apply(out_Asim_within_df[,-1],1,median_integer), S= apply(out_Ssim_within_df[,-1],1,median_integer))
-SimOutMed2 <- data.frame(DVDRef = out_Asim_within_df[,1], MedAsim = apply(out_Asim_within_df[,-1],1,median_integer), MedSsim= apply(out_Ssim_within_df[,-1],1,median_integer))
-
-SimOutMean <- 	data.frame(DVDRef = out_Asim_within_df[,1], MeanAsim = apply(out_Asim_within_df[,-1],1,mean), MeanSsim= apply(out_Ssim_within_df[,-1],1,mean))		
-
-sumarize_one_DVD <- function(x){
-
-MaleP <-nrow(x[x$Sex==1,])
-FemaleP <-nrow(x[x$Sex==0,])
-TotalP <- MaleP+FemaleP
-DiffP <- abs(MaleP-FemaleP)
-
-A <- sum(diff(x$Sex)!=0)
-if (MaleP == FemaleP){MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP)) -1} else {MaxA <- MaleP + FemaleP - (abs(MaleP - FemaleP))}
-S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 2)
-
-summary_DVD <- data.frame(cbind(DVDRef=unique(x$DVDRef),TotalP,DiffP,MaxA,A,S))
-
-summary_DVD
-
-}
-
-summary_all_DVD <- do.call(rbind,lapply(split(full_dat,full_dat$DVDRef),FUN=sumarize_one_DVD))
-
-# short table
-summary_full_dat <- merge(summary_all_DVD,SimOutMean, by='DVDRef' )
-summary_full_dat <- merge(summary_all_DVD,SimOutMed2, by='DVDRef' )
-# summary_full_dat$Adev <- summary_full_dat$A - summary_full_dat$MeanAsim
-# summary_full_dat$Sdev <- summary_full_dat$S - summary_full_dat$MeanSsim 
-# summary_full_dat$Log_Aobs_Arand <- log((summary_full_dat$A+0.00001)/(summary_full_dat$MeanAsim+0.00001))
-# summary_full_dat$Log_Sobs_Srand <- log((summary_full_dat$S+0.00001)/(summary_full_dat$MeanSsim+0.00001))
-summary_full_dat$Adev <- summary_full_dat$A - summary_full_dat$MedAsim
-summary_full_dat$Sdev <- summary_full_dat$S - summary_full_dat$MedSsim 
-#summary_full_dat$Log_Aobs_Arand <- log((summary_full_dat$A+1)/(summary_full_dat$MedAsim+1))
-#summary_full_dat$Log_Sobs_Srand <- log((summary_full_dat$S+1)/(summary_full_dat$MedSsim+1))
-head(summary_full_dat)
-
-# long table
-SimOutMed <- merge (x=SimOutMed, y= summary_all_DVD[,c('DVDRef', 'TotalP', 'DiffP', 'MaxA')], by='DVDRef', all.x=TRUE)
-SimOutMed$Type <- 'a_Sim'
-summary_all_DVD$Type <- 'z_Obsv'
-
-head(summary_all_DVD)
-head(SimOutMed)
-
-fulldat_long <- rbind(summary_all_DVD,SimOutMed)
-fulldat_long$rowID <- seq(1:nrow(fulldat_long))
-head(fulldat_long)
-}
-
-{# analyse 
-
-modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulldat_long, family = 'poisson') 
-#modA_off <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + offset(log(MaxA))+ (1|DVDRef), data=fulldat_long, family = 'poisson')
-#modAoutofAmax <- glmer(cbind(A, MaxA-A) ~ Type*scale(TotalP) + Type*scale(DiffP)+ (1|DVDRef), data=fulldat_long, family = 'binomial') 
-modS <- glmer(S~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=fulldat_long, family = 'poisson') 
-#modTotalP <- glmer(TotalP ~ scale(A)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
-#modTotalP_AMax <- glmer(TotalP ~ I(A/MaxA)*Type + (1|DVDRef), family = 'poisson', data=fulldat_long) 
-modAdev <- lm(Adev~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
-modSdev <- lm(Sdev~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
-#modLogAoAr <- lm(Log_Aobs_Arand~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
-#modLogSoSr <- lm(Log_Sobs_Srand~ scale(TotalP) + scale(DiffP) ,data=summary_full_dat) 
-
-
-}
-
-{# results
-#results <- data.frame(Factor = c('Type*TotalP', 'Type*DiffP', 'Type*A'), modA = rep(NA,3),modA_off= rep(NA,3), modAoutofAmax = rep(NA,3),modS = rep(NA,3), modP=rep(NA,3), modP_AMax= rep(NA,3))
-results <- data.frame(Factor = c('TotalP','DiffP','Type*TotalP', 'Type*DiffP'), 
-					modA_p = rep(NA,4), modS_p = rep(NA,4), modAdev_p=rep(NA,4), modSdev_p= rep(NA,4),#modLogAoAr_p=rep(NA,4),modLogSoSr_p=rep(NA,4),
-					modA_e = rep(NA,4),modS_e = rep(NA,4), modAdev_e=rep(NA,4), modSdev_e= rep(NA,4)#,modLogAoAr_e=rep(NA,4),modLogSoSr_e=rep(NA,4)
-					)	
-
-results$modA_p[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,4],3)
-results$modA_p[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,4],3)
-results$modA_p[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
-results$modA_p[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
-#results$modA_off[results$Factor=='Type*TotalP'] <- round(summary(modA_off)$coef[5,4],3)
-#results$modA_off[results$Factor=='Type*DiffP'] <- round(summary(modA_off)$coef[6,4],3)
-#results$modAoutofAmax[results$Factor=='Type*TotalP'] <- round(summary(modAoutofAmax)$coef[5,4],3)
-#results$modAoutofAmax[results$Factor=='Type*DiffP'] <- round(summary(modAoutofAmax)$coef[6,4],3)
-results$modS_p[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,4],3)
-results$modS_p[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,4],3)
-results$modS_p[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,4],3)
-results$modS_p[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,4],3)
-#results$modP[results$Factor=='Type*A'] <- round(summary(modTotalP)$coef[4,4],3)
-#results$modP_AMax[results$Factor=='Type*A'] <- round(summary(modTotalP_AMax)$coef[4,4],3)
-results$modAdev_p[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,4],4)
-results$modAdev_p[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,4],4)
-results$modSdev_p[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,4],4)
-results$modSdev_p[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,4],4)
-# results$modLogAoAr_p[results$Factor=='TotalP'] <- round(summary(modLogAoAr)$coef[2,4],4)
-# results$modLogAoAr_p[results$Factor=='DiffP'] <- round(summary(modLogAoAr)$coef[3,4],4)
-# results$modLogSoSr_p[results$Factor=='TotalP'] <- round(summary(modLogSoSr)$coef[2,4],4)
-# results$modLogSoSr_p[results$Factor=='DiffP'] <- round(summary(modLogSoSr)$coef[3,4],4)
-
-results$modA_e[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,1],3)
-results$modA_e[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,1],3)
-results$modA_e[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,1],3)
-results$modA_e[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,1],3)
-results$modS_e[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,1],3)
-results$modS_e[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,1],3)
-results$modS_e[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,1],3)
-results$modS_e[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,1],3)
-results$modAdev_e[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,1],3)
-results$modAdev_e[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,1],3)
-results$modSdev_e[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,1],3)
-results$modSdev_e[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,1],3)
-# results$modLogAoAr_e[results$Factor=='TotalP'] <- round(summary(modLogAoAr)$coef[2,1],3)
-# results$modLogAoAr_e[results$Factor=='DiffP'] <- round(summary(modLogAoAr)$coef[3,1],3)
-# results$modLogSoSr_e[results$Factor=='TotalP'] <- round(summary(modLogSoSr)$coef[2,1],3)
-# results$modLogSoSr_e[results$Factor=='DiffP'] <- round(summary(modLogSoSr)$coef[3,1],3)
-
-
-}
-
-return(list(results))
-
-}
-
-
-n <- 100
-
-{# shape the results
-
-all_results_A <- pbreplicate(n,Generate_data_randomize_them_and_analyse_A())
-
-all_results_A_Sign <- lapply(all_results_A, function(x){
-x_p <- x[,c(-1,-(((ncol(x)-1)/2+2):ncol(x)))]
-x_e <- x[,-(1:((ncol(x)+1)/2))]
-
-cbind(x_p < 0.05, x_e)
-})
-
-all_results_A_Sign_compiled <- Reduce('+',all_results_A_Sign)/n
-all_results_A_Sign_compiled <- cbind(all_results_A_Sign_compiled[,c(-(((ncol(all_results_A_Sign_compiled))/2+1):ncol(all_results_A_Sign_compiled)))]*100,
-										all_results_A_Sign_compiled[,-(1:((ncol(all_results_A_Sign_compiled))/2))])
-results_A_PercentageFactorSignificant <- data.frame(Factor=all_results_A[[1]]$Factor,all_results_A_Sign_compiled)
-
-
-Signi_results_Sign_est <- lapply(all_results_A,function(x){
-
-x <- x[1:2,c('modAdev_p', 'modSdev_p','modAdev_e','modSdev_e')]
-Adev_pos_est <-x$modAdev_p<0.05 & x$modAdev_e >0
-Sdev_pos_est <-x$modSdev_p<0.05 & x$modSdev_e >0
-
-cbind(Adev_pos_est,Sdev_pos_est)
-})
-
-Signi_results_Sign_est_compiled <- Reduce('+',Signi_results_Sign_est)
-
-}
-
-results_A_PercentageFactorSignificant
-Signi_results_Sign_est_compiled
-
-# n <- 100
-       # Factor modA modS modAdev modSdev modLogAoAr modLogSoSr
-# 1      TotalP  100  100      18      15         11        100
-# 2       DiffP  100  100       7      10          2        100
-# 3 Type*TotalP   15  100      NA      NA         NA         NA
-# 4  Type*DiffP    0   13      NA      NA         NA         NA
-
-# n <- 200 with interval for synchorny set to 2 instead of 0.5
-       # Factor modA  modS modAdev modSdev modLogAoAr modLogSoSr
-# 1      TotalP  100 100.0      10    10.5        7.0      100.0
-# 2       DiffP  100 100.0       6     7.0        3.5       77.5
-# 3 Type*TotalP    7  78.5      NA      NA         NA         NA
-# 4  Type*DiffP    0   0.0      NA      NA         NA         NA
-
-
-# n <- 200 p = sum of significant p value ; e = estimates, averaged accross n sim
-       # Factor modA_p modS_p modAdev_p modSdev_p modLogAoAr_p modLogSoSr_p    modA_e    modS_e modAdev_e modSdev_e modLogAoAr_e modLogSoSr_e
-# 1      TotalP    100  100.0      10.5      11.5          9.5          100  0.455680  0.678050 -0.004200 -0.004245      0.00278     0.339605
-# 2       DiffP    100  100.0       5.0       5.5          2.0           80 -0.205590 -0.220310  0.004185  0.007720      0.00050    -0.108185
-# 3 Type*TotalP     10   82.0        NA        NA           NA           NA -0.012615 -0.024925        NA        NA           NA           NA
-# 4  Type*DiffP      0    0.5        NA        NA           NA           NA  0.003680  0.007585        NA        NA           NA           NA
-
-# n <- 100 change the function median_integer to see whether this created a systematic bias for the random outcome influencing S specifically
-       # Factor modA_p modS_p modAdev_p modSdev_p   modA_e   modS_e modAdev_e modSdev_e
-# 1      TotalP    100    100        14         7  0.43731  0.64456   0.02815  -0.00311
-# 2       DiffP    100    100        15         5 -0.19787 -0.20969  -0.05109  -0.01160
-# 3 Type*TotalP      0      0        NA        NA  0.00067 -0.00317        NA        NA
-# 4  Type*DiffP      0      0        NA        NA -0.00247 -0.00020        NA        NA
-
-# out of the 14 significant result for modAdev effect TP, 10 were positive estimates
-     # Adev_pos_est Sdev_pos_est
-# [1,]           10            2
-# [2,]            0            1
-
-
-}
-
-
-{## Take observed CN, generate correlated TP
-
-Generate_TP_ObservedCN_randomize_data_and_analyse <-function(){
-
-{# generate TP correlated to existing CN
-
-n <- nrow(MY_tblDVDInfo)
-avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
-sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var))
-
-meanlog <- log(avPR)
-sdlog <- sqrt(log(1 + sdPR^2/avPR^2))
-
-CN <- MY_tblDVDInfo$DVDInfoChickNb     # fixed given data
-r <- 0.6
-
-b <- (r * sdlog)/ sd(CN)
-a <- meanlog - mean(CN)*b
-
-maleE <- rnorm(n,0, sqrt(sdlog^2*(1-r^2)))
-femaleE <- rnorm(n,0, sqrt(sdlog^2*(1-r^2)))
-
-MalePexp <- exp(a + b * CN + maleE)
-FemalePexp <- exp(a + b * CN + femaleE)
-
-MaleP <- NULL
-FemaleP <- NULL
-for (i in 1: length(MalePexp)){ # for my analyses I selected videos where both partners visited at least once
-MaleP5 <- rpois(5, MalePexp[i])
-MaleP[i] <- sample(MaleP5[MaleP5>0],1)
-
-FemaleP5 <- rpois(5, FemalePexp[i])
-FemaleP[i] <- sample(FemaleP5[FemaleP5>0],1)
-
-}
-
-MY_TABLE_per_DVD <- data.frame(DVDRef = seq(1:n), CN = CN, TotalP = MaleP+FemaleP, DiffP = abs(FemaleP-MaleP), FemaleP = FemaleP, MaleP = MaleP)
-
-for (i in 1:nrow(MY_TABLE_per_DVD)){
-if (MY_TABLE_per_DVD$MaleP[i] == MY_TABLE_per_DVD$FemaleP[i]) {MY_TABLE_per_DVD$MaxA[i] <- MY_TABLE_per_DVD$TotalP[i] - MY_TABLE_per_DVD$DiffP[i] -1} 
-else {MY_TABLE_per_DVD$MaxA[i] <- MY_TABLE_per_DVD$TotalP[i] - MY_TABLE_per_DVD$DiffP[i]}
-}
-
-}
-
-head(MY_TABLE_per_DVD)
-
-
-{# create nest watches
-
-full_dat <- list()
-
-create_nest_watch <- function (x){
-
-MaleVisits <- sort(runif(x$MaleP,0,90))
-FemaleVisits <- sort(runif(x$FemaleP,0,90))
+MaleVisits <- sort(runif(x$MaleP,0,VideoLength)) # MaleP is male number of provisioning visits
+FemaleVisits <- sort(runif(x$FemaleP,0,VideoLength))
 MaleIntervals <- c(0,diff(MaleVisits))
 FemaleIntervals <- c(0,diff(FemaleVisits))
 
@@ -505,19 +155,101 @@ dat
 
 }
 
-full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), create_nest_watch))
+Create_one_fully_sorted_nest_watch <- function (x){
+
+MaleVisits <- sort(runif(x$MaleP,0,VideoLength)) # MaleP is male number of provisioning visits
+FemaleVisits <- sort(runif(x$FemaleP,0,VideoLength))
+MaleIntervals <- sort(c(0,diff(MaleVisits))) # interval associated to the first visit is zero like in real dataset
+FemaleIntervals <- sort(c(0,diff(FemaleVisits)))
+MaleVisits <- MaleVisits[1] + cumsum(MaleIntervals) # recalculate Tstart based on sorted intervals
+FemaleVisits <- FemaleVisits[1] + cumsum(FemaleIntervals)
+
+dat <- data.frame(rbind(cbind(Tstart = MaleVisits, Sex = rep(1, length(MaleVisits)),Interval=MaleIntervals),
+						cbind(Tstart = FemaleVisits,Sex = rep(0, length(FemaleVisits)), Interval=FemaleIntervals)))
+dat <- dat[order(dat$Tstart),]
+dat$DVDRef <- x$DVDRef
+dat 
 
 }
 
-head(full_dat)
+Convert_CN_2_r <- function(oneCN){
+rseq <- seq(from=0,to=1, length.out=max(CN))
+r <- rseq[oneCN]
+return(r)
+}
 
-{# Randomization Within nest watch, within individual
+Create_one_partially_sorted_nest_watch <- function (x){
 
-sample_vector <- function(x,...){if(length(x)==1) x else sample(x,replace=F)} 
- 
-Randomize_Data_WithinFile_and_Calculate_A_S_fun <- function(RawData) { 
+MaleVisits <- sort(runif(x$MaleP,0,VideoLength)) # MaleP is male number of provisioning visits
+FemaleVisits <- sort(runif(x$FemaleP,0,VideoLength))
 
-RandomizeData_oneSplit <-  function(x){
+if (length(MaleVisits) == 1 | length(FemaleVisits) == 1){
+Create_one_fully_sorted_nest_watch(x)}
+
+# pick one sex at random to be fully sorted
+else{sex_fully_sorted <- sample(c(1,0),1) 
+
+if (sex_fully_sorted == 1) {
+MaleIntervals <- sort(c(0,diff(MaleVisits))) # first interval is zero like in real data
+MaleVisits <- MaleVisits[1] + cumsum(MaleIntervals) # recalculate Tstart based on sorted intervals
+}
+if (sex_fully_sorted == 0) {
+FemaleIntervals <- sort(c(0,diff(FemaleVisits)))
+FemaleVisits <- MaleVisits[1] + cumsum(FemaleIntervals)
+}
+
+# the other sex to be partially sorted
+if(sex_fully_sorted == 0) {sex_partially_sorted <- 1} else(sex_partially_sorted <- 0)
+rCNint <- Convert_CN_2_r(x$CN) # strength of the sorting = correlation to CN
+
+if (sex_partially_sorted == 1) {
+MaleIntervals <- sort(diff(MaleVisits))
+seq_intervalNb <- 1:length(MaleIntervals)
+sorting_parameter <- rCNint*seq_intervalNb + rnorm(length(seq_intervalNb), 0, sqrt(1-rCNint^2))
+MaleVisits <- MaleVisits[1] + cumsum(MaleIntervals[order(sorting_parameter)])# recalculate Tstart based on partially sorted intervals
+MaleIntervals <- c(0,diff(MaleVisits)) # first interval is zero like in real data
+}
+if (sex_partially_sorted == 0) {
+FemaleIntervals <- sort(diff(FemaleVisits))
+seq_intervalNb <- 1:length(FemaleIntervals)
+sorting_parameter <- rCNint*seq_intervalNb + rnorm(length(seq_intervalNb), 0, sqrt(1-rCNint^2))
+FemaleVisits <- FemaleVisits[1] + cumsum(FemaleIntervals[order(sorting_parameter)])# recalculate Tstart based on partially sorted intervals
+FemaleIntervals <- c(0,diff(FemaleVisits)) # first interval is zero like in real data
+}
+
+dat <- data.frame(rbind(cbind(Tstart = MaleVisits, Sex = rep(1, length(MaleVisits)),Interval=MaleIntervals),
+						cbind(Tstart = FemaleVisits,Sex = rep(0, length(FemaleVisits)), Interval=FemaleIntervals)))
+dat <- dat[order(dat$Tstart),]
+dat$DVDRef <- x$DVDRef
+dat 
+
+}
+}
+
+
+Calculate_AMax <- function(x){
+if (x$MaleP == x$FemaleP) {x$AMax <- x$TotalP - x$DiffP -1} else {x$AMax <- x$TotalP - x$DiffP}
+return(x)
+}
+
+Calculate_A_S_one_nest_watch <- function(x){
+A <- sum(diff(x$Sex)!=0)
+S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 0.5)
+data.frame(cbind(DVDRef=unique(x$DVDRef),A,S))
+}
+
+Calculate_A_one_nest_watch <- function(x){
+A <- sum(diff(x$Sex)!=0)
+A
+}
+
+Calculate_S_one_nest_watch <- function(x){
+S <- S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 0.5)
+S
+}
+
+
+Randomize_one_nest_watch <-  function(x){
 
 x <- x[order(x$Tstart),]
 x0 <- x[x$Sex==0,]
@@ -533,136 +265,256 @@ xsim <- rbind(x0,x1)
 xsim <- xsim[order(xsim$Tstart),] 
 }
 
-SimData <- do.call(rbind,lapply(split(RawData, RawData$DVDRef),RandomizeData_oneSplit))
-rownames(SimData) <- NULL
+Randomize_Data_WithinFile_and_Calculate_A_S <- function(RawData) { 
 
-## Calculate Alternation within each DVD
+SimData <- do.call(rbind,lapply(split(RawData, RawData$DVDRef),Randomize_one_nest_watch))
+SimData_A <- do.call(rbind,lapply(split(SimData,SimData$DVDRef), Calculate_A_one_nest_watch ))
+SimData_S <- do.call(rbind,lapply(split(SimData,SimData$DVDRef), Calculate_S_one_nest_watch ))
 
-SimData_Calculate_A <- function(x){
-x <- x[order(x$Tstart),]
-x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
-Asim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame)]) # NbAlternation
-return(Asim)
+return(rbind(SimData_A, SimData_S)) # the 'length(unique(DVDRef))' first row are Asim, the other half are Ssim
 }
 
-SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_A ))
 
-## Calculate Synchrony within each DVD
+Generate_TP <- function(nPR, sdlogPR,rCNTP){
 
-SimData_Calculate_S <- function(x){
-x <- x[order(x$Tstart),]
-x$NextSexSame <- c(x$Sex[-1],NA) == x$Sex
-x$NextTstartafterhalfminTstart <-  c(x$Tstart[-1],NA) <= x$Tstart +0.5 &  c(x$Tstart[-1],NA) >= x$Tstart # second arrive shortly after first visit (can share time in the nest box or not) > can assess chick feeding/state of hunger + less conspicuous?
-Ssim <- length(x$NextSexSame[x$NextSexSame == FALSE & !is.na(x$NextSexSame) 
-		& x$NextTstartafterhalfminTstart == TRUE & !is.na(x$NextTstartafterhalfminTstart)])
-return(Ssim)
+MalePexp <- rlnorm(nPR, meanlog = meanlogPR, sdlog = sdlogPR ) # expected number of visits
+FemalePexp <- rlnorm(nPR, meanlog = meanlogPR, sdlog = sdlogPR )
+
+MaleP <- NULL
+FemaleP <- NULL
+
+for (i in 1: length(MalePexp)){ # for my analyses I selected videos where both partners visited at least once
+MaleP5 <- rpois(5, MalePexp[i])  # potential realized number of visits including the poisson distributed error
+MaleP[i] <- sample(MaleP5[MaleP5>0],1)  # picking one potential MaleP that is not zero (excluded in observed data)
+FemaleP5 <- rpois(5, FemalePexp[i])
+FemaleP[i] <- sample(FemaleP5[FemaleP5>0],1)
 }
 
-SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_Calculate_S ))
+return(data.frame(DVDRef = seq(1:nPR), TotalP = MaleP+FemaleP, DiffP = abs(FemaleP-MaleP), FemaleP = FemaleP, MaleP = MaleP))
 
-# output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
-return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
 }
 
-A_S_within_randomization <- do.call(cbind,replicate(10,Randomize_Data_WithinFile_and_Calculate_A_S_fun(full_dat),simplify=FALSE ) )
+Generate_TP_correlated_to_CN <- function(nPR, sdlogPR,rCNTP, CN){
+maleE <- rnorm(nPR,0, sqrt(sdlogPR^2*(1-rCNTP^2)))
+femaleE <- rnorm(nPR,0, sqrt(sdlogPR^2*(1-rCNTP^2)))
 
+MalePexp <- exp(aCNTP + bCNTP * CN + maleE)
+FemalePexp <- exp(aCNTP + bCNTP * CN + femaleE)
+
+MaleP <- NULL
+FemaleP <- NULL
+
+for (i in 1: length(MalePexp)){ # for my analyses I selected videos where both partners visited at least once
+MaleP5 <- rpois(5, MalePexp[i])
+MaleP[i] <- sample(MaleP5[MaleP5>0],1)
+FemaleP5 <- rpois(5, FemalePexp[i])
+FemaleP[i] <- sample(FemaleP5[FemaleP5>0],1)
+}
+
+return(data.frame(DVDRef = seq(1:nPR), CN = CN, TotalP = MaleP+FemaleP, DiffP = abs(FemaleP-MaleP), FemaleP = FemaleP, MaleP = MaleP))
+
+}
+
+
+Shape_results <- function(MY_Results){
+
+sorted_results <- lapply(MY_Results, function(x){ 
+subx <- x[,-1] 
+subx <- subx[ , order(names(subx))] 
+cbind(Factor=x[,1], subx)
+})
+
+
+
+Signi_results <- lapply(sorted_results, function(x){
+x_p <- x[,-(1:((ncol(x)+1)/2))]
+x_e <- x[,c(-1,-(((ncol(x)-1)/2+2):ncol(x)))]
+
+cbind(x_p < 0.05, x_e)
+})
+
+results_Sign_compiled <- Reduce('+',Signi_results)/NreplicatesSimulation
+results_Sign_compiled <- cbind(results_Sign_compiled[,c(-(((ncol(results_Sign_compiled))/2+1):ncol(results_Sign_compiled)))]*100,
+										results_Sign_compiled[,-(1:((ncol(results_Sign_compiled))/2))])
+results_PercentageFactorSignificant <- data.frame(Factor=MY_Results[[1]]$Factor,results_Sign_compiled)
+
+# Signi_results_Sign_est <- lapply(sorted_results,function(x){
+
+# x <- x[,c('p_modAdev', 'p_modSdev','e_modAdev','e_modSdev')]
+# Adev_pos_est <-x$p_modAdev<0.05 & x$e_modAdev_e >0
+# Sdev_pos_est <-x$p_modSdev<0.05 & x$e_modSdev >0
+
+# cbind(Adev_pos_est,Sdev_pos_est)
+# })
+
+# Signi_results_Sign_est_compiled <- Reduce('+',Signi_results_Sign_est)
+
+# return(c(list(results_PercentageFactorSignificant),list(Signi_results_Sign_est_compiled)))
+
+return(results_PercentageFactorSignificant)
+
+}
+
+}
+
+{# Parameter values for above functions
+
+VideoLength <- 90
+
+nPR <- nrow(MY_tblDVDInfo)
+avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
+sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var))
+
+meanlogPR <- log(avPR) # pass on the log scale to be able to add Poisson distributed error
+sdlogPR <- sqrt(log(1 + sdPR^2/avPR^2))
+
+CN <- MY_tblDVDInfo$DVDInfoChickNb     # fixed given data for chick number
+rCNTP <- 0.6
+
+bCNTP <- (rCNTP * sdlogPR)/ sd(CN)
+aCNTP <- meanlogPR - mean(CN)*bCNTP
+
+}
+
+
+
+
+{# Simulation 1 & 2: Take observed CN, generate TP correlated to CN (sim1) / not correlated to CN (sim2), with or without an effect of CN on A 
+
+NreplicatesWithinFileRandomization <- 10
+
+Generate_TP_randomize_data_and_analyse <-function(autocorrelation, correlation_CN_TP){
+
+# generate TP correlated to existing CN and create MY_TABLE_per_DVD
+
+if (correlation_CN_TP == 'No'){
+MY_TABLE_per_DVD <- Generate_TP(nPR, sdlogPR,rCNTP)
+MY_TABLE_per_DVD$CN <- sample(CN)}
+
+if (correlation_CN_TP == 'Yes'){
+MY_TABLE_per_DVD <- Generate_TP_correlated_to_CN(nPR, sdlogPR,rCNTP,CN)}
+
+MY_TABLE_per_DVD <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Calculate_AMax))
+head(MY_TABLE_per_DVD)
+
+# create nest watches
+
+if (autocorrelation == 'none'){
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_nest_watch))}
+
+if (autocorrelation == 'partial'){
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_partially_sorted_nest_watch))}
+
+if (autocorrelation == 'full'){
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_fully_sorted_nest_watch))}
+
+head(full_dat)
+
+# Randomization Within nest watch, within individual
+A_S_within_randomization <- do.call(cbind,replicate(NreplicatesWithinFileRandomization,Randomize_Data_WithinFile_and_Calculate_A_S(full_dat),simplify=FALSE ) )
 # first half are A sim
-out_Asim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), head(A_S_within_randomization,length(unique(full_dat$DVDRef))))
-
-# second Half are S sim
+out_Asim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), head(A_S_within_randomization,length(unique(full_dat$DVDRef)))) 
+# second half are S sim
 out_Ssim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), tail(A_S_within_randomization,length(unique(full_dat$DVDRef))))
 
-}
+# summarise observed and simulated coordination
+summary_A_S_observed <- do.call(rbind,lapply(split(full_dat,full_dat$DVDRef),Calculate_A_S_one_nest_watch))
+summary_A_S_randomized <- data.frame(DVDRef = out_Asim_within_df[,1], 
+									MedAsim = apply(out_Asim_within_df[,-1],1,median_integer), # Median are used for having integer for poisson models
+									MedSsim= apply(out_Ssim_within_df[,-1],1,median_integer),
+									MeanAsim = apply(out_Asim_within_df[,-1],1,mean),
+									MeanSsim= apply(out_Ssim_within_df[,-1],1,mean))
 
 {# create table short and long
 
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
-SimOutMed <- data.frame(DVDRef = out_Asim_within_df[,1], A = apply(out_Asim_within_df[,-1],1,median_integer), S= apply(out_Ssim_within_df[,-1],1,median_integer))
-SimOutMean <- 	data.frame(DVDRef = out_Asim_within_df[,1], MeanAsim = apply(out_Asim_within_df[,-1],1,mean), MeanSsim= apply(out_Ssim_within_df[,-1],1,mean))		
-
-sumarize_one_DVD <- function(x){
-
-A <- sum(diff(x$Sex)!=0)
-S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= 0.5)
-summary_DVD <- data.frame(cbind(DVDRef=unique(x$DVDRef),A,S))
-
-summary_DVD
-
-}
-
-summary_all_DVD <- do.call(rbind,lapply(split(full_dat,full_dat$DVDRef),FUN=sumarize_one_DVD))
-MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_all_DVD, by='DVDRef')
-
 # short table
-MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD,SimOutMean, by='DVDRef' )
-MY_TABLE_per_DVD$Adev <- MY_TABLE_per_DVD$A - MY_TABLE_per_DVD$MeanAsim
-MY_TABLE_per_DVD$Sdev <- MY_TABLE_per_DVD$S - MY_TABLE_per_DVD$MeanSsim 
+MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_A_S_observed, by='DVDRef')
+MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_A_S_randomized, by='DVDRef')
+MY_TABLE_per_DVD$Adev <- MY_TABLE_per_DVD$A - MY_TABLE_per_DVD$MedAsim
+MY_TABLE_per_DVD$Sdev <- MY_TABLE_per_DVD$S - MY_TABLE_per_DVD$MedSsim 
 head(MY_TABLE_per_DVD)
 
 # long table
 MY_TABLE_per_DVD_long <- rbind(MY_TABLE_per_DVD, MY_TABLE_per_DVD)
+# first half is 'simulated', second half is 'observed'
 MY_TABLE_per_DVD_long$Type <- c(rep('a_Sim', nrow(MY_TABLE_per_DVD)), rep('z_Obsv', nrow(MY_TABLE_per_DVD)))
-
-MY_TABLE_per_DVD_long$A[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- SimOutMed$A
-MY_TABLE_per_DVD_long$S[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- SimOutMed$S
-
+MY_TABLE_per_DVD_long$A[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- MY_TABLE_per_DVD_long$MedAsim[MY_TABLE_per_DVD_long$Type == 'a_Sim'] # A sim is MedAsim
+MY_TABLE_per_DVD_long$S[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- MY_TABLE_per_DVD_long$MedSsim[MY_TABLE_per_DVD_long$Type == 'a_Sim']
 MY_TABLE_per_DVD_long$rowID <- seq(1:nrow(MY_TABLE_per_DVD_long))
 head(MY_TABLE_per_DVD_long)
+tail(MY_TABLE_per_DVD_long)
+
 }
 
-{# analyse 
+{# analyses
 
-modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=MY_TABLE_per_DVD_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
-modS <- glmer(S~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=MY_TABLE_per_DVD_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
-modAdev <- lm(Adev~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
-modSdev <- lm(Sdev~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
+modA_simple <- glmer(A~ scale(CN) + scale(TotalP) + scale(DiffP)+(1|DVDRef) ,data=MY_TABLE_per_DVD,family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
+modA <- glmer(A~ Type*scale(CN) + Type*scale(TotalP) + Type*scale(DiffP) +(1|DVDRef), data=MY_TABLE_per_DVD_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
+modS <- glmer(S~ Type*scale(CN) + Type*scale(TotalP) + Type*scale(DiffP) +(1|DVDRef), data=MY_TABLE_per_DVD_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
+modAdev <- lm(Adev~ scale(CN) + scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
+modSdev <- lm(Sdev~ scale(CN) + scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
+modAbin <- glmer(cbind(A, AMax-A) ~ Type*scale(CN) + Type*scale(TotalP) + Type*scale(DiffP) +(1|DVDRef), data=MY_TABLE_per_DVD_long, family = 'binomial') 
+
 
 }
 
 {# results
-results <- data.frame(Factor = c('TotalP','DiffP','Type*TotalP', 'Type*DiffP'), modA = rep(NA,4),modS = rep(NA,4), modAdev=rep(NA,4), modSdev= rep(NA,4))
-results$modA[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,4],3)
-results$modA[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,4],3)
-results$modA[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
-results$modA[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
-results$modS[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,4],3)
-results$modS[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,4],3)
-results$modS[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,4],3)
-results$modS[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,4],3)
-results$modAdev[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,4],4)
-results$modAdev[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,4],4)
-results$modSdev[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,4],4)
-results$modSdev[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,4],4)
+
+#results <- data.frame(Factor = c('CN','TotalP','DiffP','Type*CN','Type*TotalP', 'Type*DiffP'))
+resultsGLMER <- data.frame(Factor = rownames(summary(modA)$coeff), 
+						e_modA = summary(modA)$coeff[,1], 
+						p_modA = round(summary(modA)$coeff[,4],3),
+						e_modS = summary(modS)$coeff[,1], 
+						p_modS = round(summary(modS)$coeff[,4],3),
+						e_modAbin = summary(modAbin)$coeff[,1], 
+						p_modAbin = round(summary(modAbin)$coeff[,4],3))
+rownames(resultsGLMER) <- NULL
+				
+resultsLM <- data.frame(Factor = rownames(summary(modAdev)$coeff), 
+						e_modAdev = summary(modAdev)$coeff[,1], 
+						p_modAdev = round(summary(modAdev)$coeff[,4],3),
+						e_modSdev = summary(modSdev)$coeff[,1], 
+						p_modSdev = round(summary(modSdev)$coeff[,4],3),
+						e_modA_simple = summary(modA_simple)$coeff[,1], 
+						p_modA_simple = round(summary(modA_simple)$coeff[,4],3)			
+						)
+rownames(resultsLM) <- NULL
+
+results <- merge(resultsGLMER, resultsLM, by='Factor', all.x=TRUE)
 
 }
 
 return(list(results))
 }
 
-n <-100
+NreplicatesSimulation <- 10
 
-all_results_Generate_halfreal <- pbreplicate(n,Generate_TP_ObservedCN_randomize_data_and_analyse())
-all_results_Generate_halfreal_sign <- lapply(all_results_Generate_halfreal, function(x){x[,-1] <0.05})
-all_results_Generate_halfreal_sign_compiled <- Reduce('+',all_results_Generate_halfreal_sign)/n*100
-results_PercentageFactorSignificant_Generate_halfreal <- data.frame(Factor=all_results_Generate_halfreal[[1]]$Factor,all_results_Generate_halfreal_sign_compiled)
-results_PercentageFactorSignificant_Generate_halfreal
+result_no_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('none','No'))
+result_no_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('none','Yes'))
+result_partial_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('partial','No'))
+result_partial_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('partial','Yes'))
+result_full_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('full','No'))
+result_full_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('full','Yes'))
 
-# n <- 100
-       # Factor modA modS modAdev modSdev
-# 1      TotalP  100  100      17      18
-# 2       DiffP  100  100      10       8
-# 3 Type*TotalP   11  100      NA      NA
-# 4  Type*DiffP    0    6      NA      NA
-
+Shape_results(result_no_autocor_no_cor)
+Shape_results(result_no_autocor_corCN)
+Shape_results(result_partial_autocor_no_cor)
+Shape_results(result_partial_autocor_corCN)
+Shape_results(result_full_autocor_no_cor)
+Shape_results(result_full_autocor_corCN)
 
 }
 
-{## Take observed CN and TP and generate visits
-
-Generate_real_data_randomize_them_and_analyse <-function(){
 
 
-{# create MY_TABLE_per_DVD
+
+
+
+############################ >>>>>>>>>>>>>>>>>> to clean up to be based on calling functions from above instead of copy pasting
+
+{# Simulation 3: Take observed CN and TP and generate visits
+
+{# get MY_TABLE_per_DVD
 
 MY_TABLE_per_DVD <- merge(MY_tblParentalCare[,c('DVDRef', 'MVisit1','FVisit1', 'EffectiveTime')], MY_tblDVDInfo[,c("DVDRef","DVDInfoChickNb", "ChickAgeCat")], by = "DVDRef")
 MY_TABLE_per_DVD$TotalP <- MY_TABLE_per_DVD$MVisit1 + MY_TABLE_per_DVD$FVisit1 # total number of visits for that video
@@ -673,6 +525,9 @@ if (MY_TABLE_per_DVD$MVisit1[i] == MY_TABLE_per_DVD$FVisit1[i]) {MY_TABLE_per_DV
 }
 
 head(MY_TABLE_per_DVD)
+
+Generate_real_data_randomize_them_and_analyse <-function(){
+
 
 {# create nest watches
 
@@ -752,7 +607,7 @@ SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= SimData_C
 return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
 }
 
-A_S_within_randomization <- do.call(cbind,replicate(10,Randomize_Data_WithinFile_and_Calculate_A_S_fun(full_dat),simplify=FALSE ) )
+A_S_within_randomization <- do.call(cbind,replicate(50,Randomize_Data_WithinFile_and_Calculate_A_S_fun(full_dat),simplify=FALSE ) )
 
 # first half are A sim
 out_Asim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), head(A_S_within_randomization,length(unique(full_dat$DVDRef))))
@@ -764,7 +619,6 @@ out_Ssim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), tail(A_S_with
 
 {# create table short and long
 
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
 SimOutMed <- data.frame(DVDRef = out_Asim_within_df[,1], A = apply(out_Asim_within_df[,-1],1,median_integer), S= apply(out_Ssim_within_df[,-1],1,median_integer))
 SimOutMean <- 	data.frame(DVDRef = out_Asim_within_df[,1], MeanAsim = apply(out_Asim_within_df[,-1],1,mean), MeanSsim= apply(out_Ssim_within_df[,-1],1,mean))		
 
@@ -785,8 +639,8 @@ MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_all_DVD, by='DVDRef')
 MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD,SimOutMean, by='DVDRef' )
 MY_TABLE_per_DVD$Adev <- MY_TABLE_per_DVD$A - MY_TABLE_per_DVD$MeanAsim
 MY_TABLE_per_DVD$Sdev <- MY_TABLE_per_DVD$S - MY_TABLE_per_DVD$MeanSsim 
-MY_TABLE_per_DVD$Log_Aobs_Arand <- log((MY_TABLE_per_DVD$A+0.00001)/(MY_TABLE_per_DVD$MeanAsim+0.00001))
-MY_TABLE_per_DVD$Log_Sobs_Srand <- log((MY_TABLE_per_DVD$S+0.00001)/(MY_TABLE_per_DVD$MeanSsim+0.00001))
+#MY_TABLE_per_DVD$Log_Aobs_Arand <- log((MY_TABLE_per_DVD$A+0.00001)/(MY_TABLE_per_DVD$MeanAsim+0.00001))
+#MY_TABLE_per_DVD$Log_Sobs_Srand <- log((MY_TABLE_per_DVD$S+0.00001)/(MY_TABLE_per_DVD$MeanSsim+0.00001))
 head(MY_TABLE_per_DVD)
 
 # long table
@@ -806,30 +660,44 @@ modA <- glmer(A~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=MY_TA
 modS <- glmer(S~ Type*scale(TotalP) + Type*scale(DiffP) + (1|DVDRef), data=MY_TABLE_per_DVD_long, family = 'poisson',control=glmerControl(optimizer = "bobyqa")) 
 modAdev <- lm(Adev~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
 modSdev <- lm(Sdev~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
-modLogAoAr <- lm(Log_Aobs_Arand~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
-modLogSoSr <- lm(Log_Sobs_Srand~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
+#modLogAoAr <- lm(Log_Aobs_Arand~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
+#modLogSoSr <- lm(Log_Sobs_Srand~ scale(TotalP) + scale(DiffP) ,data=MY_TABLE_per_DVD) 
 
 
 }
 
 {# results
-results <- data.frame(Factor = c('TotalP','DiffP','Type*TotalP', 'Type*DiffP'), modA = rep(NA,4),modS = rep(NA,4), modAdev=rep(NA,4), modSdev= rep(NA,4),modLogAoAr=rep(NA,4), modLogSoSr= rep(NA,4))
-results$modA[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,4],3)
-results$modA[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,4],3)
-results$modA[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
-results$modA[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
-results$modS[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,4],3)
-results$modS[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,4],3)
-results$modS[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,4],3)
-results$modS[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,4],3)
-results$modAdev[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,4],4)
-results$modAdev[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,4],4)
-results$modSdev[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,4],4)
-results$modSdev[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,4],4)
-results$modLogAoAr[results$Factor=='TotalP'] <- round(summary(modLogAoAr)$coef[2,4],4)
-results$modLogAoAr[results$Factor=='DiffP'] <- round(summary(modLogAoAr)$coef[3,4],4)
-results$modLogSoSr[results$Factor=='TotalP'] <- round(summary(modLogSoSr)$coef[2,4],4)
-results$modLogSoSr[results$Factor=='DiffP'] <- round(summary(modLogSoSr)$coef[3,4],4)
+results <- data.frame(Factor = c('TotalP','DiffP','Type*TotalP', 'Type*DiffP'), 
+					modA_p = rep(NA,4), modS_p = rep(NA,4), modAdev_p=rep(NA,4), modSdev_p= rep(NA,4),#modLogAoAr_p=rep(NA,4),modLogSoSr_p=rep(NA,4),
+					modA_e = rep(NA,4),modS_e = rep(NA,4), modAdev_e=rep(NA,4), modSdev_e= rep(NA,4)#,modLogAoAr_e=rep(NA,4),modLogSoSr_e=rep(NA,4)
+					)	
+
+results$modA_p[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,4],3)
+results$modA_p[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,4],3)
+results$modA_p[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,4],3)
+results$modA_p[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,4],3)
+results$modS_p[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,4],3)
+results$modS_p[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,4],3)
+results$modS_p[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,4],3)
+results$modS_p[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,4],3)
+results$modAdev_p[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,4],4)
+results$modAdev_p[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,4],4)
+results$modSdev_p[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,4],4)
+results$modSdev_p[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,4],4)
+results$modA_e[results$Factor=='TotalP'] <- round(summary(modA)$coef[3,1],3)
+results$modA_e[results$Factor=='DiffP'] <- round(summary(modA)$coef[4,1],3)
+results$modA_e[results$Factor=='Type*TotalP'] <- round(summary(modA)$coef[5,1],3)
+results$modA_e[results$Factor=='Type*DiffP'] <- round(summary(modA)$coef[6,1],3)
+results$modS_e[results$Factor=='TotalP'] <- round(summary(modS)$coef[3,1],3)
+results$modS_e[results$Factor=='DiffP'] <- round(summary(modS)$coef[4,1],3)
+results$modS_e[results$Factor=='Type*TotalP'] <- round(summary(modS)$coef[5,1],3)
+results$modS_e[results$Factor=='Type*DiffP'] <- round(summary(modS)$coef[6,1],3)
+results$modAdev_e[results$Factor=='TotalP'] <- round(summary(modAdev)$coef[2,1],3)
+results$modAdev_e[results$Factor=='DiffP'] <- round(summary(modAdev)$coef[3,1],3)
+results$modSdev_e[results$Factor=='TotalP'] <- round(summary(modSdev)$coef[2,1],3)
+results$modSdev_e[results$Factor=='DiffP'] <- round(summary(modSdev)$coef[3,1],3)
+
+
 
 }
 
@@ -837,25 +705,50 @@ return(list(results))
 
 }
 
-n <-100
+n <-200
+
+{# shape the results
 
 all_results_Generate_real <- pbreplicate(n,Generate_real_data_randomize_them_and_analyse())
-all_results_Generate_real_sign <- lapply(all_results_Generate_real, function(x){x[,-1] <0.05})
-all_results_Generate_real_sign_compiled <- Reduce('+',all_results_Generate_real_sign)/n*100
-results_PercentageFactorSignificant_Generate_real <- data.frame(Factor=all_results_Generate_real[[1]]$Factor,all_results_Generate_real_sign_compiled)
-results_PercentageFactorSignificant_Generate_real
 
-# n <- 100
-       # Factor modA modS modAdev modSdev modLogAoAr modLogSoSr
-# 1      TotalP  100  100      12      19          6        100
-# 2       DiffP  100  100       7      13          5         91
-# 3 Type*TotalP   22  100      NA      NA         NA         NA
-# 4  Type*DiffP    0    1      NA      NA         NA         NA
+all_results_Generate_real_Sign <- lapply(all_results_Generate_real, function(x){
+x_p <- x[,c(-1,-(((ncol(x)-1)/2+2):ncol(x)))]
+x_e <- x[,-(1:((ncol(x)+1)/2))]
 
+cbind(x_p < 0.05, x_e)
+})
+
+all_results_Generate_real_compiled <- Reduce('+',all_results_Generate_real_Sign)/n
+all_results_Generate_real_compiled <- cbind(all_results_Generate_real_compiled[,c(-(((ncol(all_results_Generate_real_compiled))/2+1):ncol(all_results_Generate_real_compiled)))]*100,
+										all_results_Generate_real_compiled[,-(1:((ncol(all_results_Generate_real_compiled))/2))])
+results_Generate_real_PercentageFactorSignificant <- data.frame(Factor=all_results_Generate_real[[1]]$Factor,all_results_Generate_real_compiled)
+
+
+Signi_results_Generate_Real_Sign_est <- lapply(all_results_Generate_real,function(x){
+
+x <- x[1:2,c('modAdev_p', 'modSdev_p','modAdev_e','modSdev_e')]
+Adev_pos_est <-x$modAdev_p<0.05 & x$modAdev_e >0
+Sdev_pos_est <-x$modSdev_p<0.05 & x$modSdev_e >0
+
+cbind(Adev_pos_est,Sdev_pos_est)
+})
+
+Signi_results_Generate_Real_Sign_est_compiled <- Reduce('+',Signi_results_Generate_Real_Sign_est)
 
 }
 
-{## Randomized real dataset instead of generating data
+results_Generate_real_PercentageFactorSignificant
+Signi_results_Generate_Real_Sign_est_compiled
+
+       # Factor modA_p modS_p modAdev_p modSdev_p    modA_e    modS_e modAdev_e modSdev_e
+# 1      TotalP    100  100.0        13      17.5  0.474465  0.744790   0.00629   0.00541
+# 2       DiffP    100  100.0         8       9.0 -0.158115 -0.130005  -0.00505  -0.00698
+# 3 Type*TotalP      0   23.5        NA        NA  0.000060 -0.028305        NA        NA
+# 4  Type*DiffP      0    0.0        NA        NA -0.002275  0.000675        NA        NA
+
+}
+
+{# Simulation 4: Randomized real dataset instead of generating data
 
 Randomize_real_data_re_randomize_them_and_analyse <-function(){
 
@@ -1039,7 +932,6 @@ MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(
 nrow(MY_TABLE_perDVD) # 1599 files
 
 {# add Adev + MedAsim !
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
 
 MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsim 
 
@@ -1141,7 +1033,7 @@ results_PercentageFactorSignificant_realrandom
 
 }
 
-{## Randomized real dataset instead of generating data and run real test on A or Adev
+{# Simulation 5: Randomized real dataset instead of generating data and run real test on A or Adev
 
 Randomize_real_data_re_randomize_them_and_analyse_for_real <-function(AbsDev){
 
@@ -1325,7 +1217,6 @@ MY_TABLE_perDVD <- MY_TABLE_perDVD[!is.na(MY_TABLE_perDVD$SocialMumID) & !is.na(
 nrow(MY_TABLE_perDVD) # 1599 files
 
 {# add Adev + MedAsim !
-median_integer <- function(x) {as.integer(median(x) +sample(c(0.5,-0.5),1))}
 
 MY_TABLE_perDVD$Adev <-  MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsim 
 
@@ -1531,7 +1422,7 @@ results_PercentageFactorSignificant_realrandom_realtest_dev
 }
 
 
-{## Bebbington & Hatchwell 2015 analyses on A/(TP-1), while having generate TP correlated to existing CN
+{# Simulation 6: Bebbington & Hatchwell 2015 analyses on A/(TP-1), while having generate TP correlated to existing CN
 
 Generate_data_randomize_them_and_analyse_ben <-function(){
 
