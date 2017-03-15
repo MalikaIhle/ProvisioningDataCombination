@@ -933,7 +933,7 @@ return(list(results))
 
 }
 
-result_no_autocor_observed_cor_Sim3 <- pbreplicate(1,Randomize_real_data_re_randomize_them_and_analyse())
+result_no_autocor_observed_cor_Sim3 <- pbreplicate(NreplicatesSimulation,Randomize_real_data_re_randomize_them_and_analyse())
 
 Results_Sim_3 <- Shape_results(result_no_autocor_observed_cor_Sim3)
 
