@@ -2646,7 +2646,7 @@ MY_tblParentalCare[(is.na(MY_tblParentalCare$DiffEffectTime) | MY_tblParentalCar
 
 MY_tblParentalCare <- MY_tblParentalCare[, !(names(MY_tblParentalCare) %in% c('DiffEffectTime','EffectTime', 'TapeLength','Tstart'))]
 
-{# add MFTime1, MFTime02, MFTime2, provisioning rates, AlternationValue, SynchronyFeedValue, SynchronyMvtValue
+{# add MFTime1, MFTime02, MFTime2, provisioning rates
 
 MY_tblParentalCare$MFTime1 <- MY_tblParentalCare$MTime1 + MY_tblParentalCare$FTime1 - MY_tblParentalCare$ShareTime1
 MY_tblParentalCare$MFTime02 <- round(MY_tblParentalCare$EffectiveTime - MY_tblParentalCare$MFTime1,1)
@@ -2661,11 +2661,11 @@ MY_tblParentalCare$FTime1RateH <- round(60*MY_tblParentalCare$FTime1/MY_tblParen
 MY_tblParentalCare$MTime1RateH <- round(60*MY_tblParentalCare$MTime1/MY_tblParentalCare$EffectiveTime,2)
 MY_tblParentalCare$DiffTime1Rate <- abs(round(MY_tblParentalCare$FTime1RateH - MY_tblParentalCare$MTime1RateH, 2))
 
-MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1)
-MY_tblParentalCare$SynchronyFeedValue <- round(MY_tblParentalCare$NbSynchro_ChickFeedingEquanim/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
-MY_tblParentalCare$SynchronyMvtValue <- round(MY_tblParentalCare$NbSynchro_LessConspicuous/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
-MY_tblParentalCare$PropSynchroFemaleStart <- round(MY_tblParentalCare$NbSynchroFemaleStart/MY_tblParentalCare$NbSynchro_ChickFeedingEquanim *100,1)
-hist(MY_tblParentalCare$PropSynchroFemaleStart)
+# MY_tblParentalCare$AlternationValue <- round(MY_tblParentalCare$NbAlternation/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1)
+# MY_tblParentalCare$SynchronyFeedValue <- round(MY_tblParentalCare$NbSynchro_ChickFeedingEquanim/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
+# MY_tblParentalCare$SynchronyMvtValue <- round(MY_tblParentalCare$NbSynchro_LessConspicuous/(MY_tblParentalCare$MVisit1 + MY_tblParentalCare$FVisit1 -1) *100,1) # Ben did not use "-1"
+# MY_tblParentalCare$PropSynchroFemaleStart <- round(MY_tblParentalCare$NbSynchroFemaleStart/MY_tblParentalCare$NbSynchro_ChickFeedingEquanim *100,1)
+# hist(MY_tblParentalCare$PropSynchroFemaleStart)
 }
 
 
