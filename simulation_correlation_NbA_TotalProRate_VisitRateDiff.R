@@ -21,115 +21,8 @@ library(ggplot2)
 
 {# Get real data as selected for DataAnalyses.R
 
-{### Get raw data from R_ExtractedData
+RawInterfeeds <- read.csv(paste("R_SelectedData","R_MY_RawInterfeeds.csv", sep="/")) 
 
-{# output csv files
-
-# source('Compilation_provisioning_DataExtraction.R')
-# or :
-
-ExtractedData_folder <- "R_ExtractedData"
-
-MY_tblParentalCare <- read.csv(paste(ExtractedData_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
-MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
-MY_tblDVDInfo <- read.csv(paste(ExtractedData_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
-MY_RawFeedingVisits <- read.csv(paste(ExtractedData_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
-
-
-}
-
-{# input txt files  !!! needs updating if specific data change !!!
-
-input_folder <- "R_input"
-
-sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
-sys_LastSeenAlive$LastYearAlive <- substr(sys_LastSeenAlive$LastLiveRecord, 7,10)
-
-pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
-
-FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
-
-tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
-
-}
-
-
-}
-
-{### select valid video files for studying behavioural compatibility in chick provisioning
-
-list_non_valid_DVDRef <- 
-c(
-MY_tblParentalCare$DVDRef[!(MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 10 files with no visits at all + 2 files with no feeding visits at all
-MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)],# 6 - where 0 chicks
-MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5 & MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef) ],# 171 - where still brooding (age <=5) and with chicks and with feeding visit
-MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& MY_tblDVDInfo$DVDInfoChickNb > 0 & MY_tblDVDInfo$ChickAge >5  & (MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 153 - one sex did not visit for feeding despite having chicks above age 5
-MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 DVD where both parents unidentified
-MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% unlist(FedBroods)] # 106 extra files for 48 broods (the 49th: 980 already excluded as only female visited) fed by Ian 
-)
-
-
-length(unique(list_non_valid_DVDRef)) # 450 
-
-MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
-MY_tblParentalCare <- MY_tblParentalCare[ ! MY_tblParentalCare$DVDRef %in% list_non_valid_DVDRef,]
-MY_RawFeedingVisits  <- MY_RawFeedingVisits[ ! MY_RawFeedingVisits$DVDRef %in% list_non_valid_DVDRef,]
-
-MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
-
-MY_tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
-colnames(MY_tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
-MY_tblChicks_byRearingBrood$MixedBroodYN <- MY_tblChicks_byRearingBrood$NbChicksMeasured != MY_tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
-head(MY_tblChicks_byRearingBrood)
-
-MY_tblChicks_byRearingBrood <- MY_tblChicks_byRearingBrood[MY_tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
-
-MY_tblParentalCare <- dplyr::rename(MY_tblParentalCare,VisitRateDifference= DiffVisit1Rate)
-MY_tblParentalCare <- dplyr::rename(MY_tblParentalCare, TotalProRate = MFVisit1RateH)
-
-{# fill in manually the data where Julia deleted it 
-# unfortunately this list is not exhaustive and migth even be arguable 
-# they were deleted from the dataset by Julia because the genetic parents did not match the social parents
-#  but the social parents most likely did raise that one chick ! and since I am looking at social fitness...
-
-MY_tblBroods[MY_tblBroods$BroodRef == 1152,] 
-MY_tblBroods$HatchingDate <- as.character(MY_tblBroods$HatchingDate)
-MY_tblBroods$HatchingDate[MY_tblBroods$BroodRef == 1152] <- "2010-05-18" # couldn't add it because it is a new factor level...
-MY_tblBroods$BreedingYear[MY_tblBroods$BroodRef == 1152] <- 2010
-MY_tblBroods$HatchingDayAfter0401[MY_tblBroods$BroodRef == 1152] <- 47
-MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 1152] <- 1
-MY_tblBroods$Nb3[MY_tblBroods$BroodRef == 1152] <- 1
-MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 1152] <- 1
-MY_tblBroods$DadAge[MY_tblBroods$BroodRef == 1152] <- 1
-MY_tblBroods$MumAge[MY_tblBroods$BroodRef == 1152] <- 1
-MY_tblBroods$ParentsAge[MY_tblBroods$BroodRef == 1152] <- 1
-MY_tblBroods$PairIDYear <- as.character(MY_tblBroods$PairIDYear )
-MY_tblBroods$PairIDYear[MY_tblBroods$BroodRef == 1152] <- "4573475420010" # couldn't add it because it is a new factor level...
-MY_tblBroods$PairIDYear <- as.factor(MY_tblBroods$PairIDYear)
-MY_tblBroods$AvgMass[MY_tblBroods$BroodRef == 1152] <- 23.3
-MY_tblBroods$MinMass[MY_tblBroods$BroodRef == 1152] <- 23.3
-MY_tblBroods$AvgTarsus[MY_tblBroods$BroodRef == 1152] <- 17.3
-
-MY_tblBroods[MY_tblBroods$BroodRef == 457,] 
-MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 457] <- 1
-
-MY_tblBroods[MY_tblBroods$BroodRef==969,] # could have 2 hatchling and 1 ringed - not sure
-MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 969] <- 1
-MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
-
-
-
-
-}
-
-}
-
-head(MY_tblDVDInfo) 
-head(MY_tblParentalCare)
-head(MY_RawFeedingVisits) # even those where one parent unknown, needed for simulation
-
-RawInterfeeds <- MY_RawFeedingVisits[,c('DVDRef','Sex','TstartFeedVisit','Interval')]
-colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Tstart"		
 
 }
 
@@ -379,7 +272,7 @@ syncint <- 2 # I tried 10 ; 5 ; 2 ; 0.5  I had a priori chosen 0.5 but this give
 
 
 NreplicatesWithinFileRandomization <- 100
-NreplicatesSimulation <- 1000
+NreplicatesSimulation <- 1
 
 {# Simulation 1: Take observed CN ; generate TP either correlated to CN or not ; with or without an effect of CN on A (i.e. with CN = sorting parameter of intervals)
 
@@ -393,7 +286,8 @@ MY_TABLE_per_DVD$CN <- sample(CN)
 }
 
 if (correlation_CN_TP == 'Yes'){
-MY_TABLE_per_DVD <- Generate_TP_correlated_to_CN(nPR, sdlogPR,rCNTP,CN)}
+MY_TABLE_per_DVD <- Generate_TP_correlated_to_CN(nPR, sdlogPR,rCNTP,CN)
+}
 
 MY_TABLE_per_DVD <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Calculate_AMax))
 head(MY_TABLE_per_DVD)
@@ -401,13 +295,16 @@ head(MY_TABLE_per_DVD)
 # create nest watches
 
 if (autocorrelation == 'none'){
-full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_nest_watch))}
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_nest_watch))
+}
 
 if (autocorrelation == 'partial'){
-full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_partially_sorted_nest_watch))}
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_partially_sorted_nest_watch))
+}
 
 if (autocorrelation == 'full'){
-full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_fully_sorted_nest_watch))}
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_fully_sorted_nest_watch))
+}
 
 head(full_dat)
 
@@ -494,12 +391,13 @@ results <- merge(results, resultsBen, by='Factor', all.x=TRUE)
 return(list(results))
 }
 
-result_no_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('none','No'))
-result_no_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('none','Yes'))
-result_partial_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('partial','No'))
-result_partial_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('partial','Yes'))
-result_full_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('full','No'))
-result_full_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('full','Yes'))
+result_no_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('none','No')) # sim_1_1
+result_no_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('none','Yes')) # sim_1_2
+result_full_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('full','No'))# sim_1_3
+result_full_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('full','Yes'))# sim_1_4
+result_partial_autocor_no_cor <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('partial','No')) # sim_1_5
+result_partial_autocor_corCN <- pbreplicate(NreplicatesSimulation,Generate_TP_randomize_data_and_analyse('partial','Yes'))# sim_1_6
+
 
 Results_Sim_1 <- c(
 list(Shape_results(result_no_autocor_no_cor)),
@@ -943,9 +841,21 @@ Results_Sim_3
 
 
 
+# after running one simulation 1 with each of the 6 set of parameter
+
+head(MY_TABLE_per_DVD_long)
 
 
+par(mfrow=c(1,2))
+plot (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
+abline(lm(A ~ TotalP,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",] ))
+points (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
+abline(lm(A ~ TotalP,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
 
+plot (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
+abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",] ))
+points (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
+abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
 
 
 
