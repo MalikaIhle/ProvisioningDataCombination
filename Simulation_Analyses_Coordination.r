@@ -210,15 +210,13 @@ return(data.frame(DVDRef = seq(1:nPR), CN = CN, TotalP = MaleP+FemaleP, DiffP = 
 }
 
 
-Shape_results <- function(MY_Results){
+Shape_results <- function(MY_Results, TypeNumber){
 
 sorted_results <- lapply(MY_Results, function(x){ 
 subx <- x[,-1] 
 subx <- subx[ , order(names(subx))] 
 cbind(Factor=x[,1], subx)
 })
-
-
 
 Signi_results <- lapply(sorted_results, function(x){
 x_p <- x[,-(1:((ncol(x)+1)/2))]
@@ -227,23 +225,11 @@ x_e <- x[,c(-1,-(((ncol(x)-1)/2+2):ncol(x)))]
 cbind(x_p < 0.05, x_e)
 })
 
-results_Sign_compiled <- Reduce('+',Signi_results)/NreplicatesSimulation
+results_Sign_compiled <- Reduce('+',Signi_results)/NreplicatesSimulation[TypeNumber]
 results_Sign_compiled <- cbind(results_Sign_compiled[,c(-(((ncol(results_Sign_compiled))/2+1):ncol(results_Sign_compiled)))]*100,
 										results_Sign_compiled[,-(1:((ncol(results_Sign_compiled))/2))])
+results_Sign_compiled <- round(results_Sign_compiled,2)
 results_PercentageFactorSignificant <- data.frame(Factor=MY_Results[[1]]$Factor,results_Sign_compiled)
-
-# Signi_results_Sign_est <- lapply(sorted_results,function(x){
-
-# x <- x[,c('p_modAdev', 'p_modSdev','e_modAdev','e_modSdev')]
-# Adev_pos_est <-x$p_modAdev<0.05 & x$e_modAdev_e >0
-# Sdev_pos_est <-x$p_modSdev<0.05 & x$e_modSdev >0
-
-# cbind(Adev_pos_est,Sdev_pos_est)
-# })
-
-# Signi_results_Sign_est_compiled <- Reduce('+',Signi_results_Sign_est)
-
-# return(c(list(results_PercentageFactorSignificant),list(Signi_results_Sign_est_compiled)))
 
 return(results_PercentageFactorSignificant)
 
@@ -271,6 +257,7 @@ aCNTP <- meanlogPR - mean(CN)*bCNTP
 syncint <- 2 # I tried 10 ; 5 ; 2 ; 0.5  I had a priori chosen 0.5 but this gives false-postivie results (too many zeros leading to false convergence ?), for 2, 5, 10 this works well
 }
 
+set.seed(10)
 
 NreplicatesWithinFileRandomization <- 10
 NreplicatesSimulation <- 1
@@ -729,8 +716,6 @@ summary_A_S_randomized <- data.frame(DVDRef = out_Asim_within_df[,1],
 # short table
 MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_A_S_observed, by='DVDRef')
 MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_A_S_randomized, by='DVDRef')
-MY_TABLE_per_DVD$Adev <- MY_TABLE_per_DVD$A - MY_TABLE_per_DVD$MedAsim
-MY_TABLE_per_DVD$Sdev <- MY_TABLE_per_DVD$S - MY_TABLE_per_DVD$MedSsim 
 head(MY_TABLE_per_DVD)
 
 # long table
