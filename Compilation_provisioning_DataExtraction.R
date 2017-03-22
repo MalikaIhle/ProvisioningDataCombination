@@ -3,8 +3,8 @@
 #	 Compile provisioning data sparrows
 #	 Extract data from excel files and DB
 #	 Start : 21/12/2015
-#	 last modif :07/12/2016
-#	 commit: add body condition per chick SQL code
+#	 last modif :22/03/2016
+#	 commit: remove coordination measures
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### Important remarks to read !
