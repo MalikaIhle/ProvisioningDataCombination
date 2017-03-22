@@ -8,10 +8,31 @@
 
 rm(list = ls(all = TRUE))
 
+require(stringr)
+library(qdap)
+
+# import log files
+fileNamesLog <- list.files("Iceberg/Sim1_log") # vector of filenames
+Logs <- do.call(rbind,lapply(paste("Iceberg/Sim1_log",fileNamesLog, sep="/"), FUN= function(x){str_c(readLines(x), collapse = " ")}))
+Logs[1]
+Logs <- gsub("^.*union","_",Logs) # only keep the warning which come after log of packages loaded
+Logs <- data.frame(FileName=fileNamesLog, Log = Logs)
+PbLogs <- Logs$FileName[Logs$Log != "_ "] # 547 sim where one model did not converge
+PbLogs_Type <- gsub("\\..*","",PbLogs) # sim type where models did not converge
+
+table(PbLogs_Type)
+# models did not converge in those x cases out of 1000
+# sim_1_1 sim_1_2 sim_1_3 sim_1_4 sim_1_5 sim_1_6 
+#	 35      35     203     189      77       8
+
+PbLogs_sim <- paste(beg2char(PbLogs, ".", 1),char2end(PbLogs, ".", 3), sep="_")# sim name where model did not converge
+PbLogs_sim <- paste("sim1", char2end(PbLogs_sim, "_", 2), sep="_")
+
 # import files
 fileNames <- list.files("Iceberg/Sim1_out") # vector of filenames
-fileList <- lapply(paste("Iceberg/Sim1_out",fileNames, sep="/"), read.csv) # list with one file per element named from 1 to 3114
-for (i in 1:length(fileList)) {names(fileList)[[i]]<-fileNames[i]} # change name of each element to be their filename
+fileList <- lapply(paste("Iceberg/Sim1_out",fileNames, sep="/"), read.csv) # list with one file per element named from 1 to 6000
+for (i in 1:length(fileList)) {names(fileList)[[i]]<-gsub("\\..*","",fileNames[i])} # change name of each element to be the sim name
+fileList <- fileList[!names(fileList) %in% PbLogs_sim] # remove filenames where one model did not converge
 
 # select files per Sim type
 fileList_Sim1_1 <- fileList[grepl("sim1_1",names(fileList))] 
@@ -23,12 +44,12 @@ fileList_Sim1_6 <- fileList[grepl("sim1_6",names(fileList))]
 
 # Number of files per sim type
 NreplicatesSimulation <- c(
-length(fileList_Sim1_1), # 1000
-length(fileList_Sim1_2), # 1000
-length(fileList_Sim1_3), # 1000
-length(fileList_Sim1_4), # 1000
-length(fileList_Sim1_5), # 1000
-length(fileList_Sim1_6)) # 1000
+length(fileList_Sim1_1), # 965
+length(fileList_Sim1_2), # 965
+length(fileList_Sim1_3), # 797
+length(fileList_Sim1_4), # 811
+length(fileList_Sim1_5), # 923
+length(fileList_Sim1_6)) # 992
 
 # Function counting number of significant result as a percentage of NreplicatesSimulation
 Shape_results <- function(MY_Results, TypeNumber){
@@ -49,6 +70,7 @@ cbind(x_p < 0.05, x_e)
 results_Sign_compiled <- Reduce('+',Signi_results)/NreplicatesSimulation[TypeNumber]
 results_Sign_compiled <- cbind(results_Sign_compiled[,c(-(((ncol(results_Sign_compiled))/2+1):ncol(results_Sign_compiled)))]*100,
 										results_Sign_compiled[,-(1:((ncol(results_Sign_compiled))/2))])
+results_Sign_compiled <- round(results_Sign_compiled,2)
 results_PercentageFactorSignificant <- data.frame(Factor=MY_Results[[1]]$Factor,results_Sign_compiled)
 
 return(results_PercentageFactorSignificant)
@@ -64,92 +86,82 @@ list(Shape_results(fileList_Sim1_4,4)), # full_autocor_corCN
 list(Shape_results(fileList_Sim1_5,5)), # partial_autocor_no_cor
 list(Shape_results(fileList_Sim1_6,6))) # partial_autocor_corCN
 
+
+
 Results_Sim_1
 
+
+
 # [[1]]
-                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev        e_modA e_modA_simple     e_modABen     e_modAbin     e_modAdev        e_modS     e_modSdev
-# 1              (Intercept)  100.0      100.0           100     100.0      13.2  100.0      27.5  2.605015e+00  2.6133147943  4.496343e-01  6.302452e-01  0.0408898917  1.922338e+00  0.0646022864
-# 2                scale(CN)    0.4        5.1             3       0.4       5.3    0.8       5.1  1.430665e-04  0.0001013989  5.292339e-05 -9.634852e-06 -0.0004980966  2.151344e-04 -0.0009405217
-# 3             scale(DiffP)  100.0      100.0           100     100.0      13.3  100.0       7.2 -1.967531e-01 -0.1905999197 -6.549274e-02  5.077855e-01 -0.0492998001 -2.084580e-01 -0.0127810511
-# 4            scale(TotalP)  100.0         NA           100     100.0      13.9  100.0      11.3  4.381228e-01  0.4226105150            NA -1.950718e-01  0.0269225887  6.457839e-01 -0.0034723566
-# 5               Typez_Obsv    0.0         NA            NA       0.9        NA    0.5        NA  2.792429e-03            NA            NA  6.416772e-03            NA  1.039093e-02            NA
-# 6     Typez_Obsv:scale(CN)    0.0         NA            NA       0.3        NA    0.0        NA -3.582409e-05            NA            NA -9.152264e-05            NA -1.284576e-04            NA
-# 7  Typez_Obsv:scale(DiffP)    0.0         NA            NA       1.1        NA    0.0        NA -2.298919e-03            NA            NA -7.120173e-03            NA  9.284337e-05            NA
-# 8 Typez_Obsv:scale(TotalP)    0.0         NA            NA       0.2        NA    0.0        NA  2.851302e-04            NA            NA  2.866515e-04            NA -4.085765e-03            NA
+                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
+# 1              (Intercept) 100.00     100.00         100.0    100.00     12.95 100.00     26.84   2.61          2.61      0.45      0.63      0.04   1.92      0.06
+# 2                scale(CN)   0.41       5.28           2.9      0.31      5.49   0.83      5.28   0.00          0.00      0.00      0.00      0.00   0.00      0.00
+# 3             scale(DiffP) 100.00     100.00         100.0    100.00     13.47 100.00      7.46  -0.20         -0.19     -0.07      0.51     -0.05  -0.21     -0.01
+# 4            scale(TotalP) 100.00         NA         100.0    100.00     14.09 100.00     11.30   0.44          0.42        NA     -0.20      0.03   0.65      0.00
+# 5               Typez_Obsv   0.00         NA            NA      0.83        NA   0.52        NA   0.00            NA        NA      0.01        NA   0.01        NA
+# 6     Typez_Obsv:scale(CN)   0.00         NA            NA      0.31        NA   0.00        NA   0.00            NA        NA      0.00        NA   0.00        NA
+# 7  Typez_Obsv:scale(DiffP)   0.00         NA            NA      1.14        NA   0.00        NA   0.00            NA        NA     -0.01        NA   0.00        NA
+# 8 Typez_Obsv:scale(TotalP)   0.00         NA            NA      0.21        NA   0.00        NA   0.00            NA        NA      0.00        NA   0.00        NA
 
 # [[2]]
-                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev        e_modA e_modA_simple   e_modABen     e_modAbin    e_modAdev        e_modS     e_modSdev
-# 1              (Intercept)    100        100           100     100.0      16.2  100.0      28.3  2.627520e+00    2.63944454  0.46565733  0.5278372862  0.046000602  1.9326875093  0.0650866426
-# 2                scale(CN)    100        100           100       0.6       5.7  100.0       4.0  3.985538e-02    0.04384239  0.01523284 -0.0015585664  0.002231233  0.0672160408 -0.0004602265
-# 3             scale(DiffP)    100        100           100     100.0      14.0  100.0       8.7 -1.345189e-01   -0.12718962 -0.05480421  0.3981808471 -0.045094974 -0.1391098374 -0.0106960012
-# 4            scale(TotalP)    100         NA           100     100.0      12.8  100.0      13.0  4.311243e-01    0.40477642          NA -0.1756687841  0.022066548  0.6402257659 -0.0031922410
-# 5               Typez_Obsv      0         NA            NA       1.4        NA    0.6        NA  3.236483e-03            NA          NA  0.0078404470           NA  0.0103693659            NA
-# 6     Typez_Obsv:scale(CN)      0         NA            NA       0.3        NA    0.0        NA -5.699069e-05            NA          NA -0.0000602957           NA -0.0014188561            NA
-# 7  Typez_Obsv:scale(DiffP)      0         NA            NA       0.9        NA    0.0        NA -1.956256e-03            NA          NA -0.0052844485           NA -0.0001815526            NA
-# 8 Typez_Obsv:scale(TotalP)      0         NA            NA       0.3        NA    0.0        NA  2.533370e-05            NA          NA -0.0005823267           NA -0.0029921980            NA
+                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
+# 1              (Intercept)    100        100           100    100.00     16.27 100.00     28.19   2.63          2.64      0.47      0.53      0.05   1.93      0.06
+# 2                scale(CN)    100        100           100      0.62      5.70 100.00      3.94   0.04          0.04      0.02      0.00      0.00   0.07      0.00
+# 3             scale(DiffP)    100        100           100    100.00     13.89 100.00      8.70  -0.13         -0.13     -0.05      0.40     -0.04  -0.14     -0.01
+# 4            scale(TotalP)    100         NA           100    100.00     12.85 100.00     12.95   0.43          0.40        NA     -0.18      0.02   0.64      0.00
+# 5               Typez_Obsv      0         NA            NA      1.45        NA   0.62        NA   0.00            NA        NA      0.01        NA   0.01        NA
+# 6     Typez_Obsv:scale(CN)      0         NA            NA      0.31        NA   0.00        NA   0.00            NA        NA      0.00        NA   0.00        NA
+# 7  Typez_Obsv:scale(DiffP)      0         NA            NA      0.93        NA   0.00        NA   0.00            NA        NA     -0.01        NA   0.00        NA
+# 8 Typez_Obsv:scale(TotalP)      0         NA            NA      0.31        NA   0.00        NA   0.00            NA        NA      0.00        NA   0.00        NA
 
 # [[3]]
-                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev        e_modA e_modA_simple     e_modABen     e_modAbin    e_modAdev        e_modS    e_modSdev
-# 1              (Intercept)  100.0      100.0         100.0     100.0     100.0  100.0       100  2.600678e+00  2.825544e+00  5.612566e-01  0.6404542475  4.037164862  1.9108462506  3.200574007
-# 2                scale(CN)    0.4        4.7           4.9       0.3       5.4    0.3         5  1.131960e-04  4.092387e-05 -1.384942e-05 -0.0001728787 -0.001764679  0.0001524720 -0.001755834
-# 3             scale(DiffP)  100.0      100.0         100.0     100.0     100.0  100.0       100 -2.034118e-01 -2.709447e-01 -9.673077e-02  0.5191174336 -2.767178259 -0.2170606756 -1.597707831
-# 4            scale(TotalP)  100.0         NA         100.0     100.0     100.0  100.0       100  4.501590e-01  5.004392e-01            NA -0.2008821488  3.884168946  0.6693550784  3.117358180
-# 5               Typez_Obsv  100.0         NA            NA     100.0        NA  100.0        NA  2.196268e-01            NA            NA  0.8208641965           NA  0.3156026889           NA
-# 6     Typez_Obsv:scale(CN)    0.0         NA            NA       6.4        NA    0.0        NA -7.052393e-05            NA            NA -0.0003543760           NA -0.0001591036           NA
-# 7  Typez_Obsv:scale(DiffP)  100.0         NA            NA      13.5        NA  100.0        NA -7.654797e-02            NA            NA -0.0117303753           NA -0.0458805086           NA
-# 8 Typez_Obsv:scale(TotalP)  100.0         NA            NA     100.0        NA   97.9        NA  6.602718e-02            NA            NA  0.2371773001           NA  0.0322180470           NA
+                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
+# 1              (Intercept) 100.00     100.00        100.00    100.00    100.00 100.00    100.00   2.60          2.83      0.56      0.64      4.03   1.91      3.20
+# 2                scale(CN)   0.38       4.02          4.64      0.38      4.89   0.38      4.14   0.00          0.00      0.00      0.00      0.00   0.00      0.00
+# 3             scale(DiffP) 100.00     100.00        100.00    100.00    100.00 100.00    100.00  -0.20         -0.27     -0.10      0.52     -2.77  -0.22     -1.60
+# 4            scale(TotalP) 100.00         NA        100.00    100.00    100.00 100.00    100.00   0.45          0.50        NA     -0.20      3.88   0.67      3.12
+# 5               Typez_Obsv 100.00         NA            NA    100.00        NA 100.00        NA   0.22            NA        NA      0.82        NA   0.32        NA
+# 6     Typez_Obsv:scale(CN)   0.00         NA            NA      5.65        NA   0.00        NA   0.00            NA        NA      0.00        NA   0.00        NA
+# 7  Typez_Obsv:scale(DiffP) 100.00         NA            NA     13.17        NA 100.00        NA  -0.08            NA        NA     -0.01        NA  -0.05        NA
+# 8 Typez_Obsv:scale(TotalP) 100.00         NA            NA    100.00        NA  97.62        NA   0.07            NA        NA      0.24        NA   0.03        NA
 
 # [[4]]
-                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev       e_modA e_modA_simple   e_modABen    e_modAbin   e_modAdev       e_modS  e_modSdev
-# 1              (Intercept)  100.0        100           100     100.0     100.0  100.0     100.0  2.621474572    2.86136246  0.58634878  0.535525001  4.55893742  1.917987898  3.5471258
-# 2                scale(CN)   99.8        100           100       0.6      11.9  100.0      21.9  0.038020024    0.04636804  0.05084409 -0.002000824 -0.06988494  0.065873868 -0.1006904
-# 3             scale(DiffP)  100.0        100           100     100.0     100.0  100.0     100.0 -0.141187863   -0.19725160 -0.08750133  0.409712735 -2.47925653 -0.145885129 -1.3712951
-# 4            scale(TotalP)  100.0         NA           100     100.0     100.0  100.0     100.0  0.447806427    0.49430476          NA -0.178936739  4.63078097  0.667658940  3.7670276
-# 5               Typez_Obsv  100.0         NA            NA     100.0        NA  100.0        NA  0.234934133            NA          NA  0.828870742          NA  0.325652554         NA
-# 6     Typez_Obsv:scale(CN)    0.7         NA            NA      18.3        NA    0.1        NA  0.006869338            NA          NA  0.020246455          NA  0.004121719         NA
-# 7  Typez_Obsv:scale(DiffP)  100.0         NA            NA      23.0        NA  100.0        NA -0.062169084            NA          NA  0.020153537          NA -0.035797310         NA
-# 8 Typez_Obsv:scale(TotalP)  100.0         NA            NA     100.0        NA   76.8        NA  0.062856319            NA          NA  0.225927656          NA  0.028804936         NA
+                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
+# 1              (Intercept) 100.00        100           100    100.00    100.00 100.00     100.0   2.62          2.86      0.59      0.54      4.56   1.92      3.55
+# 2                scale(CN)  99.88        100           100      0.74     12.33 100.00      21.7   0.04          0.05      0.05      0.00     -0.07   0.07     -0.10
+# 3             scale(DiffP) 100.00        100           100    100.00    100.00 100.00     100.0  -0.14         -0.20     -0.09      0.41     -2.48  -0.15     -1.37
+# 4            scale(TotalP) 100.00         NA           100    100.00    100.00 100.00     100.0   0.45          0.49        NA     -0.18      4.63   0.67      3.77
+# 5               Typez_Obsv 100.00         NA            NA    100.00        NA 100.00        NA   0.24            NA        NA      0.83        NA   0.33        NA
+# 6     Typez_Obsv:scale(CN)   0.62         NA            NA     18.37        NA   0.12        NA   0.01            NA        NA      0.02        NA   0.00        NA
+# 7  Typez_Obsv:scale(DiffP) 100.00         NA            NA     22.56        NA 100.00        NA  -0.06            NA        NA      0.02        NA  -0.04        NA
+# 8 Typez_Obsv:scale(TotalP) 100.00         NA            NA    100.00        NA  77.19        NA   0.06            NA        NA      0.23        NA   0.03        NA
 
 # [[5]]
-                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev      e_modA e_modA_simple   e_modABen   e_modAbin e_modAdev      e_modS e_modSdev
-# 1              (Intercept)  100.0        100           100     100.0       100  100.0       100  2.56787510     2.7408948  0.51643406  0.52015136  3.074508  1.88031861  2.621109
-# 2                scale(CN)   26.4        100           100      54.6       100   31.7       100  0.01095056     0.0790096  0.03981748  0.02455102  1.210776  0.01650243  1.004313
-# 3             scale(DiffP)  100.0        100           100     100.0       100  100.0       100 -0.22160278    -0.2728626 -0.08491868  0.40702686 -2.214889 -0.23374419 -1.444707
-# 4            scale(TotalP)  100.0         NA           100     100.0       100  100.0       100  0.47225494     0.5187197          NA -0.11352907  3.351391  0.68920142  2.795863
-# 5               Typez_Obsv  100.0         NA            NA     100.0        NA  100.0        NA  0.16633231            NA          NA  0.55900711        NA  0.25757248        NA
-# 6     Typez_Obsv:scale(CN)  100.0         NA            NA     100.0        NA  100.0        NA  0.06818554            NA          NA  0.28694066        NA  0.09199843        NA
-# 7  Typez_Obsv:scale(DiffP)  100.0         NA            NA      73.4        NA  100.0        NA -0.06270361            NA          NA -0.05532828        NA -0.04481258        NA
-# 8 Typez_Obsv:scale(TotalP)  100.0         NA            NA     100.0        NA  100.0        NA  0.06603711            NA          NA  0.25328536        NA  0.03901251        NA
+                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
+# 1              (Intercept) 100.00        100           100    100.00       100 100.00       100   2.57          2.74      0.52      0.52      3.08   1.88      2.62
+# 2                scale(CN)  27.19        100           100     54.17       100  31.85       100   0.01          0.08      0.04      0.02      1.21   0.02      1.00
+# 3             scale(DiffP) 100.00        100           100    100.00       100 100.00       100  -0.22         -0.27     -0.08      0.41     -2.21  -0.23     -1.44
+# 4            scale(TotalP) 100.00         NA           100    100.00       100 100.00       100   0.47          0.52        NA     -0.11      3.35   0.69      2.80
+# 5               Typez_Obsv 100.00         NA            NA    100.00        NA 100.00        NA   0.17            NA        NA      0.56        NA   0.26        NA
+# 6     Typez_Obsv:scale(CN) 100.00         NA            NA    100.00        NA 100.00        NA   0.07            NA        NA      0.29        NA   0.09        NA
+# 7  Typez_Obsv:scale(DiffP) 100.00         NA            NA     73.35        NA 100.00        NA  -0.06            NA        NA     -0.06        NA  -0.04        NA
+# 8 Typez_Obsv:scale(TotalP) 100.00         NA            NA    100.00        NA 100.00        NA   0.07            NA        NA      0.25        NA   0.04        NA
 
 # [[6]]
-                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev      e_modA e_modA_simple   e_modABen    e_modAbin  e_modAdev      e_modS  e_modSdev
-# 1              (Intercept)    100        100           100     100.0       100  100.0       100  2.58889821     2.7877694  0.54529648  0.434695163  4.0387870  1.88326345  3.4102286
-# 2                scale(CN)    100        100           100      68.2       100  100.0       100  0.05381288     0.1131409  0.09260915  0.035027275  0.7768755  0.09105722  0.5529963
-# 3             scale(DiffP)    100        100           100     100.0       100  100.0       100 -0.15253209    -0.2020827 -0.08213199  0.340784605 -2.3774879 -0.15687976 -1.5137344
-# 4            scale(TotalP)    100         NA           100     100.0       100  100.0       100  0.46501050     0.5046187          NA -0.119098037  4.6185223  0.68396436  3.9169931
-# 5               Typez_Obsv    100         NA            NA     100.0        NA  100.0        NA  0.19220621            NA          NA  0.634409085         NA  0.28614456         NA
-# 6     Typez_Obsv:scale(CN)    100         NA            NA     100.0        NA  100.0        NA  0.05823749            NA          NA  0.232422940         NA  0.06897289         NA
-# 7  Typez_Obsv:scale(DiffP)    100         NA            NA       7.6        NA  100.0        NA -0.05766346            NA          NA  0.001851072         NA -0.03973819         NA
-# 8 Typez_Obsv:scale(TotalP)    100         NA            NA     100.0        NA   51.9        NA  0.05974807            NA          NA  0.277659918         NA  0.02489425         NA
+                    # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
+# 1              (Intercept)    100        100           100    100.00       100 100.00       100   2.59          2.79      0.55      0.43      4.04   1.88      3.41
+# 2                scale(CN)    100        100           100     68.15       100 100.00       100   0.05          0.11      0.09      0.03      0.78   0.09      0.55
+# 3             scale(DiffP)    100        100           100    100.00       100 100.00       100  -0.15         -0.20     -0.08      0.34     -2.38  -0.16     -1.51
+# 4            scale(TotalP)    100         NA           100    100.00       100 100.00       100   0.47          0.50        NA     -0.12      4.62   0.68      3.92
+# 5               Typez_Obsv    100         NA            NA    100.00        NA 100.00        NA   0.19            NA        NA      0.63        NA   0.29        NA
+# 6     Typez_Obsv:scale(CN)    100         NA            NA    100.00        NA 100.00        NA   0.06            NA        NA      0.23        NA   0.07        NA
+# 7  Typez_Obsv:scale(DiffP)    100         NA            NA      7.56        NA 100.00        NA  -0.06            NA        NA      0.00        NA  -0.04        NA
+# 8 Typez_Obsv:scale(TotalP)    100         NA            NA    100.00        NA  51.81        NA   0.06            NA        NA      0.28        NA   0.02        NA
 
 
-# import log files
 
-require(stringr)
 
-fileNamesLog <- list.files("Iceberg/Sim1_log") # vector of filenames
-Logs <- do.call(rbind,lapply(paste("Iceberg/Sim1_log",fileNamesLog, sep="/"), FUN= function(x){str_c(readLines(x), collapse = " ")}))
-Logs[1]
-Logs <- gsub("^.*union","_",Logs) # only keep the warning which come after log of packages loaded
-Logs <- data.frame(FileName=fileNamesLog, Log = Logs)
 
-PbLogs <- Logs$FileName[Logs$Log != "_ "] # 547 sim where one model did not converge
-PbLogs <- gsub("\\..*","",PbLogs)
 
-table(PbLogs)
-
-# models did not converge in those x cases out of 1000
-# sim_1_1 sim_1_2 sim_1_3 sim_1_4 sim_1_5 sim_1_6 
-#	 35      35     203     189      77       8
 
 
