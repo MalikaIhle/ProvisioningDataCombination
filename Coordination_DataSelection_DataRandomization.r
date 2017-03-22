@@ -605,17 +605,30 @@ random.',
 'Generated
 data')}
 
-Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean), colour=Type)+
+{my_shapes <- c(
+19, #circle
+19, # square
+19, 
+15, 
+15,
+19)}
+
+{my_colors <- c(
+'grey','black', 'grey','dimgrey','dimgrey','dimgrey'
+)}
+
+
+Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean,colour=Type, shape = Type))+
 xlab(NULL)+
 ylab("Number of alternations realized out of the maximum possible (%)\n")+
 
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-geom_point(size = 3, aes(col=Type)) +
-
-scale_y_continuous(breaks =seq(60,90, by = 7),limits = c(60,90)) +
+scale_y_continuous(breaks =seq(60,90, by = 5),limits = c(60,90)) +
 scale_x_discrete(labels = my_labels)+
 
-scale_colour_manual(values=c('grey','black', 'grey','dimgrey','dimgrey','dimgrey'), labels = my_labels)+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+geom_point(size = 3, aes(shape=Type, col=Type)) +
+scale_colour_manual(values=my_colors, labels = my_labels)+
+scale_shape_manual(values=my_shapes, labels=my_labels)+ 
 
 theme_classic()+
 theme(
@@ -682,7 +695,8 @@ sumary_S_generated_outof_A))
 
 }
 
-{my_labels_S <- c('Observed
+{my_labels_S <- c(
+'Observed
 data', 
 'Within
 random.', 
@@ -691,18 +705,28 @@ random.',
 'Generated
 data')}
 
-Fig_S_SMax <- {ggplot(data=summary_S_outof_A, aes(x=Type, y=Smean), colour=Type)+
+{my_shapes_S <- c(
+19, 
+15, # square
+15, 
+19)}
+
+{my_colors_S <- c(
+'black','dimgrey','dimgrey','dimgrey'
+)}
+
+Fig_S_SMax <- {ggplot(data=summary_S_outof_A, aes(x=Type, y=Smean), colour=Type, shape=Type)+
 xlab(NULL)+
 ylab("Number of synchronized visits realized 
 out of the maximum possible (%)\n")+
 
 geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),na.rm=TRUE)+
-geom_point(size = 3, aes(col=Type)) +
+geom_point(size = 3, aes(col=Type, shape=Type)) +
 
 scale_y_continuous(breaks =seq(45,55, by = 2),limits = c(45,55)) +
 scale_x_discrete(labels = my_labels_S)+
-
-scale_colour_manual(values=c('black', 'dimgrey','dimgrey','dimgrey'), labels = my_labels_S)+
+scale_shape_manual(values=my_shapes_S, labels=my_labels_S)+ 
+scale_colour_manual(values=my_colors_S, labels = my_labels_S)+
 
 
 theme_classic()+
