@@ -133,3 +133,23 @@ Results_Sim_1
 # 8 Typez_Obsv:scale(TotalP)    100         NA            NA     100.0        NA   51.9        NA  0.05974807            NA          NA  0.277659918         NA  0.02489425         NA
 
 
+# import log files
+
+require(stringr)
+
+fileNamesLog <- list.files("Iceberg/Sim1_log") # vector of filenames
+Logs <- do.call(rbind,lapply(paste("Iceberg/Sim1_log",fileNamesLog, sep="/"), FUN= function(x){str_c(readLines(x), collapse = " ")}))
+Logs[1]
+Logs <- gsub("^.*union","_",Logs) # only keep the warning which come after log of packages loaded
+Logs <- data.frame(FileName=fileNamesLog, Log = Logs)
+
+PbLogs <- Logs$FileName[Logs$Log != "_ "] # 547 sim where one model did not converge
+PbLogs <- gsub("\\..*","",PbLogs)
+
+table(PbLogs)
+
+# models did not converge in those x cases out of 1000
+# sim_1_1 sim_1_2 sim_1_3 sim_1_4 sim_1_5 sim_1_6 
+#	 35      35     203     189      77       8
+
+
