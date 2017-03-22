@@ -524,6 +524,7 @@ Sort_intervals_out_A <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Asorte
 
 }
 
+
 {## plot A/AMax 
 
 {### summarize for box plot A in percentage of AMax 
@@ -847,6 +848,8 @@ head(MY_TABLE_perBrood)
 # 20170208 after rerunning data extraction (should be the same)
 # 20170214 add MedAsim
 # 20170321 add all output simulation into it, set seed
+# 20170322 rerun
+
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -856,6 +859,7 @@ head(MY_TABLE_perBrood)
 # 20170208 after rerunning data extraction (should be the same)
 # 20170214 add MeanAsim 
 # 20170321 set seed
+# 20170322 rerun
 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
@@ -863,11 +867,12 @@ head(MY_TABLE_perBrood)
 # 20170208 after rerunning data extraction (should be the same)
 # 20170214 add MeanAsim 
 # 20170321 set seed
+# 20170322 rerun
 
 
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
 # 20170321 the raw data of the DVDs where both parents are known
-
+# 20170322 rerun
 
 
 
