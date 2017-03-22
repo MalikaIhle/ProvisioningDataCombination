@@ -2,8 +2,8 @@
 #	 Malika IHLE & Joel PICK  malika_ihle@hotmail.fr & joel.l.pick@gmail.com
 #	 Simulation to help decide which analyses to perfom on coordination in provisioning in pairs of sparrows
 #	 Start : 02/02/2017
-#	 last modif : 15/03/2017
-#	 commit: simulations from generated, half generated, or randomized datasets calling identical functions
+#	 last modif : 22/03/2017
+#	 commit: calling one datafile + preparation for running on iceberg
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list = ls(all = TRUE))
@@ -21,7 +21,8 @@ library(ggplot2)
 
 {# Get real data as selected for DataAnalyses.R
 
-RawInterfeeds <- read.csv(paste("R_SelectedData","R_MY_RawInterfeeds.csv", sep="/")) 
+RawInterfeeds <- read.csv(paste("R_Selected&RandomizedData","R_RawInterfeeds.csv", sep="/")) 
+MY_TABLE_perDVD <- read.csv(paste("R_Selected&RandomizedData","R_MY_TABLE_perDVD.csv", sep="/")) 
 
 
 }
@@ -254,14 +255,14 @@ return(results_PercentageFactorSignificant)
 
 VideoLength <- 90
 
-nPR <- nrow(MY_tblDVDInfo)
+nPR <- nrow(MY_TABLE_perDVD)
 avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
 sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var))
 
 meanlogPR <- log(avPR) # pass on the log scale to be able to add Poisson distributed error
 sdlogPR <- sqrt(log(1 + sdPR^2/avPR^2))
 
-CN <- MY_tblDVDInfo$DVDInfoChickNb     # fixed given data for chick number
+CN <- MY_TABLE_perDVD$DVDInfoChickNb     # fixed given data for chick number
 rCNTP <- 0.6
 
 bCNTP <- (rCNTP * sdlogPR)/ sd(CN)
@@ -271,7 +272,7 @@ syncint <- 2 # I tried 10 ; 5 ; 2 ; 0.5  I had a priori chosen 0.5 but this give
 }
 
 
-NreplicatesWithinFileRandomization <- 100
+NreplicatesWithinFileRandomization <- 10
 NreplicatesSimulation <- 1
 
 {# Simulation 1: Take observed CN ; generate TP either correlated to CN or not ; with or without an effect of CN on A (i.e. with CN = sorting parameter of intervals)
@@ -560,7 +561,7 @@ Results_Sim_1
 
 {# get the real MY_TABLE_per_DVD 
 
-MY_TABLE_per_DVD <- merge(MY_tblParentalCare[,c('DVDRef', 'MVisit1','FVisit1')], MY_tblDVDInfo[,c("DVDRef","DVDInfoChickNb")], by = "DVDRef")
+MY_TABLE_per_DVD <- MY_TABLE_perDVD[,c('DVDRef', 'MVisit1','FVisit1',"DVDInfoChickNb")]
 colnames(MY_TABLE_per_DVD) <- c('DVDRef','MaleP','FemaleP', 'CN')
 MY_TABLE_per_DVD$TotalP <- MY_TABLE_per_DVD$MaleP + MY_TABLE_per_DVD$FemaleP # total number of visits for that video
 MY_TABLE_per_DVD$DiffP <- abs(MY_TABLE_per_DVD$MaleP - MY_TABLE_per_DVD$FemaleP)
@@ -670,19 +671,13 @@ return(list(results))
 
 }
 
-result_no_autocor_no_cor_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('none'))
-result_no_autocor_corCN_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('none'))
-result_partial_autocor_no_cor_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('partial'))
-result_partial_autocor_corCN_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('partial'))
-result_full_autocor_no_cor_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('full'))
-result_full_autocor_corCN_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('full'))
+result_no_autocor_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('none'))
+result_partial_autocor_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('partial'))
+result_full_autocor_Sim2 <- pbreplicate(NreplicatesSimulation,Generate_visits_randomize_them_and_analyse('full'))
 
 Results_Sim_2 <- c(
 list(Shape_results(result_no_autocor_no_cor_Sim2)),
-list(Shape_results(result_no_autocor_corCN_Sim2)),
-list(Shape_results(result_partial_autocor_no_cor_Sim2)),
 list(Shape_results(result_partial_autocor_corCN_Sim2)),
-list(Shape_results(result_full_autocor_no_cor_Sim2)),
 list(Shape_results(result_full_autocor_corCN_Sim2)))
 
 }
@@ -693,15 +688,11 @@ Results_Sim_2
 {# Simulation 3: Randomized real dataset instead of generating data
 
 {## get the full real MY_TABLE_perDVD 
+MY_TABLE_per_DVD <- MY_TABLE_perDVD[,-which(names(MY_TABLE_perDVD) %in% c('A','S','Aswitch','MeanAsimWithin','MeanAsimAmong','MedAsimWithin','MedAsimAmong','MeanSsimWithin','MeanSsimAmong','MedSsimWithin','MedSsimAmong','Adev','Sdev'))]
 
-MY_tblParentalCare$TotalP <- MY_tblParentalCare$FVisit1+ MY_tblParentalCare$MVisit1
-MY_TABLE_per_DVD <- merge(MY_tblParentalCare[,c("DVDRef","TotalP","VisitRateDifference")],
-MY_tblDVDInfo[,c("DVDRef","BroodRef","DVDInfoChickNb", "ChickAgeCat","RelTimeHrs")], by="DVDRef")
-names(MY_TABLE_per_DVD)[names(MY_TABLE_per_DVD) == 'VisitRateDifference'] <- 'DiffP'
-names(MY_TABLE_per_DVD)[names(MY_TABLE_per_DVD) == 'DVDInfoChickNb'] <- 'ChickNb'
-
-MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, 
-MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401","SocialMumID","SocialDadID","ParentsAge","MPriorResidence","FPriorResidence","PairID","PairBroodNb","PairIDYear")], by= "BroodRef")
+MY_TABLE_per_DVD$TotalP <- MY_TABLE_per_DVD$FVisit1+ MY_TABLE_per_DVD$MVisit1
+MY_TABLE_per_DVD$DiffP <- abs(MY_TABLE_per_DVD$FVisit1- MY_TABLE_per_DVD$MVisit1)
+MY_TABLE_per_DVD <- dplyr::rename(MY_TABLE_per_DVD, ChickNb = DVDInfoChickNb)
 
 MY_TABLE_per_DVD$BroodRef <- as.factor(MY_TABLE_per_DVD$BroodRef)
 MY_TABLE_per_DVD$SocialDadID <- as.factor(MY_TABLE_per_DVD$SocialDadID)
@@ -709,10 +700,7 @@ MY_TABLE_per_DVD$SocialMumID <- as.factor(MY_TABLE_per_DVD$SocialMumID)
 MY_TABLE_per_DVD$PairID <- as.factor(MY_TABLE_per_DVD$PairID)
 MY_TABLE_per_DVD$BreedingYear <- as.factor(MY_TABLE_per_DVD$BreedingYear)
 
-# remove DVD where one social parent unknown
-length(unique(MY_TABLE_per_DVD$BroodRef[is.na(MY_TABLE_per_DVD$SocialMum) | is.na(MY_TABLE_per_DVD$SocialDadID)])) # 38 broods - 63 files one parent unknown
-MY_TABLE_per_DVD <- MY_TABLE_per_DVD[!is.na(MY_TABLE_per_DVD$SocialMumID) & !is.na(MY_TABLE_per_DVD$SocialDadID),] # where both parents known
-
+head(MY_TABLE_per_DVD)
 }
 
 Randomize_real_data_re_randomize_them_and_analyse <-function(){
@@ -841,7 +829,7 @@ Results_Sim_3
 
 
 
-# after running one simulation 1 with each of the 6 set of parameter
+{# Graphs after running one simulation 1 with each of the 6 set of parameter
 
 head(MY_TABLE_per_DVD_long)
 
@@ -857,7 +845,7 @@ abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_
 points (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
 abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
 
-
+}
 
 
 
