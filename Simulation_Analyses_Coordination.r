@@ -8,6 +8,8 @@
 
 rm(list = ls(all = TRUE))
 
+
+
 {# Packages
 library(pbapply)
 library(lme4)
@@ -17,6 +19,7 @@ options(scipen=999) # to remove scientific notation e-
 library(tidyr)
 library(dplyr) 
 library(ggplot2)
+require(gridExtra)
 }
 
 {# Get real data as selected for DataAnalyses.R
@@ -672,6 +675,7 @@ list(Shape_results(result_full_autocor_corCN_Sim2)))
 Results_Sim_2
 
 
+
 {# Simulation 3: Randomized real dataset instead of generating data
 
 {## get the full real MY_TABLE_perDVD 
@@ -814,20 +818,209 @@ Results_Sim_3
 
 
 
-{# Graphs after running one simulation 1 with each of the 6 set of parameter
+{# Graphs after running one replicate of simulation 1 with each of the 6 sets of parameter
 
+Generate_TP_randomize_data_and_give_data <-function(autocorrelation, correlation_CN_TP){
+
+# generate TP correlated to existing CN and create MY_TABLE_per_DVD
+
+if (correlation_CN_TP == 'No'){
+MY_TABLE_per_DVD <- Generate_TP(nPR, sdlogPR,rCNTP)
+MY_TABLE_per_DVD$CN <- sample(CN)
+}
+
+if (correlation_CN_TP == 'Yes'){
+MY_TABLE_per_DVD <- Generate_TP_correlated_to_CN(nPR, sdlogPR,rCNTP,CN)
+}
+
+MY_TABLE_per_DVD <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Calculate_AMax))
+head(MY_TABLE_per_DVD)
+
+# create nest watches
+
+if (autocorrelation == 'none'){
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_nest_watch))
+}
+
+if (autocorrelation == 'partial'){
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_partially_sorted_nest_watch))
+}
+
+if (autocorrelation == 'full'){
+full_dat <- do.call(rbind,lapply(split(MY_TABLE_per_DVD,MY_TABLE_per_DVD$DVDRef), Create_one_fully_sorted_nest_watch))
+}
+
+head(full_dat)
+
+# Randomization Within nest watch, within individual
+A_S_within_randomization <- do.call(cbind,replicate(NreplicatesWithinFileRandomization,Randomize_Data_WithinFile_and_Calculate_A_S(full_dat),simplify=FALSE ) )
+# first half are A sim
+out_Asim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), head(A_S_within_randomization,length(unique(full_dat$DVDRef)))) 
+# second half are S sim
+out_Ssim_within_df <- data.frame(DVDRef = unique(full_dat$DVDRef), tail(A_S_within_randomization,length(unique(full_dat$DVDRef))))
+
+# summarise observed and simulated coordination
+summary_A_S_observed <- do.call(rbind,lapply(split(full_dat,full_dat$DVDRef),Calculate_A_S_one_nest_watch))
+summary_A_S_randomized <- data.frame(DVDRef = out_Asim_within_df[,1], 
+									MedAsim = apply(out_Asim_within_df[,-1],1,median_integer), # Median are used for having integer for poisson models
+									MedSsim= apply(out_Ssim_within_df[,-1],1,median_integer),
+									MeanAsim = apply(out_Asim_within_df[,-1],1,mean),
+									MeanSsim= apply(out_Ssim_within_df[,-1],1,mean))
+
+{# create table short and long
+
+# short table
+MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_A_S_observed, by='DVDRef')
+MY_TABLE_per_DVD <- merge(MY_TABLE_per_DVD, summary_A_S_randomized, by='DVDRef')
+MY_TABLE_per_DVD$Adev <- MY_TABLE_per_DVD$A - MY_TABLE_per_DVD$MedAsim
+MY_TABLE_per_DVD$Sdev <- MY_TABLE_per_DVD$S - MY_TABLE_per_DVD$MedSsim 
+head(MY_TABLE_per_DVD)
+
+# long table
+MY_TABLE_per_DVD_long <- rbind(MY_TABLE_per_DVD, MY_TABLE_per_DVD)
+# first half is 'simulated', second half is 'observed'
+MY_TABLE_per_DVD_long$Type <- c(rep('a_Sim', nrow(MY_TABLE_per_DVD)), rep('z_Obsv', nrow(MY_TABLE_per_DVD)))
+MY_TABLE_per_DVD_long$A[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- MY_TABLE_per_DVD_long$MedAsim[MY_TABLE_per_DVD_long$Type == 'a_Sim'] # A sim is MedAsim
+MY_TABLE_per_DVD_long$S[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- MY_TABLE_per_DVD_long$MedSsim[MY_TABLE_per_DVD_long$Type == 'a_Sim']
+MY_TABLE_per_DVD_long$rowID <- seq(1:nrow(MY_TABLE_per_DVD_long))
 head(MY_TABLE_per_DVD_long)
+tail(MY_TABLE_per_DVD_long)
+
+}
+
+return(MY_TABLE_per_DVD_long)
+}
+
+
+MY_TABLE_per_DVD_long_none_no <- Generate_TP_randomize_data_and_give_data('none', 'No')
+MY_TABLE_per_DVD_long_none_yes <- Generate_TP_randomize_data_and_give_data('none', 'Yes')
+MY_TABLE_per_DVD_long_full_no <- Generate_TP_randomize_data_and_give_data('full', 'No')
+MY_TABLE_per_DVD_long_full_yes <- Generate_TP_randomize_data_and_give_data('full', 'Yes')
+MY_TABLE_per_DVD_long_partial_no <- Generate_TP_randomize_data_and_give_data('partial', 'No')
+MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('partial', 'Yes')
+
+Change_x_to_Cat <- function(x) {
+x$CN_Cat <- cut(x$CN, c(0,1,2,3,4,7), labels = c(1:5),include.lowest=TRUE)
+x$TotalP_Cat <- as.factor(ntile(x$TotalP,7))
+x}
+
+MY_TABLE_per_DVD_long_none_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_no)
+MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
+MY_TABLE_per_DVD_long_full_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_no)
+MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
+MY_TABLE_per_DVD_long_partial_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_no)
+MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
+
+
+plot1 <- ggplot(aes(y = A, x = TotalP_Cat, fill = Type), data = MY_TABLE_per_DVD_long_none_no) + geom_boxplot(position = position_dodge(width = .9))+
+xlab(NULL)+
+ylab(NULL)+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_blank(),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.text.x=element_blank(),
+axis.title.x = element_blank(),
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+
+
+plot2 <- ggplot(aes(y = A, x = CN_Cat, fill = Type), data = MY_TABLE_per_DVD_long_none_no) + geom_boxplot(position = position_dodge(width = .9))+
+xlab(NULL)+
+ylab(NULL)+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_blank(),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.text.x=element_blank(),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+plot3 <- ggplot(aes(y = A, x = TotalP_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
+xlab(NULL)+
+ylab(NULL)+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_blank(),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.text.x=element_blank(),
+axis.title.x = element_blank(),
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+
+
+plot4 <- ggplot(aes(y = A, x = CN_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
+xlab(NULL)+
+ylab(NULL)+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_blank(),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.text.x=element_blank(),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+plot3 <- ggplot(aes(y = A, x = TotalP_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
+xlab(NULL)+
+ylab("A")+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5),angle=0),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+
+
+plot4 <- ggplot(aes(y = A, x = CN_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
+xlab(NULL)+
+ylab("A")+
+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(size=14,face="bold", margin=margin(l=5),angle=0),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+axis.title.x = NULL,
+plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+
+
+grid.arrange(plot1, plot2,plot3,plot4, ncol=2)
 
 
 par(mfrow=c(1,2))
-plot (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
+boxplot (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
 abline(lm(A ~ TotalP,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",] ))
 points (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
 abline(lm(A ~ TotalP,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
 
-plot (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
+boxplot (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
 abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",] ))
-points (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
+points (A ~ jitter(CN), data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
 abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
 
 }
