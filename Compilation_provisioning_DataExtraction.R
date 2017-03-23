@@ -2674,6 +2674,7 @@ DurationScript # ~ 14 min
  # 20160516 save the 2112 lines (had saved the selection of 1768 lines last time...)
  # 20170208 rerun
  # 20170322 rerun
+ # 20170323 rerun with DB corrected after sparrow meeting
  
 ## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
  # 20160415
@@ -2688,6 +2689,8 @@ DurationScript # ~ 14 min
  # 20170207 recalculated TotalProRate (MFVisit1RateH) directly with Nb visits and effective time to not have it rounded. (not ran)
  # 20170208 rerun
  # 20170322 without coordination measurements
+ # 20170323 rerun with DB corrected after sparrow meeting
+ 
  
 ## write.csv(MY_tblBroods,file=paste(output_folder,"R_MY_tblBroods.csv", sep="/"), row.names = FALSE) 
  # 20160415
@@ -2699,8 +2702,12 @@ DurationScript # ~ 14 min
  # 20160712 change the way of deducting divorce: will divorce happen AFTER the brood/line considered
  # 20170208 rerun
  # 20170322 rerun
+ # 20170323 rerun with DB corrected after sparrow meeting
+ 
  
 ## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
  # 20161207 moved from Alternation_Synchrony_DataAnalyses (not to have SQL code there)
  # 20170208 rerun
  # 20170322 rerun
+ # 20170323 rerun with DB corrected after sparrow meeting
+ 
