@@ -20,6 +20,7 @@ library(tidyr)
 library(dplyr) 
 library(ggplot2)
 require(gridExtra)
+require(grid)
 }
 
 {# Get real data as selected for DataAnalyses.R
@@ -879,9 +880,9 @@ head(MY_TABLE_per_DVD)
 # long table
 MY_TABLE_per_DVD_long <- rbind(MY_TABLE_per_DVD, MY_TABLE_per_DVD)
 # first half is 'simulated', second half is 'observed'
-MY_TABLE_per_DVD_long$Type <- c(rep('a_Sim', nrow(MY_TABLE_per_DVD)), rep('z_Obsv', nrow(MY_TABLE_per_DVD)))
-MY_TABLE_per_DVD_long$A[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- MY_TABLE_per_DVD_long$MedAsim[MY_TABLE_per_DVD_long$Type == 'a_Sim'] # A sim is MedAsim
-MY_TABLE_per_DVD_long$S[MY_TABLE_per_DVD_long$Type == 'a_Sim'] <- MY_TABLE_per_DVD_long$MedSsim[MY_TABLE_per_DVD_long$Type == 'a_Sim']
+MY_TABLE_per_DVD_long$Type <- c(rep('Sim', nrow(MY_TABLE_per_DVD)), rep('Obsv', nrow(MY_TABLE_per_DVD)))
+MY_TABLE_per_DVD_long$A[MY_TABLE_per_DVD_long$Type == 'Sim'] <- MY_TABLE_per_DVD_long$MedAsim[MY_TABLE_per_DVD_long$Type == 'Sim'] # A sim is MedAsim
+MY_TABLE_per_DVD_long$S[MY_TABLE_per_DVD_long$Type == 'Sim'] <- MY_TABLE_per_DVD_long$MedSsim[MY_TABLE_per_DVD_long$Type == 'Sim']
 MY_TABLE_per_DVD_long$rowID <- seq(1:nrow(MY_TABLE_per_DVD_long))
 head(MY_TABLE_per_DVD_long)
 tail(MY_TABLE_per_DVD_long)
@@ -893,11 +894,12 @@ return(MY_TABLE_per_DVD_long)
 
 
 MY_TABLE_per_DVD_long_none_no <- Generate_TP_randomize_data_and_give_data('none', 'No')
-MY_TABLE_per_DVD_long_none_yes <- Generate_TP_randomize_data_and_give_data('none', 'Yes')
 MY_TABLE_per_DVD_long_full_no <- Generate_TP_randomize_data_and_give_data('full', 'No')
-MY_TABLE_per_DVD_long_full_yes <- Generate_TP_randomize_data_and_give_data('full', 'Yes')
 MY_TABLE_per_DVD_long_partial_no <- Generate_TP_randomize_data_and_give_data('partial', 'No')
-MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('partial', 'Yes')
+
+#MY_TABLE_per_DVD_long_none_yes <- Generate_TP_randomize_data_and_give_data('none', 'Yes')
+#MY_TABLE_per_DVD_long_full_yes <- Generate_TP_randomize_data_and_give_data('full', 'Yes')
+#MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('partial', 'Yes')
 
 Change_x_to_Cat <- function(x) {
 x$CN_Cat <- cut(x$CN, c(0,1,2,3,4,7), labels = c(1:5),include.lowest=TRUE)
@@ -905,123 +907,229 @@ x$TotalP_Cat <- as.factor(ntile(x$TotalP,7))
 x}
 
 MY_TABLE_per_DVD_long_none_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_no)
-MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
 MY_TABLE_per_DVD_long_full_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_no)
-MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
 MY_TABLE_per_DVD_long_partial_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_no)
-MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
+
+#MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
+#MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
+#MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
 
 
-plot1 <- ggplot(aes(y = A, x = TotalP_Cat, fill = Type), data = MY_TABLE_per_DVD_long_none_no) + geom_boxplot(position = position_dodge(width = .9))+
+summary(MY_TABLE_per_DVD_long_none_no$TotalP)
+summary(MY_TABLE_per_DVD_long_full_no$TotalP)
+summary(MY_TABLE_per_DVD_long_partial_no$TotalP)
+levels(cut(MY_TABLE_per_DVD_long_none_no$TotalP, 7, include.lowest=TRUE))
+levels(cut(MY_TABLE_per_DVD_long_full_no$TotalP, 7, include.lowest=TRUE))
+levels(cut(MY_TABLE_per_DVD_long_partial_no$TotalP, 7, include.lowest=TRUE))
+c(15,25,40,60,85,110)
+
+
+summarize_TP <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
+				Amean = mean(A/AMax*100),
+				Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
+				Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
+				NbFiles = n()))}
+
+summarize_CN <- function(x) {data.frame(summarise ((x %>% group_by(Type,CN_Cat)),
+				Amean = mean(A/AMax*100),
+				Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
+				Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
+				NbFiles = n()))	}
+				
+summary_TP_none <- summarize_TP(MY_TABLE_per_DVD_long_none_no)	
+summary_CN_none <- summarize_CN(MY_TABLE_per_DVD_long_none_no)	
+summary_TP_full <- summarize_TP(MY_TABLE_per_DVD_long_full_no)	
+summary_CN_full <- summarize_CN(MY_TABLE_per_DVD_long_full_no)	
+summary_TP_partial <- summarize_TP(MY_TABLE_per_DVD_long_partial_no)	
+summary_CN_partial <- summarize_CN(MY_TABLE_per_DVD_long_partial_no)	
+
+
+
+{plot1 <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
+xlab(NULL)+
+ylab("Observed alternation 
+simulated to be
+random")+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7), labels=c("Observation", "Randomization"))+ 
+theme_classic()+
+theme(
+legend.justification= c(0,1),
+legend.position = c(0,1),
+legend.title =element_blank(),
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(angle=0),
+axis.ticks.y=element_blank(),
+axis.text.x=element_blank(),
+axis.title.x = element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.1,0.1,0.2), "cm"))
+}
+
+{plot2 <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
 xlab(NULL)+
 ylab(NULL)+
-
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
 theme_classic()+
 theme(
 legend.position="none",
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_blank(),
+axis.title.y=element_text(angle=0),
 axis.text.y=element_blank(),
 axis.ticks.y=element_blank(),
 axis.text.x=element_blank(),
 axis.title.x = element_blank(),
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
+}
 
-
-
-plot2 <- ggplot(aes(y = A, x = CN_Cat, fill = Type), data = MY_TABLE_per_DVD_long_none_no) + geom_boxplot(position = position_dodge(width = .9))+
+{plot3 <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_full) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
 xlab(NULL)+
-ylab(NULL)+
-
+ylab("Observed alternation 
+simulated to be
+higher than random
+due to 
+autocorrelation")+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+ 
 theme_classic()+
 theme(
-legend.position="none",
+legend.position = "none",
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_blank(),
-axis.text.y=element_blank(),
+axis.title.y=element_text(angle=0),
 axis.ticks.y=element_blank(),
-axis.text.x=element_blank(),
-axis.title.x = NULL,
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
-
-plot3 <- ggplot(aes(y = A, x = TotalP_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
-xlab(NULL)+
-ylab(NULL)+
-
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_blank(),
-axis.text.y=element_blank(),
-axis.ticks.y=element_blank(),
-axis.text.x=element_blank(),
 axis.title.x = element_blank(),
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+axis.text.x=element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.1,0.1,0.2), "cm"))
+}
 
-
-
-plot4 <- ggplot(aes(y = A, x = CN_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
+{plot4 <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
 xlab(NULL)+
 ylab(NULL)+
-
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
 theme_classic()+
 theme(
 legend.position="none",
 panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(angle=0),
+axis.ticks.y=element_blank(),
+axis.text.y=element_blank(),
+axis.title.x = element_blank(),
+axis.text.x=element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
+}
+
+{plot5 <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_partial) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
+xlab(NULL)+
+ylab("Observed alternation 
+simulated to be 
+higher than random
+due to an effect of 
+chick number")+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+ 
+theme_classic()+
+theme(
+legend.position = "none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(angle=0),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.1,0.1,0.2), "cm"))
+}
+
+{plot6 <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
+xlab(NULL)+
+ylab(NULL)+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(angle=0),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
+}
+
+{blank1 <-ggplot()+
+scale_x_continuous(limits = c(0, 10))+
+scale_y_continuous(limits = c(0, 10))+
+
+ylab("Observed alternation 
+simulated to be 
+higher than random
+due to an effect of 
+chick number")+
+
+annotate("text", x = 5, y = 5, label = "Total P (seventiles)", angle=0)+
+theme_classic()+
+
+theme(
+axis.title.y=element_text(color="white", angle=(0)),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.text.x=element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+}
+
+{blank2 <-ggplot()+
+scale_x_continuous(limits = c(0, 10))+
+scale_y_continuous(limits = c(0, 10))+
+
+annotate("text", x = 5, y = 5, label = "Number of chicks", angle=0)+
+theme_classic()+
+
+theme(
 axis.title.y=element_blank(),
 axis.text.y=element_blank(),
 axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
 axis.text.x=element_blank(),
-axis.title.x = NULL,
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
-
-plot3 <- ggplot(aes(y = A, x = TotalP_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
-xlab(NULL)+
-ylab("A")+
-
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(size=14,face="bold", margin=margin(l=5),angle=0),
-axis.text.y=element_blank(),
-axis.ticks.y=element_blank(),
-axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
-axis.title.x = NULL,
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+}
 
 
-
-plot4 <- ggplot(aes(y = A, x = CN_Cat, fill = Type), data = MY_TABLE_per_DVD_long) + geom_boxplot(position = position_dodge(width = .9))+
-xlab(NULL)+
-ylab("A")+
-
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(size=14,face="bold", margin=margin(l=5),angle=0),
-axis.text.y=element_blank(),
-axis.ticks.y=element_blank(),
-axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
-axis.title.x = NULL,
-plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+g1 <- ggplotGrob(plot1)
+g2 <- ggplotGrob(plot2)
+g3 <- ggplotGrob(plot3)
+g4 <- ggplotGrob(plot4)
+g5 <- ggplotGrob(plot5)
+g6 <- ggplotGrob(plot6)
+gblank1 <- ggplotGrob(blank1)
+gblank2 <- ggplotGrob(blank2)
 
 
-grid.arrange(plot1, plot2,plot3,plot4, ncol=2)
+firstrow = cbind(g1, g2, size = "first")
+secondrow = cbind(g3, g4, size = "first")
+thirdrow = cbind(g5, g6, size = "first")
+bottom = cbind(gblank1, gblank2, size = "first")
 
+grid.arrange(firstrow,secondrow,thirdrow, bottom, ncol=1, nrow=4, heights = c(1,1,1,0.1))
 
-par(mfrow=c(1,2))
-boxplot (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
-abline(lm(A ~ TotalP,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",] ))
-points (A ~ TotalP, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
-abline(lm(A ~ TotalP,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
-
-boxplot (A ~ CN, data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",])
-abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "z_Obsv",] ))
-points (A ~ jitter(CN), data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",], col = 'red')
-abline (lm(A ~ CN,data = MY_TABLE_per_DVD_long[MY_TABLE_per_DVD_long$Type == "a_Sim",] ), col = 'red')
 
 }
 
