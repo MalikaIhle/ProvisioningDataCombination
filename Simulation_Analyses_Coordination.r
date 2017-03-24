@@ -818,6 +818,7 @@ Results_Sim_3 <- Shape_results(result_no_autocor_observed_cor_Sim3)
 Results_Sim_3
 
 
+set.seed(4) 
 
 {# Graphs after running one replicate of simulation 1 with each of the 6 sets of parameter
 
@@ -892,86 +893,94 @@ tail(MY_TABLE_per_DVD_long)
 return(MY_TABLE_per_DVD_long)
 }
 
+MY_TABLE_per_DVD_long_none_yes <- Generate_TP_randomize_data_and_give_data('none', 'Yes')
+MY_TABLE_per_DVD_long_full_yes <- Generate_TP_randomize_data_and_give_data('full', 'Yes')
+MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('partial', 'Yes')
 
-MY_TABLE_per_DVD_long_none_no <- Generate_TP_randomize_data_and_give_data('none', 'No')
-MY_TABLE_per_DVD_long_full_no <- Generate_TP_randomize_data_and_give_data('full', 'No')
-MY_TABLE_per_DVD_long_partial_no <- Generate_TP_randomize_data_and_give_data('partial', 'No')
-
-#MY_TABLE_per_DVD_long_none_yes <- Generate_TP_randomize_data_and_give_data('none', 'Yes')
-#MY_TABLE_per_DVD_long_full_yes <- Generate_TP_randomize_data_and_give_data('full', 'Yes')
-#MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('partial', 'Yes')
+{## summarize data per cat for plotting
 
 Change_x_to_Cat <- function(x) {
-x$CN_Cat <- cut(x$CN, c(0,1,2,3,4,7), labels = c(1:5),include.lowest=TRUE)
-x$TotalP_Cat <- as.factor(ntile(x$TotalP,7))
+x$CN_Cat <- cut(x$CN, c(0,1,2,3,4,7), labels = c(1:4,"5+"),include.lowest=TRUE)
+x$TotalP_Cat <- cut(x$TotalP,c(seq(0,80,20),150), labels = c(seq(10,70,20),"90+"), include.lowest=TRUE)
 x}
 
 MY_TABLE_per_DVD_long_none_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_no)
 MY_TABLE_per_DVD_long_full_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_no)
 MY_TABLE_per_DVD_long_partial_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_no)
+MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
+MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
+MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
 
-#MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
-#MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
-#MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
 
+# summarize_TP <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
+				# Amean = mean(A/AMax*100),
+				# Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
+				# Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
+				# NbFiles = n()))}
 
-summary(MY_TABLE_per_DVD_long_none_no$TotalP)
-summary(MY_TABLE_per_DVD_long_full_no$TotalP)
-summary(MY_TABLE_per_DVD_long_partial_no$TotalP)
-levels(cut(MY_TABLE_per_DVD_long_none_no$TotalP, 7, include.lowest=TRUE))
-levels(cut(MY_TABLE_per_DVD_long_full_no$TotalP, 7, include.lowest=TRUE))
-levels(cut(MY_TABLE_per_DVD_long_partial_no$TotalP, 7, include.lowest=TRUE))
-c(15,25,40,60,85,110)
-
+# summarize_CN <- function(x) {data.frame(summarise ((x %>% group_by(Type,CN_Cat)),
+				# Amean = mean(A/AMax*100),
+				# Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
+				# Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
+				# NbFiles = n()))	}
+	
 
 summarize_TP <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
-				Amean = mean(A/AMax*100),
-				Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
-				Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
+				Amean = mean(A),
+				Alower = Amean - sd(A)/sqrt(n())*1.96,
+				Aupper = Amean + sd(A)/sqrt(n())*1.96,
 				NbFiles = n()))}
 
 summarize_CN <- function(x) {data.frame(summarise ((x %>% group_by(Type,CN_Cat)),
-				Amean = mean(A/AMax*100),
-				Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
-				Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
+				Amean = mean(A),
+				Alower = Amean - sd(A)/sqrt(n())*1.96,
+				Aupper = Amean + sd(A)/sqrt(n())*1.96,
 				NbFiles = n()))	}
-				
+
+	
 summary_TP_none <- summarize_TP(MY_TABLE_per_DVD_long_none_no)	
 summary_CN_none <- summarize_CN(MY_TABLE_per_DVD_long_none_no)	
 summary_TP_full <- summarize_TP(MY_TABLE_per_DVD_long_full_no)	
 summary_CN_full <- summarize_CN(MY_TABLE_per_DVD_long_full_no)	
 summary_TP_partial <- summarize_TP(MY_TABLE_per_DVD_long_partial_no)	
-summary_CN_partial <- summarize_CN(MY_TABLE_per_DVD_long_partial_no)	
+summary_CN_partial <- summarize_CN(MY_TABLE_per_DVD_long_partial_no)
 
+summary_TP_none_yes <- summarize_TP(MY_TABLE_per_DVD_long_none_yes)	
+summary_CN_none_yes <- summarize_CN(MY_TABLE_per_DVD_long_none_yes)	
+summary_TP_full_yes <- summarize_TP(MY_TABLE_per_DVD_long_full_yes)	
+summary_CN_full_yes <- summarize_CN(MY_TABLE_per_DVD_long_full_yes)	
+summary_TP_partial_yes <- summarize_TP(MY_TABLE_per_DVD_long_partial_yes)	
+summary_CN_partial_yes <- summarize_CN(MY_TABLE_per_DVD_long_partial_yes)
 
+}	
 
-{plot1 <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none) + 
+{## plot with cor A
+
+{plot1y <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none_yes) + 
 geom_point()+
 geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
+scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
 xlab(NULL)+
-ylab("Observed alternation 
-simulated to be
-random")+
-scale_color_manual(values = rep(c('black', 'dimgrey'),7), labels=c("Observation", "Randomization"))+ 
+ylab("Number of alternated visits")+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7), labels=c("Observed", "Random"))+ 
 theme_classic()+
 theme(
 legend.justification= c(0,1),
-legend.position = c(0,1),
+legend.position = c(0.01,0.99),
 legend.title =element_blank(),
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(angle=0),
+axis.title.y=element_text(),
 axis.ticks.y=element_blank(),
-axis.text.x=element_blank(),
+axis.text.x=element_text(color="white"),
 axis.title.x = element_blank(),
 axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.1,0.1,0.2), "cm"))
+plot.margin = unit(c(0.1,0.1,0,0.2), "cm"))
 }
 
-{plot2 <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none) + 
+{plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_yes) + 
 geom_point()+
 geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
+scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
 xlab(NULL)+
 ylab(NULL)+
 scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
@@ -982,154 +991,126 @@ panel.border = element_rect(colour = "black", fill=NA),
 axis.title.y=element_text(angle=0),
 axis.text.y=element_blank(),
 axis.ticks.y=element_blank(),
-axis.text.x=element_blank(),
+axis.text.x=element_text(color="white"),
+axis.title.x = element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0.1,0.2,0,0.1), "cm"))
+}
+
+{plot3y <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_full_yes) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+xlab(NULL)+
+ylab("Number of alternated visits")+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+ 
+theme_classic()+
+theme(
+legend.position = "none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(hjust=0.5),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.text.x=element_text(color="white"),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0,0.1,0,0.2), "cm"))
+}
+
+{plot4y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_yes) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+xlab(NULL)+
+ylab(NULL)+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(angle=0),
+axis.ticks.y=element_blank(),
+axis.text.y=element_blank(),
+axis.title.x = element_blank(),
+axis.text.x=element_text(color="white"),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+}
+
+{plot5y <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_partial_yes) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+xlab(NULL)+
+ylab("Number of alternated visits")+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+ 
+theme_classic()+
+theme(
+legend.position = "none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(vjust=1),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.ticks.x=element_blank(),
+plot.margin = unit(c(0,0.1,0.1,0.2), "cm"))
+}
+
+{plot6y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_yes) + 
+geom_point()+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+xlab(NULL)+
+ylab(NULL)+
+scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
+theme_classic()+
+theme(
+legend.position="none",
+panel.border = element_rect(colour = "black", fill=NA), 
+axis.title.y=element_text(angle=0),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
 axis.title.x = element_blank(),
 axis.ticks.x=element_blank(),
 plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
 }
 
-{plot3 <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_full) + 
-geom_point()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
-xlab(NULL)+
-ylab("Observed alternation 
+
+g1y <- ggplotGrob(plot1y)
+g2y <- ggplotGrob(plot2y)
+g3y <- ggplotGrob(plot3y)
+g4y <- ggplotGrob(plot4y)
+g5y <- ggplotGrob(plot5y)
+g6y <- ggplotGrob(plot6y)
+
+firstrowy = cbind(g1y, g2y, size = "last")
+secondrowy = cbind(g3y, g4y, size = "last")
+thirdrowy = cbind(g5y, g6y, size = "last")
+
+{grid.arrange(		 
+
+grid.arrange(textGrob("Observed alternation 
+simulated to be
+random"),grid.arrange(firstrowy),ncol =2, widths = c(1.5,4)),
+
+grid.arrange(textGrob("Observed alternation 
 simulated to be
 higher than random
 due to 
-autocorrelation")+
-scale_color_manual(values = rep(c('black', 'dimgrey'),7))+ 
-theme_classic()+
-theme(
-legend.position = "none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(angle=0),
-axis.ticks.y=element_blank(),
-axis.title.x = element_blank(),
-axis.text.x=element_blank(),
-axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.1,0.1,0.2), "cm"))
-}
+autocorrelation"),grid.arrange(secondrowy),ncol =2, widths = c(1.5,4)),
 
-{plot4 <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full) + 
-geom_point()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
-xlab(NULL)+
-ylab(NULL)+
-scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(angle=0),
-axis.ticks.y=element_blank(),
-axis.text.y=element_blank(),
-axis.title.x = element_blank(),
-axis.text.x=element_blank(),
-axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
-}
-
-{plot5 <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_partial) + 
-geom_point()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
-xlab(NULL)+
-ylab("Observed alternation 
+grid.arrange(textGrob("Observed alternation 
 simulated to be 
 higher than random
 due to an effect of 
-chick number")+
-scale_color_manual(values = rep(c('black', 'dimgrey'),7))+ 
-theme_classic()+
-theme(
-legend.position = "none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(angle=0),
-axis.ticks.y=element_blank(),
-axis.title.x = element_blank(),
-axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.1,0.1,0.2), "cm"))
+chick number"),grid.arrange(thirdrowy),ncol =2, widths = c(1.5,4)), 
+
+grid.arrange(textGrob(""),
+textGrob("            Total Number of visits", gp = gpar(fontsize=12)), 
+textGrob("Number of chicks", gp=gpar(fontsize=12)),ncol =3, widths = c(1.5,2,2)), 
+
+nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
 }
 
-{plot6 <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial) + 
-geom_point()+
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-scale_y_continuous(limits = c(55, 95), breaks =seq(60,90, by = 10))+
-xlab(NULL)+
-ylab(NULL)+
-scale_color_manual(values = rep(c('black', 'dimgrey'),7))+
-theme_classic()+
-theme(
-legend.position="none",
-panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(angle=0),
-axis.text.y=element_blank(),
-axis.ticks.y=element_blank(),
-axis.title.x = element_blank(),
-axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
 }
-
-{blank1 <-ggplot()+
-scale_x_continuous(limits = c(0, 10))+
-scale_y_continuous(limits = c(0, 10))+
-
-ylab("Observed alternation 
-simulated to be 
-higher than random
-due to an effect of 
-chick number")+
-
-annotate("text", x = 5, y = 5, label = "Total P (seventiles)", angle=0)+
-theme_classic()+
-
-theme(
-axis.title.y=element_text(color="white", angle=(0)),
-axis.text.y=element_blank(),
-axis.ticks.y=element_blank(),
-axis.title.x = element_blank(),
-axis.text.x=element_blank(),
-axis.ticks.x=element_blank(),
-plot.margin = unit(c(0,0.2,0,0.2), "cm"))
-}
-
-{blank2 <-ggplot()+
-scale_x_continuous(limits = c(0, 10))+
-scale_y_continuous(limits = c(0, 10))+
-
-annotate("text", x = 5, y = 5, label = "Number of chicks", angle=0)+
-theme_classic()+
-
-theme(
-axis.title.y=element_blank(),
-axis.text.y=element_blank(),
-axis.ticks.y=element_blank(),
-axis.title.x = element_blank(),
-axis.text.x=element_blank(),
-axis.ticks.x=element_blank(),
-plot.margin = unit(c(0,0.2,0,0.2), "cm"))
-}
-
-
-g1 <- ggplotGrob(plot1)
-g2 <- ggplotGrob(plot2)
-g3 <- ggplotGrob(plot3)
-g4 <- ggplotGrob(plot4)
-g5 <- ggplotGrob(plot5)
-g6 <- ggplotGrob(plot6)
-gblank1 <- ggplotGrob(blank1)
-gblank2 <- ggplotGrob(blank2)
-
-
-firstrow = cbind(g1, g2, size = "first")
-secondrow = cbind(g3, g4, size = "first")
-thirdrow = cbind(g5, g6, size = "first")
-bottom = cbind(gblank1, gblank2, size = "first")
-
-grid.arrange(firstrow,secondrow,thirdrow, bottom, ncol=1, nrow=4, heights = c(1,1,1,0.1))
-
 
 }
 
