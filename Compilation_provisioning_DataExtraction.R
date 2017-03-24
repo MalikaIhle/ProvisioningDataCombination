@@ -102,7 +102,7 @@ pathdropboxfolder <- "C:\\Users\\Malika\\\\Dropbox\\Sparrow Lundy\\Sparrow video
 
 {# text files from input folder
 input_folder <- "R_input"
-sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
+sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20170324.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 sunrise <- read.table(file= paste(input_folder,"sunrise.txt", sep="/"), sep='\t', header=T)
 pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
 
@@ -2703,6 +2703,7 @@ DurationScript # ~ 14 min
  # 20170208 rerun
  # 20170322 rerun
  # 20170323 rerun with DB corrected after sparrow meeting
+ # rerun with lastseenalive.txt updated to be the query from new DB
  
  
 ## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)

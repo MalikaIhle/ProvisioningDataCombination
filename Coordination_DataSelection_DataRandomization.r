@@ -71,25 +71,23 @@ syncint <- 2
 
 {# Get raw data from R_ExtractedData
 
-{## output csv files
+{## output csv files !!! needs updating if specific data change !!!
 
 ExtractedData_folder <- "R_ExtractedData"
 
 MY_tblParentalCare <- read.csv(paste(ExtractedData_folder,"R_MY_tblParentalCare.csv", sep="/")) # summary stats for all analyzed videos
-MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
 MY_tblDVDInfo <- read.csv(paste(ExtractedData_folder,"R_MY_tblDVDInfo.csv", sep="/")) # metadata for all analysed videos
 MY_RawFeedingVisits <- read.csv(paste(ExtractedData_folder,"R_MY_RawFeedingVisits.csv", sep="/")) # OF directly followed by IN are merged into one feeding visits ; will be used for simulation
 
+## !!! to update when new pedigree !!! (and other corrections potentially)
+MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/")) # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
+
 }
 
-{## input txt files  !!! needs updating if specific data change !!!
+{## input txt files  
 
 input_folder <- "R_input"
 
-sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20160503.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
-sys_LastSeenAlive$LastYearAlive <- substr(sys_LastSeenAlive$LastLiveRecord, 7,10)
-
-pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
 
@@ -349,8 +347,8 @@ FRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_w
 MRawInterfeeds_with_ProRate <- subset(RawInterfeeds_with_ProRate[RawInterfeeds_with_ProRate$Sex == 1,])
 
 # save first Tstart of each file and each sex  (with interval = 0)
-F_FirstTstart <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1)
-M_FirstTstart <- MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1)
+F_FirstTstart <- data.frame(FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1))
+M_FirstTstart <- data.frame(MRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(1))
 
 # remove the first line with interval (=0) from each file for each sex before shuffling interval
 FData_to_Shuffle <- FRawInterfeeds_with_ProRate %>% group_by(DVDRef) %>% slice(-1)
@@ -873,6 +871,7 @@ head(MY_TABLE_perBrood)
 # 20170214 add MedAsim
 # 20170321 add all output simulation into it, set seed
 # 20170322 rerun
+# 20170324 updated lastseen alive
 
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
@@ -884,6 +883,8 @@ head(MY_TABLE_perBrood)
 # 20170214 add MeanAsim 
 # 20170321 set seed
 # 20170322 rerun
+# 20170324 updated lastseen alive
+
 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
@@ -892,6 +893,8 @@ head(MY_TABLE_perBrood)
 # 20170214 add MeanAsim 
 # 20170321 set seed
 # 20170322 rerun
+# 20170324 updated lastseen alive
+
 
 
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
