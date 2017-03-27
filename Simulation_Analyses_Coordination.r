@@ -261,7 +261,7 @@ aCNTP <- meanlogPR - mean(CN)*bCNTP
 syncint <- 2 # I tried 10 ; 5 ; 2 ; 0.5  I had a priori chosen 0.5 but this gives false-postivie results (too many zeros leading to false convergence ?), for 2, 5, 10 this works well
 }
 
-set.seed(10)
+set.seed(21)
 
 NreplicatesWithinFileRandomization <- 10
 NreplicatesSimulation <- 1
@@ -818,7 +818,7 @@ Results_Sim_3 <- Shape_results(result_no_autocor_observed_cor_Sim3)
 Results_Sim_3
 
 
-set.seed(4) 
+set.seed(21)
 
 {# Graphs after running one replicate of simulation 1 with each of the 6 sets of parameter
 
@@ -904,26 +904,9 @@ x$CN_Cat <- cut(x$CN, c(0,1,2,3,4,7), labels = c(1:4,"5+"),include.lowest=TRUE)
 x$TotalP_Cat <- cut(x$TotalP,c(seq(0,80,20),150), labels = c(seq(10,70,20),"90+"), include.lowest=TRUE)
 x}
 
-MY_TABLE_per_DVD_long_none_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_no)
-MY_TABLE_per_DVD_long_full_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_no)
-MY_TABLE_per_DVD_long_partial_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_no)
 MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
 MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
 MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
-
-
-# summarize_TP <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
-				# Amean = mean(A/AMax*100),
-				# Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
-				# Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
-				# NbFiles = n()))}
-
-# summarize_CN <- function(x) {data.frame(summarise ((x %>% group_by(Type,CN_Cat)),
-				# Amean = mean(A/AMax*100),
-				# Alower = Amean - sd(A/AMax*100)/sqrt(n())*1.96,
-				# Aupper = Amean + sd(A/AMax*100)/sqrt(n())*1.96,
-				# NbFiles = n()))	}
-	
 
 summarize_TP <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
 				Amean = mean(A),
@@ -936,14 +919,6 @@ summarize_CN <- function(x) {data.frame(summarise ((x %>% group_by(Type,CN_Cat))
 				Alower = Amean - sd(A)/sqrt(n())*1.96,
 				Aupper = Amean + sd(A)/sqrt(n())*1.96,
 				NbFiles = n()))	}
-
-	
-summary_TP_none <- summarize_TP(MY_TABLE_per_DVD_long_none_no)	
-summary_CN_none <- summarize_CN(MY_TABLE_per_DVD_long_none_no)	
-summary_TP_full <- summarize_TP(MY_TABLE_per_DVD_long_full_no)	
-summary_CN_full <- summarize_CN(MY_TABLE_per_DVD_long_full_no)	
-summary_TP_partial <- summarize_TP(MY_TABLE_per_DVD_long_partial_no)	
-summary_CN_partial <- summarize_CN(MY_TABLE_per_DVD_long_partial_no)
 
 summary_TP_none_yes <- summarize_TP(MY_TABLE_per_DVD_long_none_yes)	
 summary_CN_none_yes <- summarize_CN(MY_TABLE_per_DVD_long_none_yes)	
@@ -969,12 +944,12 @@ legend.justification= c(0,1),
 legend.position = c(0.01,0.99),
 legend.title =element_blank(),
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(),
+axis.title.y=element_text(margin=margin(0,10,0,0)) ,
 axis.ticks.y=element_blank(),
 axis.text.x=element_text(color="white"),
 axis.title.x = element_blank(),
 axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.1,0,0.2), "cm"))
+plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))
 }
 
 {plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_yes) + 
@@ -1008,12 +983,12 @@ theme_classic()+
 theme(
 legend.position = "none",
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(hjust=0.5),
+axis.title.y=element_text(margin=margin(0,10,0,0)),
 axis.ticks.y=element_blank(),
 axis.title.x = element_blank(),
 axis.text.x=element_text(color="white"),
 axis.ticks.x=element_blank(),
-plot.margin = unit(c(0,0.1,0,0.2), "cm"))
+plot.margin = unit(c(0,0.2,0,0.2), "cm"))
 }
 
 {plot4y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_yes) + 
@@ -1047,11 +1022,11 @@ theme_classic()+
 theme(
 legend.position = "none",
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(vjust=1),
+axis.title.y=element_text(margin=margin(0,10,0,0)),
 axis.ticks.y=element_blank(),
 axis.title.x = element_blank(),
 axis.ticks.x=element_blank(),
-plot.margin = unit(c(0,0.1,0.1,0.2), "cm"))
+plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))
 }
 
 {plot6y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_yes) + 
@@ -1065,14 +1040,58 @@ theme_classic()+
 theme(
 legend.position="none",
 panel.border = element_rect(colour = "black", fill=NA), 
-axis.title.y=element_text(angle=0),
+axis.title.y=element_text(angle=0, hjust=1),
 axis.text.y=element_blank(),
 axis.ticks.y=element_blank(),
 axis.title.x = element_blank(),
 axis.ticks.x=element_blank(),
-plot.margin = unit(c(0.1,0.2,0.1,0.1), "cm"))
+plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
 }
 
+{blank1y <-ggplot()+
+scale_x_continuous(limits = c(0,10))+
+scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
+ylab("N")+
+
+annotate("text", x = 5, y = 5, label = "Total number of visits", hjust = 0.5, angle=0, color="black")+
+theme_classic()+
+
+theme(
+#panel.border = element_rect(colour = "red", fill=NA),
+axis.title.y=element_text(color="white", angle=(90)),
+axis.text.y=element_text(color="white"),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.text.x=element_blank(),
+axis.ticks.x=element_blank(),
+#axis.line = element_line(colour = "green"),
+axis.line = element_blank(),
+plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+
+}
+
+{blank2y <-ggplot()+
+scale_x_continuous(limits = c(0, 10))+
+scale_y_continuous(limits = c(0, 10))+
+
+annotate("text", x = 5, y = 5, label = "Number of chicks",  hjust = 0.5, angle=0)+
+theme_classic()+
+
+theme(
+#panel.border = element_rect(colour = "red", fill=NA),
+axis.title.y=element_blank(),
+axis.text.y=element_blank(),
+axis.ticks.y=element_blank(),
+axis.title.x = element_blank(),
+axis.text.x=element_blank(),
+axis.ticks.x=element_blank(),
+#axis.line = element_line("orange"),
+axis.line = element_blank(),
+plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+}
+
+
+{### nested plotting structuring
 
 g1y <- ggplotGrob(plot1y)
 g2y <- ggplotGrob(plot2y)
@@ -1080,39 +1099,46 @@ g3y <- ggplotGrob(plot3y)
 g4y <- ggplotGrob(plot4y)
 g5y <- ggplotGrob(plot5y)
 g6y <- ggplotGrob(plot6y)
+gblank1y <- ggplotGrob(blank1y)
+gblank2y <- ggplotGrob(blank2y)
 
 firstrowy = cbind(g1y, g2y, size = "last")
 secondrowy = cbind(g3y, g4y, size = "last")
 thirdrowy = cbind(g5y, g6y, size = "last")
+bottomrowy = cbind(gblank1y, gblank2y, size = "last")
 
-{grid.arrange(		 
+g1 <- grid.arrange(firstrowy)
+g2 <- grid.arrange(secondrowy)
+g3 <- grid.arrange(thirdrowy)
+gbottom <- grid.arrange(bottomrowy)
 
-grid.arrange(textGrob("Observed alternation 
+gg1 <- grid.arrange(textGrob("Observed alternation 
 simulated to be
-random"),grid.arrange(firstrowy),ncol =2, widths = c(1.5,4)),
+random"),g1,ncol =2, widths = c(1.5,4))
 
-grid.arrange(textGrob("Observed alternation 
+gg2 <- grid.arrange(textGrob("Observed alternation 
 simulated to be
 higher than random
 due to 
-autocorrelation"),grid.arrange(secondrowy),ncol =2, widths = c(1.5,4)),
+autocorrelation"),g2,ncol =2, widths = c(1.5,4))
 
-grid.arrange(textGrob("Observed alternation 
+gg3 <- grid.arrange(textGrob("Observed alternation 
 simulated to be 
 higher than random
 due to an effect of 
-chick number"),grid.arrange(thirdrowy),ncol =2, widths = c(1.5,4)), 
+chick number"),g3,ncol =2, widths = c(1.5,4)) 
 
-grid.arrange(textGrob(""),
-textGrob("            Total Number of visits", gp = gpar(fontsize=12)), 
-textGrob("Number of chicks", gp=gpar(fontsize=12)),ncol =3, widths = c(1.5,2,2)), 
-
-nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
-}
+ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
 
 }
 
+grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
+
 }
+
+
+}
+
 
 
 
