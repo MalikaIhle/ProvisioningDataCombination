@@ -2,12 +2,12 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 03/02/2017
-#	 commit: upgrade analyses with Joel (cbind NbA, NbAmissed) + use of BLUPs
+#	 last modif : 27/03/2017
+#	 commit: start cleaning up code to fit simulation of analyses
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 {### remarks
-# LastSeenAlive information needs to be updated manually when DB updated
+# LastSeenAlive information needs to be updated manually when DB updated (especially with new pedigree)
 # MY_tblBrood$Nb3 is the number of post fledgling
 # MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
 }
@@ -27,41 +27,34 @@ options(scipen=999) # remove scientific notation e-
 
 }
 
-{### Get raw data from R_Selected&SimulatedData folder
+{### Get raw data from R_Selected&RandomizedData folder
 
 # source('Alternation_DataSelection_DataSimulation.R')
 # or :
 
-SelectedData_folder <- "R_Selected&SimulatedData"
+SelectedData_folder <- "R_Selected&RandomizedData"
 
 MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD.csv", sep="/")) # summary stats for all analyzed videos where both parents known and with expected alternation from simulation
 MY_TABLE_perBrood <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
 MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
-#MY_TABLE_perBirdYear
-SimulationOutput <- read.csv(paste(SelectedData_folder,"R_SimulationOutput.csv", sep="/"))
-SimulationOutput_long <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_long.csv", sep="/"))
-SimulationOutput_long_median <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_long_median.csv", sep="/"))
-SimulationOutput_S_long_median <- read.csv(paste(SelectedData_folder,"R_SimulationOutput_S_long_median.csv", sep="/"))
 
 }
 
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
-head(SimulationOutput_long_median)
 
-{# create a repeated table per DVD, with the column NbAlternation and NbS having observed values in first half, and sim values in second half
-MY_TABLE_perDVD_Sim_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
+{# create MY_TABLE_perDVD_long, with the column A and S having observed values in first half, and sim values in second half
+MY_TABLE_perDVD_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
 
-MY_TABLE_perDVD_Sim_long$Type <- c(rep("z_Obsv", nrow(MY_TABLE_perDVD)),rep("a_Sim", nrow(MY_TABLE_perDVD)))
+MY_TABLE_perDVD_long$Type <- c(rep("z_Obsv", nrow(MY_TABLE_perDVD)),rep("a_Sim", nrow(MY_TABLE_perDVD)))
 
-MY_TABLE_perDVD_Sim_long$NbAlternation[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim'] <- MY_TABLE_perDVD_Sim_long$MedAsim[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim']
-MY_TABLE_perDVD_Sim_long$NbSynchro_ChickFeedingEquanim[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim'] <- MY_TABLE_perDVD_Sim_long$MedSsim[MY_TABLE_perDVD_Sim_long$Type == 'a_Sim']
+MY_TABLE_perDVD_long$A[MY_TABLE_perDVD_long$Type == 'a_Sim'] <- MY_TABLE_perDVD_long$MedAsimWithin[MY_TABLE_perDVD_long$Type == 'a_Sim']
+MY_TABLE_perDVD_long$S[MY_TABLE_perDVD_long$Type == 'a_Sim'] <- MY_TABLE_perDVD_long$MedSsimWithin[MY_TABLE_perDVD_long$Type == 'a_Sim']
 
-MY_TABLE_perDVD_Sim_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_Sim_long))
+MY_TABLE_perDVD_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_long))
 }
 
-head(MY_TABLE_perDVD_Sim_long)
-
+head(MY_TABLE_perDVD_long)
 
 
 
@@ -69,52 +62,90 @@ head(MY_TABLE_perDVD_Sim_long)
 # RANDOM VS OBSERVED #
 ######################
 
+{All_A_long <- data.frame(
+
+A=c(MY_TABLE_perDVD$Asorted, 
+MY_TABLE_perDVD$A,
+MY_TABLE_perDVD$Aswitch,
+MY_TABLE_perDVD$MedAsimWithin,
+MY_TABLE_perDVD$MedAsimAmong), 
+
+Type = c(rep("a_sorted", nrow(MY_TABLE_perDVD)),
+rep("a_Obsv", nrow(MY_TABLE_perDVD)),
+rep("b_switch", nrow(MY_TABLE_perDVD)),
+rep("c_within", nrow(MY_TABLE_perDVD)),
+rep("d_among", nrow(MY_TABLE_perDVD))),
+
+AMax = c(MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax),
+
+DVDRef = c(MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef),
+
+LineID = 1: nrow(MY_TABLE_perDVD)*5
+)
+}
+
+head(All_A_long)
+
+{All_S_long <- data.frame(
+
+S=c(MY_TABLE_perDVD$S,
+MY_TABLE_perDVD$MedSsimWithin,
+MY_TABLE_perDVD$MedSsimAmong), 
+
+Type = c(rep("a_Obsv", nrow(MY_TABLE_perDVD)),
+rep("c_within", nrow(MY_TABLE_perDVD)),
+rep("d_among", nrow(MY_TABLE_perDVD))),
+
+SMax = c(MY_TABLE_perDVD$A,MY_TABLE_perDVD$MedAsimWithin,MY_TABLE_perDVD$MedAsimAmong), # this is an approximation, Smax should be the actual number of A in that specific observation.
+
+DVDRef = c(MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef),
+
+LineID = 1: nrow(MY_TABLE_perDVD)*5
+)
+}
+
+head(All_S_long)
 
 {#### alternation
 
 {# paired t.test > non-normality of the difference
  
-SimulationOutput$DVDRef <- as.character(as.numeric(SimulationOutput$DVDRef))
+MY_TABLE_perDVD$DVDRef <- as.character(as.numeric(MY_TABLE_perDVD$DVDRef))
 
-hist(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-boxplot(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-qqnorm(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-qqline(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
-shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$Aswitch)
+hist(MY_TABLE_perDVD$A - MY_TABLE_perDVD$Aswitch)
+boxplot(MY_TABLE_perDVD$A - MY_TABLE_perDVD$Aswitch)
+qqnorm(MY_TABLE_perDVD$A - MY_TABLE_perDVD$Aswitch)
+qqline(MY_TABLE_perDVD$A - MY_TABLE_perDVD$Aswitch)
+shapiro.test(MY_TABLE_perDVD$A - MY_TABLE_perDVD$Aswitch)
 
-t.test(SimulationOutput$NbAlternation,SimulationOutput$Aswitch, paired=TRUE)
-
-
-hist(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-boxplot(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-qqnorm(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-qqline(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimWithin)
-
-t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimWithin, paired=TRUE)
+t.test(MY_TABLE_perDVD$A,MY_TABLE_perDVD$Aswitch, paired=TRUE)
 
 
-hist(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-boxplot(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-qqnorm(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-qqline(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
-shapiro.test(SimulationOutput$NbAlternation - SimulationOutput$MeanAsimAmong)
+hist(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimWithin)
+boxplot(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimWithin)
+qqnorm(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimWithin)
+qqline(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimWithin)
+shapiro.test(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimWithin)
 
-t.test(SimulationOutput$NbAlternation,SimulationOutput$MeanAsimAmong, paired=TRUE)
+t.test(MY_TABLE_perDVD$A,MY_TABLE_perDVD$MeanAsimWithin, paired=TRUE)
+
+
+hist(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimAmong)
+boxplot(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimAmong)
+qqnorm(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimAmong)
+qqline(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimAmong)
+shapiro.test(MY_TABLE_perDVD$A - MY_TABLE_perDVD$MeanAsimAmong)
+
+t.test(MY_TABLE_perDVD$A,MY_TABLE_perDVD$MeanAsimAmong, paired=TRUE)
 
 }
 
 {# lmer > heteroscedasticity
 
-SimulationOutput_long$LineID <- as.character(1:nrow(SimulationOutput_long))
-SimulationOutput_long$NbAlternation <- as.numeric(as.character(SimulationOutput_long$NbAlternation))
-
-
-modRandomVsObs <- lmer( NbAlternation ~ Type + (1|DVDRef) , data = SimulationOutput_long)
+modRandomVsObs <- lmer( A ~ Type + (1|DVDRef) , data = All_A_long)
 summary(modRandomVsObs)
 
-
-modRandomVsObs_without_intercept <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long)
+modRandomVsObs_without_intercept <- lmer(A ~ -1 + Type + (1|DVDRef) , data = All_A_long)
 summary(modRandomVsObs_without_intercept)
 
 
@@ -131,61 +162,58 @@ qqnorm(unlist(ranef(modRandomVsObs)))
 qqline(unlist(ranef(modRandomVsObs)))
 
 # homogeneity of variance
-scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # quite not !!!!!!!
+scatter.smooth(sqrt(abs(resid(modRandomVsObs))),fitted(modRandomVsObs)) # quite not !?
 
 	#library(nlme)
-	#modRandomVsObsnlme <- lme(NbAlternation ~ Type, random  =  ~1|DVDRef, data = SimulationOutput_long) # give the same output > heteroscedasticity no solved
+	#modRandomVsObsnlme <- lme(A ~ Type, random  =  ~1|DVDRef, data = All_A_long) # give the same output > heteroscedasticity no solved
 
-	#modRandomVsObsglm <- glmer(NbAlternation ~ Type+ (1|DVDRef), family = 'poisson', data = SimulationOutput_long) does not run because NbA not integers
+	#modRandomVsObsglm <- glmer(A ~ Type+ (1|DVDRef), family = 'poisson', data = All_A_long) does not run because NbA not integers
 
 # Mean of ranefs: should be zero
 mean(unlist(ranef(modRandomVsObs)$DVDRef))
 
 
 # residuals vs predictors
-plot(SimulationOutput_long$Type, resid(modRandomVsObs))
+plot(as.factor(All_A_long$Type), resid(modRandomVsObs))
 abline(h=0, lty=2)
 
 # dependent variable vs fitted
-d <- SimulationOutput_long
+d <- All_A_long
 d$fitted <- fitted(modRandomVsObs)
-scatter.smooth(d$fitted, jitter(d$NbAlternation, 0.05),ylim=c(0, 100))
+scatter.smooth(d$fitted, jitter(d$A, 0.05),ylim=c(0, 100))
 abline(0,1)	
 
 # fitted vs all predictors
-boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="NbAlternation", xlab="Type")
+boxplot(fitted~Type, d, ylim=c(0, 100), las=1, cex.lab=1.4, cex.axis=1.2, ylab="A", xlab="Type")
 
 }
 
 }
 
 {# median and mean are extremely well correlated > use median for glmer
-cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'])),
-as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])))
-plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '3_Within'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '3_Within'])
-
-cor.test(as.numeric(as.character(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'])),
-as.numeric(as.character(SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])))
-plot(SimulationOutput_long$NbAlternation[SimulationOutput_long$Type == '4_Among'],SimulationOutput_long_median$NbAlternation[SimulationOutput_long_median$Type == '4_Among'])
+cor.test(MY_TABLE_perDVD$MeanAsimWithin,MY_TABLE_perDVD$MedAsimWithin)
+plot(MY_TABLE_perDVD$MeanAsimWithin,MY_TABLE_perDVD$MedAsimWithin)
+cor.test(MY_TABLE_perDVD$MeanAsimAmong,MY_TABLE_perDVD$MedAsimAmong)
+plot(MY_TABLE_perDVD$MeanAsimAmong,MY_TABLE_perDVD$MedAsimAmong)
 }
 
-{# glmer poisson > fine
+{# glmer poisson > assumption ok
 
-modRandomVsObs_glmer <- glmer( NbAlternation ~ Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'poisson')
+modRandomVsObs_glmer <- glmer(A ~ Type + (1|DVDRef), data = All_A_long, family = 'poisson')
 summary(modRandomVsObs_glmer)
 
-dispersion_glmer(modRandomVsObs_glmer) # 0.63 < 1.4
+dispersion_glmer(modRandomVsObs_glmer) # < 1.4
 
-modRandomVsObs_glmer_without_intercept <- glmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'poisson')
+modRandomVsObs_glmer_without_intercept <- glmer(A ~ -1 + Type  +(1|DVDRef) , data = All_A_long, family = 'poisson')
 summary(modRandomVsObs_glmer_without_intercept)
 exp(summary(modRandomVsObs_glmer_without_intercept)$coeff[,1])
 
 	# gaussian for comparison
-	modRandomVsObs_glmer_without_intercept_lmer <- lmer(NbAlternation ~ -1 + Type + (1|DVDRef) , data = SimulationOutput_long_median)
+	modRandomVsObs_glmer_without_intercept_lmer <- lmer(A ~ -1 + Type + (1|DVDRef) , data = All_A_long)
 	summary(modRandomVsObs_glmer_without_intercept_lmer)$coeff[,1]
 
 	
-{# model assumption checking : all ok
+{# model assumption checking 
 
 # residuals vs fitted: mean should constantly be zero
 scatter.smooth(fitted(modRandomVsObs_glmer), resid(modRandomVsObs_glmer))	
@@ -205,7 +233,7 @@ qqline(residuals(modRandomVsObs_glmer, type="deviance"))
 mean(unlist(ranef(modRandomVsObs_glmer)$DVDRef))
 
 # residuals vs predictors
-plot(SimulationOutput_long_median$Type, resid(modRandomVsObs_glmer))
+plot(as.factor(All_A_long$Type), resid(modRandomVsObs_glmer))
 abline(h=0, lty=2)
 
 
@@ -213,9 +241,9 @@ abline(h=0, lty=2)
 
 }
 
-{# glmer binomial > the best one for plotting A out of A Max in percentage
+{# glmer binomial > assumption okish ? could be used for plotting 
 
-modRandomVsObs_outofAmax_glmer <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ Type + (1|DVDRef) , data = SimulationOutput_long_median, family = 'binomial')
+modRandomVsObs_outofAmax_glmer <- glmer(cbind(A,AMax-A) ~ Type + (1|DVDRef) , data = All_A_long, family = 'binomial')
 summary(modRandomVsObs_outofAmax_glmer)
 	
 {# model assumption checking : ok-ish ?
@@ -238,13 +266,13 @@ qqline(residuals(modRandomVsObs_outofAmax_glmer, type="deviance"))
 mean(unlist(ranef(modRandomVsObs_outofAmax_glmer)$DVDRef))
 
 # residuals vs predictors
-plot(SimulationOutput_long_median$Type, resid(modRandomVsObs_outofAmax_glmer))
+plot(as.factor(All_A_long$Type), resid(modRandomVsObs_outofAmax_glmer))
 abline(h=0, lty=2)
 }
 
 {# plot
 
-modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbAlternation,NbAMax-NbAlternation) ~ -1+Type + (1|DVDRef), data = SimulationOutput_long_median, family = 'binomial')
+modRandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(A,AMax-A) ~ -1+Type + (1|DVDRef), data = All_A_long, family = 'binomial')
 
 estimatesNbAoutofNbAMax <- summary(modRandomVsObs_outofAmax_glmer_without_intercept)$coeff
 estimatesNbAoutofNbAMax
@@ -262,8 +290,8 @@ ylab("Number of alternations realized out of the maximum possible (%)\n")+
 geom_errorbar(aes(ymin=selow, ymax=seup),na.rm=TRUE)+
 geom_point(size = 3) +
 
-scale_y_continuous(breaks =seq(60,80, by = 2),limits = c(60,80)) +
-scale_x_discrete(labels = c('Observed', 'Switch', 'Within', 'Among'))+
+scale_y_continuous(breaks =seq(60,90, by = 2),limits = c(60,90)) +
+scale_x_discrete(labels = c('Observed', 'Sorted','Switch', 'Within', 'Among'))+
 
 theme_classic()+
 theme(
@@ -286,67 +314,105 @@ Fig_A_AMax_est
 
 }
 
-summary(modRandomVsObs_outofAmax_glmer)
+summary(modRandomVsObs_glmer)
 
 {#### synchrony
 
-{# gmer binomial cbind(NbS,NbAMax-NbS)
-	
-mod_S_RandomVsObs_outofAmax_glmer <- glmer( cbind(NbS,NbAMax-NbS) ~ Type
-																	+(1|DVDRef)
-																	, data = SimulationOutput_S_long_median, 
-																	family = 'binomial')
-																	
-summary(mod_S_RandomVsObs_outofAmax_glmer)
+{# glmer poisson > assumption okish ?
 
-dispersion_glmer(mod_S_RandomVsObs_outofAmax_glmer) # 0.8 < 1.6
+mod_S_RandomVsObs_glmer <- glmer(S ~ Type + (1|DVDRef), data = All_S_long, family = 'poisson')
+summary(mod_S_RandomVsObs_glmer)
+
+dispersion_glmer(mod_S_RandomVsObs_glmer) # < 1.4
+
+mod_S_RandomVsObs_glmer_without_intercept <- glmer(S ~ -1 + Type  +(1|DVDRef) , data = All_S_long, family = 'poisson')
+summary(mod_S_RandomVsObs_glmer_without_intercept)
+
+{# model assumption checking 
+
+# residuals vs fitted: mean should constantly be zero
+scatter.smooth(fitted(mod_S_RandomVsObs_glmer), resid(mod_S_RandomVsObs_glmer))	
+abline(h=0, lty=2)
+
+# qqplots of residuals and ranefs: should be normally distributed
+qqnorm(resid(mod_S_RandomVsObs_glmer))
+qqline(resid(mod_S_RandomVsObs_glmer))
+qqnorm(unlist(ranef(mod_S_RandomVsObs_glmer))) 
+qqline(unlist(ranef(mod_S_RandomVsObs_glmer)))
+
+# qq-plot of deviance-residuals: should be normally distributed
+qqnorm(residuals(mod_S_RandomVsObs_glmer, type="deviance"))
+qqline(residuals(mod_S_RandomVsObs_glmer, type="deviance"))
+
+# Mean of ranefs: should be zero
+mean(unlist(ranef(mod_S_RandomVsObs_glmer)$DVDRef))
+
+# residuals vs predictors
+plot(as.factor(All_A_long$Type), resid(mod_S_RandomVsObs_glmer))
+abline(h=0, lty=2)
+
 
 }
+
+}
+
+{# gmer binomial cbind(S,NbAMax-S)
+	
+mod_S_RandomVsObs_outofSmax_glmer <- glmer( cbind(S,SMax-S) ~ Type
+																	+(1|DVDRef)
+																	, data = All_S_long, 
+																	family = 'binomial')
+																	
+summary(mod_S_RandomVsObs_outofSmax_glmer)
+
+dispersion_glmer(mod_S_RandomVsObs_outofSmax_glmer) # 0.8 < 1.6
 
 {# model assumption checking : ok-ish ?
 
 # residuals vs fitted: mean should constantly be zero: not quite ?
-scatter.smooth(fitted(mod_S_RandomVsObs_outofAmax_glmer), resid(mod_S_RandomVsObs_outofAmax_glmer))	
+scatter.smooth(fitted(mod_S_RandomVsObs_outofSmax_glmer), resid(mod_S_RandomVsObs_outofSmax_glmer))	
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
-qqnorm(resid(mod_S_RandomVsObs_outofAmax_glmer))
-qqline(resid(mod_S_RandomVsObs_outofAmax_glmer))
-qqnorm(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer))) 
-qqline(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer)))
+qqnorm(resid(mod_S_RandomVsObs_outofSmax_glmer))
+qqline(resid(mod_S_RandomVsObs_outofSmax_glmer))
+qqnorm(unlist(ranef(mod_S_RandomVsObs_outofSmax_glmer))) 
+qqline(unlist(ranef(mod_S_RandomVsObs_outofSmax_glmer)))
 
 # qq-plot of deviance-residuals: should be normally distributed
-qqnorm(residuals(mod_S_RandomVsObs_outofAmax_glmer, type="deviance"))
-qqline(residuals(mod_S_RandomVsObs_outofAmax_glmer, type="deviance"))
+qqnorm(residuals(mod_S_RandomVsObs_outofSmax_glmer, type="deviance"))
+qqline(residuals(mod_S_RandomVsObs_outofSmax_glmer, type="deviance"))
 
 # Mean of ranefs: should be zero
-mean(unlist(ranef(mod_S_RandomVsObs_outofAmax_glmer)$DVDRef))
+mean(unlist(ranef(mod_S_RandomVsObs_outofSmax_glmer)$DVDRef))
 
 # residuals vs predictors
-plot(SimulationOutput_S_long_median$Type, resid(mod_S_RandomVsObs_outofAmax_glmer))
+plot(All_S_long$Type, resid(mod_S_RandomVsObs_outofSmax_glmer))
 abline(h=0, lty=2)
 }
 
-{# plot Fig_S_AMax_est
+}
 
-mod_S_RandomVsObs_outofAmax_glmer_without_intercept <- glmer(cbind(NbS,NbAMax-NbS) ~ -1+Type + (1|DVDRef) + (1|LineID), data = SimulationOutput_S_long_median, family = 'binomial')
+{# plot Fig_S_SMax_est
 
-estimatesNbSoutofNbAMax <- summary(mod_S_RandomVsObs_outofAmax_glmer_without_intercept)$coeff
-estimatesNbSoutofNbAMax
+mod_S_RandomVsObs_outofSmax_glmer_without_intercept <- glmer(cbind(S,SMax-S) ~ -1+Type + (1|DVDRef) + (1|LineID), data = All_S_long, family = 'binomial')
 
-summary_S_AMax_est <- cbind(Type = rownames(data.frame(est = invlogit(estimatesNbSoutofNbAMax[,1])*100)),
-data.frame(est = invlogit(estimatesNbSoutofNbAMax[,1])*100),
-data.frame(selow = invlogit(estimatesNbSoutofNbAMax[,1]-estimatesNbSoutofNbAMax[,2]*1.96)*100),
-data.frame(seup = invlogit(estimatesNbSoutofNbAMax[,1]+estimatesNbSoutofNbAMax[,2]*1.96)*100))
+estimatesSoutofNbSMax <- summary(mod_S_RandomVsObs_outofSmax_glmer_without_intercept)$coeff
+estimatesSoutofNbSMax
 
-Fig_S_AMax_est <- {ggplot(data=summary_S_AMax_est, aes(x=Type, y=est))+
+summary_S_SMax_est <- cbind(Type = rownames(data.frame(est = invlogit(estimatesSoutofNbSMax[,1])*100)),
+data.frame(est = invlogit(estimatesSoutofNbSMax[,1])*100),
+data.frame(selow = invlogit(estimatesSoutofNbSMax[,1]-estimatesSoutofNbSMax[,2]*1.96)*100),
+data.frame(seup = invlogit(estimatesSoutofNbSMax[,1]+estimatesSoutofNbSMax[,2]*1.96)*100))
+
+Fig_S_SMax_est <- {ggplot(data=summary_S_SMax_est, aes(x=Type, y=est))+
 xlab(NULL)+
 ylab("Number of synchronous visits realized out of the maximum possible (%)\n")+
 
 geom_errorbar(aes(ymin=selow, ymax=seup),na.rm=TRUE)+
 geom_point(size = 3) +
 
-scale_y_continuous(breaks =seq(5,13, by = 2),limits = c(5,13)) +
+scale_y_continuous(breaks =seq(40,60, by = 2),limits = c(40,60)) +
 scale_x_discrete(labels = c('Observed', 'Within', 'Among'))+
 
 theme_classic()+
@@ -364,7 +430,7 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 
 }
 
-summary(mod_S_RandomVsObs_outofAmax_glmer)
+summary(mod_S_RandomVsObs_glmer)
 
 
 
