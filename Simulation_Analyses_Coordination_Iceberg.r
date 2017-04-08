@@ -184,7 +184,7 @@ PbLogs_sim23 <- paste(beg2char(PbLogs23, ".", 1),char2end(PbLogs23, ".", 3), sep
 PbLogs_sim23 <- char2end(PbLogs_sim23, "_", 2) # to remove filenames where one model did not converge in any of the four type of simulations
 
 Logs23$Log[Logs23$Log != "_ "] # see the logs: they are model convergence problemes but also data.frame construction problems
-
+Logs23[984,]
 
 
 }
@@ -256,6 +256,8 @@ Results_Sim_2
 
 
 }
+
+PbLogs_sim23 # sim num where something went wrong, also seed number of those sims
 
 {# Sim 3
 
