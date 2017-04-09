@@ -1128,8 +1128,8 @@ gg3 <- grid.arrange(textGrob("Scenario 3:
 Observed alternation 
 simulated to be
 higher than random
-due to 
-autocorrelation"),g2,ncol =2, widths = c(1.5,4))
+due to an effect
+of the number of chicks"),g3,ncol =2, widths = c(1.5,4))
 
 ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
 
@@ -1138,6 +1138,14 @@ ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4))
 grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
 
 }
+
+length(MY_TABLE_per_DVD_long_none_yes$TotalP[MY_TABLE_per_DVD_long_none_yes$TotalP >100])
+length(MY_TABLE_per_DVD_long_full_yes$TotalP[MY_TABLE_per_DVD_long_full_yes$TotalP >100])
+length(MY_TABLE_per_DVD_long_partial_yes$TotalP[MY_TABLE_per_DVD_long_partial_yes$TotalP >100])
+
+length(MY_TABLE_per_DVD_long_none_yes$CN[MY_TABLE_per_DVD_long_none_yes$CN >5])
+length(MY_TABLE_per_DVD_long_full_yes$CN[MY_TABLE_per_DVD_long_full_yes$CN >5])
+length(MY_TABLE_per_DVD_long_partial_yes$CN[MY_TABLE_per_DVD_long_partial_yes$CN >5])
 
 
 }
