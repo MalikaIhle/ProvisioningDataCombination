@@ -1112,21 +1112,24 @@ g2 <- grid.arrange(secondrowy)
 g3 <- grid.arrange(thirdrowy)
 gbottom <- grid.arrange(bottomrowy)
 
-gg1 <- grid.arrange(textGrob("Observed alternation 
+gg1 <- grid.arrange(textGrob("Scenario 1:
+Observed alternation 
 simulated to be
 random"),g1,ncol =2, widths = c(1.5,4))
 
-gg2 <- grid.arrange(textGrob("Observed alternation 
+gg2 <- grid.arrange(textGrob("Scenario 2:
+Observed alternation 
 simulated to be
 higher than random
 due to 
 autocorrelation"),g2,ncol =2, widths = c(1.5,4))
 
-gg3 <- grid.arrange(textGrob("Observed alternation 
-simulated to be 
+gg3 <- grid.arrange(textGrob("Scenario 3:
+Observed alternation 
+simulated to be
 higher than random
-due to an effect of 
-chick number"),g3,ncol =2, widths = c(1.5,4)) 
+due to 
+autocorrelation"),g2,ncol =2, widths = c(1.5,4))
 
 ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
 
