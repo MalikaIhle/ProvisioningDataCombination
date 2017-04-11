@@ -6,6 +6,7 @@
 #	 commit: start cleaning up code to fit simulation of analyses
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+
 {### remarks
 # LastSeenAlive information needs to be updated manually when DB updated (especially with new pedigree)
 # MY_tblBrood$Nb3 is the number of post fledgling
