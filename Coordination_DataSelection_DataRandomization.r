@@ -885,6 +885,7 @@ head(MY_TABLE_perBrood)
 # 20170321 set seed
 # 20170322 rerun
 # 20170324 updated lastseen alive
+# 20170415 updated format last seen alive input to recover divorce YN
 
 
 
