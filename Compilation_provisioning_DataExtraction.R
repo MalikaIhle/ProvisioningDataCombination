@@ -2540,7 +2540,7 @@ x$FPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior reside
 x$FnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)	
 x$FnextLayDate <- c(x$LayDate[-1],NA)
 x$FnextMsame <- x$SocialDadID == c(x$SocialDadID[-1],NA) 
-x$FwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialDad, format = "%d.%b.%y") > x$FnextLayDate & x$FnextMsame == FALSE
+x$FwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialDad, format = "%d-%b-%y") > x$FnextLayDate & x$FnextMsame == FALSE
 x$FwillDivorceforEx <- NA
 if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
 {x$FwillDivorceforEx[i] <- x$SocialDadID[i+1] %in% x$SocialDadID[1:i-1]}}}
@@ -2653,6 +2653,7 @@ head(MY_tblParentalCare)
 
 DurationScript <- Sys.time() - TimeStart
 DurationScript # ~ 14 min
+
 
 
 ## output_folder <- "R_ExtractedData"
