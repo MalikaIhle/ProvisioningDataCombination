@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 15/04/2017
-#	 commit: start cleaning up code to fit simulation of analyses
+#	 last modif : 16/04/2017
+#	 commit: cleaning up code to fit simulation of analyses
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -112,12 +112,17 @@ head(All_S_long)
 
 {#### alternation
 
-mod_A_RandomVsObs <- glmer(A ~ Type + (1|DVDRef), data = All_A_long, family = 'poisson')
+mod_A_RandomVsObs <- glmer(A ~ Type + (1|DVDRef)
+								, data = All_A_long
+								, family = 'poisson')
 summary(mod_A_RandomVsObs)
 
 dispersion_glmer(mod_A_RandomVsObs) # < 1.4
 
-mod_A_RandomVsObs_without_intercept <- glmer(A ~ -1 + Type  +(1|DVDRef) , data = All_A_long, family = 'poisson')
+mod_A_RandomVsObs_without_intercept <- glmer(A ~ -1 + Type  +(1|DVDRef) 
+												, data = All_A_long
+												, family = 'poisson')
+
 summary(mod_A_RandomVsObs_without_intercept)
 exp(summary(mod_A_RandomVsObs_without_intercept)$coeff[,1])
 
@@ -155,12 +160,16 @@ summary(mod_A_RandomVsObs)
 
 {#### synchrony
 
-mod_S_RandomVsObs <- glmer(S ~ Type + (1|DVDRef), data = All_S_long, family = 'poisson')
+mod_S_RandomVsObs <- glmer(S ~ Type + (1|DVDRef)
+								, data = All_S_long
+								, family = 'poisson')
 summary(mod_S_RandomVsObs)
 
 dispersion_glmer(mod_S_RandomVsObs) # < 1.4
 
-mod_S_RandomVsObs_without_intercept <- glmer(S ~ -1 + Type  +(1|DVDRef) , data = All_S_long, family = 'poisson')
+mod_S_RandomVsObs_without_intercept <- glmer(S ~ -1 + Type  +(1|DVDRef)
+												, data = All_S_long
+												, family = 'poisson')
 summary(mod_S_RandomVsObs_without_intercept)
 
 {# model assumption checking 
@@ -201,6 +210,7 @@ summary(mod_S_RandomVsObs)
 
 # the type of model was decided following simulations (other script)
 
+
 {#### predictors of alternation
 
 {# check dependent and explanatory variables
@@ -209,13 +219,22 @@ cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.1
 cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$NbRinged) # cor = 0.05, p=0.06 
 cor.test(MY_TABLE_perDVD$MumAge,MY_TABLE_perDVD$DadAge) # cor = 0.34, p *****   - assortative mating for age > take the mean of the 2 ?
 cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.65, p < 0.0001 ! > take one or the other variable ?
-cor.test(MY_TABLE_perDVD$FPriorResidence,MY_TABLE_perDVD$MPriorResidence)
+
+summary(MY_TABLE_perDVD$MPriorResidence == MY_TABLE_perDVD$FPriorResidence) # quite aliased
+cor.test(MY_TABLE_perDVD$MBroodNb,MY_TABLE_perDVD$FBroodNb)
+sunflowerplot(MY_TABLE_perDVD$MBroodNb,MY_TABLE_perDVD$FBroodNb)
+cor.test(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$FBroodNb)
+sunflowerplot(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$FBroodNb)
+cor.test(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$MBroodNb)
+sunflowerplot(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$MBroodNb)
+
 
 #hist(MY_TABLE_perDVD$DVDInfoAge) # very bimodal as the protocol is to measure d7 and d11, in between is when they "miss"
 
 summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
 # add the average RelTimeHrs for those NA
 MY_TABLE_perDVD_long$RelTimeHrs[is.na(MY_TABLE_perDVD_long$RelTimeHrs)] <- mean(MY_TABLE_perDVD_long$RelTimeHrs, na.rm=T)
+
 
 
 #scatter.smooth(MY_TABLE_perDVD$NbAlternation,MY_TABLE_perDVD$RelTimeHrs)# linear 
@@ -235,8 +254,7 @@ modA <- glmer(A ~
 	Type*ChickAgeCat +
 	Type*scale(RelTimeHrs) + 
 	Type*MPriorResidence +
-    Type*FPriorResidence +
-	
+
 	Type*scale(TotalProRate) +
 	Type*scale(VisitRateDifference)+
 		
@@ -246,13 +264,16 @@ modA <- glmer(A ~
 	#(1|BreedingYear) + # explained 0% of the variance
 	(1|PairIDYear)
 	+ (1|DVDRef) 
-	+ (1|rowID) # for overdispersion
+	#+ (1|rowID) # for overdispersion > doesnt reduce overdispersion... ?? deviance = 17500 >> df ~3200 !
 	, data = MY_TABLE_perDVD_long
 	, family = 'poisson'
 	,control=glmerControl(optimizer = "bobyqa")
 	)
 
 summary(modA)
+
+dispersion_glmer(modA) # < 1.4
+
 
 }
 
@@ -302,14 +323,13 @@ summary(modA)
 
 modS <- glmer(S ~ 
 	
-	Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+	Type*scale(ParentsAge) + 
 	Type*scale(HatchingDayAfter0401) +
 	Type*scale(PairBroodNb) + 
 	Type*scale(DVDInfoChickNb) + 
 	Type*ChickAgeCat +
 	Type*scale(RelTimeHrs) + 
 	Type*MPriorResidence +
-    Type*FPriorResidence +
 	
 	Type*scale(TotalProRate) +
 	Type*scale(VisitRateDifference)+
@@ -320,13 +340,15 @@ modS <- glmer(S ~
 	#(1|BreedingYear) + # explained 0% of the variance
 	(1|PairIDYear)
 	+ (1|DVDRef) 
-	#+ (1|rowID) # for overdispersion
+	#+ (1|rowID) # for overdispersion > doesnt help ... ??
 	, data = MY_TABLE_perDVD_long
 	, family = 'poisson'
 	,control=glmerControl(optimizer = "bobyqa")
 	)
 
 summary(modS)
+
+dispersion_glmer(modS) # < 1.4
 
 {# model assumption checking
 
@@ -375,44 +397,64 @@ summary(modS)
 # FITNESS CORRELATES #
 ######################
 
+### the deviation from randomness modelled above, with a poisson model is essentially:
+### log (A) - log (Asim) = log (A/Asim)
+{## since A can be 0, we add 0.5 to both numerator and denominator (Yamamura 1999)
 
-head(MY_TABLE_perBrood)
-cor.test(MY_TABLE_perBrood$MeanAdev, log((MY_TABLE_perBrood$MeanA+0.5)/(MY_TABLE_perBrood$MeanAsim+0.5)))
-plot (MY_TABLE_perBrood$MeanAdev, log((MY_TABLE_perBrood$MeanA+0.5)/(MY_TABLE_perBrood$MeanAsim+0.5)))
-cor.test(MY_TABLE_perBrood$MeanSdev, log((MY_TABLE_perBrood$MeanS+0.5)/(MY_TABLE_perBrood$MeanSsim+0.5)))
-plot (MY_TABLE_perBrood$MeanSdev, log((MY_TABLE_perBrood$MeanS+0.5)/(MY_TABLE_perBrood$MeanSsim+0.5)))
+MY_TABLE_perDVD$LogAdev <- log((MY_TABLE_perDVD$A+0.5)/(MY_TABLE_perDVD$MeanAsimWithin+0.5))
+MY_TABLE_perDVD$LogSdev <- log((MY_TABLE_perDVD$S+0.5)/(MY_TABLE_perDVD$MeanSsimWithin+0.5))
+
+MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
+data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef),
+MeanLogAdev = mean(LogAdev), 
+MeanLogSdev = mean(LogSdev))), by='BroodRef')
 
 
 head(MY_TABLE_perDVD)
-cor.test(MY_TABLE_perDVD$Adev, log((MY_TABLE_perDVD$A+0.5)/(MY_TABLE_perDVD$MeanAsimWithin+0.5)))
-plot (MY_TABLE_perDVD$Adev, log((MY_TABLE_perDVD$A+0.5)/(MY_TABLE_perDVD$MeanAsimWithin+0.5)))
-cor.test(MY_TABLE_perDVD$Sdev, log((MY_TABLE_perDVD$S+0.5)/(MY_TABLE_perDVD$MeanSsimWithin+0.5)))
-plot (MY_TABLE_perDVD$Sdev, log((MY_TABLE_perDVD$S+0.5)/(MY_TABLE_perDVD$MeanSsimWithin+0.5)))
+cor.test(MY_TABLE_perDVD$Adev, MY_TABLE_perDVD$LogAdev)
+plot (MY_TABLE_perDVD$Adev, MY_TABLE_perDVD$LogAdev)
+cor.test(MY_TABLE_perDVD$Sdev, MY_TABLE_perDVD$LogSdev)
+plot (MY_TABLE_perDVD$Sdev, MY_TABLE_perDVD$LogSdev)
+
+head(MY_TABLE_perBrood)
+cor.test(MY_TABLE_perBrood$MeanAdev, MY_TABLE_perBrood$MeanLogAdev)
+plot (MY_TABLE_perBrood$MeanAdev, MY_TABLE_perBrood$MeanLogAdev)
+cor.test(MY_TABLE_perBrood$MeanSdev, MY_TABLE_perBrood$MeanLogSdev)
+plot (MY_TABLE_perBrood$MeanSdev, MY_TABLE_perBrood$MeanLogSdev)
+
+head(MY_TABLE_perChick)
+MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by.x="RearingBrood", by.y="BroodRef")
+
+}
 
 
 
 {#### ChickSurvival ~ Alternation + Synchrony, brood
 
-modChickSurvival <- glmer(cbind(NbRinged, NbHatched) ~ 	scale(MeanTotalProRate)+
-														scale(MeanAdev)+
-														scale(MeanSdev) +
-														scale(HatchingDayAfter0401) +
-														scale(PairBroodNb) +
-														scale(MBroodNb) +
-														scale(FBroodNb) +
-														MPriorResidence +
-														FPriorResidence +
-														(1|SocialMumID)+ (1|SocialDadID) + 
-														(1|PairID) + 
-														(1|BreedingYear) 
-														, data = MY_TABLE_perBrood
-														, family = 'binomial')
-										
-summary(modChickSurvival)  
+modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
+							poly(MeanTotalProRate,2)+
+							scale(MeanLogAdev)+
+							scale(MeanLogSdev) +
+							#scale(MeanAdev)+
+							#scale(MeanSdev) +
+							scale(HatchingDayAfter0401) +
+							scale(PairBroodNb) +
+							MPriorResidence +
+							(1|SocialMumID)+ (1|SocialDadID) + 
+							(1|PairID) + 
+							(1|BreedingYear) +
+							(1|BroodRef) # to account for overdispersion... doesn't work ?
+							, data = MY_TABLE_perBrood
+							, family = 'binomial'
+							, control=glmerControl(optimizer = "bobyqa"))
+			
+summary(modChickSurvival) 
+
+dispersion_glmer(modChickSurvival) # < 1.4
 
 {# model assumptions checking
 
-# residuals vs fitted: mean should constantly be zero: not quite !
+# residuals vs fitted: mean should constantly be zero: not quite ?
 scatter.smooth(fitted(modChickSurvival), resid(modChickSurvival))	
 abline(h=0, lty=2)
 
@@ -430,16 +472,23 @@ mean(unlist(ranef(modChickSurvival)$BreedingYear))
 
 # residuals vs predictors
 d <- MY_TABLE_perBrood
-scatter.smooth(d$MeanAdev, resid(modChickSurvival)) # not linear !! > add poly term to model ?
+scatter.smooth(d$MeanLogAdev, resid(modChickSurvival))
+abline(h=0, lty=2)
+scatter.smooth(d$MeanTotalProRate, resid(modChickSurvival))
+abline(h=0, lty=2)
+scatter.smooth(d$MeanLogSdev, resid(modChickSurvival))
 abline(h=0, lty=2)
 
-
 # fitted vs all predictors
-scatter.smooth(d$MeanAdev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2)
-scatter.smooth(d$MeanSdev,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2)
-scatter.smooth(d$MeanTotalProRate,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2)
+scatter.smooth(d$MeanLogAdev,fitted(modChickSurvival),  las=1, cex.lab=1.4, cex.axis=1.2)
+scatter.smooth(d$MeanLogSdev,fitted(modChickSurvival),  las=1, cex.lab=1.4, cex.axis=1.2)
+scatter.smooth(d$MeanTotalProRate,fitted(modChickSurvival),  las=1, cex.lab=1.4, cex.axis=1.2)
+plot(fitted(modChickSurvival), jitter(MY_TABLE_perBrood$NbRinged/(MY_TABLE_perBrood$NbHatched-MY_TABLE_perBrood$NbRinged), 0.05))
+abline(0,1)
 
 }
+
+
 
 }
 
@@ -467,12 +516,14 @@ nrow(MY_TABLE_perChick[is.na(MY_TABLE_perChick$sire) | is.na(MY_TABLE_perChick$d
 }
 
 
-modChickMass <- lmer(ResMassTarsus_perChick ~ MeanTotalProRate +
-											HatchingDayAfter0401 +
-											PairBroodNb +
-											NbRinged + # brood size at d11 when measured
-											MeanAdev + 
-											MeanSdev +
+modChickMass <- lmer(ResMassTarsus_perChick ~ poly(MeanTotalProRate,2) +
+											scale(HatchingDayAfter0401) +
+											scale(PairBroodNb) +
+											scale(NbRinged) + # brood size at d11 when measured
+											#scale(MeanAdev) + 
+											#scale(MeanSdev) +
+											scale(MeanLogAdev) + 
+											scale(MeanLogSdev) +											
 											(1|RearingBrood)+
 											#(1|SocialMumID)+ (1|SocialDadID) + 
 											(1|PairID) + (1|BreedingYear) 
@@ -507,13 +558,15 @@ scatter.smooth(sqrt(abs(resid(modChickMass))), fitted (modChickMass))
 
 # residuals vs predictors
 d <- MY_TABLE_perChick[!is.na(MY_TABLE_perChick$ResMassTarsus_perChick) & !is.na(MY_TABLE_perChick$dam) & !is.na(MY_TABLE_perChick$sire),]
-scatter.smooth(d$MeanAdev, resid(modChickMass)) # not linear !! > add poly term to model ?
+scatter.smooth(d$MeanTotalProRate, resid(modChickMass)) 
+scatter.smooth(d$MeanAdev, resid(modChickMass)) 
+scatter.smooth(d$MeanSdev, resid(modChickMass)) 
 abline(h=0, lty=2)
 
 
 # fitted vs all predictors
-scatter.smooth(d$MeanAdev,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
-scatter.smooth(d$MeanSdev,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
+scatter.smooth(d$MeanLogAdev,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
+scatter.smooth(d$MeanLogSdev,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
 scatter.smooth(d$MeanTotalProRate,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
 scatter.smooth(d$HatchingDayAfter0401,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
 plot(d$PairBroodNb,fitted(modChickMass),  las=1, cex.lab=1.4, cex.axis=1.2)
@@ -528,13 +581,15 @@ summary(modChickMass)
 
 {#### ChickMassVariance ~ synchrony, brood
 
-modChickMassVariance <- lmer(sdResMassTarsus ~ MeanTotalProRate+
-												HatchingDayAfter0401+
-												NbRinged +
-												MixedBroodYN +	# this isn't quite correct										
-												MeanAdev+
-												MeanSdev + 
-												PairBroodNb+
+modChickMassVariance <- lmer(sdResMassTarsus ~ poly(MeanTotalProRate,2)+
+												scale(HatchingDayAfter0401)+
+												scale(NbRinged) +
+												MixedBroodYN +									
+												#scale(MeanAdev)+
+												#scale(MeanSdev) + 
+												scale(MeanLogAdev)+
+												scale(MeanLogSdev) + 
+												scale(PairBroodNb) +
 												(1|SocialMumID)+ (1|SocialDadID) + 
 												(1|PairID) + (1|BreedingYear) 
 												,data=MY_TABLE_perBrood)
@@ -542,7 +597,7 @@ summary(modChickMassVariance)
 
 {# model assumptions checking
 
-# residuals vs fitted: mean should constantly be zero: not quite !
+# residuals vs fitted: mean should constantly be zero
 scatter.smooth(fitted(modChickMassVariance), resid(modChickMassVariance))	
 abline(h=0, lty=2)
 
@@ -563,9 +618,14 @@ scatter.smooth(sqrt(abs(resid(modChickMassVariance))), fitted (modChickMassVaria
 
 # residuals vs predictors
 d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$sdResMassTarsus),]
-scatter.smooth(d$MeanAdev, resid(modChickMassVariance)) # not linear !! > add poly term to model ?
+scatter.smooth(d$MeanLogAdev, resid(modChickMassVariance)) 
 abline(h=0, lty=2)
-
+scatter.smooth(d$MeanLogSdev, resid(modChickMassVariance)) 
+abline(h=0, lty=2)
+scatter.smooth(d$MeanTotalProRate, resid(modChickMassVariance)) 
+abline(h=0, lty=2)
+scatter.smooth(d$NbRinged, resid(modChickMassVariance)) 
+abline(h=0, lty=2)
 
 # fitted vs all predictors
 scatter.smooth(d$MeanAdev,fitted(modChickMassVariance),  las=1, cex.lab=1.4, cex.axis=1.2)
@@ -596,24 +656,37 @@ summary(modChickMassVariance)
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MwillDivorce) & !is.na(MY_TABLE_perBrood$NbRinged),])
 MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$MwillDivorce) & !is.na(MY_TABLE_perBrood$NbRinged),] # when Social female was NA
 MY_TABLE_perBrood[MY_TABLE_perBrood$SocialDadID == 4060,]
+
+summary(MY_TABLE_perBrood$FwillDivorce)
+summary(MY_TABLE_perBrood$MwillDivorce)
+
+summary(data.frame(summarise (group_by(MY_TABLE_perBrood, SocialMumID),
+NbDivorce = sum(FwillDivorce, na.rm=TRUE))))
+
+summary(data.frame(summarise (group_by(MY_TABLE_perBrood, SocialDadID),
+NbDivorce = sum(MwillDivorce, na.rm=TRUE))))
+
+summary(split(MY_TABLE_perBrood$FwillDivorce, MY_TABLE_perBrood$SocialMumID)
 }
 
 
-mod_MaleDivorce <- glmer(MwillDivorce~  scale(MeanSdev) + 
-										scale(MeanAdev)	+
-										scale(ParentsAge) + 
-										scale(PairBroodNb) +
-										scale(MeanTotalProRate) +  
-										MnextNBsame + 
-										scale(NbRinged) +
-										(1|SocialDadID)
-										#+(1|BreedingYear) 
-										, data = MY_TABLE_perBrood
-										, family="binomial")
+mod_MaleDivorce <- glmer(MwillDivorce~  
+							scale(MeanLogSdev) + 
+							scale(MeanLogAdev)	+
+							scale(ParentsAge) + 
+							scale(PairBroodNb) +
+							scale(MeanTotalProRate) +  
+							#MnextNBsame + # could be cause or consequence, and its a all new question ?
+							scale(NbRinged) +
+							(1|SocialDadID)
+							#+(1|BreedingYear) 
+							, data = MY_TABLE_perBrood
+							, family="binomial")
 
 									
-summary(mod_MaleDivorce) # Number of obs: 680, groups:  SocialDadID, 223; BreedingYear, 12
+summary(mod_MaleDivorce) 
 
+dispersion_glmer(mod_MaleDivorce) # <1.4
 
 
 {# model assumptions checking >> residuals not normal !!!!!!
@@ -650,65 +723,51 @@ rnum
 qqnorm(unlist(ranef(mod_MaleDivorce))) 
 qqline(unlist(ranef(mod_MaleDivorce)))
 
-
-## check for overdispersion
-# mod_MaleDivorce_withOverdispersionAccounted <- glmer(MDivorce~MeanSynchroFeed + 
-									##MeanA	+
-									# scale(DadAge, scale=FALSE) + 
-									# scale(PairBroodNb, scale=FALSE) +
-									##MeanVisitRateDifference +  
-									# MPriorResidence + 
-									##MPrevNbRinged +
-									 # (1|SocialDadID) + (1|BreedingYear) +(1|BroodRef)
-									# , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MDivorce),], family="binomial")
-									
-# summary(mod_MaleDivorce_withOverdispersionAccounted)
-# anova(mod_MaleDivorce, mod_MaleDivorce_withOverdispersionAccounted)
-
-
 # Mean of ranefs: should be zero
 mean(unlist(ranef(mod_MaleDivorce)$SocialDadID))
 
 # residuals vs predictors
 
-# d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MDivorce) & !is.na(MY_TABLE_perBrood$MPrevNbRinged),]
-# plot(d$MeanSynchroFeed, resid(mod_MaleDivorce))
-# abline(h=0, lty=2)
-# plot(d$PairBroodNb, resid(mod_MaleDivorce))
-# abline(h=0, lty=2)
-# plot(d$MPriorResidence, resid(mod_MaleDivorce))
-# abline(h=0, lty=2)
-# plot(d$MPrevNbRinged, resid(mod_MaleDivorce))
-# abline(h=0, lty=2)
+d <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MDivorce) & !is.na(MY_TABLE_perBrood$MPrevNbRinged),]
+plot(d$MeanSynchroFeed, resid(mod_MaleDivorce))
+abline(h=0, lty=2)
+plot(d$PairBroodNb, resid(mod_MaleDivorce))
+abline(h=0, lty=2)
+plot(d$MPriorResidence, resid(mod_MaleDivorce))
+abline(h=0, lty=2)
+plot(d$MPrevNbRinged, resid(mod_MaleDivorce))
+abline(h=0, lty=2)
 
 # # dependent variable vs fitted
-# d$fitted <- fitted(mod_MaleDivorce)
-# plot(d$fitted, d$MDivorce,ylim=c(0, 1))
-# abline(0,1)	
+d$fitted <- fitted(mod_MaleDivorce)
+plot(d$fitted, d$MDivorce,ylim=c(0, 1))
+abline(0,1)	
 
 # # fitted vs all predictors
-# plot(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="MeanSynchroFeed")
-# plot(d$PairBroodNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="PairBroodNb")
-# plot(d$MPriorResidence,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="MPriorResidence")
-# plot(d$MPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="MPrevNbRinged")
+plot(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="MeanSynchroFeed")
+plot(d$PairBroodNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="PairBroodNb")
+plot(d$MPriorResidence,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="MPriorResidence")
+plot(d$MPrevNbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="MDivorce", xlab="MPrevNbRinged")
 
 }
 
 
 
-mod_FemaleDivorce <- glmer(FwillDivorce~scale(MeanSdev) + 
-									scale(MeanAdev)	+
+mod_FemaleDivorce <- glmer(FwillDivorce~scale(MeanLogSdev) + 
+									scale(MeanLogAdev)	+
 									scale(MumAge) + 
 									scale(PairBroodNb) +
 									scale(MeanTotalProRate) +  
-									FnextNBsame + 
+									#FnextNBsame + # could be cause or consequence, and its a all new question ?
 									scale(NbRinged) +
 									(1|SocialMumID) 
 									#+ (1|BreedingYear) 
 									, data = MY_TABLE_perBrood
 									, family="binomial")
 									
-summary(mod_FemaleDivorce) # Number of obs: 679, groups:  SocialMumID, 232; BreedingYear, 12
+summary(mod_FemaleDivorce) 
+
+dispersion_glmer(mod_FemaleDivorce) # < 1.4
 
 {# model assumptions checking >> residuals not normal !!!!!!
 
@@ -744,21 +803,6 @@ rnum
 qqnorm(unlist(ranef(mod_FemaleDivorce))) 
 qqline(unlist(ranef(mod_FemaleDivorce)))
 
-
-# # check for overdispersion
-# mod_FemaleDivorce_withOverdispersionAccounted <- glmer(FDivorce~MeanSynchroFeed + 
-									# # MeanA	+
-									# #scale(DadAge, scale=FALSE) + 
-									# scale(PairBroodNb, scale=FALSE) +
-									# # MeanVisitRateDifference +  
-									# FPriorResidence + FPrevNbRinged +
-									 # (1|SocialMumID) + (1|BreedingYear) +(1|BroodRef)
-									# , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FDivorce),], family="binomial")
-									
-# summary(mod_FemaleDivorce_withOverdispersionAccounted)
-# anova(mod_FemaleDivorce, mod_FemaleDivorce_withOverdispersionAccounted) 
-
-
 # Mean of ranefs: should be zero
 mean(unlist(ranef(mod_FemaleDivorce)$SocialMumID))
 mean(unlist(ranef(mod_FemaleDivorce)$BreedingYear))
@@ -783,7 +827,6 @@ abline(0,1)
 # fitted vs all predictors
 plot(d$MeanSynchroFeed,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="MeanSynchroFeed")
 plot(d$PairBroodNb,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="PairBroodNb")
-plot(d$FnextNBsame,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FnextNBsame")
 plot(d$NbRinged,d$fitted,  las=1, cex.lab=1.4, cex.axis=1.2, ylab="FDivorce", xlab="FPrevNbRinged")
 }
 
