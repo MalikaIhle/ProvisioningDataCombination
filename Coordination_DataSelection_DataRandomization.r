@@ -623,8 +623,8 @@ ylab("Number of alternations realized out of the maximum possible (%)\n")+
 scale_y_continuous(breaks =seq(60,90, by = 5),limits = c(60,90)) +
 scale_x_discrete(labels = my_labels)+
 
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
-geom_point(size = 3, aes(shape=Type, col=Type)) +
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type), size = 1.5,na.rm=TRUE)+
+geom_point(size =4.5, aes(shape=Type, col=Type)) +
 scale_colour_manual(values=my_colors, labels = my_labels)+
 scale_shape_manual(values=my_shapes, labels=my_labels)+ 
 
@@ -641,7 +641,7 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 }
 
 dev.new()
-Fig_A_AMax
+Fig_A_AMax # this reads well, as Amax is identical within nest watch ID, and the graph gives an info relative to the max possible
 
 {## plot S/SMax
 ### SMax = A observed in that specific nest watch (observed or randomized)
@@ -661,6 +661,8 @@ sumary_S_generated_outof_A <- summarise (one_generated_fulldat,
 				Supper = Smean + sd(S/A*100)/sqrt(n())*1.96,
 				NbFiles = n())
 
+out_Ssim_df <- out_Ssim_among_df
+out_Asim_df <- out_Asim_among_df
 
 summarise_S_sim_outof_A <- function(out_Ssim_df, out_Asim_df){ # Nreplicates needs to be identical in both randomization
 
@@ -718,7 +720,7 @@ xlab(NULL)+
 ylab("Number of synchronized visits realized 
 out of the maximum possible (%)\n")+
 
-geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),na.rm=TRUE)+
+geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type), na.rm=TRUE)+
 geom_point(size = 3, aes(col=Type, shape=Type)) +
 
 scale_y_continuous(breaks =seq(45,55, by = 2),limits = c(45,55)) +
@@ -740,7 +742,220 @@ plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
 }
 
 dev.new()
-Fig_S_SMax
+Fig_S_SMax # does not read well, since A (Smax) is different accross the same nest watch ID.
+
+
+{## plot A
+  
+  {### summarize A 
+    
+    summary_Aobsv <- data.frame(summarise (MY_TABLE_perDVD,
+                                                      Amean = mean(A),
+                                                      Alower = Amean - sd(A)/sqrt(n())*1.96,
+                                                      Aupper = Amean + sd(A)/sqrt(n())*1.96,
+                                                      NbFiles = n()))
+    
+    sumary_A_generated <- summarise (one_generated_fulldat,
+                                                Amean = mean(A),
+                                                Alower = Amean - sd(A)/sqrt(n())*1.96,
+                                                Aupper = Amean + sd(A)/sqrt(n())*1.96,
+                                                NbFiles = n())	
+    
+    Summary_A_sorted_intervals <- summarise (Sort_intervals_out_A,
+                                                        Amean = mean(Asorted),
+                                                        Alower = Amean - sd(Asorted)/sqrt(n())*1.96,
+                                                        Aupper = Amean + sd(Asorted)/sqrt(n())*1.96,
+                                                        NbFiles = n())			
+    
+    
+    summarise_Asim <- function(out_sim_df){
+      
+      out_sim_df$SimMean <- rowMeans(out_sim_df[,2:(NreplicatesAmongFileRandomization)])
+       
+      return(data.frame(summarise (out_sim_df,
+                                   Amean = mean(SimMean),
+                                   Alower = Amean - sd(SimMean)/sqrt(n())*1.96,
+                                   Aupper = Amean + sd(SimMean)/sqrt(n())*1.96,
+                                   NbFiles = n())))
+    }				
+    
+    summary_out_Asim_among <- summarise_Asim(out_Asim_among_df)
+    summary_out_Asim_within <- summarise_Asim(out_Asim_within_df)
+    
+    summary_Aswitch <- data.frame(summarise (Switch_Consecutive_intervals_out_A,
+                                                        Amean = mean(Aswitch),
+                                                        Alower = Amean - sd(Aswitch)/sqrt(n())*1.96,
+                                                        Aupper = Amean + sd(Aswitch)/sqrt(n())*1.96,
+                                                        NbFiles = n()))
+    
+    Summary_A_sorted_intervals$Type <- '1_Sorted'		
+    summary_Aobsv$Type <- '2_Observed' 
+    summary_Aswitch$Type <- '3_Switch' 
+    summary_out_Asim_within$Type <-'4_Within'
+    summary_out_Asim_among$Type <- '5_Among'
+    sumary_A_generated$Type <- '6_Generated'
+    
+    summary_A <- do.call(rbind, 
+                                    list(summary_Aobsv,
+                                         summary_out_Asim_among,
+                                         summary_out_Asim_within,
+                                         summary_Aswitch,
+                                         sumary_A_generated,
+                                         Summary_A_sorted_intervals))
+    
+  }
+  
+  {my_labels <- c(
+    'Sorted
+    intervals',
+    'Observed
+    data', 
+    'Switched
+    intervals', 
+    'Within
+    random.', 
+    'Among
+    random.',
+    'Generated
+    data')}
+  
+  {my_shapes <- c(
+    19, #circle
+    19, # square
+    19, 
+    15, 
+    15,
+    19)}
+  
+  {my_colors <- c(
+    'grey','black', 'grey','dimgrey','dimgrey','dimgrey'
+  )}
+  
+  
+  Fig_A <- {ggplot(data=summary_A, aes(x=Type, y=Amean,colour=Type, shape = Type))+
+      xlab(NULL)+
+      ylab("Number of alternated visits")+
+      
+      #scale_y_continuous(breaks =seq(60,90, by = 5),limits = c(60,90)) +
+      scale_x_discrete(labels = my_labels)+
+      
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+      geom_point(size = 3, aes(shape=Type, col=Type)) +
+      scale_colour_manual(values=my_colors, labels = my_labels)+
+      scale_shape_manual(values=my_shapes, labels=my_labels)+ 
+      
+      theme_classic()+
+      theme(
+        legend.position="none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+        axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+        axis.title.x = NULL,
+        plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+  }
+  
+  }
+
+dev.new()
+Fig_A # this is what is analyzed and compared (data analyses script)
+
+{## plot S
+
+  
+  {# summarize Ssim made on each DVD and averaged accross the dataset
+    
+    summary_Sobsv <- data.frame(summarise (MY_TABLE_perDVD,
+                                                   Smean = mean(S),
+                                                   Slower = Smean - sd(S)/sqrt(n())*1.96,
+                                                   Supper = Smean + sd(S)/sqrt(n())*1.96,
+                                                   NbFiles = n()))
+    
+    
+    sumary_S_generated <- summarise (one_generated_fulldat,
+                                             Smean = mean(S),
+                                             Slower = Smean - sd(S)/sqrt(n())*1.96,
+                                             Supper = Smean + sd(S)/sqrt(n())*1.96,
+                                             NbFiles = n())
+    
+    
+    summarise_S_sim <- function(out_Ssim_df){ # Nreplicates needs to be identical in both randomization
+      
+      out_sim_df <- out_Ssim_df[,2:(NreplicatesAmongFileRandomization)]
+      out_sim_df$SimMean <- rowMeans(out_sim_df)
+      
+      return(data.frame(summarise (out_sim_df,
+                                   Smean = mean(SimMean),
+                                   Slower = Smean - sd(SimMean)/sqrt(n())*1.96,
+                                   Supper = Smean + sd(SimMean)/sqrt(n())*1.96,
+                                   NbFiles = n())))
+      
+    }				
+    
+    summary_out_Ssim_among <- summarise_S_sim(out_Ssim_among_df)
+    summary_out_Ssim_within <- summarise_S_sim(out_Ssim_within_df)
+    
+    
+    summary_Sobsv$Type <- '2_Observed' 
+    summary_out_Ssim_within$Type <-'4_Within'
+    summary_out_Ssim_among$Type <- '5_Among'
+    sumary_S_generated$Type <- '6_Generated'
+    
+    
+    summary_S <- do.call(rbind, 
+                                 list(summary_Sobsv,
+                                      summary_out_Ssim_among,
+                                      summary_out_Ssim_within,
+                                      sumary_S_generated))
+    
+  }
+  
+  {my_labels_S <- c(
+    'Observed
+    data', 
+    'Within
+    random.', 
+    'Among
+    random.',
+    'Generated
+    data')}
+  
+  {my_shapes_S <- c(
+    19, 
+    15, # square
+    15, 
+    19)}
+  
+  {my_colors_S <- c(
+    'black','dimgrey','dimgrey','dimgrey'
+  )}
+  
+  Fig_S <- {ggplot(data=summary_S, aes(x=Type, y=Smean), colour=Type, shape=Type)+
+      xlab(NULL)+
+      ylab("Number of synchronized visits \n")+
+      
+      geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),na.rm=TRUE)+
+      geom_point(size = 3, aes(col=Type, shape=Type)) +
+      
+      #scale_y_continuous(breaks =seq(45,55, by = 2),limits = c(45,55)) +
+      scale_x_discrete(labels = my_labels_S)+
+      scale_shape_manual(values=my_shapes_S, labels=my_labels_S)+ 
+      scale_colour_manual(values=my_colors_S, labels = my_labels_S)+
+      
+      
+      theme_classic()+
+      theme(
+        legend.position="none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+        axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
+        axis.title.x = NULL,
+        plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
+  }
+  
+  }
+
+dev.new()
+Fig_S # this is what is analyzed and compared (data analyses script)
 
 
 {## add output randomization to MY_TABLE_perDVD
