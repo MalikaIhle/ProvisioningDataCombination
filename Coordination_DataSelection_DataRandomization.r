@@ -749,6 +749,9 @@ MY_TABLE_perDVD <- cbind(MY_TABLE_perDVD,
 							Asorted = Sort_intervals_out_A$Asorted,
 							Aswitch= Switch_Consecutive_intervals_out_A$Aswitch,
 							
+							Agenerated=one_generated_fulldat$A,
+							Sgenerated=one_generated_fulldat$S,
+							
 							MeanAsimWithin = rowMeans(out_Asim_within_df[,-1]), 
 							MeanAsimAmong = rowMeans(out_Asim_among_df[,-1]),
 							
@@ -874,6 +877,7 @@ head(MY_TABLE_perBrood)
 # 20170322 rerun
 # 20170324 updated lastseen alive
 # 20170327 added Asorted
+# 20170430 added Agenerated
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
