@@ -71,19 +71,21 @@ A=c(MY_TABLE_perDVD$Asorted,
 MY_TABLE_perDVD$A,
 MY_TABLE_perDVD$Aswitch,
 MY_TABLE_perDVD$MedAsimWithin,
-MY_TABLE_perDVD$MedAsimAmong), 
+MY_TABLE_perDVD$MedAsimAmong,
+MY_TABLE_perDVD$Agenerated), 
 
 Type = c(rep("a_sorted", nrow(MY_TABLE_perDVD)),
 rep("a_Obsv", nrow(MY_TABLE_perDVD)),
 rep("b_switch", nrow(MY_TABLE_perDVD)),
 rep("c_within", nrow(MY_TABLE_perDVD)),
-rep("d_among", nrow(MY_TABLE_perDVD))),
+rep("d_among", nrow(MY_TABLE_perDVD)),
+rep("e_generated", nrow(MY_TABLE_perDVD))),
 
-AMax = c(MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax,MY_TABLE_perDVD$AMax),
+AMax = rep(MY_TABLE_perDVD$AMax, 6),
 
-DVDRef = c(MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef),
+DVDRef = rep(MY_TABLE_perDVD$DVDRef,6),
 
-LineID = 1: nrow(MY_TABLE_perDVD)*5
+LineID = 1: nrow(MY_TABLE_perDVD)*6
 )
 }
 
@@ -93,17 +95,19 @@ head(All_A_long)
 
 S=c(MY_TABLE_perDVD$S,
 MY_TABLE_perDVD$MedSsimWithin,
-MY_TABLE_perDVD$MedSsimAmong), 
+MY_TABLE_perDVD$MedSsimAmong,
+MY_TABLE_perDVD$Sgenerated), 
 
 Type = c(rep("a_Obsv", nrow(MY_TABLE_perDVD)),
 rep("c_within", nrow(MY_TABLE_perDVD)),
-rep("d_among", nrow(MY_TABLE_perDVD))),
+rep("d_among", nrow(MY_TABLE_perDVD)),
+rep("e_generated", nrow(MY_TABLE_perDVD))),
 
-SMax = c(MY_TABLE_perDVD$A,MY_TABLE_perDVD$MedAsimWithin,MY_TABLE_perDVD$MedAsimAmong), # this is an approximation, Smax should be the actual number of A in that specific observation.
+SMax = c(MY_TABLE_perDVD$A,MY_TABLE_perDVD$MedAsimWithin,MY_TABLE_perDVD$MedAsimAmong,MY_TABLE_perDVD$Agenerated), # this is an approximation, Smax should be the actual number of A in that specific observation.
 
-DVDRef = c(MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef,MY_TABLE_perDVD$DVDRef),
+DVDRef = rep(MY_TABLE_perDVD$DVDRef,4),
 
-LineID = 1: nrow(MY_TABLE_perDVD)*5
+LineID = 1: nrow(MY_TABLE_perDVD)*4
 )
 }
 
@@ -157,6 +161,9 @@ abline(h=0, lty=2)
 
 summary(mod_A_RandomVsObs)
 
+library (multcomp)
+summary(glht(mod_A_RandomVsObs, mcp(Type="Tukey")))
+
 
 {#### synchrony
 
@@ -202,6 +209,8 @@ abline(h=0, lty=2)
 
 summary(mod_S_RandomVsObs)
 
+library (multcomp)
+summary(glht(mod_S_RandomVsObs, mcp(Type="Tukey")))
 
 
 ##############
@@ -241,6 +250,9 @@ MY_TABLE_perDVD_long$RelTimeHrs[is.na(MY_TABLE_perDVD_long$RelTimeHrs)] <- mean(
 #scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$NbAlternation)# linear
 #scatter.smooth(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
 
+cor.test(MY_TABLE_perDVD$MeanAsimWithin, MY_TABLE_perDVD$MedAsimWithin)
+cor.test(MY_TABLE_perDVD$MeanSsimWithin, MY_TABLE_perDVD$MedSsimWithin)
+
 }
 
 {# mod A
@@ -260,11 +272,11 @@ modA <- glmer(A ~
 		
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + 
-	#(1|PairID) +  # explained 0% of the variance
-	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairID) +  # explained 0% of the variance
+  (1|BreedingYear) + # explained 0% of the variance
 	(1|PairIDYear)
 	+ (1|DVDRef) 
-	#+ (1|rowID) # for overdispersion > doesnt reduce overdispersion... ?? deviance = 17500 >> df ~3200 !
+  + (1|rowID) # for overdispersion > doesnt reduce overdispersion... ?? deviance = 17500 >> df ~3200 !
 	, data = MY_TABLE_perDVD_long
 	, family = 'poisson'
 	,control=glmerControl(optimizer = "bobyqa")
@@ -336,11 +348,11 @@ modS <- glmer(S ~
 	
 	(1|BroodRef) + 
 	(1|SocialMumID)+ (1|SocialDadID) + 
-	#(1|PairID) +  # explained 0% of the variance
-	#(1|BreedingYear) + # explained 0% of the variance
+	(1|PairID) +  # explained 0% of the variance
+	(1|BreedingYear) + # explained 0% of the variance
 	(1|PairIDYear)
 	+ (1|DVDRef) 
-	#+ (1|rowID) # for overdispersion > doesnt help ... ??
+	+ (1|rowID) # for overdispersion > doesnt help ... ??
 	, data = MY_TABLE_perDVD_long
 	, family = 'poisson'
 	,control=glmerControl(optimizer = "bobyqa")
@@ -525,7 +537,7 @@ modChickMass <- lmer(ResMassTarsus_perChick ~ poly(MeanTotalProRate,2) +
 											scale(MeanLogAdev) + 
 											scale(MeanLogSdev) +											
 											(1|RearingBrood)+
-											#(1|SocialMumID)+ (1|SocialDadID) + 
+											(1|SocialMumID)+ (1|SocialDadID) + 
 											(1|PairID) + (1|BreedingYear) 
 											+ (1|dam) + (1|sire) + (1|GenPairID)
 											, data = MY_TABLE_perChick)
@@ -666,22 +678,23 @@ NbDivorce = sum(FwillDivorce, na.rm=TRUE))))
 summary(data.frame(summarise (group_by(MY_TABLE_perBrood, SocialDadID),
 NbDivorce = sum(MwillDivorce, na.rm=TRUE))))
 
-summary(split(MY_TABLE_perBrood$FwillDivorce, MY_TABLE_perBrood$SocialMumID)
+summary(split(MY_TABLE_perBrood$FwillDivorce, MY_TABLE_perBrood$SocialMumID))
 }
 
 
 mod_MaleDivorce <- glmer(MwillDivorce~  
 							scale(MeanLogSdev) + 
 							scale(MeanLogAdev)	+
-							scale(ParentsAge) + 
+							scale(DadAge) + 
 							scale(PairBroodNb) +
-							scale(MeanTotalProRate) +  
+							scale(MeanFVisit1RateH) +  
 							#MnextNBsame + # could be cause or consequence, and its a all new question ?
 							scale(NbRinged) +
 							(1|SocialDadID)
-							#+(1|BreedingYear) 
+							+(1|BreedingYear) 
 							, data = MY_TABLE_perBrood
-							, family="binomial")
+							, family="binomial"
+							, control=glmerControl(optimizer = "bobyqa"))
 
 									
 summary(mod_MaleDivorce) 
@@ -757,13 +770,14 @@ mod_FemaleDivorce <- glmer(FwillDivorce~scale(MeanLogSdev) +
 									scale(MeanLogAdev)	+
 									scale(MumAge) + 
 									scale(PairBroodNb) +
-									scale(MeanTotalProRate) +  
+									scale(MeanMVisit1RateH) +  
 									#FnextNBsame + # could be cause or consequence, and its a all new question ?
 									scale(NbRinged) +
 									(1|SocialMumID) 
-									#+ (1|BreedingYear) 
+									+ (1|BreedingYear) 
 									, data = MY_TABLE_perBrood
-									, family="binomial")
+									, family="binomial"
+									, control=glmerControl(optimizer = "bobyqa"))
 									
 summary(mod_FemaleDivorce) 
 
