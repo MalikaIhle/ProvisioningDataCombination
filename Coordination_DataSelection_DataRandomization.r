@@ -246,7 +246,7 @@ summary(MY_TABLE_perDVD$FBroodNb[!is.na(MY_TABLE_perDVD$SocialDadID) & !is.na(MY
 }
 
 {## the typical sparrow (judge from ALL broods)
-
+  
 cor.test(MY_tblBroods$ParentsAge,MY_tblBroods$PairBroodNb) # cor = 0.54, p < 0.0001 
 summary(MY_tblBroods$MBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
 summary(MY_tblBroods$FBroodNb[!is.na(MY_tblBroods$SocialDadID) & !is.na(MY_tblBroods$SocialMumID)])
@@ -278,12 +278,16 @@ summary(outTsartMin$TstartFeedVisit)
 
 t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
 }
+  
+## visit rate
+  summary(MY_TABLE_perDVD$FVisit1)
+  summary(MY_TABLE_perDVD$MVisit1)
 
 }
 
 
 
-head(MY_tblBroods) # even those where one parent unknown, needed divorce question
+head(MY_tblBroods) # even those where one parent unknown, needed for divorce question
 head(RawInterfeeds) 
 head(MY_TABLE_perDVD)
 

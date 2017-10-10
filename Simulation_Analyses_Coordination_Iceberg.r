@@ -53,7 +53,7 @@ PbLogs_Type <- gsub("\\..*","",PbLogs) # sim type where models did not converge
 table(PbLogs_Type)
 # models did not converge in those x cases out of 1000
 # sim_1_1 sim_1_2 sim_1_3 sim_1_4 sim_1_5 sim_1_6 
-#	 35      35     203     189      77       8
+#	 37      35     203     189      77       8
 
 PbLogs_sim <- paste(beg2char(PbLogs, ".", 1),char2end(PbLogs, ".", 3), sep="_")# sim name where model did not converge
 PbLogs_sim <- paste("sim1", char2end(PbLogs_sim, "_", 2), sep="_")
@@ -74,7 +74,7 @@ fileList_Sim1_6 <- fileList[grepl("sim1_6",names(fileList))]
 
 # Number of files per sim type
 NreplicatesSimulation <- c(
-length(fileList_Sim1_1), # 965
+length(fileList_Sim1_1), # 963
 length(fileList_Sim1_2), # 965
 length(fileList_Sim1_3), # 797
 length(fileList_Sim1_4), # 811
@@ -90,10 +90,16 @@ list(Shape_results(fileList_Sim1_4,4)), # full_autocor_corCN
 list(Shape_results(fileList_Sim1_5,5)), # partial_autocor_no_cor
 list(Shape_results(fileList_Sim1_6,6))) # partial_autocor_corCN
 
-
+summary(
+  c(
+    length(fileList_Sim1_2), 
+length(fileList_Sim1_3),
+length(fileList_Sim1_4), 
+length(fileList_Sim1_5), 
+length(fileList_Sim1_6)))
 
 Results_Sim_1
-
+# Simulation 1: Take observed CN ; generate TP either correlated to CN or not ; with or without an effect of CN on A (i.e. with CN = sorting parameter of intervals)
 
 
 # [[1]]
@@ -218,6 +224,8 @@ list(Shape_results(fileList_Sim2_5,5))) # partial_autocor
 
 
 Results_Sim_2
+# Simulation 2: Take observed CN ; take observed TP ; generate visits ; with or without an effect of CN on A (i.e. with CN = sorting parameter of intervals)
+
 
 # [[1]]
                     # Factor p_modA p_modA_Ben p_modA_simple p_modAbin p_modAdev p_modS p_modSdev e_modA e_modA_simple e_modABen e_modAbin e_modAdev e_modS e_modSdev
@@ -277,6 +285,7 @@ NreplicatesSimulation <- length(fileList_Sim3_1) # 685
 # shape results Sim 2
 Results_Sim_3 <- Shape_results(fileList_Sim3_1,1) # real data randomized, real tests
 Results_Sim_3
+# Simulation 3: Randomized real dataset instead of generating data
 
                                    # Factor p_modA p_modS e_modA e_modS
 # 1                             (Intercept) 100.00    100   2.70   1.95
