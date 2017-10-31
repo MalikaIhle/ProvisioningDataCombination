@@ -901,7 +901,8 @@ MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('p
 
 Change_x_to_Cat <- function(x) {
 x$CN_Cat <- cut(x$CN, c(0,1,2,3,4,7), labels = c(1:4,"5+"),include.lowest=TRUE)
-x$TotalP_Cat <- cut(x$TotalP,c(seq(0,80,20),150), labels = c(seq(10,70,20),"90+"), include.lowest=TRUE)
+# x$TotalP_Cat <- cut(x$TotalP,c(seq(0,80,20),150), labels = c(seq(10,70,20),"90+"), include.lowest=TRUE)
+x$TotalP_Cat <- cut(x$TotalP,c(seq(0,80,20),150), labels = c("2-20","21-40","41-60", "61-80","81-136"), include.lowest=TRUE)
 x}
 
 MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)

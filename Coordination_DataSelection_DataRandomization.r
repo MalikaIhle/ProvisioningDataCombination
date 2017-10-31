@@ -126,8 +126,16 @@ colnames(RawInterfeeds)[which(names(RawInterfeeds) == "TstartFeedVisit")] <- "Ts
 
 MY_tblChicks <- tblChicks[tblChicks$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
-MY_tblChicks_byRearingBrood <- as.data.frame(tblChicks %>% group_by(RearingBrood) %>% summarise(sd(AvgOfMass),sd(AvgOfTarsus), n(), sum(CrossFosteredYN)))
-colnames(MY_tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
+MY_tblChicks_byRearingBrood <- as.data.frame(tblChicks 
+                                             %>% group_by(RearingBrood)
+                                             %>% summarise(
+                                               sd(AvgOfMass),
+                                               sd(AvgOfTarsus), 
+                                               max(AvgOfMass)-min(AvgOfMass),
+                                               n(), 
+                                               sum(CrossFosteredYN)))
+
+colnames(MY_tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus","MassRange", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
 MY_tblChicks_byRearingBrood$MixedBroodYN <- MY_tblChicks_byRearingBrood$NbChicksMeasured != MY_tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
 head(MY_tblChicks_byRearingBrood)
 
@@ -191,7 +199,7 @@ MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401",
 "PairID","PairBroodNb","PairIDYear", "NbRinged","AvgMass", "MinMass", "AvgTarsus")], by= "BroodRef")
 
 MY_TABLE_perDVD <- merge(MY_TABLE_perDVD, 
-MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MixedBroodYN")], 
+MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MassRange","MixedBroodYN")], 
 by.x="BroodRef", by.y="RearingBrood", all.x=TRUE)
 
 
@@ -1020,7 +1028,7 @@ MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401",
 "PairID","PairBroodNb","PairIDYear", "NbHatched","NbRinged","AvgMass", "MinMass", "AvgTarsus")], by= "BroodRef")
 
 MY_TABLE_perBrood <- merge(MY_TABLE_perBrood, 
-MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MixedBroodYN")], 
+MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus","MassRange", "MixedBroodYN")], 
 by.x="BroodRef", by.y="RearingBrood", all.x=TRUE)
 
 }
@@ -1109,7 +1117,7 @@ head(MY_TABLE_perBrood)
 # 20170322 rerun
 # 20170324 updated lastseen alive
 # 20170415 updated format last seen alive input to recover divorce YN
-
+# 20171031 added chick mass range
 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
