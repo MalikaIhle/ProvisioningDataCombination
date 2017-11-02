@@ -215,7 +215,7 @@ summary(glht(mod_S_RandomVsObs, mcp(Type="Tukey")))
 
 
 ##############
-#' # PREDICTORS 
+# PREDICTORS 
 ##############
 
 # the type of model was decided following simulations (other script)
@@ -408,7 +408,7 @@ summary(modS)
 
 
 ######################
-#' FITNESS CORRELATES
+# FITNESS CORRELATES
 ######################
 
 ### the deviation from randomness modeled above, with a poisson model is essentially:
@@ -445,7 +445,7 @@ MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","Me
 {#### ChickSurvival ~ Alternation + Synchrony, brood
 
 modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
-							poly(MeanTotalProRate,2)+
+							scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
 							scale(MeanLogAdev)+
 							scale(MeanLogSdev) +
 							#scale(MeanAdev)+
@@ -529,8 +529,9 @@ summary(modChickSurvival)
 }
  
 
-modChickMass <- lmer(AvgOfMass ~ AvgOfTarsus +
-                       poly(MeanTotalProRate,2) +
+modChickMass <- lmer(I(log(AvgOfMass)) ~ I(log(AvgOfTarsus)) +
+                       scale(MeanTotalProRate) +
+                       scale(I(MeanTotalProRate^2))+
 											scale(HatchingDayAfter0401) +
 											scale(PairBroodNb) +
 											scale(NbRinged) + # brood size at d11 when measured
@@ -599,7 +600,9 @@ summary(modChickMass)
  # scatter.smooth(MY_TABLE_perBrood$AvgMass~MY_TABLE_perBrood$sdMass^2)
  # cor.test(MY_TABLE_perBrood$AvgMass,MY_TABLE_perBrood$sdMass^2)
 
-modChickMassVariance <- lmer(sdResMassTarsus ~ poly(MeanTotalProRate,2)+
+modChickMassVariance <- lmer(sdResMassTarsus ~ 
+                               scale(MeanTotalProRate)+
+                               scale(I(MeanTotalProRate^2))+
 												scale(HatchingDayAfter0401)+
 												scale(NbRinged) +
 												MixedBroodYN +									
@@ -614,7 +617,9 @@ modChickMassVariance <- lmer(sdResMassTarsus ~ poly(MeanTotalProRate,2)+
 summary(modChickMassVariance)
 
 
-modChickMassRange <- lmer(MassRange ~ poly(MeanTotalProRate,2)+
+modChickMassRange <- lmer(MassRange ~  
+                                scale(MeanTotalProRate)+
+                                scale(I(MeanTotalProRate^2))+
                                scale(HatchingDayAfter0401)+
                                scale(NbRinged) +
                                MixedBroodYN +									
