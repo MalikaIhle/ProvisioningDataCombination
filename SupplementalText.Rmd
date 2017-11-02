@@ -1,0 +1,110 @@
+---
+title: "Supplemental Text"
+author: "Malika Ihle"
+date: "October 13, 2017"
+output: pdf_document
+classoption: landscape
+---
+
+```{r, echo=FALSE, results="hide", message=FALSE, warnings=FALSE, include =FALSE}
+source('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\_ProvisioningDataCombination\\Coordination_DataAnalyses.R')
+```
+
+
+## Variable names and description:
+**_A_**: count of alternated visits  
+**_BreedingYear_**: year during which the brood was raised  
+**_BroodRef_**: unique identifier for broods  
+**_ChickAgeCat_**: the chick age as a categorical variable (chicks are routinely recorded at 6 and 10 days old, recordings deviating from that were pooled according to whether they were inferior, or superior (or equal) to 10)  
+**_DadAge_**:age of the social male parent (in years)  
+**_dam_**: genetic female parent of a chick  
+**_DVDInfoChickNb_**: the best estimate of the number of chicks at time of recording  
+**_DVDRef_**: nest watch unique identifier  
+**_FwillDivorce_**: Whether or not (1/0) female repaired while her previous partner was still alive, after a specific recorded brood she had with that initial partner 
+**_GenPairID_**: combination of the dan and sire IDs  
+**_HatchingDayAfter0401_**: the numbers of day after the first of April of that year  
+**_MeanFVisit1RateH_**: for males, the partner’s provisioning rate in number of visits per hour  
+**_MeanLogAdev_**: logarithm of the deviation in alternation [log ((A observed+0.5) / (A random+0.5)], averaged accross all nest watch for that brood  
+**_MeanLogSdev_**: logarithm of the deviation in synchrony, averaged accross all nest watch for that brood  
+**_MeanMVisit1RateH_**: for females, the partner’s provisioning rate in number of visits per hour  
+**_MeanTotalProRate_**: the average total provisioning rate for that brood in number of visits per hour   
+**_MixedBroodYN_**: whether or not (1/0) the brood contained cross-fostered chicks  
+**_MPriorResidence_**: whether or not (1/0) a male had nested in this nest box prior to the breeding attempt recorded  
+**_MumAge_**:age of the social female parent (in years)  
+**_MwillDivorce_**: Whether or not (1/0) male repaired while his previous partner was still alive, after a specific recorded brood he had with that initial partner  
+**_NbHatched_**: number of chicks that hatched in that brood  
+**_NBRinged_**:number of chicks ringed in that brood  
+**_PairBroodNb_**: the number of brood a pair already reared together (successfully or unsuccessfully, including the brood of interest)  
+**_PairID_**: combination of the social parents IDs  
+**_PairIDYear_**: combination of the Pair ID and the breeding year  
+**_ParentsAge_**: average of both parents age (in this population, pairs are assortatively mated for age, correlation between male and female age is r= 0.34, p <0.0001)   
+**_RearingBrood_**:the brood where chicks were reared (foster brood for cross-fostered chicks)  
+**_RelTimeHrs_**: the time, relative to sunrise, at which the video was taken  
+**_ResMassTarsus_perChick_**: residuals of the regression of chick mass over its tarsus length  
+**_rowID_**: observation level ID  
+**_S_**: count of synchroneous visits  
+**_sdResMassTarsus_**: standard deviation of the residuals of the regression of chick mass over its tarsus length  
+**_sire_**: genetic male parent of a chick  
+**_SocialDadID_**: unique idenifier for male parent observed caring for a brood  
+**_SocialMumID_**: unique idenifier for female parent observed caring for a brood  
+**_TotalProRate_**: the total number of visits provided by both partners divided by the entire duration of the nest watch in hours   
+**_Type_**: the type of data (observed ("z_Obsv") or randomized ("Exp")  
+**_VisitRateDifference_**: the difference in visit rate per hour between the partner  
+
+
+## Predictors of coordination
+
+### Alternation
+
+```{r set-options, echo=FALSE}
+options(width=120)
+summary(modA)
+```
+### Synchrony
+
+```{r, echo=FALSE}
+summary(modS)
+```
+
+## Fitness correlates
+
+### Chick Survival
+
+```{r, echo=FALSE}
+summary(modChickSurvival) 
+```
+
+### Chick Mass
+
+```{r, echo=FALSE}
+summary(modChickMass) 
+```
+
+### Variance in Chick Body Condition (residuals of mass on tarsus)
+
+```{r, echo=FALSE}
+summary(modChickMassVariance)
+```
+
+### Range in chick mass
+
+```{r, echo=FALSE}
+summary(modChickMassRange)
+```
+
+## Divorce correlates
+
+### Male
+
+```{r, echo=FALSE}
+summary(mod_MaleDivorce) 
+```
+### Female
+
+```{r, echo=FALSE}
+summary(mod_FemaleDivorce)
+```
+
+
+
+
