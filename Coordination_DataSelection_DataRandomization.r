@@ -290,7 +290,13 @@ t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
 ## visit rate
   summary(MY_TABLE_perDVD$FVisit1)
   summary(MY_TABLE_perDVD$MVisit1)
-
+  summary(c(MY_TABLE_perDVD$FVisit1,MY_TABLE_perDVD$MVisit1))
+  summary(c(MY_TABLE_perDVD$FVisit1RateH,MY_TABLE_perDVD$MVisit1RateH))
+  sd(c(MY_TABLE_perDVD$FVisit1RateH,MY_TABLE_perDVD$MVisit1RateH))
+  
+## coordination
+  summary(MY_TABLE_perDVD$A/(MY_TABLE_perDVD$EffectiveTime)*60)
+  summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
 
 
