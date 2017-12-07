@@ -622,17 +622,25 @@ random.',
 data')}
 
 {my_shapes <- c(
-19, #circle
-19, # square
-19, 
-15, 
-15,
-19)}
+21, #circle
+21, 
+21, 
+22, # square
+22,
+21)}
 
 {my_colors <- c(
 'grey','black', 'grey','dimgrey','dimgrey','dimgrey'
 )}
+  
+  {my_colors <- c(
+    '#56B4E9','black', '#56B4E9','#009E73','#009E73','#009E73'
+  )}  
 
+  {my_bg <- c(
+    '#56B4E9','black', '#56B4E9','black','#black','#009E73'
+  )} 
+  
 
 Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean,colour=Type, shape = Type))+
 xlab(NULL)+
@@ -641,10 +649,11 @@ ylab("Number of alternations realized out of the maximum possible (%)\n")+
 scale_y_continuous(breaks =seq(60,90, by = 5),limits = c(60,90)) +
 scale_x_discrete(labels = my_labels)+
 
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type), size = 1.5,na.rm=TRUE)+
-geom_point(size =4.5, aes(shape=Type, col=Type)) +
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type), size = 1,na.rm=TRUE)+
+geom_point(size =4, aes(shape=Type, col=Type, bg = Type)) +
 scale_colour_manual(values=my_colors, labels = my_labels)+
 scale_shape_manual(values=my_shapes, labels=my_labels)+ 
+scale_fill_manual(values=my_bg, labels=my_labels)+    
 
 theme_classic()+
 theme(
