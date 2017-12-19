@@ -1141,14 +1141,15 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
 } # GREY
 
 {## plot with cor A
-  
+  pd <- position_dodge(width = 0.4)
+   
   {plot1y <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none_yes) + 
-    geom_point()+
-    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position=  pd)+
     scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
     xlab(NULL)+
     ylab("Number of alternated visits")+
-    scale_color_manual(values = rep(c('black', '#009E73'),7), labels=c("'Observed'", "Random"))+ 
+    scale_color_manual(values = rep(c('black', '#009E73'),7), labels=c("Simulated", "Simulated randomized"))+ 
     theme_classic()+
     theme(
       legend.justification= c(0,1),
@@ -1164,8 +1165,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
   }
   
   {plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_yes) + 
-      geom_point()+
-      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position = pd)+
       scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
       xlab(NULL)+
       ylab(NULL)+
@@ -1184,8 +1185,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
   }
   
   {plot3y <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_full_yes) + 
-      geom_point()+
-      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
       scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
       xlab(NULL)+
       ylab("Number of alternated visits")+
@@ -1203,8 +1204,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
   }
   
   {plot4y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_yes) + 
-      geom_point()+
-      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
       scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
       xlab(NULL)+
       ylab(NULL)+
@@ -1223,8 +1224,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
   }
   
   {plot5y <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_partial_yes) + 
-      geom_point()+
-      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
       scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
       xlab(NULL)+
       ylab("Number of alternated visits")+
@@ -1241,8 +1242,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
   }
   
   {plot6y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_yes) + 
-      geom_point()+
-      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE)+
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
       scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
       xlab(NULL)+
       ylab(NULL)+
@@ -1324,21 +1325,17 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
     gbottom <- grid.arrange(bottomrowy)
     
     gg1 <- grid.arrange(textGrob("Scenario 1:
-'Observed' alternation 
-simulated to be
-random"),g1,ncol =2, widths = c(1.5,4))
+Alternation simulated 
+to be random"),g1,ncol =2, widths = c(1.5,4))
     
     gg2 <- grid.arrange(textGrob("Scenario 2:
-'Observed' alternation 
-simulated to be
-higher than random
-due to 
-autocorrelation"),g2,ncol =2, widths = c(1.5,4))
+Alternation simulated 
+to be higher than random
+due to autocorrelation"),g2,ncol =2, widths = c(1.5,4))
     
     gg3 <- grid.arrange(textGrob("Scenario 3:
-'Observed' alternation 
-simulated to be
-higher than random
+Alternation simulated 
+to be higher than random
 due to an effect
 of the number of chicks"),g3,ncol =2, widths = c(1.5,4))
     

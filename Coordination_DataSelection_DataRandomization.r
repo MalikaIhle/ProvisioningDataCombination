@@ -277,6 +277,14 @@ summary(MY_tblBroods$FwillDivorceforEx)
 summary(MY_tblBroods$MwillDivorce)
 summary(MY_tblBroods$MwillDivorceforEx)
 
+# assortative mating for age and correlation age - familiarity
+
+head(MY_tblBroods)
+summary(MY_tblBroods$LayDate)
+MY_tblBroods[is.na(MY_tblBroods$LayDate),]
+# cor.test(MY_TABLE_perDVD$MumAge,MY_TABLE_perDVD$DadAge) # cor = 0.34, p *****   - assortative mating for age > take the mean of the 2 ? !!!! Highly pseudoreplicated
+# cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.65, p < 0.0001 ! > take one or the other variable ? !!!! Highly pseudoreplicated
+
 
 }
 
@@ -287,7 +295,7 @@ summary(outTsartMin$TstartFeedVisit)
 t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
 }
   
-## visit rate
+{## visit rate
   summary(MY_TABLE_perDVD$FVisit1)
   summary(MY_TABLE_perDVD$MVisit1)
   summary(c(MY_TABLE_perDVD$FVisit1,MY_TABLE_perDVD$MVisit1))
@@ -298,7 +306,8 @@ t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
   summary(MY_TABLE_perDVD$A/(MY_TABLE_perDVD$EffectiveTime)*60)
   summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
-
+  
+}
 
 
 head(MY_tblBroods) # even those where one parent unknown, needed for divorce question
@@ -638,7 +647,7 @@ data')}
   )}  
 
   {my_bg <- c(
-    '#56B4E9','black', '#56B4E9','black','#black','#009E73'
+    '#56B4E9','black', '#56B4E9','#009E73','#009E73','#009E73'
   )} 
   
 
@@ -947,27 +956,35 @@ Fig_A # this is what is analyzed and compared (data analyses script)
     data')}
   
   {my_shapes_S <- c(
-    19, 
-    15, # square
-    15, 
-    19)}
+    21, 
+    22, # square
+    22, 
+    21)}
+  
+  my_bg_S <- c(
+    'black','#009E73','#009E73','#009E73'
+  )
   
   {my_colors_S <- c(
     'black','dimgrey','dimgrey','dimgrey'
   )}
+  
+  {my_colors_S <- c(
+    'black','#009E73','#009E73','#009E73'
+  )}
+  
   
   Fig_S <- {ggplot(data=summary_S, aes(x=Type, y=Smean), colour=Type, shape=Type)+
       xlab(NULL)+
       ylab("Number of synchronized visits \n")+
       
       geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),na.rm=TRUE)+
-      geom_point(size = 3, aes(col=Type, shape=Type)) +
-      
+      geom_point(size =4, aes(shape=Type, col=Type, bg = Type)) +
       #scale_y_continuous(breaks =seq(45,55, by = 2),limits = c(45,55)) +
       scale_x_discrete(labels = my_labels_S)+
       scale_shape_manual(values=my_shapes_S, labels=my_labels_S)+ 
       scale_colour_manual(values=my_colors_S, labels = my_labels_S)+
-      
+      scale_fill_manual(values=my_bg_S, labels = my_labels_S)+
       
       theme_classic()+
       theme(
