@@ -292,7 +292,10 @@ MY_tblBroods[is.na(MY_tblBroods$LayDate),]
 outTsartMin <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[which.min(x$TstartFeedVisit), c('DVDRef','TstartFeedVisit')] ))
 summary(outTsartMin$TstartFeedVisit)
 
-t.test(MY_RawFeedingVisits$Interval,outTsartMin$TstartFeedVisit)
+outAllOtherIntervals <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[-which.min(x$TstartFeedVisit), c('DVDRef','Interval')] ))
+summary(outAllOtherIntervals$Interval)
+
+t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
 }
   
 {## visit rate

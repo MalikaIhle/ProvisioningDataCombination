@@ -35,7 +35,7 @@ data selection
 
 perform the different types of randomization and plot observed vs expected coordination
 
-#### creates all tables needed for data analyses of the alternation project and store them in the R_Selected&RandomizedData folder
+#### creates all tables needed for data analyses of the coordination in provisioning project and store them in the R_Selected&RandomizedData folder
 
 ## Simulation Analyses Coordination 
 
@@ -43,7 +43,7 @@ simulation of data and modelling of coordination according to different models t
 
 ## Simulation Analyses Coordination Iceberg
 
-processing the simulations from the code above on a high power computing server (Iceberg) and summarizing the results of a 1000 run per simulations
+processing the simulations from the code above on a high power computing server (Iceberg) and summarizing the results of a 1000 run per simulation
 
 
 ## Coordination Data Analyses
