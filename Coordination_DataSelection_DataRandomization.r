@@ -621,24 +621,24 @@ Summary_A_sorted_intervals_outof_AMax))
 
 {my_labels <- c(
 'Sorted
-intervals',
+(f)',
 'Observed
-data', 
+(a)', 
 'Switched
-intervals', 
-'Within
-random.', 
-'Among
-random.',
+(e)', 
+'R. within
+(d)', 
+'R. among
+(c)',
 'Generated
-data')}
+(b)')}
 
 {my_shapes <- c(
 21, #circle
 21, 
 21, 
-22, # square
-22,
+23, # square
+23,
 21)}
 
 {my_colors <- c(
@@ -650,18 +650,19 @@ data')}
   )}  
 
   {my_bg <- c(
-    '#56B4E9','black', '#56B4E9','#009E73','#009E73','#009E73'
+    '#56B4E9','black', '#56B4E9','black','black','#009E73'
   )} 
   
 
 Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean,colour=Type, shape = Type))+
 xlab(NULL)+
-ylab("Number of alternations realized out of the maximum possible (%)\n")+
+ylab("Percentage of alternations realized 
+     out of the maximum possible\n")+
 
 scale_y_continuous(breaks =seq(60,90, by = 5),limits = c(60,90)) +
 scale_x_discrete(labels = my_labels)+
 
-geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type), size = 1,na.rm=TRUE)+
+geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type), size = 2, width =1,na.rm=TRUE)+
 geom_point(size =4, aes(shape=Type, col=Type, bg = Type)) +
 scale_colour_manual(values=my_colors, labels = my_labels)+
 scale_shape_manual(values=my_shapes, labels=my_labels)+ 
@@ -672,6 +673,7 @@ theme(
 legend.position="none",
 panel.border = element_rect(colour = "black", fill=NA), 
 axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+axis.text=element_text(size=14),
 axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
 axis.title.x = NULL,
 plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
@@ -950,22 +952,22 @@ Fig_A # this is what is analyzed and compared (data analyses script)
   
   {my_labels_S <- c(
     'Observed
-    data', 
-    'Within
-    random.', 
-    'Among
-    random.',
+    (a)', 
+    'Within random.
+    (d)', 
+    'Among random.
+    (c)',
     'Generated
-    data')}
+    (b)')}
   
   {my_shapes_S <- c(
     21, 
-    22, # square
-    22, 
+    23, # square
+    23, 
     21)}
   
   my_bg_S <- c(
-    'black','#009E73','#009E73','#009E73'
+    'black','black','black','#009E73'
   )
   
   {my_colors_S <- c(
@@ -981,7 +983,7 @@ Fig_A # this is what is analyzed and compared (data analyses script)
       xlab(NULL)+
       ylab("Number of synchronized visits \n")+
       
-      geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),na.rm=TRUE)+
+      geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),size = 2, width=1,na.rm=TRUE)+
       geom_point(size =4, aes(shape=Type, col=Type, bg = Type)) +
       #scale_y_continuous(breaks =seq(45,55, by = 2),limits = c(45,55)) +
       scale_x_discrete(labels = my_labels_S)+
@@ -994,6 +996,7 @@ Fig_A # this is what is analyzed and compared (data analyses script)
         legend.position="none",
         panel.border = element_rect(colour = "black", fill=NA), 
         axis.title.y=element_text(size=14,face="bold", margin=margin(l=5)),
+        axis.text.y=element_text(size=14),
         axis.text.x=element_text(size=14, face="bold",margin=margin(t=5)),
         axis.title.x = NULL,
         plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
