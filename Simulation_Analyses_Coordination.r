@@ -1286,7 +1286,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_x_continuous(limits = c(0, 10))+
       scale_y_continuous(limits = c(0, 10))+
       
-      annotate("text", x = 5, y = 5, label = "Number of nestlings",  hjust = 0.5, angle=0)+
+      annotate("text", x = 5, y = 5, label = "Brood size",  hjust = 0.5, angle=0)+
       theme_classic()+
       
       theme(
@@ -1324,20 +1324,20 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
     g3 <- grid.arrange(thirdrowy)
     gbottom <- grid.arrange(bottomrowy)
     
-    gg1 <- grid.arrange(textGrob("Scenario 1:
-Alternation simulated 
-to be random"),g1,ncol =2, widths = c(1.5,4))
+    gg1 <- grid.arrange(textGrob("Alternation simulated 
+to be random
+( 2 )"),g1,ncol =2, widths = c(1.5,4))
     
-    gg2 <- grid.arrange(textGrob("Scenario 2:
-Alternation simulated 
+    gg2 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
-due to autocorrelation"),g2,ncol =2, widths = c(1.5,4))
+due to autocorrelation
+( 4 )"),g2,ncol =2, widths = c(1.5,4))
     
-    gg3 <- grid.arrange(textGrob("Scenario 3:
-Alternation simulated 
+    gg3 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
 due to an effect
-of the number of nestlings"),g3,ncol =2, widths = c(1.5,4))
+of the brood size
+( 6 )"),g3,ncol =2, widths = c(1.5,4))
     
     ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
     
