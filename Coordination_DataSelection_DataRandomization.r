@@ -637,7 +637,7 @@ Summary_A_sorted_intervals_outof_AMax))
 21, #circle
 21, 
 21, 
-21, # cross
+21, # 
 21,
 21)}
 
@@ -647,9 +647,9 @@ Summary_A_sorted_intervals_outof_AMax))
 )}  
 
    {my_bg <- c(
-     '#56B4E9','black', '#56B4E9','white','white','#009E73'
+     '#56B4E9','black', '#56B4E9','#009E73','#009E73','#009E73'
    )} 
-  
+
 
 Fig_A_AMax <- {ggplot(data=summary_A_outof_AMax, aes(x=Type, y=Amean,colour=Type, shape = Type))+
 xlab(NULL)+
@@ -661,7 +661,7 @@ scale_x_discrete(labels = my_labels)+
 
 geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type), size = 2, width =1,na.rm=TRUE)+
 #geom_point(size =4, aes(shape=Type, col=Type, bg = Type)) +
-geom_point(size =4, aes(shape=Type, col=Type, bg = Type), stroke = 3) +    
+geom_point(size =4, aes(shape=Type, col=Type, bg=Type), stroke = 1) +   
 scale_colour_manual(values=my_colors, labels = my_labels)+
 scale_shape_manual(values=my_shapes, labels=my_labels)+ 
 scale_fill_manual(values=my_bg, labels=my_labels)+    
@@ -965,8 +965,7 @@ Fig_A # this is what is analyzed and compared (data analyses script)
     21, #
     21)}
   
-  my_bg_S <- c('black','white','white','#009E73')
-  
+
   {my_colors_S <- c(
     'black','dimgrey','dimgrey','dimgrey'
   )}
@@ -975,13 +974,15 @@ Fig_A # this is what is analyzed and compared (data analyses script)
     'black','#009E73','#009E73','#009E73'
   )}
   
+  my_bg_S <- c('black','#009E73','#009E73','#009E73')
+  
   
   Fig_S <- {ggplot(data=summary_S, aes(x=Type, y=Smean), colour=Type, shape=Type)+
       xlab(NULL)+
       ylab("Number of synchronized visits \n")+
       
       geom_errorbar(aes(ymin=Slower, ymax=Supper, col=Type),size = 2, width=1,na.rm=TRUE)+
-      geom_point(size =4, aes(shape=Type, col=Type, bg = Type), stroke=3) +
+      geom_point(size =4, aes(shape=Type, col=Type, bg = Type), stroke=1) +
       #scale_y_continuous(breaks =seq(45,55, by = 2),limits = c(45,55)) +
       scale_x_discrete(labels = my_labels_S)+
       scale_shape_manual(values=my_shapes_S, labels=my_labels_S)+ 
