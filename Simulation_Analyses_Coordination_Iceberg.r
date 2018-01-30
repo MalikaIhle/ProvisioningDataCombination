@@ -81,6 +81,23 @@ length(fileList_Sim1_4), # 811
 length(fileList_Sim1_5), # 923
 length(fileList_Sim1_6)) # 992
 
+      #1
+      binom.test(61,963,0.05) # more than 61 becomes significant: accepted false positive rate in simulation 1 = 6.1
+      #2
+      binom.test(61,965,0.05)# more than 61 becomes significant
+      #3
+      binom.test(52,797,0.05)# more than 52 becomes significant
+      #4
+      binom.test(53,811,0.05)# more than 53 becomes significant
+      #5
+      binom.test(59,923,0.05)# more than 59 becomes significant
+      #6
+      binom.test(63,992,0.05)# more than 63 becomes significant
+      
+      mean(c(61,61,52,53,59,63))
+
+
+
 # shape results Sim 1
 Results_Sim_1 <- c(
 list(Shape_results(fileList_Sim1_1,1)), # no_autocor_no_cor
