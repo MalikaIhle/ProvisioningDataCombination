@@ -66,7 +66,11 @@ nPR <- 1599 # nb of selected DVD (see below)
 avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
 sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var))
 
+#syncint <- 0.5
 syncint <- 2
+#syncint <- 1.5
+syncint <- 2.5
+
 }
 
 {# Get raw data from R_ExtractedData
@@ -1125,7 +1129,7 @@ head(MY_TABLE_perBrood)
 
 
 
-# output_folder <- "R_Selected&RandomizedData"
+ output_folder <- "R_Selected&RandomizedData"
 
 
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD.csv", sep="/"), row.names = FALSE) 
@@ -1170,8 +1174,9 @@ head(MY_TABLE_perBrood)
 # 20170321 the raw data of the DVDs where both parents are known
 # 20170322 rerun
 
-
-
-
+# 20180131
+# write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S15.csv", sep="/"), row.names = FALSE) 
+write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S25.csv", sep="/"), row.names = FALSE) 
+# write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S05.csv", sep="/"), row.names = FALSE) 
 
 
