@@ -44,8 +44,9 @@ return(results_PercentageFactorSignificant)
 Shape_results2 <- function(MY_Results, TypeNumber){ 
   # MY_Results <- fileList_Sim1_1 
   # TypeNumber <- 1
-  effects_modA <- do.call(rbind,lapply(MY_Results, function(x){x$e_modA}))
-  colnames(effects_modA) <-MY_Results[[1]]$Factor
+  # x <- MY_Results[[1]]
+  effects_modA <- do.call(rbind,lapply(MY_Results, function(x){x$e_modA[c(5:8)]}))
+  colnames(effects_modA) <-MY_Results[[1]]$Factor[c(5:8)]
   return(summary(effects_modA))
   
 }
@@ -198,10 +199,70 @@ Results_Sim_1
 # 8 Typez_Obsv:scale(TotalP)    100         NA            NA    100.00        NA  51.81        NA   0.06            NA        NA      0.28        NA   0.02        NA
 
 
+# shape results2 Sim 1 - summary effects for modA
+Results2_Sim_1 <- c(
+  list(Shape_results2(fileList_Sim1_1,1)), # no_autocor_no_cor
+  list(Shape_results2(fileList_Sim1_2,2)), # no_autocor_corCN
+  list(Shape_results2(fileList_Sim1_3,3)), # full_autocor_no_cor
+  list(Shape_results2(fileList_Sim1_4,4)), # full_autocor_corCN
+  list(Shape_results2(fileList_Sim1_5,5)), # partial_autocor_no_cor
+  list(Shape_results2(fileList_Sim1_6,6))) # partial_autocor_corCN
 
+Results2_Sim_1
 
-
-
+# [[1]]
+# Typez_Obsv         Typez_Obsv:scale(CN) Typez_Obsv:scale(DiffP) Typez_Obsv:scale(TotalP)
+# Min.   :-0.0093691   Min.   :-1.130e-02   Min.   :-0.012206       Min.   :-0.0098004      
+# 1st Qu.: 0.0003543   1st Qu.:-2.425e-03   1st Qu.:-0.004158       1st Qu.:-0.0018937      
+# Median : 0.0027801   Median : 3.497e-05   Median :-0.002217       Median : 0.0002098      
+# Mean   : 0.0027825   Mean   :-3.550e-05   Mean   :-0.002271       Mean   : 0.0002529      
+# 3rd Qu.: 0.0052727   3rd Qu.: 2.417e-03   3rd Qu.:-0.000175       3rd Qu.: 0.0024322      
+# Max.   : 0.0137022   Max.   : 1.093e-02   Max.   : 0.007535       Max.   : 0.0119775      
+# 
+# [[2]]
+# Typez_Obsv         Typez_Obsv:scale(CN) Typez_Obsv:scale(DiffP) Typez_Obsv:scale(TotalP)
+# Min.   :-0.0090423   Min.   :-1.317e-02   Min.   :-0.0118199      Min.   :-1.260e-02      
+# 1st Qu.: 0.0007844   1st Qu.:-3.298e-03   1st Qu.:-0.0041384      1st Qu.:-2.555e-03      
+# Median : 0.0032332   Median :-9.521e-05   Median :-0.0019254      Median :-1.585e-04      
+# Mean   : 0.0032400   Mean   :-8.230e-05   Mean   :-0.0019324      Mean   : 2.948e-05      
+# 3rd Qu.: 0.0056429   3rd Qu.: 2.897e-03   3rd Qu.: 0.0002262      3rd Qu.: 2.785e-03      
+# Max.   : 0.0174860   Max.   : 1.523e-02   Max.   : 0.0079131      Max.   : 1.310e-02      
+# 
+# [[3]]
+# Typez_Obsv     Typez_Obsv:scale(CN) Typez_Obsv:scale(DiffP) Typez_Obsv:scale(TotalP)
+# Min.   :0.2041   Min.   :-0.0122434   Min.   :-0.08956        Min.   :0.05262         
+# 1st Qu.:0.2167   1st Qu.:-0.0025517   1st Qu.:-0.07956        1st Qu.:0.06296         
+# Median :0.2194   Median :-0.0003028   Median :-0.07658        Median :0.06589         
+# Mean   :0.2195   Mean   :-0.0001331   Mean   :-0.07656        Mean   :0.06595         
+# 3rd Qu.:0.2224   3rd Qu.: 0.0023514   3rd Qu.:-0.07345        3rd Qu.:0.06872         
+# Max.   :0.2333   Max.   : 0.0111210   Max.   :-0.06268        Max.   :0.07779         
+# 
+# [[4]]
+# Typez_Obsv     Typez_Obsv:scale(CN) Typez_Obsv:scale(DiffP) Typez_Obsv:scale(TotalP)
+# Min.   :0.2207   Min.   :-0.011645    Min.   :-0.07774        Min.   :0.03879         
+# 1st Qu.:0.2320   1st Qu.: 0.003406    1st Qu.:-0.06507        1st Qu.:0.05922         
+# Median :0.2352   Median : 0.006593    Median :-0.06224        Median :0.06314         
+# Mean   :0.2350   Mean   : 0.006728    Mean   :-0.06226        Mean   :0.06300         
+# 3rd Qu.:0.2379   3rd Qu.: 0.009964    3rd Qu.:-0.05940        3rd Qu.:0.06748         
+# Max.   :0.2494   Max.   : 0.026742    Max.   :-0.04986        Max.   :0.08053         
+# 
+# [[5]]
+# Typez_Obsv     Typez_Obsv:scale(CN) Typez_Obsv:scale(DiffP) Typez_Obsv:scale(TotalP)
+# Min.   :0.1538   Min.   :0.05616      Min.   :-0.07751        Min.   :0.04959         
+# 1st Qu.:0.1636   1st Qu.:0.06553      1st Qu.:-0.06558        1st Qu.:0.06329         
+# Median :0.1665   Median :0.06826      Median :-0.06237        Median :0.06592         
+# Mean   :0.1664   Mean   :0.06818      Mean   :-0.06265        Mean   :0.06596         
+# 3rd Qu.:0.1693   3rd Qu.:0.07100      3rd Qu.:-0.05968        3rd Qu.:0.06891         
+# Max.   :0.1793   Max.   :0.07877      Max.   :-0.04946        Max.   :0.08233         
+# 
+# [[6]]
+# Typez_Obsv     Typez_Obsv:scale(CN) Typez_Obsv:scale(DiffP) Typez_Obsv:scale(TotalP)
+# Min.   :0.1781   Min.   :0.04292      Min.   :-0.07291        Min.   :0.02767         
+# 1st Qu.:0.1894   1st Qu.:0.05456      1st Qu.:-0.06088        1st Qu.:0.05579         
+# Median :0.1922   Median :0.05834      Median :-0.05764        Median :0.05981         
+# Mean   :0.1922   Mean   :0.05824      Mean   :-0.05767        Mean   :0.05974         
+# 3rd Qu.:0.1950   3rd Qu.:0.06185      3rd Qu.:-0.05468        3rd Qu.:0.06433         
+# Max.   :0.2050   Max.   :0.08222      Max.   :-0.04052        Max.   :0.07770  
 
 
 }
