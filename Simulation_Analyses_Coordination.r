@@ -1336,7 +1336,7 @@ due to autocorrelation
     gg3 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
 due to an effect
-of the brood size
+of brood size
 ( 6 )"),g3,ncol =2, widths = c(1.5,4))
     
     ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
