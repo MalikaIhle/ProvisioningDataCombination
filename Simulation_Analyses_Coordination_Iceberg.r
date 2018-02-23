@@ -12,6 +12,7 @@ rm(list = ls(all = TRUE))
 
 require(stringr)
 library(qdap)
+library(dplyr)
 
 # Function counting number of significant result as a percentage of NreplicatesSimulation
 
@@ -50,6 +51,23 @@ Shape_results2 <- function(MY_Results, TypeNumber){
   return(summary(effects_modA))
   
 }
+
+
+Shape_results3 <- function(MY_Results, TypeNumber){ 
+  # MY_Results <- fileList_Sim1_1 
+  # TypeNumber <- 1
+  # x <- MY_Results[[1]]
+  effects_modA <- do.call(rbind,lapply(MY_Results, function(x){x$e_modA[c(5:8)]}))
+  MeanSDout <- cbind(rbind(mean(effects_modA[,1]), sd(effects_modA[,1])), 
+        rbind(mean(effects_modA[,2]), sd(effects_modA[,2])),
+        rbind(mean(effects_modA[,3]), sd(effects_modA[,3])),
+        rbind(mean(effects_modA[,4]), sd(effects_modA[,4])))
+  colnames(MeanSDout) <-MY_Results[[1]]$Factor[c(5:8)]
+  rownames(MeanSDout) <- c('Mean','SD')
+  return(MeanSDout)
+  
+}
+
 
 
 {# Sim 1
@@ -263,6 +281,21 @@ Results2_Sim_1
 # Mean   :0.1922   Mean   :0.05824      Mean   :-0.05767        Mean   :0.05974         
 # 3rd Qu.:0.1950   3rd Qu.:0.06185      3rd Qu.:-0.05468        3rd Qu.:0.06433         
 # Max.   :0.2050   Max.   :0.08222      Max.   :-0.04052        Max.   :0.07770  
+
+
+# shape results3 Sim 1 - summary effects for modA
+Results3_Sim_1 <- c(
+  list(Shape_results3(fileList_Sim1_1,1)), # no_autocor_no_cor
+  list(Shape_results3(fileList_Sim1_2,2)), # no_autocor_corCN
+  list(Shape_results3(fileList_Sim1_3,3)), # full_autocor_no_cor
+  list(Shape_results3(fileList_Sim1_4,4)), # full_autocor_corCN
+  list(Shape_results3(fileList_Sim1_5,5)), # partial_autocor_no_cor
+  list(Shape_results3(fileList_Sim1_6,6))) # partial_autocor_corCN
+
+Results3_Sim_1
+
+
+
 
 
 }
