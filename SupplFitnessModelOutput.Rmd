@@ -1,9 +1,8 @@
 ---
-title: "Supplemental Text"
+title: "Supplemental Fitness models output"
 author: "Malika Ihle"
-date: "October 13, 2017"
+date: "April 2, 2018"
 output: pdf_document
-classoption: landscape
 ---
 
 ```{r, echo=FALSE, results="hide", message=FALSE, warnings=FALSE, include =FALSE}
@@ -52,19 +51,6 @@ source('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\s
 **_VisitRateDifference_**: the difference in visit rate per hour between the partner  
 
 
-## Predictors of coordination
-
-### Alternation
-
-```{r set-options, echo=FALSE}
-options(width=120)
-summary(modA)
-```
-### Synchrony
-
-```{r, echo=FALSE}
-summary(modS)
-```
 
 ## Fitness correlates
 
@@ -104,7 +90,6 @@ summary(mod_MaleDivorce)
 ```{r, echo=FALSE}
 summary(mod_FemaleDivorce)
 ```
-
 
 
 
