@@ -69,7 +69,7 @@ sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var))
 #syncint <- 0.5
 syncint <- 2
 #syncint <- 1.5
-syncint <- 2.5
+#syncint <- 2.5
 
 }
 
@@ -292,14 +292,22 @@ MY_tblBroods[is.na(MY_tblBroods$LayDate),]
 
 }
 
-{## first interval after setting up camera
+{## first interval after setting up camera - all intervals distribution - time in the nest
 outTsartMin <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[which.min(x$TstartFeedVisit), c('DVDRef','TstartFeedVisit')] ))
 summary(outTsartMin$TstartFeedVisit)
 
 outAllOtherIntervals <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[-which.min(x$TstartFeedVisit), c('DVDRef','Interval')] ))
 summary(outAllOtherIntervals$Interval)
+#hist(outAllOtherIntervals$Interval)
 
 t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
+
+summary(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
+table(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
+hist(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit, breaks =50)
+length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) >1.2]))
+
+
 }
   
 {## visit rate
@@ -367,6 +375,38 @@ fulldat
 
 one_generated_fulldat <- generate_fulldat(1599,avPR,sdPR,VideoLength) # see default parameter values
 head(one_generated_fulldat)
+
+  {### request from reviewer: check the itnerval distribution of the generated dataset
+      set.seed(10)
+
+        meanlog <- log(avPR)
+        sdlog <-  sqrt(log(1 + sdPR^2/avPR^2))
+        
+        create_DVD <- function(){
+          
+          MalePexp <- rlnorm(1, meanlog = meanlog, sdlog = sdlog )
+          MaleP <- rpois(1, MalePexp)
+          if (MaleP == 0){MaleP <- rpois(1, MalePexp)}
+          
+          FemalePexp <- rlnorm(1, meanlog = log(avPR), sdlog = sqrt(log(1 + sdPR^2/avPR^2)) )
+          FemaleP <- rpois(1, FemalePexp)
+          if (FemaleP == 0){FemaleP <- rpois(1, FemalePexp)}
+          
+          TotalP <- MaleP + FemaleP
+          DiffP <- abs(MaleP - FemaleP)
+          
+          MaleVisits <- sort(runif(MaleP,0,VideoLength))
+          FemaleVisits <- sort(runif(FemaleP,0,VideoLength))
+          MaleIntervals <- c(0,diff(MaleVisits))[-1]
+          FemaleIntervals <- c(0,diff(FemaleVisits))[-1]
+          Intervals <- c(MaleIntervals,FemaleIntervals)
+          Intervals
+        }
+        
+        allintervals <- unlist(pbreplicate(1599, create_DVD()))
+        summary(allintervals)
+        hist(allintervals)
+    }
 
 }
 
