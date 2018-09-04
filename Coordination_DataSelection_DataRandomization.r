@@ -297,12 +297,12 @@ outTsartMin <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef
 summary(outTsartMin$TstartFeedVisit)
 
 outAllOtherIntervals <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[-which.min(x$TstartFeedVisit), c('DVDRef','Interval')] ))
-summary(outAllOtherIntervals$Interval)
+summary(outAllOtherIntervals$Interval) # time between known visits
 #hist(outAllOtherIntervals$Interval)
 
 t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
 
-summary(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
+summary(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) # time in nest
 table(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
 hist(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit, breaks =50)
 length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) >1.2]))
