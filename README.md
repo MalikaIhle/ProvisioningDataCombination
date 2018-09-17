@@ -19,6 +19,8 @@ for old files, also gives comments 'S', 'IN', 'O' with color of 'O' visits
 
 query the DB to get MY_tblParentalCare, MY_tblBrood, MY_tblDVDInfo, create variables on all data
 
+data 'All' contains info on whether the bird were seen around the nest (Shinichi's protocol), 'FeedingVisits' only contains feeding visits
+
 #### creates all tables of all extracted data and store then in R_ExtractedData folder: these can be used by other members of the team, working on provisioning and not necessarily behavioural compatibility (i.e. this is the full set of data)
 
 

@@ -2666,7 +2666,7 @@ DurationScript # ~ 14 min
 # 20170208 to avoid reextracting excel file to run end of script
 
 ## write.csv(RawFeedingVisits, file = paste(output_folder,"R_MY_RawFeedingVisits.csv", sep="/"), row.names = FALSE) 
- # 20160324 20160331 20160426 20170208 rerun
+ # 20160324 20160331 20160426 20170208 rerun # create RawFeedingVisit ('A' bouts removed, one succession OF-IN give the Tstart of OF and the Tend of IN - split per sex and recombine)
  
 ## write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) 
  # 20160415
