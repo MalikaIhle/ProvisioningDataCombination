@@ -2325,9 +2325,9 @@ MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$Hatch
 sunflowerplot(MY_tblDVDInfo$DVDInfoAge,MY_tblDVDInfo$ChickAge)
 MY_tblDVDInfo[abs(MY_tblDVDInfo$DVDInfoAge - MY_tblDVDInfo$ChickAge) > 2,]
 
-MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge <10 ] <- 'Age06'
-MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge >=10 ] <- 'Age10'
- 
+MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge <9 ] <- 'Age06'
+MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge >=9 ] <- 'Age10'
+MY_tblDVDInfo[MY_tblDVDInfo$ChickAge ==9,]
 }
 
 {# RelTime
@@ -2669,6 +2669,7 @@ DurationScript # ~ 14 min
  # 20160324 20160331 20160426 20170208 rerun
  
 ## write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) 
+    # MY_tblDVDInfo <- read.csv(paste("R_ExtractedData","R_MY_tblDVDInfo.csv", sep="/"))
  # 20160415
  # 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
  # 20160504 with new dummy variables
@@ -2676,6 +2677,7 @@ DurationScript # ~ 14 min
  # 20170208 rerun
  # 20170322 rerun
  # 20170323 rerun with DB corrected after sparrow meeting
+ # 20190110 change AgeCat delimiation (include age 9 into cat 10)
  
 ## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
  # 20160415
