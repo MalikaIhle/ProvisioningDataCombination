@@ -321,7 +321,25 @@ length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY
   summary(MY_TABLE_perDVD$A/(MY_TABLE_perDVD$EffectiveTime)*60)
   summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
-  
+ 
+  {# interval at d6 and d12
+RawInterfeedsWithoutFirstZeros <- data.frame(RawInterfeeds %>% group_by (DVDRef,Sex) %>% slice(-1))
+summary(MY_TABLE_perDVD$DVDInfoAge)
+RawInterfeedsWithoutFirstZeros <- merge(RawInterfeedsWithoutFirstZeros,MY_TABLE_perDVD[,c("DVDInfoAge","DVDRef")], by = "DVDRef")
+
+setEPS() 
+pdf("SuppFig2.pdf", height=10, width=15)
+par(mfrow=c(1,2))
+hist(RawInterfeedsWithoutFirstZeros$Interval[RawInterfeedsWithoutFirstZeros$DVDInfoAge <= 6], main = "Day 6", xlab= "Interval duration (min)", ylim = c(0, 10100), xlim = c(0,70))  
+hist(RawInterfeedsWithoutFirstZeros$Interval[RawInterfeedsWithoutFirstZeros$DVDInfoAge == 10], main = "Day 10",xlab= "Interval duration (min)", ylim = c(0, 10100), xlim = c(0,70))  
+dev.off()
+
+length(RawInterfeedsWithoutFirstZeros$Interval[RawInterfeedsWithoutFirstZeros$DVDInfoAge <= 6]) # 13033
+length(RawInterfeedsWithoutFirstZeros$Interval[RawInterfeedsWithoutFirstZeros$DVDInfoAge == 10]) # 14552
+
+
+}  
+   
 }
 
 
@@ -376,7 +394,7 @@ fulldat
 one_generated_fulldat <- generate_fulldat(1599,avPR,sdPR,VideoLength) # see default parameter values
 head(one_generated_fulldat)
 
-  {### request from reviewer: check the itnerval distribution of the generated dataset
+  {### request from reviewer: check the itnerval distribution of the generated dataset and compare to observed dataset
       set.seed(10)
 
         meanlog <- log(avPR)
