@@ -322,7 +322,26 @@ length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY
   summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
  
+# comparison time spend in nest a day 6 vs day 10
+  MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_TABLE_perDVD[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
+  MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
+  head(MY_RawFeedingVisits)
+  
+  setEPS() 
+  pdf("SuppFig2.pdf", height=10, width=15)
+  par(mfrow=c(1,2))
+  hist(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6], main = "Day 6", xlab= "Time spent in the nest (min)", ylim = c(0, 14000), xlim = c(0,50), breaks=20)  
+  hist(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge == 10], main = "Day 10",xlab= "Time spent in the nest (min)", ylim = c(0, 14000), xlim = c(0,50))  
+  dev.off()
 
+  
+  length(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6]) # 13999
+  length(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge == 10]) # 15402
+  summary(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6])
+  summary(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge == 10])
+  sd(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6])
+  sd(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge ==10])
+  
 }
 
 
@@ -1231,7 +1250,7 @@ head(MY_TABLE_perBrood)
 
 # 20180131
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S15.csv", sep="/"), row.names = FALSE) 
-write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S25.csv", sep="/"), row.names = FALSE) 
+# write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S25.csv", sep="/"), row.names = FALSE) 
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S05.csv", sep="/"), row.names = FALSE) 
 
 
