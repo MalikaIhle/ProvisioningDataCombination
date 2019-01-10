@@ -558,6 +558,30 @@ modChickMass <- lmer(I(log(AvgOfMass)) ~ I(log(AvgOfTarsus)) +
 
 summary(modChickMass) 
 
+
+
+# model chick mass and chick mass variance at once
+
+MY_TABLE_perChick$MeanLogSdevMinus <- MY_TABLE_perChick$MeanLogSdev*-1 +1
+library(MCMCglmm)
+
+modChickMassAndVariance <- MCMCglmm(AvgOfMass~ #I(log(AvgOfTarsus)) +
+           scale(MeanTotalProRate) +
+           scale(I(MeanTotalProRate^2))+
+           scale(HatchingDayAfter0401) +
+           scale(PairBroodNb) +
+           scale(NbRinged) +
+            scale(MeanLogAdev) + 
+            scale(MeanLogSdev) 											
+, random = ~us(sqrt(MeanLogSdevMinus )) :units, rcov = ~units, data = MY_TABLE_perChick, nitt=30000, thin=20, burnin = 10000) 
+  # added minus because we need the relationship between the variance in chick amss and synchrony to be positive
+  # the expectation is that synchrony is negatively correlated with the vairance in chick mass
+  plot(modChickMassAndVariance)
+
+
+
+
+
 {# model assumptions checking
 # 
 # # residuals vs fitted: mean should constantly be zero: not quite !
