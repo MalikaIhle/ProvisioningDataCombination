@@ -97,7 +97,7 @@ tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), s
 
 }
 
-
+  
 }
 
 {# select valid video files for studying behavioural compatibility in chick provisioning
@@ -117,6 +117,30 @@ MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% unlist(FedBroods)] # 106 extra 
 
 
 length(unique(list_non_valid_DVDRef)) # 450 
+
+
+  ########### !!!!!!!!!!! Beofre running this paragraph silence the line selecting out age below 5
+  # comparison time spend in nest a day 3, day 6 vs day 10
+  MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_tblDVDInfo[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
+  MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
+  head(MY_RawFeedingVisits)
+  
+  colboxplt <- c(rep("grey",5), rep("black",8))
+  
+  setEPS() 
+  pdf("SuppFig2.pdf", height=10, width=15)
+
+  
+  boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
+  boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, xlab= "Chick age (days)", ylab = "Time spent in the nest (min)", medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
+  text(x = boxplt$names, y = 45, paste("(n=",boxplt$n,")",sep=""))
+  abline(v=c(5.5,8.5), col=c("red", "red"), lty=c(2,2), lwd=c(2, 2))
+  
+  dev.off()
+  #############
+
+
+
 
 MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
 
@@ -322,26 +346,7 @@ length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY
   summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
  
-# comparison time spend in nest a day 6 vs day 10
-  MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_TABLE_perDVD[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
-  MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
-  head(MY_RawFeedingVisits)
-  
-  setEPS() 
-  pdf("SuppFig2.pdf", height=10, width=15)
-  par(mfrow=c(1,2))
-  hist(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6], main = "Day 6", xlab= "Time spent in the nest (min)", ylim = c(0, 14000), xlim = c(0,50), breaks=20)  
-  hist(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge == 10], main = "Day 10",xlab= "Time spent in the nest (min)", ylim = c(0, 14000), xlim = c(0,50))  
-  dev.off()
 
-  
-  length(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6]) # 13999
-  length(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge == 10]) # 15402
-  summary(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6])
-  summary(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge == 10])
-  sd(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge <= 6])
-  sd(MY_RawFeedingVisits$Tin[MY_RawFeedingVisits$DVDInfoAge ==10])
-  
 }
 
 
