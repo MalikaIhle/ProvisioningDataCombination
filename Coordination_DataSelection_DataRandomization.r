@@ -326,7 +326,7 @@ length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY
 
 
 head(MY_tblBroods) # even those where one parent unknown, needed for divorce question
-head(RawInterfeeds) 
+head(RawInterfeeds, 50) 
 head(MY_TABLE_perDVD)
 
 
@@ -404,9 +404,23 @@ head(one_generated_fulldat)
         }
         
         allintervals <- unlist(pbreplicate(1599, create_DVD()))
-        summary(allintervals)
-        hist(allintervals)
-    }
+        summary(allintervals) #does not include first zeros of each nest watches
+        
+        RawInterfeedsWithoutFirstZeros <- data.frame(RawInterfeeds %>% group_by (DVDRef,Sex) %>% slice(-1))
+        summary(RawInterfeedsWithoutFirstZeros$Interval)
+        
+        setEPS() 
+        pdf("SuppFig.pdf", height=10, width=15)
+        par(mfrow=c(1,2))
+        hist(allintervals,  xlim = c(0,80), ylim = c(0,35000), main = "Simulated intervals", xlab = "Interval duration (min)")
+        hist(RawInterfeedsWithoutFirstZeros$Interval, xlim = c(0,80), ylim = c(0,35000), main = "Observed intervals", xlab = "Interval duration (min)")
+        dev.off()
+        
+        
+        length(allintervals)
+        length(RawInterfeedsWithoutFirstZeros$Interval)
+        
+        }
 
 }
 
