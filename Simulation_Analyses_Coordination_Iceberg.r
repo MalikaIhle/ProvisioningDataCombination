@@ -68,6 +68,41 @@ Shape_results3 <- function(MY_Results, TypeNumber){
   
 }
 
+Shape_results4 <- function(MY_Results, TypeNumber){ 
+  # MY_Results <- fileList_Sim1_1 
+  # TypeNumber <- 1
+  # x <- MY_Results[[1]]
+  
+  MY_Resultssub <-  lapply(MY_Results, function(x){ 
+    subx <- x[,c("e_modA_simple", "e_modABen", "e_modAdev","e_modA", "e_modAbin", "e_modS" )] })
+  
+  Reduce("+", MY_Resultssub) / length(MY_Resultssub)
+  Reduce(quantfunc, MY_Resultssub)
+  
+  quantfunc <- function(x) {quantile(x, c(0.25,0.75), na.rm=TRUE)}
+  quantfunc <- function(x) {quantile(x, 0.25, na.rm=TRUE)}
+  
+  
+  quant(x, c(2.5,97.5)) 
+  
+  quantfunc(c(1,2,3,4,5,6))[[1]]
+  quantile(c(0,1), c(2.5,97.5))
+  summary(c(0,1,2,3,4,5))
+  quantile(c(0,1,2,3,4,5), c(0.25,0.75))
+  str(quantfunc(c(0,1,2,3,4,5)))
+  as.data.frame(quantfunc(c(0,1,2,3,4,5)))
+  quantfunc(c(0,1,2,3,4,5))[[1]]
+  
+  
+
+  
+  apply(simplify2array(MY_Resultssub), c(1,2), mean)
+  
+  sapply(MY_Results,mean)
+  lapply(MY_Results,  mean, na.rm=TRUE)
+
+  
+}
 
 
 {# Sim 1
