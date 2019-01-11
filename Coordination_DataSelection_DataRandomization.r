@@ -108,7 +108,7 @@ list_non_valid_DVDRef <-
 c(
 MY_tblParentalCare$DVDRef[!(MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 10 files with no visits at all + 2 files with no feeding visits at all
 MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)],# 6 - where 0 chicks
-MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5 & MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef) ],# 171 - where still brooding (age <=5) and with chicks and with feeding visit
+#MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5 & MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef) ],# 171 - where still brooding (age <=5) and with chicks and with feeding visit
 MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& MY_tblDVDInfo$DVDInfoChickNb > 0 & MY_tblDVDInfo$ChickAge >5  & (MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 153 - one sex did not visit for feeding despite having chicks above age 5
 MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 DVD where both parents unidentified
 MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef[is.na(MY_tblBroods$SocialDadID) | is.na(MY_tblBroods$SocialMumID)] ], # 63 files where one parent unidentified
@@ -125,6 +125,8 @@ length(unique(list_non_valid_DVDRef)) # 450
   MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
   head(MY_RawFeedingVisits)
   
+  nbVideoperAge <- data.frame(MY_RawFeedingVisits %>% group_by(DVDInfoAge) %>% summarise(nVideo =length(unique(DVDRef))))
+  
   colboxplt <- c(rep("grey",5), rep("black",8))
   
   setEPS() 
@@ -134,6 +136,7 @@ length(unique(list_non_valid_DVDRef)) # 450
   boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
   boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, xlab= "Chick age (days)", ylab = "Time spent in the nest (min)", medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
   text(x = boxplt$names, y = 45, paste("(n=",boxplt$n,")",sep=""))
+  text(x = boxplt$names, y = 43, paste("(N=",nbVideoperAge$nVideo,")",sep=""))  
   abline(v=c(5.5,8.5), col=c("red", "red"), lty=c(2,2), lwd=c(2, 2))
   
   dev.off()
