@@ -82,6 +82,15 @@ Shape_results4 <- function(MY_Results, TypeNumber){
   quantfunc <- function(x) {quantile(x, c(0.25,0.75), na.rm=TRUE)}
   quantfunc <- function(x) {quantile(x, 0.25, na.rm=TRUE)}
   
+  dim(mm)
+  mm <- array(NA,dim=c(8,6,length(MY_Resultssub)))
+  for(i in 1:length(MY_Resultssub)) mm[,,i] <- as.matrix(MY_Resultssub[[i]])
+  
+  apply(mm,1:2,mean)
+  apply(mm,1:2,sd)
+  apply(mm,1:2,quantile, probs=c(0.025), na.rm=TRUE)
+  apply(mm,1:2,quantile, probs=c(0.975), na.rm=TRUE)
+
   
   quant(x, c(2.5,97.5)) 
   
