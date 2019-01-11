@@ -300,6 +300,44 @@ summary(modA)
 dispersion_glmer(modA) # < 1.4
 
 
+
+library(MCMCglmm)
+
+MY_TABLE_perDVD_long$BroodRef <- as.factor(MY_TABLE_perDVD_long$BroodRef)
+MY_TABLE_perDVD_long$SocialMumID <- as.factor(MY_TABLE_perDVD_long$SocialMumID)
+MY_TABLE_perDVD_long$SocialDadID <- as.factor(MY_TABLE_perDVD_long$SocialDadID)
+MY_TABLE_perDVD_long$PairID <- as.factor(MY_TABLE_perDVD_long$PairID)
+MY_TABLE_perDVD_long$BreedingYear <- as.factor(MY_TABLE_perDVD_long$BreedingYear)
+MY_TABLE_perDVD_long$PairIDYear <- as.factor(MY_TABLE_perDVD_long$PairIDYear)
+MY_TABLE_perDVD_long$DVDRef <- as.factor(MY_TABLE_perDVD_long$DVDRef)
+
+# write.csv(MY_TABLE_perDVD_long, file = "R_MY_TABLE_perDVD_long.csv", row.names = FALSE) 
+
+modAmcmcglmm <- MCMCglmm(A ~
+        Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+        Type*scale(HatchingDayAfter0401) +
+        Type*scale(PairBroodNb) +
+        Type*scale(DVDInfoChickNb) +
+        Type*ChickAgeCat +
+        Type*scale(RelTimeHrs) +
+        Type*MPriorResidence +
+        Type*scale(TotalProRate) +
+        Type*scale(VisitRateDifference), random = ~  idh(Type):BroodRef +
+          idh(Type):SocialMumID+ 
+          idh(Type):SocialDadID +
+          idh(Type):PairID +  # explained 0% of the variance
+          idh(Type):BreedingYear + # explained 0% of the variance
+          idh(Type):PairIDYear 
+      + DVDRef
+      , data = MY_TABLE_perDVD_long
+      , family = 'poisson', nitt=20000, thin=10, burnin=10000
+)
+
+summary(modAmcmcglmm)
+summary(MY_TABLE_perDVD_long)
+
+
+
 }
 
 {# model assumption checking
@@ -565,6 +603,20 @@ summary(modChickMass)
 MY_TABLE_perChick$MeanLogSdevMinus <- MY_TABLE_perChick$MeanLogSdev*-1 +1
 library(MCMCglmm)
 
+library("MasterBayes")
+
+input_folder <- "R_input"
+pedigree <-  read.table(file= paste(input_folder,"PedigreeUptoIncl2016.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
+
+ped_new<-insertPed(prunePed(orderPed(pedigree[,1:3]), MY_TABLE_perChick$ChickID, make.base = TRUE))
+head(ped_new)
+ped_new2 <- rbind(data.frame(id=MY_TABLE_perChick$ChickID[! MY_TABLE_perChick$ChickID %in% ped_new[,1]], dam=NA, sire=NA), ped_new)
+
+Ainv<-inverseA(ped_new2)$Ainv
+
+
+MY_TABLE_perChick[MY_TABLE_perChick$ChickID %in% MY_TABLE_perChick$ChickID[! MY_TABLE_perChick$ChickID %in% ped_new[,1]],]
+
 modChickMassAndVariance <- MCMCglmm(AvgOfMass~ #I(log(AvgOfTarsus)) +
            scale(MeanTotalProRate) +
            scale(I(MeanTotalProRate^2))+
@@ -573,16 +625,18 @@ modChickMassAndVariance <- MCMCglmm(AvgOfMass~ #I(log(AvgOfTarsus)) +
            scale(NbRinged) +
             scale(MeanLogAdev) + 
             scale(MeanLogSdev) 											
-, random = ~us(sqrt(MeanLogSdevMinus )) :units, rcov = ~units, data = MY_TABLE_perChick, nitt=30000, thin=20, burnin = 10000) 
+, random = ~ RearingBrood + SocialMumID + SocialDadID + PairID + BreedingYear + ChickID + us(sqrt(MeanLogSdevMinus )) :units, rcov = ~units
+, data = MY_TABLE_perChick
+, nitt=60000, thin=30, burnin = 30000,verbose=FALSE, ginverse=list(ChickID=Ainv)) 
   # added minus because we need the relationship between the variance in chick amss and synchrony to be positive
   # the expectation is that synchrony is negatively correlated with the vairance in chick mass
   plot(modChickMassAndVariance)
 
+summary(modChickMassAndVariance)
 
+# write.csv(MY_TABLE_perChick, file = "R_MY_TABLE_perChick.csv", row.names = FALSE) 
 
-
-
-{# model assumptions checking
+  {# model assumptions checking
 # 
 # # residuals vs fitted: mean should constantly be zero: not quite !
 # scatter.smooth(fitted(modChickMass), resid(modChickMass))	
