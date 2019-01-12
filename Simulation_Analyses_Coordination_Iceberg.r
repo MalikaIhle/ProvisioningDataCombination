@@ -68,50 +68,29 @@ Shape_results3 <- function(MY_Results, TypeNumber){
   
 }
 
+
 Shape_results4 <- function(MY_Results, TypeNumber){ 
   # MY_Results <- fileList_Sim1_1 
-  # TypeNumber <- 1
-  # x <- MY_Results[[1]]
+  # i <- 2
   
-  MY_Resultssub <-  lapply(MY_Results, function(x){ 
+  MY_Resultssub <- lapply(MY_Results, function(x){ 
     subx <- x[,c("e_modA_simple", "e_modABen", "e_modAdev","e_modA", "e_modAbin", "e_modS" )] })
   
-  Reduce("+", MY_Resultssub) / length(MY_Resultssub)
-  Reduce(quantfunc, MY_Resultssub)
-  
-  quantfunc <- function(x) {quantile(x, c(0.25,0.75), na.rm=TRUE)}
-  quantfunc <- function(x) {quantile(x, 0.25, na.rm=TRUE)}
-  
+  mm <- array(NA,dim=c(8,6,length(MY_Resultssub))) # empty array
+  for(i in 1:length(MY_Resultssub)) mm[,,i] <- as.matrix(MY_Resultssub[[i]]) # fill in the array with the data frane from the list MY_Resultssub
   dim(mm)
-  mm <- array(NA,dim=c(8,6,length(MY_Resultssub)))
-  for(i in 1:length(MY_Resultssub)) mm[,,i] <- as.matrix(MY_Resultssub[[i]])
   
-  apply(mm,1:2,mean)
-  apply(mm,1:2,sd)
-  apply(mm,1:2,quantile, probs=c(0.025), na.rm=TRUE)
-  apply(mm,1:2,quantile, probs=c(0.975), na.rm=TRUE)
+ Means <- round(apply(mm,1:2,mean),2)
+ LowerCI <- round(apply(mm,1:2,quantile, probs=c(0.025), na.rm=TRUE),2)
+ UpperCI <- round(apply(mm,1:2,quantile, probs=c(0.975), na.rm=TRUE),2)
 
-  
-  quant(x, c(2.5,97.5)) 
-  
-  quantfunc(c(1,2,3,4,5,6))[[1]]
-  quantile(c(0,1), c(2.5,97.5))
-  summary(c(0,1,2,3,4,5))
-  quantile(c(0,1,2,3,4,5), c(0.25,0.75))
-  str(quantfunc(c(0,1,2,3,4,5)))
-  as.data.frame(quantfunc(c(0,1,2,3,4,5)))
-  quantfunc(c(0,1,2,3,4,5))[[1]]
-  
-  
+table <- matrix( paste(paste(as.character(Means), LowerCI, sep= "["), ";", UpperCI, "]", sep=""), nrow=8, ncol = 6)
 
-  
-  apply(simplify2array(MY_Resultssub), c(1,2), mean)
-  
-  sapply(MY_Results,mean)
-  lapply(MY_Results,  mean, na.rm=TRUE)
+Table <- cbind(data.frame(MY_Results[[1]]$Factor), data.frame(table))
+  colnames(Table) <- c("Factor", "e_modA_simple", "e_modABen", "e_modAdev","e_modA", "e_modAbin", "e_modS")
 
-  
-}
+return(Table)  
+  }
 
 
 {# Sim 1
@@ -339,7 +318,84 @@ Results3_Sim_1 <- c(
 Results3_Sim_1
 
 
+# shape results4 Sim 1 - summary effects for all models
+Results4_Sim_1 <- c(
+  list(Shape_results4(fileList_Sim1_1,1)), # no_autocor_no_cor
+  list(Shape_results4(fileList_Sim1_2,2)), # no_autocor_corCN
+  list(Shape_results4(fileList_Sim1_3,3)), # full_autocor_no_cor
+  list(Shape_results4(fileList_Sim1_4,4)), # full_autocor_corCN
+  list(Shape_results4(fileList_Sim1_5,5)), # partial_autocor_no_cor
+  list(Shape_results4(fileList_Sim1_6,6))) # partial_autocor_corCN
 
+
+{
+  # [[1]]
+  # Factor      e_modA_simple          e_modABen         e_modAdev            e_modA         e_modAbin             e_modS
+  # 1              (Intercept)    2.61[2.59;2.64]    0.45[0.44;0.46]  0.04[-0.06;0.14]   2.61[2.58;2.63]    0.63[0.6;0.66]    1.92[1.89;1.96]
+  # 2                scale(CN)      0[-0.01;0.01]             0[0;0]     0[-0.11;0.09]     0[-0.01;0.01]     0[-0.02;0.02]      0[-0.01;0.01]
+  # 3             scale(DiffP) -0.19[-0.22;-0.16] -0.07[-0.07;-0.06] -0.05[-0.18;0.07] -0.2[-0.22;-0.17]   0.51[0.47;0.55] -0.21[-0.25;-0.17]
+  # 4            scale(TotalP)     0.42[0.4;0.45]          NA[NA;NA]  0.03[-0.12;0.18]   0.44[0.42;0.46] -0.2[-0.22;-0.17]    0.65[0.62;0.68]
+  # 5               Typez_Obsv          NA[NA;NA]          NA[NA;NA]         NA[NA;NA]         0[0;0.01]  0.01[-0.02;0.03]       0.01[0;0.02]
+  # 6     Typez_Obsv:scale(CN)          NA[NA;NA]          NA[NA;NA]         NA[NA;NA]     0[-0.01;0.01]     0[-0.02;0.02]      0[-0.01;0.01]
+  # 7  Typez_Obsv:scale(DiffP)          NA[NA;NA]          NA[NA;NA]         NA[NA;NA]        0[-0.01;0] -0.01[-0.04;0.02]      0[-0.01;0.01]
+  # 8 Typez_Obsv:scale(TotalP)          NA[NA;NA]          NA[NA;NA]         NA[NA;NA]     0[-0.01;0.01]     0[-0.02;0.02]      0[-0.01;0.01]
+  # 
+  # [[2]]
+  # Factor     e_modA_simple          e_modABen         e_modAdev             e_modA          e_modAbin             e_modS
+  # 1              (Intercept)   2.64[2.62;2.66]    0.47[0.46;0.47]  0.05[-0.06;0.15]    2.63[2.61;2.65]     0.53[0.5;0.55]     1.93[1.9;1.96]
+  # 2                scale(CN)   0.04[0.03;0.07]    0.02[0.01;0.02]     0[-0.14;0.14]    0.04[0.03;0.06]      0[-0.02;0.02]    0.07[0.05;0.09]
+  # 3             scale(DiffP) -0.13[-0.15;-0.1] -0.05[-0.06;-0.05] -0.04[-0.17;0.08] -0.13[-0.16;-0.11]     0.4[0.37;0.43] -0.14[-0.17;-0.11]
+  # 4            scale(TotalP)    0.4[0.38;0.43]          NA[NA;NA]  0.02[-0.17;0.21]    0.43[0.41;0.45] -0.18[-0.21;-0.15]    0.64[0.61;0.67]
+  # 5               Typez_Obsv         NA[NA;NA]          NA[NA;NA]         NA[NA;NA]          0[0;0.01]   0.01[-0.01;0.03]       0.01[0;0.02]
+  # 6     Typez_Obsv:scale(CN)         NA[NA;NA]          NA[NA;NA]         NA[NA;NA]      0[-0.01;0.01]      0[-0.02;0.02]      0[-0.02;0.01]
+  # 7  Typez_Obsv:scale(DiffP)         NA[NA;NA]          NA[NA;NA]         NA[NA;NA]         0[-0.01;0]  -0.01[-0.03;0.02]      0[-0.01;0.01]
+  # 8 Typez_Obsv:scale(TotalP)         NA[NA;NA]          NA[NA;NA]         NA[NA;NA]      0[-0.01;0.01]      0[-0.02;0.02]      0[-0.01;0.01]
+  # 
+  # [[3]]
+  # Factor     e_modA_simple        e_modABen         e_modAdev             e_modA         e_modAbin             e_modS
+  # 1              (Intercept)    2.83[2.8;2.85]  0.56[0.55;0.57]   4.03[3.83;4.23]     2.6[2.58;2.62]   0.64[0.61;0.67]    1.91[1.88;1.95]
+  # 2                scale(CN)     0[-0.01;0.01]    0[-0.01;0.01]     0[-0.13;0.13]      0[-0.01;0.01]     0[-0.02;0.02]      0[-0.01;0.01]
+  # 3             scale(DiffP) -0.27[-0.3;-0.24] -0.1[-0.1;-0.09] -2.77[-3.05;-2.5]  -0.2[-0.23;-0.18]   0.52[0.48;0.57] -0.22[-0.26;-0.19]
+  # 4            scale(TotalP)    0.5[0.48;0.53]        NA[NA;NA]    3.88[3.57;4.2]    0.45[0.43;0.47] -0.2[-0.23;-0.17]     0.67[0.64;0.7]
+  # 5               Typez_Obsv         NA[NA;NA]        NA[NA;NA]         NA[NA;NA]    0.22[0.21;0.23]   0.82[0.78;0.86]     0.32[0.3;0.33]
+  # 6     Typez_Obsv:scale(CN)         NA[NA;NA]        NA[NA;NA]         NA[NA;NA]      0[-0.01;0.01]     0[-0.03;0.03]      0[-0.01;0.01]
+  # 7  Typez_Obsv:scale(DiffP)         NA[NA;NA]        NA[NA;NA]         NA[NA;NA] -0.08[-0.09;-0.07] -0.01[-0.07;0.05] -0.05[-0.06;-0.04]
+  # 8 Typez_Obsv:scale(TotalP)         NA[NA;NA]        NA[NA;NA]         NA[NA;NA]    0.07[0.06;0.07]   0.24[0.19;0.28]    0.03[0.02;0.04]
+  # 
+  # [[4]]
+  # Factor     e_modA_simple          e_modABen          e_modAdev             e_modA          e_modAbin             e_modS
+  # 1              (Intercept)   2.86[2.84;2.88]    0.59[0.58;0.59]    4.56[4.35;4.76]     2.62[2.6;2.64]    0.54[0.51;0.56]    1.92[1.89;1.95]
+  # 2                scale(CN)   0.05[0.03;0.07]    0.05[0.04;0.06]  -0.07[-0.26;0.11]    0.04[0.03;0.05]      0[-0.03;0.02]    0.07[0.05;0.09]
+  # 3             scale(DiffP) -0.2[-0.22;-0.17] -0.09[-0.09;-0.08] -2.48[-2.76;-2.23] -0.14[-0.16;-0.12]    0.41[0.38;0.44] -0.15[-0.18;-0.12]
+  # 4            scale(TotalP)   0.49[0.47;0.52]          NA[NA;NA]    4.63[4.25;5.03]    0.45[0.43;0.47] -0.18[-0.22;-0.15]     0.67[0.64;0.7]
+  # 5               Typez_Obsv         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.24[0.23;0.24]    0.83[0.79;0.87]    0.33[0.31;0.34]
+  # 6     Typez_Obsv:scale(CN)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]       0.01[0;0.02]   0.02[-0.03;0.07]      0[-0.01;0.02]
+  # 7  Typez_Obsv:scale(DiffP)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA] -0.06[-0.07;-0.05]   0.02[-0.03;0.07] -0.04[-0.05;-0.03]
+  # 8 Typez_Obsv:scale(TotalP)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.06[0.05;0.07]    0.23[0.17;0.28]    0.03[0.02;0.04]
+  # 
+  # [[5]]
+  # Factor     e_modA_simple          e_modABen          e_modAdev             e_modA          e_modAbin             e_modS
+  # 1              (Intercept)   2.74[2.71;2.77]    0.52[0.51;0.52]     3.08[2.9;3.26]    2.57[2.55;2.59]    0.52[0.49;0.55]    1.88[1.85;1.92]
+  # 2                scale(CN)   0.08[0.07;0.09]    0.04[0.03;0.05]    1.21[1.07;1.35]       0.01[0;0.02]    0.02[0.01;0.04]       0.02[0;0.03]
+  # 3             scale(DiffP) -0.27[-0.3;-0.24] -0.08[-0.09;-0.08] -2.21[-2.46;-1.97]  -0.22[-0.25;-0.2]    0.41[0.38;0.44]  -0.23[-0.27;-0.2]
+  # 4            scale(TotalP)   0.52[0.49;0.54]          NA[NA;NA]    3.35[3.05;3.67]     0.47[0.45;0.5] -0.11[-0.14;-0.09]    0.69[0.66;0.72]
+  # 5               Typez_Obsv         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.17[0.16;0.17]    0.56[0.53;0.59]    0.26[0.25;0.27]
+  # 6     Typez_Obsv:scale(CN)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.07[0.06;0.08]    0.29[0.26;0.32]     0.09[0.08;0.1]
+  # 7  Typez_Obsv:scale(DiffP)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA] -0.06[-0.07;-0.05]  -0.06[-0.1;-0.01] -0.04[-0.06;-0.03]
+  # 8 Typez_Obsv:scale(TotalP)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.07[0.06;0.07]    0.25[0.21;0.29]    0.04[0.03;0.05]
+  # 
+  # [[6]]
+  # Factor     e_modA_simple          e_modABen          e_modAdev             e_modA          e_modAbin             e_modS
+  # 1              (Intercept)   2.79[2.76;2.81]    0.55[0.54;0.55]    4.04[3.84;4.24]    2.59[2.57;2.61]    0.43[0.41;0.46]    1.88[1.85;1.91]
+  # 2                scale(CN)    0.11[0.1;0.14]     0.09[0.09;0.1]    0.78[0.58;0.95]    0.05[0.04;0.07]    0.03[0.01;0.06]    0.09[0.07;0.12]
+  # 3             scale(DiffP) -0.2[-0.23;-0.17] -0.08[-0.09;-0.08] -2.38[-2.65;-2.11] -0.15[-0.18;-0.13]    0.34[0.32;0.37] -0.16[-0.19;-0.13]
+  # 4            scale(TotalP)    0.5[0.48;0.53]          NA[NA;NA]    4.62[4.23;5.04]    0.47[0.44;0.49] -0.12[-0.15;-0.09]    0.68[0.65;0.72]
+  # 5               Typez_Obsv         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]     0.19[0.18;0.2]    0.63[0.61;0.66]     0.29[0.27;0.3]
+  # 6     Typez_Obsv:scale(CN)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.06[0.05;0.07]    0.23[0.19;0.27]    0.07[0.05;0.08]
+  # 7  Typez_Obsv:scale(DiffP)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA] -0.06[-0.07;-0.05]      0[-0.04;0.05] -0.04[-0.05;-0.03]
+  # 8 Typez_Obsv:scale(TotalP)         NA[NA;NA]          NA[NA;NA]          NA[NA;NA]    0.06[0.05;0.07]    0.28[0.22;0.33]    0.02[0.01;0.04]
+  # 
+}
 
 
 }
