@@ -2466,8 +2466,11 @@ MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
 }
 
 {# add Male divorce
+  nrow(MY_tblBroods[is.na(MY_tblBroods$SocialMumID) | is.na(MY_tblBroods$SocialMumID),]) # 220
+ #x <-  MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 1717,]
+  
 MY_tblBroods_split_per_SocialDadID <- split(MY_tblBroods,MY_tblBroods$SocialDadID)
-#x <- MY_tblBroods_split_per_SocialDadID[[21]]
+#x <- MY_tblBroods_split_per_SocialDadID[[12]]
 
 MY_tblBroods_split_per_SocialDadID_fun = function(x)  {
 x <- x[order(x$BroodName),]
@@ -2493,7 +2496,8 @@ x$MnextLayDate <- c(x$LayDate[-1],NA)
 x$MnextFsame <- x$SocialMumID == c(x$SocialMumID[-1],NA) 
 x$MwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialMum, format = "%d-%b-%y") > x$MnextLayDate & x$MnextFsame == FALSE
 x$MwillDivorceforEx <- NA
-if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MwillDivorce[i]) & x$MwillDivorce[i] == TRUE)
+
+if(nrow(x)>1) {for (i in 2: nrow(x)) {if (!is.na(x$MwillDivorce[i]) & x$MwillDivorce[i] == TRUE)
 {x$MwillDivorceforEx[i] <- x$SocialMumID[i+1] %in% x$SocialMumID[1:i-1]}}}
 if(nrow(x)==1)
 {x$MwillDivorceforEx <- NA}
@@ -2542,7 +2546,7 @@ x$FnextLayDate <- c(x$LayDate[-1],NA)
 x$FnextMsame <- x$SocialDadID == c(x$SocialDadID[-1],NA) 
 x$FwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialDad, format = "%d-%b-%y") > x$FnextLayDate & x$FnextMsame == FALSE
 x$FwillDivorceforEx <- NA
-if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
+if(nrow(x)>1) {for (i in 2: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
 {x$FwillDivorceforEx[i] <- x$SocialDadID[i+1] %in% x$SocialDadID[1:i-1]}}}
 if(nrow(x)==1)
 {x$FwillDivorceforEx <- NA}
@@ -2708,6 +2712,7 @@ DurationScript # ~ 14 min
  # 20170323 rerun with DB corrected after sparrow meeting
  # 20170323 rerun with lastseenalive.txt updated to be the query from new DB
  # 20170415 change input format of last seen alive to accomodate "%d-%b-%y" (inpact on divorced YN)
+ # 20190116 slighty correct F and Nwill divorce for EX
  
  
 ## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
