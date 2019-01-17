@@ -1001,15 +1001,59 @@ summary(mod_FemaleDivorce)
 
 
 {##### understand why Male and Female divorce are not matching for both partners
-  
+
+# all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
+ExtractedData_folder <- "R_ExtractedData" 
+MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/")) 
+
+# just recorded broods : MY_TABLE_perBrood
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
                        & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
                        & !is.na(MY_TABLE_perBrood$BroodRef),]) # 68 where 'will divorce' doesn't match for both parents
 
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-                       & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 broods to analyse
+                       & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 
 
+# rules for individual divorce (MwillDivorce and FwillDivorce) (from data extraction script):
+## TRUE = we know for sure the other partner is alive and the individual is breeding again but with another partner
+## FALSE = the individual breed again with the same partner next (even if their partner has had other brood with someone else in between)
+## NA: everything else, partner unidentified, no next brood.
 
+# calculation of pair divorce
+MY_TABLE_perBrood$PairDivorce <- NA
+for (i in 1: nrow(MY_TABLE_perBrood)){
+  # if both the same, no problem
+  if (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) 
+      & MY_TABLE_perBrood$MwillDivorce[i] == MY_TABLE_perBrood$FwillDivorce[i])
+  {MY_TABLE_perBrood$PairDivorce[i] <- MY_TABLE_perBrood$MwillDivorce[i]}
+  # if one is TRUE, the other NA, the other is NA because he/she doesnt breed again or breed with someone unidentified; either way, divorce = TRUE
+  if ((is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) & MY_TABLE_perBrood$FwillDivorce[i] == TRUE) 
+      | (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & MY_TABLE_perBrood$MwillDivorce[i] == TRUE & is.na(MY_TABLE_perBrood$FwillDivorce[i])))
+  {MY_TABLE_perBrood$PairDivorce[i] <- TRUE}
+  # if one is FALSE, the other NA, it measn the first one we know breed again with that smae partner again, but the other is NA because he/she breed with someone unidentified in between, depending on who that unidendify bird would be, divorce could be true or false, so let it be NA 
+  if ((is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) & MY_TABLE_perBrood$FwillDivorce[i] == FALSE) 
+      | (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & MY_TABLE_perBrood$MwillDivorce[i] == FALSE & is.na(MY_TABLE_perBrood$FwillDivorce[i])))
+  {MY_TABLE_perBrood$PairDivorce[i] <- NA}
+  # if one is FALSE, the other TRUE: one is being faithful, the other plogamous, need to decide 'by hand' whether brood overlap (true polygamie), or not (divorce and getting back with their ex)
+  if (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) 
+      & MY_TABLE_perBrood$MwillDivorce[i] != MY_TABLE_perBrood$FwillDivorce[i])
+  {MY_TABLE_perBrood$PairDivorce[i] <- NA}
+  
+  }
+
+# example of one is NA the other TRUE
+nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & is.na(MY_TABLE_perBrood$MwillDivorce) 
+                       & !is.na(MY_TABLE_perBrood$BroodRef),]) # 32
+MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & MY_tblBroods$SocialMumID == 1718,c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'FBroodNb','MBroodNb',  'FwillDivorce', 'MwillDivorce')]
+MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 1738,c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'FBroodNb','MBroodNb', 'FwillDivorce', 'MwillDivorce')]
+
+# example of one is NA the other TRUE
+nrow(MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                       & !is.na(MY_TABLE_perBrood$BroodRef),]) # 37
+MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & MY_tblBroods$SocialMumID == 960,c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'FBroodNb','MBroodNb', 'FwillDivorce', 'MwillDivorce')]
+MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 650,c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'FBroodNb','MBroodNb', 'FwillDivorce', 'MwillDivorce')]
+
+# cases to decide on how to replace NA by TRUE or FALSE
 Polyandrous <- MY_TABLE_perBrood$SocialMumID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce)
                  & MY_TABLE_perBrood$FwillDivorce == TRUE  &  MY_TABLE_perBrood$MwillDivorce == FALSE
                  & !is.na(MY_TABLE_perBrood$BroodRef)] #  1 polyandrous female?
@@ -1020,11 +1064,15 @@ Polygynous <- unique(MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$Fwil
 
 
   
-BroodPolyandrous <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$SocialMumID) & MY_TABLE_perBrood$SocialMumID == 985,c('BroodRef', 'SocialMumID', 'SocialDadID', 'BroodName', 'LayDate', 'FBroodNb', 'FwillDivorce', 'FwillDivorceforEx', 'MwillDivorce', 'MwillDivorceforEx')]
+BroodPolyandrous <- MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & MY_tblBroods$SocialMumID == 985,c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'FBroodNb', 'FwillDivorce', 'MwillDivorce')]
 BroodPolyandrous <- BroodPolyandrous[order(BroodPolyandrous$FBroodNb),] # this is a true divorce (between season), even if then come back with ex.
+BroodPolyandrous$RecordedYN <- BroodPolyandrous$BroodRef %in% MY_TABLE_perBrood$BroodRef
 
-BroodPolygynous <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$SocialDadID) & MY_TABLE_perBrood$SocialDadID %in% Polygynous, c('BroodRef', 'SocialMumID', 'SocialDadID', 'BroodName', 'LayDate', 'MBroodNb', 'FwillDivorce', 'FwillDivorceforEx', 'MwillDivorce', 'MwillDivorceforEx')]
+MY_TABLE_perBrood$PairDivorce[MY_TABLE_perBrood$BroodRef == 636] <- TRUE
+
+BroodPolygynous <- MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID %in% Polygynous, c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'MBroodNb', 'FwillDivorce', 'MwillDivorce')]
 BroodPolygynous <- BroodPolygynous[order(BroodPolygynous$MBroodNb),] 
+BroodPolygynous$RecordedYN <- BroodPolygynous$BroodRef %in% MY_TABLE_perBrood$BroodRef
 split(BroodPolygynous, BroodPolygynous$SocialDadID)
   
   # 7900: in 2015 male has two females simultaneously 
