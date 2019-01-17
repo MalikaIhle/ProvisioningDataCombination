@@ -493,6 +493,36 @@ MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","Me
 {#### ChickSurvival ~ Alternation + Synchrony, brood
 
 modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
+                              scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
+                              scale(MeanLogAdev)+
+                              scale(MeanLogSdev) +
+                              #scale(MeanAdev)+
+                              #scale(MeanSdev) +
+                              scale(HatchingDayAfter0401) +
+                              scale(PairBroodNb) +
+                              MPriorResidence +
+                           NbHatched + 
+                             # (1|SocialMumID)+ (1|SocialDadID) + 
+                              (1|PairID) + 
+                              (1|BreedingYear) +
+                              (1|BroodRef) # to account for overdispersion... doesn't work ?
+                            , data = MY_TABLE_perBrood
+                            , family = 'binomial'
+                            , control=glmerControl(optimizer = "bobyqa"))
+  
+  summary(modChickSurvival) 
+  drop1(modChickSurvival, test="Chisq") # LRT
+  
+  
+  
+  
+  
+  
+  
+  head(MY_TABLE_perChick)
+  head(MY_TABLE_perBrood)
+
+modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
 							scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
 							scale(MeanLogAdev)+
 							scale(MeanLogSdev) +
@@ -510,6 +540,7 @@ modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~
 							, control=glmerControl(optimizer = "bobyqa"))
 			
 summary(modChickSurvival) 
+drop1(modChickSurvival, test="Chisq") # LRT
 
 dispersion_glmer(modChickSurvival) # < 1.4
 
@@ -962,9 +993,51 @@ dispersion_glmer(mod_FemaleDivorce) # < 1.4
 }	
 
 summary(mod_MaleDivorce)	
-summary(mod_FemaleDivorce)		
+summary(mod_FemaleDivorce)	
+
+
+
+# male and female divorce in one model
+
+nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                  & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
+                  & !is.na(MY_TABLE_perBrood$BroodRef),]) # 68 where 'will divorce' doesn't match for both parents
+
+
+MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                  & MY_TABLE_perBrood$FwillDivorce == TRUE  &  MY_TABLE_perBrood$MwillDivorce == FALSE
+                  & !is.na(MY_TABLE_perBrood$BroodRef),] # 1 polyandrous females?
+
+MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                  & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
+                  & !is.na(MY_TABLE_perBrood$BroodRef),] 
+
+length(MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                  & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
+                  & !is.na(MY_TABLE_perBrood$BroodRef)]) # 67 polygynous males?
+
+nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                                     & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 broods to analyse
+
+
+mod_Divorce <- glmer(FwillDivorce~scale(MeanLogSdev) + 
+                             scale(MeanLogAdev)	+
+                             scale(MumAge) + 
+                             scale(PairBroodNb) +
+                             scale(MeanMVisit1RateH) +  
+                             #FnextNBsame + # could be cause or consequence, and its a all new question ?
+                             scale(NbRinged) +
+                             (1|SocialMumID) 
+                           + (1|BreedingYear) 
+                           , data = MY_TABLE_perBrood
+                           , family="binomial"
+                           , control=glmerControl(optimizer = "bobyqa"))
+
+summary(mod_FemaleDivorce) 
+
+
 
 # library('rmarkdown')
 # rmarkdown::render('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\_ProvisioningDataCombination\\Coordination_DataAnalyses.R')
 
-
+head(MY_TABLE_perBrood)
