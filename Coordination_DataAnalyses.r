@@ -999,25 +999,50 @@ summary(mod_FemaleDivorce)
 
 # male and female divorce in one model
 
+
+{##### understand why Male and Female divorce are not matching for both partners
+  
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-                  & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
-                  & !is.na(MY_TABLE_perBrood$BroodRef),]) # 68 where 'will divorce' doesn't match for both parents
-
-
-MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-                  & MY_TABLE_perBrood$FwillDivorce == TRUE  &  MY_TABLE_perBrood$MwillDivorce == FALSE
-                  & !is.na(MY_TABLE_perBrood$BroodRef),] # 1 polyandrous females?
-
-MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-                  & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
-                  & !is.na(MY_TABLE_perBrood$BroodRef),] 
-
-length(MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-                  & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
-                  & !is.na(MY_TABLE_perBrood$BroodRef)]) # 67 polygynous males?
+                       & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
+                       & !is.na(MY_TABLE_perBrood$BroodRef),]) # 68 where 'will divorce' doesn't match for both parents
 
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-                                     & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 broods to analyse
+                       & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 broods to analyse
+
+
+Polyandrous <- MY_TABLE_perBrood$SocialMumID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce)
+                 & MY_TABLE_perBrood$FwillDivorce == TRUE  &  MY_TABLE_perBrood$MwillDivorce == FALSE
+                 & !is.na(MY_TABLE_perBrood$BroodRef)] #  1 polyandrous female?
+
+Polygynous <- unique(MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                   & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
+                  & !is.na(MY_TABLE_perBrood$BroodRef)]) # 37 polygynous males?
+
+
+  
+BroodPolyandrous <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$SocialMumID) & MY_TABLE_perBrood$SocialMumID == 985,c('BroodRef', 'SocialMumID', 'SocialDadID', 'BroodName', 'LayDate', 'FBroodNb', 'FwillDivorce', 'FwillDivorceforEx', 'MwillDivorce', 'MwillDivorceforEx')]
+BroodPolyandrous <- BroodPolyandrous[order(BroodPolyandrous$FBroodNb),] # this is a true divorce (between season), even if then come back with ex.
+
+BroodPolygynous <- MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$SocialDadID) & MY_TABLE_perBrood$SocialDadID %in% Polygynous, c('BroodRef', 'SocialMumID', 'SocialDadID', 'BroodName', 'LayDate', 'MBroodNb', 'FwillDivorce', 'FwillDivorceforEx', 'MwillDivorce', 'MwillDivorceforEx')]
+BroodPolygynous <- BroodPolygynous[order(BroodPolygynous$MBroodNb),] 
+split(BroodPolygynous, BroodPolygynous$SocialDadID)
+  
+  # 7900: in 2015 male has two females simultaneously 
+  # 7814: in 2015 male has two females simultaneously 
+  # 7267: in 2014 male has two females simultaneously 
+  # 6816: in 2014 male has two females simultaneously 
+  # 6270: in 2014 male has two females simultaneously 
+  # 5675: in 2015 male has two females simultaneously 
+  # 5489: in 2013 male has two females simultaneously 
+  # 5466: in 2014 male has two females simultaneously 
+  # 5461: in 2013 male has two females simultaneously 
+  # 5202: end of season 2013, last brood with another female, then get back with initial female in 2014
+  
+  
+  
+}
+
+
 
 
 mod_Divorce <- glmer(FwillDivorce~scale(MeanLogSdev) + 

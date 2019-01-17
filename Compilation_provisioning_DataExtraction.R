@@ -2611,30 +2611,6 @@ rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
 MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialMumID_out2[,-1], by='BroodRef', all.x=TRUE)
 
 
-{##### understand why Male and Female divorce are not matching for both partners
-
-# Polyandrous <- MY_TABLE_perBrood$SocialMumID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-#                  & MY_TABLE_perBrood$FwillDivorce == TRUE  &  MY_TABLE_perBrood$MwillDivorce == FALSE
-#                  & !is.na(MY_TABLE_perBrood$BroodRef)] # 11 polyandrous females?
-Polyandrous <- c(371,  985, 1318, 4034, 4760, 4744, 5025, 5294, 7133, 6250, 4854)
-
-# Polygynous <- MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
-#                   & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
-#                   & !is.na(MY_TABLE_perBrood$BroodRef)] # 75 polygynous males?
-Polygynous <- c(2018, 1226, 1717, 2018,  591,  591,  504,  356, 4423, 4423, 4422,  132, 4422, 4423,  132,  818,  765,  513,  505,   23, 1464, 2202, 2944, 1697,  417, 2453, 3460, 2453,
- 4673, 3684, 3684, 4686, 4060, 4969, 3684, 4960, 4768, 4682, 4960, 4991, 4768, 4682, 4682, 5048, 4682, 4682, 4960, 4682, 5461, 4682, 4682, 5202, 5468, 5489, 6280, 4960,
- 4682, 5466, 5466, 7267, 6816, 6816, 5466, 7267, 4895, 4895, 7267, 7814, 5675, 7900, 5675, 7814, 7814, 4943, 7900)
-
-
-split(MY_tblBroods[MY_tblBroods$SocialMumID%in%Polyandrous,],MY_tblBroods$SocialMumID[MY_tblBroods$SocialMumID%in%Polyandrous])
-MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 6790,]
-MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & MY_tblBroods$SocialMumID == 371,]
-
-
-}
-
-
-
 }
 
 {# add PairBroodNb
