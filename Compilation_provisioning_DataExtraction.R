@@ -2464,16 +2464,29 @@ MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
 
 
 }
+  
+
+MY_tblBroods$SocialMumID[is.na(MY_tblBroods$LayDate)] # 5428 5438 6245
+MY_tblBroods$SocialDadID[is.na(MY_tblBroods$LayDate)] # just NAs
+MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & (MY_tblBroods$SocialMumID == 5428 | 
+                                                 MY_tblBroods$SocialMumID == 5438 |
+                                                 MY_tblBroods$SocialMumID == 6245 ),]
+
+MY_tblBroods$LayDate[MY_tblBroods$BroodName == "L097"] <- as.POSIXct("2012-08-12") # first visit in DB
+MY_tblBroods$LayDate[MY_tblBroods$BroodName == "L044"] <- as.POSIXct("2012-06-30")
+MY_tblBroods$LayDate[MY_tblBroods$BroodName == "L045"] <- as.POSIXct("2012-06-03")
+
+
 
 {# add Male divorce
-  nrow(MY_tblBroods[is.na(MY_tblBroods$SocialMumID) | is.na(MY_tblBroods$SocialMumID),]) # 220
- #x <-  MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 1717,]
+ # nrow(MY_tblBroods[is.na(MY_tblBroods$SocialMumID) | is.na(MY_tblBroods$SocialMumID),]) # 220
+ # x <-  MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 1717,]
   
 MY_tblBroods_split_per_SocialDadID <- split(MY_tblBroods,MY_tblBroods$SocialDadID)
 #x <- MY_tblBroods_split_per_SocialDadID[[12]]
 
 MY_tblBroods_split_per_SocialDadID_fun = function(x)  {
-x <- x[order(x$BroodName),]
+x <- x[order(x$LayDate),]
 
 x$MBroodNb <- 1:nrow(x) # MBroodNb
 x$MPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
@@ -2494,7 +2507,24 @@ x$MPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior reside
 x$MnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)	
 x$MnextLayDate <- c(x$LayDate[-1],NA)
 x$MnextFsame <- x$SocialMumID == c(x$SocialMumID[-1],NA) 
-x$MwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialMum, format = "%d-%b-%y") > x$MnextLayDate & x$MnextFsame == FALSE
+
+  # x$MwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialMum, format = "%d-%b-%y") > x$MnextLayDate & x$MnextFsame == FALSE >> removed 20190116
+
+x$MwillDivorce <- NA # version added 20190116
+for (i in 1:nrow(x)){
+  if (!is.na(as.POSIXct(x$LastLiveRecordSocialMum[i], format = "%d-%b-%y"))
+      & !is.na(x$MnextLayDate[i])
+      & !is.na(x$MnextFsame[i]))
+  {if( as.POSIXct(x$LastLiveRecordSocialMum[i], format = "%d-%b-%y") > x$MnextLayDate[i] 
+       & x$MnextFsame[i] == FALSE) 
+  {x$MwillDivorce[i] <- TRUE }}
+  
+  if (!is.na(x$MnextFsame[i]) & x$MnextFsame[i] == TRUE) 
+  {x$MwillDivorce[i] <- FALSE}
+}
+
+
+
 x$MwillDivorceforEx <- NA
 
 if(nrow(x)>1) {for (i in 2: nrow(x)) {if (!is.na(x$MwillDivorce[i]) & x$MwillDivorce[i] == TRUE)
@@ -2519,10 +2549,10 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialDadID_out2[
 
 {# add Female divorce
 MY_tblBroods_split_per_SocialMumID <- split(MY_tblBroods,MY_tblBroods$SocialMumID)
-#x <- MY_tblBroods_split_per_SocialMumID[[5]]
+# x <- MY_tblBroods_split_per_SocialMumID[[11]]
 
 MY_tblBroods_split_per_SocialMumID_fun = function(x)  {
-x <- x[order(x$BroodName),]
+x <- x[order(x$LayDate),]
 
 x$FBroodNb <- 1:nrow(x) # FBroodNb
 x$FPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
@@ -2545,6 +2575,21 @@ x$FnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)
 x$FnextLayDate <- c(x$LayDate[-1],NA)
 x$FnextMsame <- x$SocialDadID == c(x$SocialDadID[-1],NA) 
 x$FwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialDad, format = "%d-%b-%y") > x$FnextLayDate & x$FnextMsame == FALSE
+
+x$FwillDivorce <- NA # version added 20190116
+for (i in 1:nrow(x)){
+  if (!is.na(as.POSIXct(x$LastLiveRecordSocialDad[i], format = "%d-%b-%y"))
+      & !is.na(x$FnextLayDate[i])
+      & !is.na(x$FnextMsame[i]))
+  {if( as.POSIXct(x$LastLiveRecordSocialDad[i], format = "%d-%b-%y") > x$FnextLayDate[i] 
+       & x$FnextMsame[i] == FALSE) 
+  {x$FwillDivorce[i] <- TRUE }}
+  
+  if (!is.na(x$FnextMsame[i]) & x$FnextMsame[i] == TRUE) 
+  {x$FwillDivorce[i] <- FALSE}
+}
+
+
 x$FwillDivorceforEx <- NA
 if(nrow(x)>1) {for (i in 2: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
 {x$FwillDivorceforEx[i] <- x$SocialDadID[i+1] %in% x$SocialDadID[1:i-1]}}}
@@ -2564,6 +2609,32 @@ nrow(MY_tblBroods_split_per_SocialMumID_out2)	# 962
 rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
 
 MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialMumID_out2[,-1], by='BroodRef', all.x=TRUE)
+
+
+{##### understand why Male and Female divorce are not matching for both partners
+
+# Polyandrous <- MY_TABLE_perBrood$SocialMumID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+#                  & MY_TABLE_perBrood$FwillDivorce == TRUE  &  MY_TABLE_perBrood$MwillDivorce == FALSE
+#                  & !is.na(MY_TABLE_perBrood$BroodRef)] # 11 polyandrous females?
+Polyandrous <- c(371,  985, 1318, 4034, 4760, 4744, 5025, 5294, 7133, 6250, 4854)
+
+# Polygynous <- MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+#                   & MY_TABLE_perBrood$FwillDivorce == FALSE  &  MY_TABLE_perBrood$MwillDivorce == TRUE
+#                   & !is.na(MY_TABLE_perBrood$BroodRef)] # 75 polygynous males?
+Polygynous <- c(2018, 1226, 1717, 2018,  591,  591,  504,  356, 4423, 4423, 4422,  132, 4422, 4423,  132,  818,  765,  513,  505,   23, 1464, 2202, 2944, 1697,  417, 2453, 3460, 2453,
+ 4673, 3684, 3684, 4686, 4060, 4969, 3684, 4960, 4768, 4682, 4960, 4991, 4768, 4682, 4682, 5048, 4682, 4682, 4960, 4682, 5461, 4682, 4682, 5202, 5468, 5489, 6280, 4960,
+ 4682, 5466, 5466, 7267, 6816, 6816, 5466, 7267, 4895, 4895, 7267, 7814, 5675, 7900, 5675, 7814, 7814, 4943, 7900)
+
+
+split(MY_tblBroods[MY_tblBroods$SocialMumID%in%Polyandrous,],MY_tblBroods$SocialMumID[MY_tblBroods$SocialMumID%in%Polyandrous])
+MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 6790,]
+MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & MY_tblBroods$SocialMumID == 371,]
+
+
+}
+
+
+
 }
 
 {# add PairBroodNb
@@ -2573,7 +2644,7 @@ MY_tblBroods_split_per_PairID <- split(MY_tblBroods, MY_tblBroods$PairID)
 x <- MY_tblBroods_split_per_PairID[[2]]
 
 MY_tblBroods_split_per_PairID_fun <- function(x){
-x <- x[order(x$BroodName),]
+x <- x[order(x$LayDate),]
 
 x$PairBroodNb <- 1:nrow(x)
 

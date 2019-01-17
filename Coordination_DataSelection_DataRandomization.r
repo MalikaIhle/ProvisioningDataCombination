@@ -1227,6 +1227,7 @@ head(MY_TABLE_perBrood)
 # 20170324 updated lastseen alive
 # 20170327 added Asorted
 # 20170430 added Agenerated
+# 20190117 corrected divorce and M/F/Pair brood number in data extraction
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1240,7 +1241,8 @@ head(MY_TABLE_perBrood)
 # 20170324 updated lastseen alive
 # 20170415 updated format last seen alive input to recover divorce YN
 # 20171031 added chick mass range
-
+# 20190117 corrected divorce and M/F/Pair brood number in data extraction
+ 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1249,7 +1251,8 @@ head(MY_TABLE_perBrood)
 # 20170321 set seed
 # 20170322 rerun
 # 20170324 updated lastseen alive
-
+# 20190117 corrected divorce and M/F/Pair brood number in data extraction
+ 
 
 
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
