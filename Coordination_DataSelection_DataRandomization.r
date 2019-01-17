@@ -129,8 +129,8 @@ length(unique(list_non_valid_DVDRef)) # 450
   
   colboxplt <- c(rep("grey",5), rep("black",8))
   
-  setEPS() 
-  pdf("SuppFig2.pdf", height=10, width=15)
+  #setEPS() 
+  #pdf("SuppFig2.pdf", height=10, width=15)
 
   
   boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
@@ -437,8 +437,8 @@ head(one_generated_fulldat)
         RawInterfeedsWithoutFirstZeros <- data.frame(RawInterfeeds %>% group_by (DVDRef,Sex) %>% slice(-1))
         summary(RawInterfeedsWithoutFirstZeros$Interval)
         
-        setEPS() 
-        pdf("SuppFig.pdf", height=10, width=15)
+        #setEPS() 
+        #pdf("SuppFig.pdf", height=10, width=15)
         par(mfrow=c(1,2))
         hist(allintervals,  xlim = c(0,80), ylim = c(0,35000), main = "Simulated intervals", xlab = "Interval duration (min)")
         hist(RawInterfeedsWithoutFirstZeros$Interval, xlim = c(0,80), ylim = c(0,35000), main = "Observed intervals", xlab = "Interval duration (min)")
