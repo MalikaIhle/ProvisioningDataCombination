@@ -1563,7 +1563,8 @@ of brood size"),g3,ncol =2, widths = c(0.6,4))
   
   
   setEPS() 
-  pdf("Fig4.pdf", height=10, width=15)
+  #pdf("Fig4.pdf", height=10, width=15)
+  jpeg("Fig5.jpeg", height = 650, width = 1100)
   grid.arrange(ggtop, gg1,gg2,gg3,ggbottom,nrow = 5, ncol= 1, heights = c(0.5,4,4,4,0.5))
   dev.off()
   
