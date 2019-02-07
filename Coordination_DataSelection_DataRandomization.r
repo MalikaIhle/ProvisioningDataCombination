@@ -94,7 +94,8 @@ input_folder <- "R_input"
 
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
-
+tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T)  ## addedd 20190207, needed to assess chick survival on chick base
+  
 }
 
   
@@ -172,6 +173,10 @@ head(MY_tblChicks_byRearingBrood)
 
 MY_tblChicks_byRearingBrood <- MY_tblChicks_byRearingBrood[MY_tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
+
+MY_tblChicks_All <- tblChicks_All[tblChicks_All$BroodRef %in% MY_tblDVDInfo$BroodRef,] # doesnt include the changes made below 
+  
+  
 }
 
 {## fill in manually the data where Julia deleted it 
@@ -1209,6 +1214,17 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=ResMassTarsus_perChick_perBrood
 head(MY_TABLE_perChick)
 head(MY_TABLE_perBrood)
 
+{# create MY_TABLE_perChick_All
+  MY_TABLE_perChick_All <- merge(x= MY_tblChicks_All , 
+                             y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
+                                                    "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb")],
+                             by= "BroodRef", all.x=TRUE ) 
+
+  summary(MY_TABLE_perChick_All)
+  nrow(MY_TABLE_perChick_All)
+  length(unique(MY_TABLE_perChick_All$BroodRef)) # all the chicks of those 872 valid and recorded broods
+  
+}
 
 
  output_folder <- "R_Selected&RandomizedData"
@@ -1264,4 +1280,11 @@ head(MY_TABLE_perBrood)
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S25.csv", sep="/"), row.names = FALSE) 
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S05.csv", sep="/"), row.names = FALSE) 
 
+ 
+ 
+ # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
+ # 20190207 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base 
+ # (to include natal brood ID for each chick since its different for each)
+ # in this script we remove chicks from brood that were not recorded for provisioning rate
 
+ 

@@ -110,7 +110,7 @@ pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/
 
 {# input from database
 
-conDB= odbcConnectAccess("C:\\Users\\Malika\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+conDB= odbcConnectAccess("U:\\My Documents\\My Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 # SqlFetch
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
@@ -714,6 +714,17 @@ WHERE (((IIf([usys_qBroodTrueEggDate].[LayDate],[usys_qBroodTrueEggDate].[LayDat
 
 BreedingYear <- data.frame(c("Z",LETTERS[1:25]), 2000:2025)
 colnames(BreedingYear) <- c('Letter','BreedingYear' )
+
+
+# table with all chicks and natal brood (for analysis of chick survival) # added 20190207
+
+tblChicks_All <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, tblBirdID.BroodRef AS NatalBroodID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS BroodID, IIf([tblAllCodes]![BirdID]>0,1,0) AS RingedYN
+FROM (tblBirdID LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID) LEFT JOIN tblAllCodes ON tblBirdID.BirdID = tblAllCodes.BirdID
+GROUP BY tblBirdID.BirdID, tblBirdID.BroodRef, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]), IIf([tblAllCodes]![BirdID]>0,1,0)
+HAVING (((tblBirdID.BroodRef) Is Not Null));
+")
+names(tblChicks_All)[names(tblChicks_All) == 'BroodID'] <- 'BroodRef'
+
 
 close(conDB)
 }
@@ -2767,4 +2778,8 @@ DurationScript # ~ 14 min
  # 20170208 rerun
  # 20170322 rerun
  # 20170323 rerun with DB corrected after sparrow meeting
+
+## write.table(tblChicks_All,file=paste(input_folder,"R_tblChicks_All.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
+ # 20190107 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base (to include natal brood ID for each chick since its different for each)
+
  

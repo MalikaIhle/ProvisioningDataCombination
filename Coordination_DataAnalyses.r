@@ -24,6 +24,7 @@ library(arm) # for the function invlogit
 library(blmeco) # to check for overdispersion
 library (multcomp)
 library(MCMCglmm)
+library(RODBC)
   
 options(scipen=999) # remove scientific notation e-
 #options(scipen=0)
@@ -52,11 +53,17 @@ MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD.csv", s
 
 MY_TABLE_perBrood <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
 MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
+MY_TABLE_perChick_All <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/"))
 
 }
 
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
+head(MY_TABLE_perChick) # this only includes chicks that reached d12 (to analyse chick mass)
+head(MY_TABLE_perChick_All) # this includes all chicks, to analyse chick survival
+
+
+
 
 
 {# create MY_TABLE_perDVD_long, with the column A and S having observed values in first half, and sim values in second half
@@ -492,7 +499,7 @@ MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","Me
 
   modChickSurvival <- glmer(RingedYN ~ 
                               scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
-                              scale(NbRinged) +
+                              scale(NbHatched) +
                               scale(MeanLogAdev)+
                               scale(MeanLogSdev) +
                               scale(HatchingDayAfter0401) +
