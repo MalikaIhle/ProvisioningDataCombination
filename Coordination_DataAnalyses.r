@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 16/04/2017
-#	 commit: cleaning up code to fit simulation of analyses
+#	 last modif : 07/02/2019
+#	 commit: cleaning up code to archive old analyses versions (corrected by joel)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -23,6 +23,7 @@ library(lme4)
 library(arm) # for the function invlogit
 library(blmeco) # to check for overdispersion
 library (multcomp)
+library(MCMCglmm)
   
 options(scipen=999) # remove scientific notation e-
 #options(scipen=0)
@@ -300,43 +301,40 @@ summary(modA)
 dispersion_glmer(modA) # < 1.4
 
 
-
-library(MCMCglmm)
-
-MY_TABLE_perDVD_long$BroodRef <- as.factor(MY_TABLE_perDVD_long$BroodRef)
-MY_TABLE_perDVD_long$SocialMumID <- as.factor(MY_TABLE_perDVD_long$SocialMumID)
-MY_TABLE_perDVD_long$SocialDadID <- as.factor(MY_TABLE_perDVD_long$SocialDadID)
-MY_TABLE_perDVD_long$PairID <- as.factor(MY_TABLE_perDVD_long$PairID)
-MY_TABLE_perDVD_long$BreedingYear <- as.factor(MY_TABLE_perDVD_long$BreedingYear)
-MY_TABLE_perDVD_long$PairIDYear <- as.factor(MY_TABLE_perDVD_long$PairIDYear)
-MY_TABLE_perDVD_long$DVDRef <- as.factor(MY_TABLE_perDVD_long$DVDRef)
+{# Joel attempt 
+  
+# MY_TABLE_perDVD_long$BroodRef <- as.factor(MY_TABLE_perDVD_long$BroodRef)
+# MY_TABLE_perDVD_long$SocialMumID <- as.factor(MY_TABLE_perDVD_long$SocialMumID)
+# MY_TABLE_perDVD_long$SocialDadID <- as.factor(MY_TABLE_perDVD_long$SocialDadID)
+# MY_TABLE_perDVD_long$PairID <- as.factor(MY_TABLE_perDVD_long$PairID)
+# MY_TABLE_perDVD_long$BreedingYear <- as.factor(MY_TABLE_perDVD_long$BreedingYear)
+# MY_TABLE_perDVD_long$PairIDYear <- as.factor(MY_TABLE_perDVD_long$PairIDYear)
+# MY_TABLE_perDVD_long$DVDRef <- as.factor(MY_TABLE_perDVD_long$DVDRef)
 
 # write.csv(MY_TABLE_perDVD_long, file = "R_MY_TABLE_perDVD_long.csv", row.names = FALSE) 
-
-modAmcmcglmm <- MCMCglmm(A ~
-        Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
-        Type*scale(HatchingDayAfter0401) +
-        Type*scale(PairBroodNb) +
-        Type*scale(DVDInfoChickNb) +
-        Type*ChickAgeCat +
-        Type*scale(RelTimeHrs) +
-        Type*MPriorResidence +
-        Type*scale(TotalProRate) +
-        Type*scale(VisitRateDifference), random = ~  idh(Type):BroodRef +
-          idh(Type):SocialMumID+ 
-          idh(Type):SocialDadID +
-          idh(Type):PairID +  # explained 0% of the variance
-          idh(Type):BreedingYear + # explained 0% of the variance
-          idh(Type):PairIDYear 
-      + DVDRef
-      , data = MY_TABLE_perDVD_long
-      , family = 'poisson', nitt=20000, thin=10, burnin=10000
-)
-
-summary(modAmcmcglmm)
-summary(MY_TABLE_perDVD_long)
-
-
+  
+# modAmcmcglmm <- MCMCglmm(A ~
+#         Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
+#         Type*scale(HatchingDayAfter0401) +
+#         Type*scale(PairBroodNb) +
+#         Type*scale(DVDInfoChickNb) +
+#         Type*ChickAgeCat +
+#         Type*scale(RelTimeHrs) +
+#         Type*MPriorResidence +
+#         Type*scale(TotalProRate) +
+#         Type*scale(VisitRateDifference), random = ~  idh(Type):BroodRef +
+#           idh(Type):SocialMumID+ 
+#           idh(Type):SocialDadID +
+#           idh(Type):PairID +  # explained 0% of the variance
+#           idh(Type):BreedingYear + # explained 0% of the variance
+#           idh(Type):PairIDYear 
+#       + DVDRef
+#       , data = MY_TABLE_perDVD_long
+#       , family = 'poisson', nitt=20000, thin=10, burnin=10000
+# )
+# 
+# summary(modAmcmcglmm)
+}
 
 }
 
@@ -492,35 +490,6 @@ MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","Me
 
 {#### ChickSurvival ~ Alternation + Synchrony, brood
 
-modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
-                              scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
-                              scale(MeanLogAdev)+
-                              scale(MeanLogSdev) +
-                              #scale(MeanAdev)+
-                              #scale(MeanSdev) +
-                              scale(HatchingDayAfter0401) +
-                              scale(PairBroodNb) +
-                              MPriorResidence +
-                           NbHatched + 
-                             # (1|SocialMumID)+ (1|SocialDadID) + 
-                              (1|PairID) + 
-                              (1|BreedingYear) +
-                              (1|BroodRef) # to account for overdispersion... doesn't work ?
-                            , data = MY_TABLE_perBrood
-                            , family = 'binomial'
-                            , control=glmerControl(optimizer = "bobyqa"))
-  
-  summary(modChickSurvival) 
-  drop1(modChickSurvival, test="Chisq") # LRT
-  
-  
-  
-  
-  
-  
-  
-  head(MY_TABLE_perChick)
-  head(MY_TABLE_perBrood)
 
 modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
 							scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
@@ -581,11 +550,12 @@ dispersion_glmer(modChickSurvival) # < 1.4
 }
 
 
-
 }
 
 summary(modChickSurvival) 
 
+
+{# old models prior to ASREML version from Joel
 
 {#### ChickMass ~ Alternation + Synchrony, chicks
 
@@ -800,7 +770,7 @@ summary(modChickMassRange)
 
 summary(modChickMassVariance)
 
-
+}
 
 
 
@@ -808,8 +778,9 @@ summary(modChickMassVariance)
 # DIVORCE #
 ###########
 
-{#### predictors of divorce
-
+{# old models separated for sexes
+  
+{#### predictors of divorce -
 {# check dependent and explanatory variables 
 # nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$MwillDivorce) & !is.na(MY_TABLE_perBrood$NbRinged),])
 # MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$MwillDivorce) & !is.na(MY_TABLE_perBrood$NbRinged),] # when Social female was NA
@@ -995,10 +966,7 @@ dispersion_glmer(mod_FemaleDivorce) # < 1.4
 summary(mod_MaleDivorce)	
 summary(mod_FemaleDivorce)	
 
-
-
-# male and female divorce in one model
-
+}
 
 {##### understand why Male and Female divorce are not matching for both partners
 
@@ -1091,7 +1059,7 @@ split(BroodPolygynous, BroodPolygynous$SocialDadID)
 }
 
 
-
+{# male and female divorce in one model
 
 mod_Divorce <- glmer(FwillDivorce~scale(MeanLogSdev) + 
                              scale(MeanLogAdev)	+
@@ -1105,12 +1073,7 @@ mod_Divorce <- glmer(FwillDivorce~scale(MeanLogSdev) +
                            , data = MY_TABLE_perBrood
                            , family="binomial"
                            , control=glmerControl(optimizer = "bobyqa"))
+}
 
-summary(mod_FemaleDivorce) 
+summary(mod_Divorce) 
 
-
-
-# library('rmarkdown')
-# rmarkdown::render('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\_ProvisioningDataCombination\\Coordination_DataAnalyses.R')
-
-head(MY_TABLE_perBrood)

@@ -1,7 +1,7 @@
 ---
 title: "Supplemental Fitness models output"
 author: "Malika Ihle"
-date: "April 2, 2018"
+date: "February 5, 2019"
 output: pdf_document
 ---
 
@@ -60,35 +60,11 @@ source('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\s
 summary(modChickSurvival) 
 ```
 
-### Chick Mass
-
-```{r, echo=FALSE}
-summary(modChickMass) 
-```
-
-### Variance in Chick Body Condition (residuals of mass on tarsus)
-
-```{r, echo=FALSE}
-summary(modChickMassVariance)
-```
-
-### Range in chick mass
-
-```{r, echo=FALSE}
-summary(modChickMassRange)
-```
 
 ## Divorce correlates
 
-### Male
-
 ```{r, echo=FALSE}
-summary(mod_MaleDivorce) 
-```
-### Female
-
-```{r, echo=FALSE}
-summary(mod_FemaleDivorce)
+summary(mod_Divorce)
 ```
 
 
