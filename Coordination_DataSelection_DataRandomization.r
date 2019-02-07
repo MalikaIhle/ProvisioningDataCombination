@@ -97,7 +97,7 @@ tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), s
 
 }
 
-
+  
 }
 
 {# select valid video files for studying behavioural compatibility in chick provisioning
@@ -117,6 +117,33 @@ MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% unlist(FedBroods)] # 106 extra 
 
 
 length(unique(list_non_valid_DVDRef)) # 450 
+
+
+  ########### !!!!!!!!!!! Beofre running this paragraph silence the line selecting out age below 5
+  # comparison time spend in nest a day 3, day 6 vs day 10
+  MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_tblDVDInfo[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
+  MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
+  head(MY_RawFeedingVisits)
+  
+  nbVideoperAge <- data.frame(MY_RawFeedingVisits %>% group_by(DVDInfoAge) %>% summarise(nVideo =length(unique(DVDRef))))
+  
+  colboxplt <- c(rep("grey",5), rep("black",8))
+  
+  #setEPS() 
+  #pdf("SuppFig2.pdf", height=10, width=15)
+
+  
+  boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
+  boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, xlab= "Chick age (days)", ylab = "Time spent in the nest (min)", medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
+  text(x = boxplt$names, y = 45, paste("(n=",boxplt$n,")",sep=""))
+  text(x = boxplt$names, y = 43, paste("(N=",nbVideoperAge$nVideo,")",sep=""))  
+  abline(v=c(5.5,8.5), col=c("red", "red"), lty=c(2,2), lwd=c(2, 2))
+  
+  dev.off()
+  #############
+
+
+
 
 MY_tblDVDInfo <- MY_tblDVDInfo[ ! MY_tblDVDInfo$DVDRef %in% list_non_valid_DVDRef,]
 
@@ -297,12 +324,12 @@ outTsartMin <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef
 summary(outTsartMin$TstartFeedVisit)
 
 outAllOtherIntervals <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[-which.min(x$TstartFeedVisit), c('DVDRef','Interval')] ))
-summary(outAllOtherIntervals$Interval)
+summary(outAllOtherIntervals$Interval) # time between known visits
 #hist(outAllOtherIntervals$Interval)
 
 t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
 
-summary(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
+summary(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) # time in nest
 table(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
 hist(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit, breaks =50)
 length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) >1.2]))
@@ -321,12 +348,13 @@ length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY
   summary(MY_TABLE_perDVD$A/(MY_TABLE_perDVD$EffectiveTime)*60)
   summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
-  
+ 
+
 }
 
 
 head(MY_tblBroods) # even those where one parent unknown, needed for divorce question
-head(RawInterfeeds) 
+head(RawInterfeeds, 50) 
 head(MY_TABLE_perDVD)
 
 
@@ -376,7 +404,7 @@ fulldat
 one_generated_fulldat <- generate_fulldat(1599,avPR,sdPR,VideoLength) # see default parameter values
 head(one_generated_fulldat)
 
-  {### request from reviewer: check the itnerval distribution of the generated dataset
+  {### request from reviewer: check the itnerval distribution of the generated dataset and compare to observed dataset
       set.seed(10)
 
         meanlog <- log(avPR)
@@ -404,9 +432,23 @@ head(one_generated_fulldat)
         }
         
         allintervals <- unlist(pbreplicate(1599, create_DVD()))
-        summary(allintervals)
-        hist(allintervals)
-    }
+        summary(allintervals) #does not include first zeros of each nest watches
+        
+        RawInterfeedsWithoutFirstZeros <- data.frame(RawInterfeeds %>% group_by (DVDRef,Sex) %>% slice(-1))
+        summary(RawInterfeedsWithoutFirstZeros$Interval)
+        
+        #setEPS() 
+        #pdf("SuppFig.pdf", height=10, width=15)
+        par(mfrow=c(1,2))
+        hist(allintervals,  xlim = c(0,80), ylim = c(0,35000), main = "Simulated intervals", xlab = "Interval duration (min)")
+        hist(RawInterfeedsWithoutFirstZeros$Interval, xlim = c(0,80), ylim = c(0,35000), main = "Observed intervals", xlab = "Interval duration (min)")
+        dev.off()
+        
+        
+        length(allintervals)
+        length(RawInterfeedsWithoutFirstZeros$Interval)
+        
+        }
 
 }
 
@@ -1185,6 +1227,7 @@ head(MY_TABLE_perBrood)
 # 20170324 updated lastseen alive
 # 20170327 added Asorted
 # 20170430 added Agenerated
+# 20190117 corrected divorce and M/F/Pair brood number in data extraction
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1198,7 +1241,8 @@ head(MY_TABLE_perBrood)
 # 20170324 updated lastseen alive
 # 20170415 updated format last seen alive input to recover divorce YN
 # 20171031 added chick mass range
-
+# 20190117 corrected divorce and M/F/Pair brood number in data extraction
+ 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1207,7 +1251,8 @@ head(MY_TABLE_perBrood)
 # 20170321 set seed
 # 20170322 rerun
 # 20170324 updated lastseen alive
-
+# 20190117 corrected divorce and M/F/Pair brood number in data extraction
+ 
 
 
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
@@ -1216,7 +1261,7 @@ head(MY_TABLE_perBrood)
 
 # 20180131
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S15.csv", sep="/"), row.names = FALSE) 
-write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S25.csv", sep="/"), row.names = FALSE) 
+# write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S25.csv", sep="/"), row.names = FALSE) 
 # write.csv(MY_TABLE_perDVD, file = paste(output_folder,"R_MY_TABLE_perDVD_S05.csv", sep="/"), row.names = FALSE) 
 
 

@@ -71,7 +71,7 @@ dat
 }
 
 Convert_CN_2_r <- function(oneCN){
-rseq <- seq(from=0,to=1, length.out=max(CN))
+rseq <- seq(from=0,to=1, length.out=max(CN)) # chick number varies from 1 to 7, correlation coefficient from 0 to 1, we just equally distributed 1 to 7 on 0 to 1 space.
 r <- rseq[oneCN]
 return(r)
 }
@@ -101,9 +101,9 @@ if(sex_fully_sorted == 0) {sex_partially_sorted <- 1} else(sex_partially_sorted 
 rCNint <- Convert_CN_2_r(x$CN) # strength of the sorting = correlation to CN
 
 if (sex_partially_sorted == 1) {
-MaleIntervals <- sort(diff(MaleVisits))
-seq_intervalNb <- 1:length(MaleIntervals)
-sorting_parameter <- rCNint*seq_intervalNb + rnorm(length(seq_intervalNb), 0, sqrt(1-rCNint^2))
+MaleIntervals <- sort(diff(MaleVisits)) # sort intervals in ascending order
+seq_intervalNb <- 1:length(MaleIntervals) # label intervals
+sorting_parameter <- rCNint*seq_intervalNb + rnorm(length(seq_intervalNb), 0, sqrt(1-rCNint^2)) # creates a new variable correlated to seq_intervalNb with the correlation coeffecient rCNint
 MaleVisits <- MaleVisits[1] + cumsum(MaleIntervals[order(sorting_parameter)])# recalculate Tstart based on partially sorted intervals
 MaleIntervals <- c(0,diff(MaleVisits)) # first interval is zero like in real data
 }
@@ -896,6 +896,14 @@ return(MY_TABLE_per_DVD_long)
 MY_TABLE_per_DVD_long_none_yes <- Generate_TP_randomize_data_and_give_data('none', 'Yes')
 MY_TABLE_per_DVD_long_full_yes <- Generate_TP_randomize_data_and_give_data('full', 'Yes')
 MY_TABLE_per_DVD_long_partial_yes <- Generate_TP_randomize_data_and_give_data('partial', 'Yes')
+MY_TABLE_per_DVD_long_none_no <- Generate_TP_randomize_data_and_give_data('none', 'No')
+MY_TABLE_per_DVD_long_full_no <- Generate_TP_randomize_data_and_give_data('full', 'No')
+MY_TABLE_per_DVD_long_partial_no <- Generate_TP_randomize_data_and_give_data('partial', 'No')
+
+
+MY_TABLE_per_DVD_long_none_yes$logA <- log(MY_TABLE_per_DVD_long_none_yes$A)
+MY_TABLE_per_DVD_long_full_yes$logA <- log(MY_TABLE_per_DVD_long_full_yes$A)
+MY_TABLE_per_DVD_long_partial_yes$logA <- log(MY_TABLE_per_DVD_long_partial_yes$A)
 
 {## summarize data per cat for plotting
 
@@ -908,6 +916,10 @@ x}
 MY_TABLE_per_DVD_long_none_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_yes)
 MY_TABLE_per_DVD_long_full_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_yes)
 MY_TABLE_per_DVD_long_partial_yes <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_yes)
+MY_TABLE_per_DVD_long_none_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_none_no)
+MY_TABLE_per_DVD_long_full_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_full_no)
+MY_TABLE_per_DVD_long_partial_no <- Change_x_to_Cat(MY_TABLE_per_DVD_long_partial_no)
+
 
 summarize_TP <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
 				Amean = mean(A),
@@ -927,6 +939,35 @@ summary_TP_full_yes <- summarize_TP(MY_TABLE_per_DVD_long_full_yes)
 summary_CN_full_yes <- summarize_CN(MY_TABLE_per_DVD_long_full_yes)	
 summary_TP_partial_yes <- summarize_TP(MY_TABLE_per_DVD_long_partial_yes)	
 summary_CN_partial_yes <- summarize_CN(MY_TABLE_per_DVD_long_partial_yes)
+summary_TP_none_no <- summarize_TP(MY_TABLE_per_DVD_long_none_no)	
+summary_CN_none_no <- summarize_CN(MY_TABLE_per_DVD_long_none_no)	
+summary_TP_full_no <- summarize_TP(MY_TABLE_per_DVD_long_full_no)	
+summary_CN_full_no <- summarize_CN(MY_TABLE_per_DVD_long_full_no)	
+summary_TP_partial_no <- summarize_TP(MY_TABLE_per_DVD_long_partial_no)	
+summary_CN_partial_no <- summarize_CN(MY_TABLE_per_DVD_long_partial_no)
+
+
+
+summarize_TP_logA <- function(x) {data.frame(summarise ((x %>% group_by(Type,TotalP_Cat)),
+                                                   Amean = mean(logA),
+                                                   Alower = Amean - sd(logA)/sqrt(n())*1.96,
+                                                   Aupper = Amean + sd(logA)/sqrt(n())*1.96,
+                                                   NbFiles = n()))}
+
+summarize_CN_logA <- function(x) {data.frame(summarise ((x %>% group_by(Type,CN_Cat)),
+                                                   Amean = mean(logA),
+                                                   Alower = Amean - sd(logA)/sqrt(n())*1.96,
+                                                   Aupper = Amean + sd(logA)/sqrt(n())*1.96,
+                                                   NbFiles = n()))	}
+
+summary_TP_logA_none_yes <- summarize_TP_logA(MY_TABLE_per_DVD_long_none_yes)	
+summary_CN_logA_none_yes <- summarize_CN_logA(MY_TABLE_per_DVD_long_none_yes)	
+summary_TP_logA_full_yes <- summarize_TP_logA(MY_TABLE_per_DVD_long_full_yes)	
+summary_CN_logA_full_yes <- summarize_CN_logA(MY_TABLE_per_DVD_long_full_yes)	
+summary_TP_logA_partial_yes <- summarize_TP_logA(MY_TABLE_per_DVD_long_partial_yes)	
+summary_CN_logA_partial_yes <- summarize_CN_logA(MY_TABLE_per_DVD_long_partial_yes)
+
+
 
 }	
 
@@ -1143,28 +1184,28 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
 {## plot with cor A
   pd <- position_dodge(width = 0.4)
    
-  {plot1y <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none_yes) + 
-    geom_point(position = pd)+
-    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position=  pd)+
-    scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
-    xlab(NULL)+
-    ylab("Number of alternated visits")+
-    scale_color_manual(values = rep(c('black', '#009E73'),7), labels=c("Simulated", "Simulated randomized"))+ 
-    theme_classic()+
-    theme(
-      legend.justification= c(0,1),
-      legend.position = c(0.01,0.99),
-      legend.title =element_blank(),
-      panel.border = element_rect(colour = "black", fill=NA), 
-      axis.title.y=element_text(margin=margin(0,10,0,0)) ,
-      axis.ticks.y=element_blank(),
-      axis.text.x=element_text(color="white"),
-      axis.title.x = element_blank(),
-      axis.ticks.x=element_blank(),
-      plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))
+  {plot1n <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none_no) + 
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position=  pd)+
+      scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+      xlab(NULL)+
+      ylab("Number of alternated visits")+
+      scale_color_manual(values = rep(c('black', '#009E73'),7)) + 
+      theme_classic()+
+      theme(
+        legend.position = "none",
+        legend.title =element_blank(),
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(margin=margin(0,10,0,0)) ,
+        axis.ticks.y=element_blank(),
+        axis.text.x=element_text(color="white"),
+        axis.title.x = element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))+
+     annotate("text", x = 1.25, y = 65, label = "( 1 )", cex =5)
   }
   
-  {plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_yes) + 
+  {plot2n <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_no) + 
       geom_point(position = pd)+
       geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position = pd)+
       scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
@@ -1174,6 +1215,127 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme_classic()+
       theme(
         legend.position="none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(angle=0),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.text.x=element_text(color="white"),
+        axis.title.x = element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.margin = unit(c(0.1,0.2,0,0.1), "cm"))
+  }
+  
+  {plot3n <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_full_no) + 
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+      scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+      xlab(NULL)+
+      ylab("Number of alternated visits")+
+      scale_color_manual(values = rep(c('black', '#009E73'),7))+ 
+      theme_classic()+
+      theme(
+        legend.position = "none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.ticks.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x=element_text(color="white"),
+        axis.ticks.x=element_blank(),
+        plot.margin = unit(c(0,0.2,0,0.2), "cm"))+
+    annotate("text", x = 1.25, y = 65, label = "( 3 )", cex =5)
+  }
+  
+  {plot4n <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_no) + 
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+      scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+      xlab(NULL)+
+      ylab(NULL)+
+      scale_color_manual(values = rep(c('black', '#009E73'),7))+
+      theme_classic()+
+      theme(
+        legend.position="none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(angle=0),
+        axis.ticks.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x=element_text(color="white"),
+        axis.ticks.x=element_blank(),
+        plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+  }
+  
+  {plot5n <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_partial_no) + 
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+      scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+      xlab(NULL)+
+      ylab("Number of alternated visits")+
+      scale_color_manual(values = rep(c('black', '#009E73'),7))+ 
+      theme_classic()+
+      theme(
+        legend.position = "none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.ticks.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))+
+      annotate("text", x = 1.25, y = 65, label = "( 5 )", cex =5)
+  }
+  
+  {plot6n <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_no) + 
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+      scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+      xlab(NULL)+
+      ylab(NULL)+
+      scale_color_manual(values = rep(c('black', '#009E73'),7))+
+      theme_classic()+
+      theme(
+        legend.position="none",
+        panel.border = element_rect(colour = "black", fill=NA), 
+        axis.title.y=element_text(angle=0, hjust=1),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x=element_blank(),
+        plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
+  }
+  
+  {plot1y <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position=  pd)+
+    scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+    xlab(NULL)+
+    ylab("Number of alternated visits")+
+    scale_color_manual(values = rep(c('black', '#009E73'),7))+ 
+    theme_classic()+
+    theme(
+      legend.position = "none",
+      
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(margin=margin(0,10,0,0)) ,
+      axis.ticks.y=element_blank(),
+      axis.text.x=element_text(color="white"),
+      axis.title.x = element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))+
+    annotate("text", x = 1.25, y = 65, label = "( 2 )", cex =5)
+  }
+  
+  {plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_yes) + 
+      geom_point(position = pd)+
+      geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position = pd)+
+      scale_y_continuous(limits = c(0, 70), breaks =seq(5,65, by = 10))+
+      xlab(NULL)+
+      ylab(NULL)+
+      scale_color_manual(values = rep(c('black', '#009E73'),7), labels=c("Simulated", "Simulated randomized"))+
+      theme_classic()+
+      theme(
+        legend.justification= c(1,1),
+        legend.position = c(0.99,0.99),
+        legend.title =element_blank(),
         panel.border = element_rect(colour = "black", fill=NA), 
         axis.title.y=element_text(angle=0),
         axis.text.y=element_blank(),
@@ -1200,7 +1362,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         axis.title.x = element_blank(),
         axis.text.x=element_text(color="white"),
         axis.ticks.x=element_blank(),
-        plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+        plot.margin = unit(c(0,0.2,0,0.2), "cm")) +
+    annotate("text", x = 1.25, y = 65, label = "( 4 )", cex =5)
   }
   
   {plot4y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_yes) + 
@@ -1238,7 +1401,8 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.ticks.x=element_blank(),
-        plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))
+        plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))+
+      annotate("text", x = 1.25, y = 65, label = "( 6 )", cex =5)
   }
   
   {plot6y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_yes) + 
@@ -1302,9 +1466,61 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         plot.margin = unit(c(0,0.2,0,0.1), "cm"))
   }
   
+  {blank01y <-ggplot()+
+      scale_x_continuous(limits = c(0,10))+
+      scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
+      ylab("N")+
+      
+      annotate("text", x = 5, y = 5, label = "Provisioning rate not correlated with brood size", hjust = 0.5, angle=0, color="black")+
+      theme_classic()+
+      
+      theme(
+        #panel.border = element_rect(colour = "red", fill=NA),
+        axis.title.y=element_text(color="white", angle=(90)),
+        axis.text.y=element_text(color="white"),
+        axis.ticks.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        #axis.line = element_line(colour = "green"),
+        axis.line = element_blank(),
+        plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+    
+  }
+  
+  {blank02y <-ggplot()+
+      scale_x_continuous(limits = c(0, 10))+
+      scale_y_continuous(limits = c(0, 10))+
+      
+      annotate("text", x = 5, y = 5, label = "Provisioning rate correlated with brood size",  hjust = 0.5, angle=0)+
+      theme_classic()+
+      
+      theme(
+        #panel.border = element_rect(colour = "red", fill=NA),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        #axis.line = element_line("orange"),
+        axis.line = element_blank(),
+        plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+  }
+  
   
   {### nested plotting structuring
+  
+    gblank01y <- ggplotGrob(blank01y)
+    gblank02y <- ggplotGrob(blank02y)   
     
+    g1n <- ggplotGrob(plot1n)
+    g2n <- ggplotGrob(plot2n)
+    g3n <- ggplotGrob(plot3n)
+    g4n <- ggplotGrob(plot4n)
+    g5n <- ggplotGrob(plot5n)
+    g6n <- ggplotGrob(plot6n)
+     
     g1y <- ggplotGrob(plot1y)
     g2y <- ggplotGrob(plot2y)
     g3y <- ggplotGrob(plot3y)
@@ -1314,38 +1530,46 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
     gblank1y <- ggplotGrob(blank1y)
     gblank2y <- ggplotGrob(blank2y)
     
-    firstrowy = cbind(g1y, g2y, size = "last")
-    secondrowy = cbind(g3y, g4y, size = "last")
-    thirdrowy = cbind(g5y, g6y, size = "last")
-    bottomrowy = cbind(gblank1y, gblank2y, size = "last")
+    toprow = cbind(gblank01y,gblank02y)
+    firstrowy = cbind(g1n, g2n, g1y, g2y, size = "last")
+    secondrowy = cbind(g3n, g4n, g3y, g4y, size = "last")
+    thirdrowy = cbind(g5n, g6n, g5y, g6y, size = "last")
+    bottomrowy = cbind(gblank1y, gblank2y, gblank1y, gblank2y, size = "last")
     
+    gtop <- grid.arrange(toprow)
     g1 <- grid.arrange(firstrowy)
     g2 <- grid.arrange(secondrowy)
     g3 <- grid.arrange(thirdrowy)
     gbottom <- grid.arrange(bottomrowy)
     
+    
+    ggtop <- grid.arrange(textGrob(""), gtop,ncol =2, widths = c(0.6,4)) 
+    
     gg1 <- grid.arrange(textGrob("Alternation simulated 
-to be random
-( 2 )"),g1,ncol =2, widths = c(1.5,4))
+to be random"),g1,ncol =2, widths = c(0.6,4))
     
     gg2 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
-due to autocorrelation
-( 4 )"),g2,ncol =2, widths = c(1.5,4))
+due to autocorrelation"),g2,ncol =2, widths = c(0.6,4))
     
     gg3 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
 due to an effect
-of brood size
-( 6 )"),g3,ncol =2, widths = c(1.5,4))
+of brood size"),g3,ncol =2, widths = c(0.6,4))
     
-    ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
+    ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(0.6,4)) 
     
   }
   
-  grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
   
-} # COLOR
+  setEPS() 
+  #pdf("Fig4.pdf", height=10, width=15)
+  jpeg("Fig5.jpeg", height = 650, width = 1100)
+  grid.arrange(ggtop, gg1,gg2,gg3,ggbottom,nrow = 5, ncol= 1, heights = c(0.5,4,4,4,0.5))
+  dev.off()
+  
+  
+} # COLOR with all 6 scenarios
 
 length(MY_TABLE_per_DVD_long_none_yes$TotalP[MY_TABLE_per_DVD_long_none_yes$TotalP >100])
 length(MY_TABLE_per_DVD_long_full_yes$TotalP[MY_TABLE_per_DVD_long_full_yes$TotalP >100])
@@ -1354,6 +1578,215 @@ length(MY_TABLE_per_DVD_long_partial_yes$TotalP[MY_TABLE_per_DVD_long_partial_ye
 length(MY_TABLE_per_DVD_long_none_yes$CN[MY_TABLE_per_DVD_long_none_yes$CN >5])
 length(MY_TABLE_per_DVD_long_full_yes$CN[MY_TABLE_per_DVD_long_full_yes$CN >5])
 length(MY_TABLE_per_DVD_long_partial_yes$CN[MY_TABLE_per_DVD_long_partial_yes$CN >5])
+
+{# plot with logA color
+pd <- position_dodge(width = 0.4)
+
+{plot1y <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_logA_none_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position=  pd)+
+    scale_y_continuous(limits = c(0, 5), breaks =seq(0,5, by = 0.5))+
+    xlab(NULL)+
+    ylab("Number of alternated visits")+
+    scale_color_manual(values = rep(c('black', '#009E73'),7), labels=c("Simulated", "Simulated randomized"))+ 
+    theme_classic()+
+    theme(
+      legend.justification= c(0,1),
+      legend.position = c(0.01,0.99),
+      legend.title =element_blank(),
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(margin=margin(0,10,0,0)) ,
+      axis.ticks.y=element_blank(),
+      axis.text.x=element_text(color="white"),
+      axis.title.x = element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))
+}
+
+{plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_logA_none_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position = pd)+
+    scale_y_continuous(limits = c(0, 5), breaks =seq(0,5, by = 0.5))+
+    xlab(NULL)+
+    ylab(NULL)+
+    scale_color_manual(values = rep(c('black', '#009E73'),7))+
+    theme_classic()+
+    theme(
+      legend.position="none",
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(angle=0),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.text.x=element_text(color="white"),
+      axis.title.x = element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0.1,0.2,0,0.1), "cm"))
+}
+
+{plot3y <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_logA_full_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+    scale_y_continuous(limits = c(0, 5), breaks =seq(0,5, by = 0.5))+
+    xlab(NULL)+
+    ylab("Number of alternated visits")+
+    scale_color_manual(values = rep(c('black', '#009E73'),7))+ 
+    theme_classic()+
+    theme(
+      legend.position = "none",
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(margin=margin(0,10,0,0)),
+      axis.ticks.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.x=element_text(color="white"),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+}
+
+{plot4y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_logA_full_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+    scale_y_continuous(limits = c(0, 5), breaks =seq(0,5, by = 0.5))+
+    xlab(NULL)+
+    ylab(NULL)+
+    scale_color_manual(values = rep(c('black', '#009E73'),7))+
+    theme_classic()+
+    theme(
+      legend.position="none",
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(angle=0),
+      axis.ticks.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.x=element_text(color="white"),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+}
+
+{plot5y <- ggplot(aes(y = Amean, x = TotalP_Cat, col = Type), data = summary_TP_logA_partial_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+    scale_y_continuous(limits = c(0, 5), breaks =seq(0,5, by = 0.5))+
+    xlab(NULL)+
+    ylab("Number of alternated visits")+
+    scale_color_manual(values = rep(c('black', '#009E73'),7))+ 
+    theme_classic()+
+    theme(
+      legend.position = "none",
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(margin=margin(0,10,0,0)),
+      axis.ticks.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))
+}
+
+{plot6y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_logA_partial_yes) + 
+    geom_point(position = pd)+
+    geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE,position = pd)+
+    scale_y_continuous(limits = c(0, 5), breaks =seq(0,5, by = 0.5))+
+    xlab(NULL)+
+    ylab(NULL)+
+    scale_color_manual(values = rep(c('black', '#009E73'),7))+
+    theme_classic()+
+    theme(
+      legend.position="none",
+      panel.border = element_rect(colour = "black", fill=NA), 
+      axis.title.y=element_text(angle=0, hjust=1),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.ticks.x=element_blank(),
+      plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
+}
+
+{blank1y <-ggplot()+
+    scale_x_continuous(limits = c(0,10))+
+    scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
+    ylab("N")+
+    
+    annotate("text", x = 5, y = 5, label = "Total number of visits", hjust = 0.5, angle=0, color="black")+
+    theme_classic()+
+    
+    theme(
+      #panel.border = element_rect(colour = "red", fill=NA),
+      axis.title.y=element_text(color="white", angle=(90)),
+      axis.text.y=element_text(color="white"),
+      axis.ticks.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      #axis.line = element_line(colour = "green"),
+      axis.line = element_blank(),
+      plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+  
+}
+
+{blank2y <-ggplot()+
+    scale_x_continuous(limits = c(0, 10))+
+    scale_y_continuous(limits = c(0, 10))+
+    
+    annotate("text", x = 5, y = 5, label = "Brood size",  hjust = 0.5, angle=0)+
+    theme_classic()+
+    
+    theme(
+      #panel.border = element_rect(colour = "red", fill=NA),
+      axis.title.y=element_blank(),
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank(),
+      #axis.line = element_line("orange"),
+      axis.line = element_blank(),
+      plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+}
+
+
+{### nested plotting structuring
+  
+  g1y <- ggplotGrob(plot1y)
+  g2y <- ggplotGrob(plot2y)
+  g3y <- ggplotGrob(plot3y)
+  g4y <- ggplotGrob(plot4y)
+  g5y <- ggplotGrob(plot5y)
+  g6y <- ggplotGrob(plot6y)
+  gblank1y <- ggplotGrob(blank1y)
+  gblank2y <- ggplotGrob(blank2y)
+  
+  firstrowy = cbind(g1y, g2y, size = "last")
+  secondrowy = cbind(g3y, g4y, size = "last")
+  thirdrowy = cbind(g5y, g6y, size = "last")
+  bottomrowy = cbind(gblank1y, gblank2y, size = "last")
+  
+  g1 <- grid.arrange(firstrowy)
+  g2 <- grid.arrange(secondrowy)
+  g3 <- grid.arrange(thirdrowy)
+  gbottom <- grid.arrange(bottomrowy)
+  
+  gg1 <- grid.arrange(textGrob("Alternation simulated 
+                               to be random
+                               ( 2 )"),g1,ncol =2, widths = c(1.5,4))
+  
+  gg2 <- grid.arrange(textGrob("Alternation simulated 
+                               to be higher than random
+                               due to autocorrelation
+                               ( 4 )"),g2,ncol =2, widths = c(1.5,4))
+  
+  gg3 <- grid.arrange(textGrob("Alternation simulated 
+                               to be higher than random
+                               due to an effect
+                               of brood size
+                               ( 6 )"),g3,ncol =2, widths = c(1.5,4))
+  
+  ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1.5,4)) 
+  
+}
+
+
+grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
+
+ 
+}
 
 
 }

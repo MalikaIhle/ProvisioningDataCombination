@@ -2325,9 +2325,9 @@ MY_tblDVDInfo$ChickAge <- as.numeric(MY_tblDVDInfo$DVDdate - MY_tblDVDInfo$Hatch
 sunflowerplot(MY_tblDVDInfo$DVDInfoAge,MY_tblDVDInfo$ChickAge)
 MY_tblDVDInfo[abs(MY_tblDVDInfo$DVDInfoAge - MY_tblDVDInfo$ChickAge) > 2,]
 
-MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge <10 ] <- 'Age06'
-MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge >=10 ] <- 'Age10'
- 
+MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge <9 ] <- 'Age06'
+MY_tblDVDInfo$ChickAgeCat[MY_tblDVDInfo$ChickAge >=9 ] <- 'Age10'
+MY_tblDVDInfo[MY_tblDVDInfo$ChickAge ==9,]
 }
 
 {# RelTime
@@ -2464,13 +2464,29 @@ MY_tblBroods$ParentsAge <- (MY_tblBroods$MumAge+ MY_tblBroods$DadAge) /2
 
 
 }
+  
+
+MY_tblBroods$SocialMumID[is.na(MY_tblBroods$LayDate)] # 5428 5438 6245
+MY_tblBroods$SocialDadID[is.na(MY_tblBroods$LayDate)] # just NAs
+MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & (MY_tblBroods$SocialMumID == 5428 | 
+                                                 MY_tblBroods$SocialMumID == 5438 |
+                                                 MY_tblBroods$SocialMumID == 6245 ),]
+
+MY_tblBroods$LayDate[MY_tblBroods$BroodName == "L097"] <- as.POSIXct("2012-08-12") # first visit in DB
+MY_tblBroods$LayDate[MY_tblBroods$BroodName == "L044"] <- as.POSIXct("2012-06-30")
+MY_tblBroods$LayDate[MY_tblBroods$BroodName == "L045"] <- as.POSIXct("2012-06-03")
+
+
 
 {# add Male divorce
+ # nrow(MY_tblBroods[is.na(MY_tblBroods$SocialMumID) | is.na(MY_tblBroods$SocialMumID),]) # 220
+ # x <-  MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID == 1717,]
+  
 MY_tblBroods_split_per_SocialDadID <- split(MY_tblBroods,MY_tblBroods$SocialDadID)
-#x <- MY_tblBroods_split_per_SocialDadID[[21]]
+#x <- MY_tblBroods_split_per_SocialDadID[[12]]
 
 MY_tblBroods_split_per_SocialDadID_fun = function(x)  {
-x <- x[order(x$BroodName),]
+x <- x[order(x$LayDate),]
 
 x$MBroodNb <- 1:nrow(x) # MBroodNb
 x$MPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
@@ -2491,9 +2507,27 @@ x$MPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior reside
 x$MnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)	
 x$MnextLayDate <- c(x$LayDate[-1],NA)
 x$MnextFsame <- x$SocialMumID == c(x$SocialMumID[-1],NA) 
-x$MwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialMum, format = "%d-%b-%y") > x$MnextLayDate & x$MnextFsame == FALSE
+
+  # x$MwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialMum, format = "%d-%b-%y") > x$MnextLayDate & x$MnextFsame == FALSE >> removed 20190116
+
+x$MwillDivorce <- NA # version added 20190116
+for (i in 1:nrow(x)){
+  if (!is.na(as.POSIXct(x$LastLiveRecordSocialMum[i], format = "%d-%b-%y"))
+      & !is.na(x$MnextLayDate[i])
+      & !is.na(x$MnextFsame[i]))
+  {if( as.POSIXct(x$LastLiveRecordSocialMum[i], format = "%d-%b-%y") > x$MnextLayDate[i] 
+       & x$MnextFsame[i] == FALSE) 
+  {x$MwillDivorce[i] <- TRUE }}
+  
+  if (!is.na(x$MnextFsame[i]) & x$MnextFsame[i] == TRUE) 
+  {x$MwillDivorce[i] <- FALSE}
+}
+
+
+
 x$MwillDivorceforEx <- NA
-if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$MwillDivorce[i]) & x$MwillDivorce[i] == TRUE)
+
+if(nrow(x)>1) {for (i in 2: nrow(x)) {if (!is.na(x$MwillDivorce[i]) & x$MwillDivorce[i] == TRUE)
 {x$MwillDivorceforEx[i] <- x$SocialMumID[i+1] %in% x$SocialMumID[1:i-1]}}}
 if(nrow(x)==1)
 {x$MwillDivorceforEx <- NA}
@@ -2515,10 +2549,10 @@ MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialDadID_out2[
 
 {# add Female divorce
 MY_tblBroods_split_per_SocialMumID <- split(MY_tblBroods,MY_tblBroods$SocialMumID)
-#x <- MY_tblBroods_split_per_SocialMumID[[5]]
+# x <- MY_tblBroods_split_per_SocialMumID[[11]]
 
 MY_tblBroods_split_per_SocialMumID_fun = function(x)  {
-x <- x[order(x$BroodName),]
+x <- x[order(x$LayDate),]
 
 x$FBroodNb <- 1:nrow(x) # FBroodNb
 x$FPriorResidence <- x$NestboxRef == c(-1,x$NestboxRef[-nrow(x)]) # Prior residence does not take into account change of year here. # changed first breeding event prior residence from NA to FALSE 2016/07/07
@@ -2541,8 +2575,23 @@ x$FnextNBsame <- c(x$NestboxRef[-nrow(x)] == c(x$NestboxRef[-1]) ,NA)
 x$FnextLayDate <- c(x$LayDate[-1],NA)
 x$FnextMsame <- x$SocialDadID == c(x$SocialDadID[-1],NA) 
 x$FwillDivorce <-  as.POSIXct(x$LastLiveRecordSocialDad, format = "%d-%b-%y") > x$FnextLayDate & x$FnextMsame == FALSE
+
+x$FwillDivorce <- NA # version added 20190116
+for (i in 1:nrow(x)){
+  if (!is.na(as.POSIXct(x$LastLiveRecordSocialDad[i], format = "%d-%b-%y"))
+      & !is.na(x$FnextLayDate[i])
+      & !is.na(x$FnextMsame[i]))
+  {if( as.POSIXct(x$LastLiveRecordSocialDad[i], format = "%d-%b-%y") > x$FnextLayDate[i] 
+       & x$FnextMsame[i] == FALSE) 
+  {x$FwillDivorce[i] <- TRUE }}
+  
+  if (!is.na(x$FnextMsame[i]) & x$FnextMsame[i] == TRUE) 
+  {x$FwillDivorce[i] <- FALSE}
+}
+
+
 x$FwillDivorceforEx <- NA
-if(nrow(x)>1) {for (i in 1: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
+if(nrow(x)>1) {for (i in 2: nrow(x)) {if (!is.na(x$FwillDivorce[i]) & x$FwillDivorce[i] == TRUE)
 {x$FwillDivorceforEx[i] <- x$SocialDadID[i+1] %in% x$SocialDadID[1:i-1]}}}
 if(nrow(x)==1)
 {x$FwillDivorceforEx <- NA}
@@ -2560,6 +2609,8 @@ nrow(MY_tblBroods_split_per_SocialMumID_out2)	# 962
 rownames(MY_tblBroods_split_per_SocialMumID_out2) <- NULL
 
 MY_tblBroods <- merge(x=MY_tblBroods, y=MY_tblBroods_split_per_SocialMumID_out2[,-1], by='BroodRef', all.x=TRUE)
+
+
 }
 
 {# add PairBroodNb
@@ -2569,7 +2620,7 @@ MY_tblBroods_split_per_PairID <- split(MY_tblBroods, MY_tblBroods$PairID)
 x <- MY_tblBroods_split_per_PairID[[2]]
 
 MY_tblBroods_split_per_PairID_fun <- function(x){
-x <- x[order(x$BroodName),]
+x <- x[order(x$LayDate),]
 
 x$PairBroodNb <- 1:nrow(x)
 
@@ -2669,6 +2720,7 @@ DurationScript # ~ 14 min
  # 20160324 20160331 20160426 20170208 rerun # create RawFeedingVisit ('A' bouts removed, one succession OF-IN give the Tstart of OF and the Tend of IN - split per sex and recombine)
  
 ## write.csv(MY_tblDVDInfo,file = paste(output_folder,"R_MY_tblDVDInfo.csv", sep="/"), row.names = FALSE) 
+    # MY_tblDVDInfo <- read.csv(paste("R_ExtractedData","R_MY_tblDVDInfo.csv", sep="/"))
  # 20160415
  # 20160428 without one DVD where summary data in initial zzz_OldParentalCare but no excel file with raw data
  # 20160504 with new dummy variables
@@ -2676,6 +2728,7 @@ DurationScript # ~ 14 min
  # 20170208 rerun
  # 20170322 rerun
  # 20170323 rerun with DB corrected after sparrow meeting
+ # 20190110 change AgeCat delimiation (include age 9 into cat 10)
  
 ## write.csv(MY_tblParentalCare,file = paste(output_folder,"R_MY_tblParentalCare.csv", sep="/"), row.names = FALSE) 
  # 20160415
@@ -2706,6 +2759,7 @@ DurationScript # ~ 14 min
  # 20170323 rerun with DB corrected after sparrow meeting
  # 20170323 rerun with lastseenalive.txt updated to be the query from new DB
  # 20170415 change input format of last seen alive to accomodate "%d-%b-%y" (inpact on divorced YN)
+ # 20190116 slighty correct F and Nwill divorce for EX
  
  
 ## write.table(tblChicks,file=paste(input_folder,"R_tblChicks.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
