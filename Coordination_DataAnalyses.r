@@ -63,9 +63,6 @@ head(MY_TABLE_perChick) # this only includes chicks that reached d12 (to analyse
 head(MY_TABLE_perChick_All) # this includes all chicks, to analyse chick survival
 
 
-
-
-
 {# create MY_TABLE_perDVD_long, with the column A and S having observed values in first half, and sim values in second half
 MY_TABLE_perDVD_long <- rbind(MY_TABLE_perDVD,MY_TABLE_perDVD)
 
@@ -464,47 +461,16 @@ summary(modS)
 # FITNESS CORRELATES
 ######################
 
-### the deviation from randomness modeled above, with a poisson model is essentially:
-### log (A) - log (Asim) = log (A/Asim)
-{## since A can be 0, we add 0.5 to both numerator and denominator (Yamamura 1999)
-
-MY_TABLE_perDVD$LogAdev <- log((MY_TABLE_perDVD$A+0.5)/(MY_TABLE_perDVD$MeanAsimWithin+0.5))
-MY_TABLE_perDVD$LogSdev <- log((MY_TABLE_perDVD$S+0.5)/(MY_TABLE_perDVD$MeanSsimWithin+0.5))
-
-MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
-data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef),
-MeanLogAdev = mean(LogAdev), 
-MeanLogSdev = mean(LogSdev))), by='BroodRef')
-
-
-head(MY_TABLE_perDVD)
-cor.test(MY_TABLE_perDVD$Adev, MY_TABLE_perDVD$LogAdev)
-plot (MY_TABLE_perDVD$Adev, MY_TABLE_perDVD$LogAdev)
-cor.test(MY_TABLE_perDVD$Sdev, MY_TABLE_perDVD$LogSdev)
-plot (MY_TABLE_perDVD$Sdev, MY_TABLE_perDVD$LogSdev)
-
-head(MY_TABLE_perBrood)
-cor.test(MY_TABLE_perBrood$MeanAdev, MY_TABLE_perBrood$MeanLogAdev)
-plot (MY_TABLE_perBrood$MeanAdev, MY_TABLE_perBrood$MeanLogAdev)
-cor.test(MY_TABLE_perBrood$MeanSdev, MY_TABLE_perBrood$MeanLogSdev)
-plot (MY_TABLE_perBrood$MeanSdev, MY_TABLE_perBrood$MeanLogSdev)
-
-head(MY_TABLE_perChick)
-MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by.x="RearingBrood", by.y="BroodRef")
-
-}
-
-
 {#### ChickSurvival ~ Alternation + Synchrony, brood
 
   modChickSurvival <- glmer(RingedYN ~ 
                               scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
-                              scale(NbHatched) +
+                              #scale(NbHatched) +
                               scale(MeanLogAdev)+
                               scale(MeanLogSdev) +
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
-                              MPriorResidence +
+                             # MPriorResidence +
                               (1|PairID) + 
                               (1|BreedingYear) +
                               (1|BroodRef) +
