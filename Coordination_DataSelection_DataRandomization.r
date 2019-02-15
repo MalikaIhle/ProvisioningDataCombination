@@ -1185,7 +1185,7 @@ nrow(MY_tblChicks[is.na(MY_tblChicks$AvgOfTarsus),]) # 40
 
 MY_TABLE_perChick <- merge(x= MY_tblChicks , 
 y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
-"SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb")],
+"SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb","NbHatched", "MPriorResidence")],
 by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
 
 MY_TABLE_perChick <- MY_TABLE_perChick[!is.na(MY_TABLE_perChick$BreedingYear),]
@@ -1283,7 +1283,7 @@ head(MY_TABLE_perChick_All)
 # 20170327 added Asorted
 # 20170430 added Agenerated
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
-# 20190215 add MeanLogCoordinatin (removed from data analyses script)
+# 20190215 add MeanLogCoordination (removed from data analyses script)
 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1298,7 +1298,7 @@ head(MY_TABLE_perChick_All)
 # 20170415 updated format last seen alive input to recover divorce YN
 # 20171031 added chick mass range
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
-# 20190215 add MeanLogCoordinatin (removed from data analyses script) 
+# 20190215 add MeanLogCoordination (removed from data analyses script) 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1308,8 +1308,8 @@ head(MY_TABLE_perChick_All)
 # 20170322 rerun
 # 20170324 updated lastseen alive
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
-# 20190215 add MeanLogCoordinatin (removed from data analyses script) 
-
+# 20190215 add MeanLogCoordination (removed from data analyses script) 
+# 20190215 added Mprior residence and NbHatched from tblbrood
 
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
 # 20170321 the raw data of the DVDs where both parents are known
@@ -1327,5 +1327,5 @@ head(MY_TABLE_perChick_All)
  # (to include natal brood ID for each chick since its different for each)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
  # 20190215 exclude the broods where Julia deleted the broodRef for ChickID and therefore can't find the chickID to add them to those broods again.
- # 20190215 add MeanLogCoordinatin (removed from data analyses script)
+ # 20190215 add MeanLogCoordination (removed from data analyses script)
  

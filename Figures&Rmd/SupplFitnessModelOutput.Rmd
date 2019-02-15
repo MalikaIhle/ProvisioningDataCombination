@@ -1,12 +1,13 @@
 ---
 title: "Supplemental Fitness models output"
 author: "Malika Ihle"
-date: "February 5, 2019"
+date: "February 15, 2019"
 output: pdf_document
 ---
 
 ```{r, echo=FALSE, results="hide", message=FALSE, warnings=FALSE, include =FALSE}
-source('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\stats&data_extraction\\_ProvisioningDataCombination\\Coordination_DataAnalyses.R')
+library(here)
+source(paste(here(),'Coordination_DataAnalyses.R', sep='/'))
 ```
 
 
@@ -47,24 +48,37 @@ source('C:\\Users\\malika.ihle\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\s
 **_SocialDadID_**: unique idenifier for male parent observed caring for a brood  
 **_SocialMumID_**: unique idenifier for female parent observed caring for a brood  
 **_TotalProRate_**: the total number of visits provided by both partners divided by the entire duration of the nest watch in hours   
-**_Type_**: the type of data (observed ("z_Obsv") or randomized ("Exp")  
-**_VisitRateDifference_**: the difference in visit rate per hour between the partner  
-
 
 
 ## Fitness correlates
 
 ### Chick Survival
 
-```{r, echo=FALSE}
+```{r}
 summary(modChickSurvival) 
+drop1(modChickSurvival, test="Chisq") # Likelihood ratio test
+dispersion_glmer(modChickSurvival) # from package blmeco
 ```
 
 
 ## Divorce correlates
 
-```{r, echo=FALSE}
-summary(mod_Divorce)
+They are 37 polygynous males, for which a total of 67 brood the male divorce (breed with another female), while the female does not (her next brood will be with the same male again).
+In the first model, the dependent variable 'PairDivorce' is NA (those broods are excluded), in the second, PairDivorce is set to FALSE (female perspective), and in the third model, PairDivorce is set to TRUE (male perspective).
+
+```{r}
+summary(mod_Divorce) 
+drop1(mod_Divorce, test = "Chisq")
+dispersion_glmer(mod_Divorce)
+
+summary(mod_Divorce_PolygynousDontDivorce) 
+drop1(mod_Divorce_PolygynousDontDivorce, test = "Chisq")
+dispersion_glmer(mod_Divorce_PolygynousDontDivorce)
+
+summary(mod_Divorce_PolygynousDivorce) 
+drop1(mod_Divorce_PolygynousDivorce, test = "Chisq")
+dispersion_glmer(mod_Divorce_PolygynousDivorce)
+
 ```
 
 

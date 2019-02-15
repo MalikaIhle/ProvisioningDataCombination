@@ -23,8 +23,9 @@ library(lme4)
 library(arm) # for the function invlogit
 library(blmeco) # to check for overdispersion
 library (multcomp)
-library(MCMCglmm)
-library(RODBC)
+#library(MCMCglmm)
+#library(RODBC) # to call DB
+library(here)
   
 options(scipen=999) # remove scientific notation e-
 #options(scipen=0)
@@ -39,7 +40,7 @@ options(scipen=999) # remove scientific notation e-
 
 SelectedData_folder <- "R_Selected&RandomizedData"
 
-MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD.csv", sep="/")) # summary stats for all analyzed videos where both parents known and with expected alternation from simulation
+MY_TABLE_perDVD <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_perDVD.csv", sep="/")) # summary stats for all analyzed videos where both parents known and with expected alternation from simulation
   # nrow(MY_TABLE_perDVD[MY_TABLE_perDVD$S == 0,])/nrow(MY_TABLE_perDVD)*100 #3%
 #MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD_S05.csv", sep="/")) 
   # nrow(MY_TABLE_perDVD[MY_TABLE_perDVD$S == 0,])/nrow(MY_TABLE_perDVD)*100 #17%
@@ -51,9 +52,9 @@ MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD.csv", s
   # nrow(MY_TABLE_perDVD[MY_TABLE_perDVD$S == 0,])/nrow(MY_TABLE_perDVD)*100 #2.1%
   # summary(MY_TABLE_perDVD$S)
 
-MY_TABLE_perBrood <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
-MY_TABLE_perChick <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
-MY_TABLE_perChick_All <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/"))
+MY_TABLE_perBrood <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
+MY_TABLE_perChick <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
+MY_TABLE_perChick_All <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/"))
 
 }
 
@@ -465,12 +466,12 @@ summary(modS)
 
   modChickSurvival <- glmer(RingedYN ~ 
                               scale(MeanTotalProRate)+ scale(I(MeanTotalProRate^2))+
-                              #scale(NbHatched) +
+                              scale(NbHatched) +
                               scale(MeanLogAdev)+
                               scale(MeanLogSdev) +
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
-                             # MPriorResidence +
+                              MPriorResidence +
                               (1|PairID) + 
                               (1|BreedingYear) +
                               (1|BroodRef) +
@@ -479,9 +480,9 @@ summary(modS)
                             , family = 'binomial'
                             , control=glmerControl(optimizer = "bobyqa"))
 
+  summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
-  
-  dispersion_glmer(modChickSurvival) # 
+  dispersion_glmer(modChickSurvival) # 1.091
 
 }
 
@@ -495,8 +496,7 @@ summary(modChickSurvival)
 {##### understand why Male and Female divorce are not matching for both partners
 
 # all broods unless bot parents are unidentified, even those when one social parent not identified, even those not recorded
-ExtractedData_folder <- "R_ExtractedData" 
-MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/")) 
+MY_tblBroods <- read.csv(paste(here(),"R_ExtractedData/R_MY_tblBroods.csv", sep='/')) 
 
 # just recorded broods : MY_TABLE_perBrood
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
@@ -522,18 +522,18 @@ for (i in 1: nrow(MY_TABLE_perBrood)){
   if ((is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) & MY_TABLE_perBrood$FwillDivorce[i] == TRUE) 
       | (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & MY_TABLE_perBrood$MwillDivorce[i] == TRUE & is.na(MY_TABLE_perBrood$FwillDivorce[i])))
   {MY_TABLE_perBrood$PairDivorce[i] <- TRUE}
-  # if one is FALSE, the other NA, it measn the first one we know breed again with that smae partner again, but the other is NA because he/she breed with someone unidentified in between, depending on who that unidendify bird would be, divorce could be true or false, so let it be NA 
+  # if one is FALSE, the other NA, it means the first one we know breed again with that same partner again, but the other is NA because he/she breed with someone unidentified in between, depending on who that unidendify bird would be, divorce could be true or false, so let it be NA 
   if ((is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) & MY_TABLE_perBrood$FwillDivorce[i] == FALSE) 
       | (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & MY_TABLE_perBrood$MwillDivorce[i] == FALSE & is.na(MY_TABLE_perBrood$FwillDivorce[i])))
   {MY_TABLE_perBrood$PairDivorce[i] <- NA}
-  # if one is FALSE, the other TRUE: one is being faithful, the other plogamous, need to decide 'by hand' whether brood overlap (true polygamie), or not (divorce and getting back with their ex)
+  # if one is FALSE, the other TRUE: one is being faithful, the other polygamous, need to decide whether we considere this divorce or not
   if (!is.na(MY_TABLE_perBrood$MwillDivorce[i]) & !is.na(MY_TABLE_perBrood$FwillDivorce[i]) 
       & MY_TABLE_perBrood$MwillDivorce[i] != MY_TABLE_perBrood$FwillDivorce[i])
   {MY_TABLE_perBrood$PairDivorce[i] <- NA}
   
   }
 
-# example of one is NA the other TRUE
+{# example of one is NA the other TRUE
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & is.na(MY_TABLE_perBrood$MwillDivorce) 
                        & !is.na(MY_TABLE_perBrood$BroodRef),]) # 32
 MY_tblBroods[!is.na(MY_tblBroods$SocialMumID) & MY_tblBroods$SocialMumID == 1718,c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'FBroodNb','MBroodNb',  'FwillDivorce', 'MwillDivorce')]
@@ -565,7 +565,7 @@ MY_TABLE_perBrood$PairDivorce[MY_TABLE_perBrood$BroodRef == 636] <- TRUE
 BroodPolygynous <- MY_tblBroods[!is.na(MY_tblBroods$SocialDadID) & MY_tblBroods$SocialDadID %in% Polygynous, c('BroodRef', 'SocialMumID', 'SocialDadID', 'LayDate','NbHatched', 'NbRinged', 'MBroodNb', 'FwillDivorce', 'MwillDivorce')]
 BroodPolygynous <- BroodPolygynous[order(BroodPolygynous$MBroodNb),] 
 BroodPolygynous$RecordedYN <- BroodPolygynous$BroodRef %in% MY_TABLE_perBrood$BroodRef
-split(BroodPolygynous, BroodPolygynous$SocialDadID)
+# split(BroodPolygynous, BroodPolygynous$SocialDadID)
   
   # 7900: in 2015 male has two females simultaneously 
   # 7814: in 2015 male has two females simultaneously 
@@ -577,16 +577,17 @@ split(BroodPolygynous, BroodPolygynous$SocialDadID)
   # 5466: in 2014 male has two females simultaneously 
   # 5461: in 2013 male has two females simultaneously 
   # 5202: end of season 2013, last brood with another female, then get back with initial female in 2014
-  
+}  
   
   
 }
 
-{# male and female divorce in one model
-
+{# male and female divorce in one model - exclude polygynous males
+summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
+  
 mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
                              scale(MeanLogAdev)	+
-                             scale(MumAge) + Scale(DadAge)+
+                             scale(MumAge) + scale(DadAge)+
                              scale(PairBroodNb) +
                              scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
                              scale(NbRinged) +
@@ -594,8 +595,81 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                            + (1|BreedingYear) 
                            , data = MY_TABLE_perBrood
                            , family="binomial"
-                           , control=glmerControl(optimizer = "bobyqa"))
+                         , control=glmerControl(optimizer = "bobyqa"))
+  
+  summary(mod_Divorce) 
+  drop1(mod_Divorce, test = "Chisq")
+  dispersion_glmer(mod_Divorce) # 0.90
 }
 
 summary(mod_Divorce) 
-dispersion_glmer(mod_Divorce) # 
+
+{# male and female divorce in one model - include polygynous males with PairDivorce = FALSE
+  MY_TABLE_perBrood_PolygynousDontDivorce <- MY_TABLE_perBrood
+  length(MY_TABLE_perBrood_PolygynousDontDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce) & 
+                                                             !is.na(MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce) &
+                                                             MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce == TRUE & 
+                                                             MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce==FALSE]) # 67
+  
+  MY_TABLE_perBrood_PolygynousDontDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce) &
+                                                      !is.na(MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce) &
+                                                      MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce == TRUE & 
+                                                      MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce==FALSE] <- FALSE
+  
+  summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
+  summary(MY_TABLE_perBrood_PolygynousDontDivorce) 
+  
+  mod_Divorce_PolygynousDontDivorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
+                         scale(MeanLogAdev)	+
+                         scale(MumAge) + scale(DadAge)+
+                         scale(PairBroodNb) +
+                         scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                         scale(NbRinged) +
+                         (1|SocialMumID) + (1|SocialDadID)
+                       + (1|BreedingYear) 
+                       , data = MY_TABLE_perBrood_PolygynousDontDivorce
+                       , family="binomial"
+                       , control=glmerControl(optimizer = "bobyqa"))
+  
+  summary(mod_Divorce_PolygynousDontDivorce) 
+  drop1(mod_Divorce_PolygynousDontDivorce, test = "Chisq")
+  dispersion_glmer(mod_Divorce_PolygynousDontDivorce) # 0.90
+}
+
+summary(mod_Divorce_PolygynousDontDivorce) 
+
+{# male and female divorce in one model - include polygynous males with PairDivorce = FALSE
+  MY_TABLE_perBrood_PolygynousDivorce <- MY_TABLE_perBrood
+  length(MY_TABLE_perBrood_PolygynousDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce) & 
+                                                               !is.na(MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce) &
+                                                           MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce == TRUE & 
+                                                           MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce==FALSE]) # 67
+  
+  MY_TABLE_perBrood_PolygynousDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce) &
+                                                        !is.na(MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce) &
+                                                        MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce == TRUE & 
+                                                        MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce==FALSE] <- TRUE
+  
+  summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
+  summary(MY_TABLE_perBrood_PolygynousDivorce) 
+  
+  mod_Divorce_PolygynousDivorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
+                                               scale(MeanLogAdev)	+
+                                               scale(MumAge) + scale(DadAge)+
+                                               scale(PairBroodNb) +
+                                               scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                                               scale(NbRinged) +
+                                               (1|SocialMumID) + (1|SocialDadID)
+                                             + (1|BreedingYear) 
+                                             , data = MY_TABLE_perBrood_PolygynousDivorce
+                                             , family="binomial"
+                                             , control=glmerControl(optimizer = "bobyqa"))
+  
+  summary(mod_Divorce_PolygynousDivorce) 
+  drop1(mod_Divorce_PolygynousDivorce, test = "Chisq")
+  dispersion_glmer(mod_Divorce_PolygynousDivorce) # 0.90
+}
+
+summary(mod_Divorce_PolygynousDivorce) 
+
+
