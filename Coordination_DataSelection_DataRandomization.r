@@ -122,25 +122,25 @@ length(unique(list_non_valid_DVDRef)) # 450
 
   ########### !!!!!!!!!!! Beofre running this paragraph silence the line selecting out age below 5
   # comparison time spend in nest a day 3, day 6 vs day 10
-  MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_tblDVDInfo[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
-  MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
-  head(MY_RawFeedingVisits)
-  
-  nbVideoperAge <- data.frame(MY_RawFeedingVisits %>% group_by(DVDInfoAge) %>% summarise(nVideo =length(unique(DVDRef))))
-  
-  colboxplt <- c(rep("grey",5), rep("black",8))
-  
-  #setEPS() 
-  #pdf("SuppFig2.pdf", height=10, width=15)
-
-  
-  boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
-  boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, xlab= "Chick age (days)", ylab = "Time spent in the nest (min)", medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
-  text(x = boxplt$names, y = 45, paste("(n=",boxplt$n,")",sep=""))
-  text(x = boxplt$names, y = 43, paste("(N=",nbVideoperAge$nVideo,")",sep=""))  
-  abline(v=c(5.5,8.5), col=c("red", "red"), lty=c(2,2), lwd=c(2, 2))
-  
-  dev.off()
+  # MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_tblDVDInfo[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
+  # MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
+  # head(MY_RawFeedingVisits)
+  # 
+  # nbVideoperAge <- data.frame(MY_RawFeedingVisits %>% group_by(DVDInfoAge) %>% summarise(nVideo =length(unique(DVDRef))))
+  # 
+  # colboxplt <- c(rep("grey",5), rep("black",8))
+  # 
+  # #setEPS() 
+  # #pdf("SuppFig2.pdf", height=10, width=15)
+  # 
+  # 
+  # boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
+  # boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, xlab= "Chick age (days)", ylab = "Time spent in the nest (min)", medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
+  # text(x = boxplt$names, y = 45, paste("(n=",boxplt$n,")",sep=""))
+  # text(x = boxplt$names, y = 43, paste("(N=",nbVideoperAge$nVideo,")",sep=""))  
+  # abline(v=c(5.5,8.5), col=c("red", "red"), lty=c(2,2), lwd=c(2, 2))
+  # 
+  # dev.off()
   #############
 
 
@@ -209,8 +209,10 @@ MY_tblBroods[MY_tblBroods$BroodRef==969,] # could have 2 hatchling and 1 ringed 
 MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 969] <- 1
 MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
 
-
-
+MY_tblChicks_All <- MY_tblChicks_All[MY_tblChicks_All$BroodRef != "1152" & MY_tblChicks_All$BroodRef != '457' & MY_tblChicks_All$BroodRef != '969',]
+  # since brood ID were deleted for so many chicks where social mother didn't match (Julia.......)
+  # I could correct the broods above (evidence that during visits they were indeed chicks in the nest)
+  # but I do not know which chickID were in those nest...
 
 }
 
@@ -1286,5 +1288,6 @@ head(MY_TABLE_perBrood)
  # 20190207 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base 
  # (to include natal brood ID for each chick since its different for each)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
+ # 20190215 exclude the broods where Julia deleted the broodRef for ChickID and therefore can't find the chickID to add them to those broods again.
 
  
