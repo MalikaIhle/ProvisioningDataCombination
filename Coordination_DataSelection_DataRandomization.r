@@ -45,7 +45,7 @@ A
 }
 
 Calculate_S_one_nest_watch <- function(x){
-S <- S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= syncint)
+S <- sum(diff(x$Sex)!=0 & diff(x$Tstart) <= syncint)
 S
 }
 
@@ -579,39 +579,63 @@ out_Ssim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(A_S
 
 {## Shuffling consecutives intervals within one individual to keep some autocorrelation within nest watch
 
-Switch_Consecutive_intervals_onesplit_fun <- function(x){
+# Switch_Consecutive_intervals_and_Calculate_A_S_fun <- function(RawData) {
+#   
+# Switch_Consecutive_intervals_onesplit_fun <- function(x){
+# 
+# x <- x[order(x$Tstart),]
+# x0 <- x[x$Sex==0,]
+# x1 <- x[x$Sex==1,]
+# 
+# x1sim <- x1 # only shuffle intervals for one sex
+# 
+# if (nrow(x1) > 1){
+# 
+# x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)]) # repeat the last one when uneven number of rows (see below)
+# 
+# for (i in 2:nrow(x1sim))
+# { if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
+# else {x1sim$Interval[i] <- x1simInterval[i-1]}
+# }
+# 
+# x1sim$Tstart <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval))
+# 
+# }
+# 
+# 
+# xsim <- rbind(x0,x1sim)
+# xsim <- xsim[order(xsim$Tstart),]
+# }
+# 
+# SimData <- do.call(cbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun))
+# rownames(SimData) <- NULL
+# 
+# ## Calculate Alternation within each DVD
+# 
+# SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= Calculate_A_one_nest_watch ))
+# 
+# ## Calculate Synchrony within each DVD
+# 
+# SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= Calculate_S_one_nest_watch ))
+# 
+# # output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
+# return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
+# 
+# }
+# 
+# Switch_Consecutive_intervals_out_A_S <- do.call(cbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun))
+# 
+# 
+# # A_S_within_randomization <- do.call(cbind,pbreplicate(NreplicatesWithinFileRandomization,Randomize_Data_WithinFile_and_Calculate_A_S_fun(RawInterfeeds),simplify=FALSE ) )
+# # 
+# # # first half are A sim
+# # out_Asim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
+# # 
+# # # second Half are S sim
+# # out_Ssim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
+# # 
 
-x <- x[order(x$Tstart),]
-x0 <- x[x$Sex==0,]
-x1 <- x[x$Sex==1,]
 
-x1sim <- x1 # only shuffle intervals for one sex
-
-if (nrow(x1) > 1){
-
-x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)]) # repeat the last one when uneven number of rows (see below)
-
-for (i in 2:nrow(x1sim))
-{ if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
-else {x1sim$Interval[i] <- x1simInterval[i-1]}
-}
-
-x1sim$Tstart <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval))
-
-}
-
-
-xsim <- rbind(x0,x1sim)
-xsim <- xsim[order(xsim$Tstart),]
-
-Asim <- sum(diff(xsim$Sex)!=0)
-
-return(Asim)
-
-}
-
-Switch_Consecutive_intervals_out_A <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Aswitch=
-														do.call(rbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun)))
 }
 
 
