@@ -447,8 +447,8 @@ head(one_generated_fulldat)
         #setEPS() 
         #pdf("SuppFig.pdf", height=10, width=15)
         par(mfrow=c(1,2))
-        hist(allintervals,  xlim = c(0,80), ylim = c(0,35000), main = "Simulated intervals", xlab = "Interval duration (min)")
-        hist(RawInterfeedsWithoutFirstZeros$Interval, xlim = c(0,80), ylim = c(0,35000), main = "Observed intervals", xlab = "Interval duration (min)")
+        hist(allintervals,  breaks = 100, xlim = c(0,80), ylim = c(0,12500), main = "Simulated intervals", xlab = "Interval duration (min)")
+        hist(RawInterfeedsWithoutFirstZeros$Interval,  breaks = 100, xlim = c(0,80), ylim = c(0,12500), main = "Observed intervals", xlab = "Interval duration (min)")
         dev.off()
         
         

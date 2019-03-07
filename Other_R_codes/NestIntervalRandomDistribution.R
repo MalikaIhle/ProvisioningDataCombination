@@ -35,4 +35,5 @@ syncint <- 2
   
 AllNestInt <- do.call(c,replicate(nPR,create_DVD()))
 hist(AllNestInt)
+summary(AllNestInt)
         
