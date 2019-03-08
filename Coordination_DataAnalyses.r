@@ -111,21 +111,30 @@ head(All_A_long)
 
 {All_S_long <- data.frame(
 
-S=c(MY_TABLE_perDVD$S,
-MY_TABLE_perDVD$MedSsimWithin,
-MY_TABLE_perDVD$MedSsimAmong,
-MY_TABLE_perDVD$Sgenerated), 
+S=c(MY_TABLE_perDVD$Ssorted, 
+    MY_TABLE_perDVD$S,
+    MY_TABLE_perDVD$Sswitch,
+    MY_TABLE_perDVD$MedSsimWithin,
+    MY_TABLE_perDVD$MedSsimAmong,
+    MY_TABLE_perDVD$Sgenerated), 
 
-Type = c(rep("a_Obsv", nrow(MY_TABLE_perDVD)),
-rep("c_within", nrow(MY_TABLE_perDVD)),
-rep("d_among", nrow(MY_TABLE_perDVD)),
-rep("e_generated", nrow(MY_TABLE_perDVD))),
+Type = c(rep("a_sorted", nrow(MY_TABLE_perDVD)),
+         rep("a_Obsv", nrow(MY_TABLE_perDVD)),
+         rep("b_switch", nrow(MY_TABLE_perDVD)),
+         rep("c_within", nrow(MY_TABLE_perDVD)),
+         rep("d_among", nrow(MY_TABLE_perDVD)),
+         rep("e_generated", nrow(MY_TABLE_perDVD))),
 
-SMax = c(MY_TABLE_perDVD$A,MY_TABLE_perDVD$MedAsimWithin,MY_TABLE_perDVD$MedAsimAmong,MY_TABLE_perDVD$Agenerated), # this is an approximation, Smax should be the actual number of A in that specific observation.
+SMax = c(MY_TABLE_perDVD$Asorted,
+         MY_TABLE_perDVD$A,
+         MY_TABLE_perDVD$Aswitch,
+         MY_TABLE_perDVD$MedAsimWithin,
+         MY_TABLE_perDVD$MedAsimAmong,
+         MY_TABLE_perDVD$Agenerated), # this is an approximation, Smax should be the actual number of A in that specific observation.
 
-DVDRef = rep(MY_TABLE_perDVD$DVDRef,4),
+DVDRef = rep(MY_TABLE_perDVD$DVDRef,6),
 
-LineID = 1: nrow(MY_TABLE_perDVD)*4
+LineID = 1: nrow(MY_TABLE_perDVD)*6
 )
 }
 

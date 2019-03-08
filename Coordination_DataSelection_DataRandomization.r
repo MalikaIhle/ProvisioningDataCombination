@@ -579,62 +579,43 @@ out_Ssim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(A_S
 
 {## Shuffling consecutives intervals within one individual to keep some autocorrelation within nest watch
 
-# Switch_Consecutive_intervals_and_Calculate_A_S_fun <- function(RawData) {
-#   
-# Switch_Consecutive_intervals_onesplit_fun <- function(x){
-# 
-# x <- x[order(x$Tstart),]
-# x0 <- x[x$Sex==0,]
-# x1 <- x[x$Sex==1,]
-# 
-# x1sim <- x1 # only shuffle intervals for one sex
-# 
-# if (nrow(x1) > 1){
-# 
-# x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)]) # repeat the last one when uneven number of rows (see below)
-# 
-# for (i in 2:nrow(x1sim))
-# { if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
-# else {x1sim$Interval[i] <- x1simInterval[i-1]}
-# }
-# 
-# x1sim$Tstart <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval))
-# 
-# }
-# 
-# 
-# xsim <- rbind(x0,x1sim)
-# xsim <- xsim[order(xsim$Tstart),]
-# }
-# 
-# SimData <- do.call(cbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun))
-# rownames(SimData) <- NULL
-# 
-# ## Calculate Alternation within each DVD
-# 
-# SimData_A <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= Calculate_A_one_nest_watch ))
-# 
-# ## Calculate Synchrony within each DVD
-# 
-# SimData_S <- do.call(rbind,lapply(X=split(SimData,SimData$DVDRef),FUN= Calculate_S_one_nest_watch ))
-# 
-# # output: Asim of each DVD (first half of the rows), and Ssim of each DVD (second half of the rows)
-# return(rbind(SimData_A, SimData_S)) # the length(unique(DVDRef)) first row are Asim, the other half are Ssim
-# 
-# }
-# 
-# Switch_Consecutive_intervals_out_A_S <- do.call(cbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun))
-# 
-# 
-# # A_S_within_randomization <- do.call(cbind,pbreplicate(NreplicatesWithinFileRandomization,Randomize_Data_WithinFile_and_Calculate_A_S_fun(RawInterfeeds),simplify=FALSE ) )
-# # 
-# # # first half are A sim
-# # out_Asim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), head(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
-# # 
-# # # second Half are S sim
-# # out_Ssim_within_df <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), tail(A_S_within_randomization,length(unique(RawInterfeeds$DVDRef))))
-# # 
+  
+Switch_Consecutive_intervals_onesplit_fun <- function(x){
 
+x <- x[order(x$Tstart),]
+x0 <- x[x$Sex==0,]
+x1 <- x[x$Sex==1,]
+
+x1sim <- x1 # only shuffle intervals for one sex
+
+if (nrow(x1) > 1){
+
+x1simInterval <- c(x1$Interval,x1$Interval[nrow(x1)]) # repeat the last one when uneven number of rows (see below)
+
+for (i in 2:nrow(x1sim))
+{ if (is.even(i)){x1sim$Interval[i] <- x1simInterval[i+1]}
+else {x1sim$Interval[i] <- x1simInterval[i-1]}
+}
+
+x1sim$Tstart <- c(x1sim$Tstart[1] + cumsum(x1sim$Interval))
+
+}
+
+
+xsim <- rbind(x0,x1sim)
+xsim <- xsim[order(xsim$Tstart),]
+
+
+}
+
+ 
+SimDataswitched <- do.call(rbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Switch_Consecutive_intervals_onesplit_fun))
+rownames(SimDataswitched) <- NULL
+
+Aswitch <- do.call(rbind,lapply(X=split(SimDataswitched,SimDataswitched$DVDRef),FUN= Calculate_A_one_nest_watch ))
+Sswitch <- do.call(rbind,lapply(X=split(SimDataswitched,SimDataswitched$DVDRef),FUN= Calculate_S_one_nest_watch ))
+
+Switch_Consecutive_intervals_out_A_S <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Aswitch, Sswitch)
 
 }
 
@@ -656,14 +637,15 @@ x1$Tstart <- x1$Tstart[1] + cumsum(x1$Interval)
 xsim <- rbind(x0,x1)
 xsim <- xsim[order(xsim$Tstart),]
 
-Asim <- sum(diff(xsim$Sex)!=0)
-
-return(Asim)
-
 }
 
-Sort_intervals_out_A <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Asorted=
-														do.call(rbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Sort_intervals_onesplit_fun)))
+SimDatasorted <- do.call(rbind,lapply(split(RawInterfeeds,RawInterfeeds$DVDRef),Sort_intervals_onesplit_fun))
+rownames(SimDatasorted) <- NULL
+
+Asorted <- do.call(rbind,lapply(X=split(SimDatasorted,SimDatasorted$DVDRef),FUN= Calculate_A_one_nest_watch ))
+Ssorted <- do.call(rbind,lapply(X=split(SimDatasorted,SimDatasorted$DVDRef),FUN= Calculate_S_one_nest_watch ))
+
+Sort_intervals_out_A_S <- data.frame(DVDRef = unique(RawInterfeeds$DVDRef), Asorted, Ssorted)
 
 }
 
@@ -686,7 +668,7 @@ sumary_A_generated_outof_AMax <- summarise (one_generated_fulldat,
 				Aupper = Amean + sd(A/MaxA*100)/sqrt(n())*1.96,
 				NbFiles = n())	
 
-Sort_intervals_out_A <- merge(x=Sort_intervals_out_A, y= MY_TABLE_perDVD[,c('DVDRef','AMax')], all.x=TRUE)
+Sort_intervals_out_A <- merge(x=Sort_intervals_out_A_S, y= MY_TABLE_perDVD[,c('DVDRef','AMax')], all.x=TRUE)
 Summary_A_sorted_intervals_outof_AMax <- summarise (Sort_intervals_out_A,
 				Amean = mean(Asorted/AMax*100),
 				Alower = Amean - sd(Asorted/AMax*100)/sqrt(n())*1.96,
@@ -712,7 +694,7 @@ return(data.frame(summarise (out_sim_df,
 summary_out_Asim_outof_AMax_among_df <- summarise_Asim_outof_AMax(out_Asim_among_df)
 summary_out_Asim_outof_AMax_within_df <- summarise_Asim_outof_AMax(out_Asim_within_df)
 
-Switch_Consecutive_intervals_out_A <- merge(x=Switch_Consecutive_intervals_out_A, y= MY_TABLE_perDVD[,c('DVDRef','AMax')], all.x=TRUE)
+Switch_Consecutive_intervals_out_A <- merge(x=Switch_Consecutive_intervals_out_A_S, y= MY_TABLE_perDVD[,c('DVDRef','AMax')], all.x=TRUE)
 summary_Aswitch_outof_AMax <- data.frame(summarise (Switch_Consecutive_intervals_out_A,
 				Amean = mean(Aswitch/AMax*100),
 				Alower = Amean - sd(Aswitch/AMax*100)/sqrt(n())*1.96,
@@ -918,7 +900,7 @@ Fig_S_SMax # does not read well, since A (Smax) is different accross the same ne
                                                 Aupper = Amean + sd(A)/sqrt(n())*1.96,
                                                 NbFiles = n())	
     
-    Summary_A_sorted_intervals <- summarise (Sort_intervals_out_A,
+    Summary_A_sorted_intervals <- summarise (Sort_intervals_out_A_S,
                                                         Amean = mean(Asorted),
                                                         Alower = Amean - sd(Asorted)/sqrt(n())*1.96,
                                                         Aupper = Amean + sd(Asorted)/sqrt(n())*1.96,
@@ -939,7 +921,7 @@ Fig_S_SMax # does not read well, since A (Smax) is different accross the same ne
     summary_out_Asim_among <- summarise_Asim(out_Asim_among_df)
     summary_out_Asim_within <- summarise_Asim(out_Asim_within_df)
     
-    summary_Aswitch <- data.frame(summarise (Switch_Consecutive_intervals_out_A,
+    summary_Aswitch <- data.frame(summarise (Switch_Consecutive_intervals_out_A_S,
                                                         Amean = mean(Aswitch),
                                                         Alower = Amean - sd(Aswitch)/sqrt(n())*1.96,
                                                         Aupper = Amean + sd(Aswitch)/sqrt(n())*1.96,
@@ -1035,6 +1017,13 @@ Fig_A # this is what is analyzed and compared (data analyses script)
                                              NbFiles = n())
     
     
+    Summary_S_sorted_intervals <- summarise (Sort_intervals_out_A_S,
+                                             Smean = mean(Ssorted),
+                                             Slower = Smean - sd(Ssorted)/sqrt(n())*1.96,
+                                             Supper = Smean + sd(Ssorted)/sqrt(n())*1.96,
+                                             NbFiles = n())	
+    
+    
     summarise_S_sim <- function(out_Ssim_df){ # Nreplicates needs to be identical in both randomization
       
       out_sim_df <- out_Ssim_df[,2:(NreplicatesAmongFileRandomization)]
@@ -1051,15 +1040,24 @@ Fig_A # this is what is analyzed and compared (data analyses script)
     summary_out_Ssim_among <- summarise_S_sim(out_Ssim_among_df)
     summary_out_Ssim_within <- summarise_S_sim(out_Ssim_within_df)
     
+    summary_Sswitch <- data.frame(summarise (Switch_Consecutive_intervals_out_A_S,
+                                             Smean = mean(Sswitch),
+                                             Slower = Smean - sd(Sswitch)/sqrt(n())*1.96,
+                                             Supper = Smean + sd(Sswitch)/sqrt(n())*1.96,
+                                             NbFiles = n()))
     
+    Summary_S_sorted_intervals$Type <- '1_Sorted'	
     summary_Sobsv$Type <- '2_Observed' 
+    summary_Sswitch$Type <- '3_Switch'
     summary_out_Ssim_within$Type <-'4_Within'
     summary_out_Ssim_among$Type <- '5_Among'
     sumary_S_generated$Type <- '6_Generated'
     
     
     summary_S <- do.call(rbind, 
-                                 list(summary_Sobsv,
+                                 list(Summary_S_sorted_intervals,
+                                      summary_Sobsv,
+                                      summary_Sswitch,
                                       summary_out_Ssim_among,
                                       summary_out_Ssim_within,
                                       sumary_S_generated))
@@ -1067,8 +1065,12 @@ Fig_A # this is what is analyzed and compared (data analyses script)
   }
   
   {my_labels_S <- c(
+    'Sorted
+    (f)',
     'Observed
     (a)', 
+    'Switched
+    (e)', 
     'R. within
     (d)', 
     'R. among
@@ -1077,21 +1079,23 @@ Fig_A # this is what is analyzed and compared (data analyses script)
     (b)')}
   
   {my_shapes_S <- c(
+    21, #circle
+    21, 
     21, 
     21, # 
-    21, #
+    21,
     21)}
   
-
-  {my_colors_S <- c(
-    'black','dimgrey','dimgrey','dimgrey'
-  )}
   
   {my_colors_S <- c(
-    'black','#009E73','#009E73','#009E73'
-  )}
+    '#56B4E9','black', '#56B4E9','#009E73','#009E73','#009E73'
+  )}  
   
-  my_bg_S <- c('black','#009E73','#009E73','#009E73')
+  {my_bg_S <- c(
+    '#56B4E9','black', '#56B4E9','#009E73','#009E73','#009E73'
+  )} 
+  
+  
   
   
   Fig_S <- {ggplot(data=summary_S, aes(x=Type, y=Smean), colour=Type, shape=Type)+
@@ -1126,8 +1130,10 @@ Fig_S # this is what is analyzed and compared (data analyses script)
 {## add output randomization to MY_TABLE_perDVD
 
 MY_TABLE_perDVD <- cbind(MY_TABLE_perDVD,
-							Asorted = Sort_intervals_out_A$Asorted,
-							Aswitch= Switch_Consecutive_intervals_out_A$Aswitch,
+							Asorted = Sort_intervals_out_A_S$Asorted,
+							Aswitch= Switch_Consecutive_intervals_out_A_S$Aswitch,
+							Ssorted = Sort_intervals_out_A_S$Ssorted,
+							Sswitch= Switch_Consecutive_intervals_out_A_S$Sswitch,
 							
 							Agenerated=one_generated_fulldat$A,
 							Sgenerated=one_generated_fulldat$S,
@@ -1308,7 +1314,9 @@ head(MY_TABLE_perChick_All)
 # 20170430 added Agenerated
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
 # 20190215 add MeanLogCoordination (removed from data analyses script)
-
+# 20190308 add Ssorted and Sswitch
+ 
+ 
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
