@@ -40,22 +40,17 @@ summary(c(MY_TABLE_perDVD$FVisit1,MY_TABLE_perDVD$MVisit1))
 sd(c(MY_TABLE_perDVD$FVisit1,MY_TABLE_perDVD$MVisit1))
 nPR <- nrow(MY_TABLE_perDVD)
 avPR <- 15  # average provisioning (in number of visits, assuming length of videos are equal) in our videos
-sdPR <- 8 # sd of provisioning on the expected scale (sqrt(mean-var)) 
-# <<<<<<<<<<<<<<  these three previous lines of codes and notes are what we wrote in our simulation code 
-# I do not understand it, 
-# at this stage it's probably still on the observed scale ?
-# where does the formula "(sqrt(mean-var))" comes into play ?
+sdPR <- 8 # sd of provisioning on the observed scale
 
 # expected mean = observed mean
 # expected sd = sqrt(var(observed)-mean(observed))
 # in poisson mean = variance, we are trying to remove poisson variance. we can remove the mean (since = variance)
-# var(observed) = biological variation + error
-# error = mean(observed)
+# var(observed) = biological variation + poisson error
+# poisson error = mean(observed)
 
-# expected sd = sqrt(sd^2(observed)-mean(observed)) # formula for vairance sqrted to get sd
+# expected sd = sqrt(sd^2(observed)-mean(observed)) # formula for variance sqrted to get sd
 expected_mean <- 15
-expected_sd <- sqrt(8*8-15)
-
+expected_sd <- sqrt(sdPR^2-avPR)
 
 
 meanlogPR <- log(avPR) # pass on the log scale to be able to add Poisson distributed error # not actually correct
@@ -63,24 +58,13 @@ sdlogPR <- sqrt(log(1 + sdPR^2/avPR^2))
 
 
 # jensen inequality 
-# if you transform a distribution. mean and sd transformed are not necessarily = transform (mean)
-# with poisson stuff, assuming log normal distribution underlying it
-# for log normal distribution we know what the equation is to go from original scale to the transformed scale
+# if you transform a distribution. mean and sd transformed are not necessarily = transformation (mean)
+# with poisson data, we assume log normal distribution underlying it 
+# for log normal distribution we know what the equation is to go from original scale to the transformed scale (jensen inequality)
 # citation : wiki page for log normal https://en.wikipedia.org/wiki/Log-normal_distribution 
 
-# <<<<<<<<<<<<<<<< these three previous lines of codes and notes are what we wrote in our simulation code 
-# I do not understand this either
-# what are the formula in generic terms to pass from observed to latent sale?
 
-    ### <<<<<<<<<<<<< could the stuff above be plotted?
-
-
-
-
-
-
-
-### after extracting meand and SD, simulated PR expected
+### after extracting mean and SD on the expected scale and logged (with jensen inequality) to input into rlnorm, simulate PR expected
 MalePexp <- rlnorm(nPR, meanlog = meanlogPR, sdlog = sdlogPR ) # expected number of visits
 FemalePexp <- rlnorm(nPR, meanlog = meanlogPR, sdlog = sdlogPR )
 
