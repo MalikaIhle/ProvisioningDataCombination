@@ -11,8 +11,8 @@ hist(rexp(10000), breaks = 100, xlim = c(0,10), ylim = c(0,1000), xaxt = "n",
 ## uniform distribution of visit times
 hist(runif(10000, 0, 90), breaks = 100,  xlim = c(0,96), ylim = c(0,150), 
      main = "Uniform distribution", 
-     xlab = "Time of entrance in the nest, for a nest watch of 90 min (HH:MM:SS)", 
-     ylab = "Probability of arrival")
+     xlab = "Time of entrance in the nest, for a nest watch of 90 min", 
+     ylab = "Frequency")
      axis(side=1, at=seq(10,90, 20), labels=seq(10,90,20))
 
 
@@ -26,7 +26,7 @@ MY_TABLE_perDVD <- read.csv(paste(here(), "R_Selected&RandomizedData/R_MY_TABLE_
 ### observed provisioning rate
 hist(c(MY_TABLE_perDVD$FVisit1,MY_TABLE_perDVD$MVisit1), 
      breaks = 20, xlim = c(0,80), ylim = c(0,1000), 
-     main = "Poisson distribution", 
+     main = "Overdispersed Poisson distribution", 
      xlab = "Observed number of provisioning visits per bird per nest watch")
 
 
@@ -49,19 +49,12 @@ sdPR <- 8 # sd of provisioning on the observed scale
 # poisson error = mean(observed)
 
 # expected sd = sqrt(sd^2(observed)-mean(observed)) # formula for variance sqrted to get sd
-expected_mean <- 15
+expected_mean <- avPR
 expected_sd <- sqrt(sdPR^2-avPR)
 
 
 meanlogPR <- log(avPR) # pass on the log scale to be able to add Poisson distributed error # not actually correct
 sdlogPR <- sqrt(log(1 + sdPR^2/avPR^2)) 
-
-
-# jensen inequality 
-# if you transform a distribution. mean and sd transformed are not necessarily = transformation (mean)
-# with poisson data, we assume log normal distribution underlying it 
-# for log normal distribution we know what the equation is to go from original scale to the transformed scale (jensen inequality)
-# citation : wiki page for log normal https://en.wikipedia.org/wiki/Log-normal_distribution 
 
 
 ### after extracting mean and SD on the expected scale and logged (with jensen inequality) to input into rlnorm, simulate PR expected
@@ -71,8 +64,7 @@ FemalePexp <- rlnorm(nPR, meanlog = meanlogPR, sdlog = sdlogPR )
 hist(c(MalePexp,FemalePexp), 
      breaks = 20, xlim = c(0,80), ylim = c(0,1000), 
      main = "Log Normal distribution", 
-     xlab = "Expected number of provisioning visits per bird per nest watch
-     (on the latent scale, i.e. without Poisson stochastic error)")
+     xlab = "Expected number of provisioning visits per bird per nest watch")
 
 ### Draw from such distribution and add stochastic Poisson error
 MaleP <- NULL
@@ -87,26 +79,31 @@ for (i in 1: length(MalePexp)){ # for my analyses I selected videos where both p
 
 hist(c(MaleP,FemaleP), 
      breaks = 20, xlim = c(0,80), ylim = c(0,1000), 
-     main = "Poisson distribution", 
+     main = "Overdispersed Poisson distribution", 
      xlab = "Simulated number of provisioning visits per bird per nest watch")
 
 ## generate nest visit times
-MaleVisits <- sort(runif(MaleP,0,90)) # MaleP is male number of provisioning visits
-FemaleVisits <- sort(runif(FemaleP,0,90))
-MaleIntervals <- c(0,diff(MaleVisits))
-FemaleIntervals <- c(0,diff(FemaleVisits))
+MaleVisits <- NULL
+FemaleVisits <- NULL
 
-hist(c(MaleVisits), 
-     breaks = 20, xlim = c(0,90), ylim = c(0,110), 
+for (i in 1:length(MaleP)){
+MaleVisits[[i]] <- sort(runif(MaleP[i],0,90)) # MaleP is male number of provisioning visits
+FemaleVisits[[i]] <- sort(runif(FemaleP[i],0,90))
+}
+
+MaleIntervals <- lapply(MaleVisits,function(x)diff(x))
+FemaleIntervals <- lapply(FemaleVisits,function(x)diff(x))
+
+hist(unlist(MaleVisits), 
+     breaks = 100, xlim = c(0,90), #ylim = c(0,110), 
      main = "Uniform distribution", 
-     xlab = "Time of entrance in the nest, for a nest watch of 90 min (HH:MM:SS)",
-     ylab = "Probability of arrival")
+     xlab = "Simulated time of entrance in the nest, for a nest watch of 90 min",
+     ylab = "Frequency")
      axis(side=1, at=seq(10,90, 20), labels=seq(10,90,20))
 
 
-hist(c(MaleIntervals,FemaleIntervals), breaks = 50, ylim = c(0,600), 
-    main = "Exponential distribution", xlab = "Interval duration (min)")
-
+hist(c(unlist(MaleIntervals),unlist(FemaleIntervals)), breaks = 100, #ylim = c(0,600), 
+    main = "Exponential distribution", xlab = "Simulated interval durations (min)")
 
 
 
