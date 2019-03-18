@@ -110,7 +110,9 @@ c(
 MY_tblParentalCare$DVDRef[!(MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 10 files with no visits at all + 2 files with no feeding visits at all
 MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)],# 6 - where 0 chicks
 MY_tblDVDInfo$DVDRef[ ! MY_tblDVDInfo$ChickAge >5 & MY_tblDVDInfo$DVDInfoChickNb > 0 & (MY_tblDVDInfo$DVDRef)%in%(MY_RawFeedingVisits$DVDRef) ],# 171 - where still brooding (age <=5) and with chicks and with feeding visit
-MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& MY_tblDVDInfo$DVDInfoChickNb > 0 & MY_tblDVDInfo$ChickAge >5  & (MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 153 - one sex did not visit for feeding despite having chicks above age 5
+MY_tblParentalCare$DVDRef[(MY_tblParentalCare$MVisit1 ==0 | MY_tblParentalCare$FVisit1 ==0 )& MY_tblDVDInfo$DVDInfoChickNb > 0 
+                          & MY_tblDVDInfo$ChickAge >5  
+                          & (MY_tblParentalCare$DVDRef)%in%(MY_RawFeedingVisits$DVDRef)], # 153 - one sex did not visit for feeding despite having chicks above age 5
 MY_tblDVDInfo$DVDRef[ !MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef],# 2 DVD where both parents unidentified
 MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% MY_tblBroods$BroodRef[is.na(MY_tblBroods$SocialDadID) | is.na(MY_tblBroods$SocialMumID)] ], # 63 files where one parent unidentified
 MY_tblDVDInfo$DVDRef[MY_tblDVDInfo$BroodRef %in% unlist(FedBroods)] # 106 extra files for 48 broods (the 49th: 980 already excluded as only female visited) fed by Ian 
@@ -121,7 +123,7 @@ length(unique(list_non_valid_DVDRef)) # 450
 
 
   ########### !!!!!!!!!!! Beofre running this paragraph silence the line selecting out age below 5
-  # comparison time spend in nest a day 3, day 6 vs day 10
+  # # comparison time spend in nest a day 3, day 6 vs day 10
   # MY_RawFeedingVisits <-  merge(MY_RawFeedingVisits, MY_tblDVDInfo[,c("DVDInfoAge", "DVDRef" )] , by="DVDRef")
   # MY_RawFeedingVisits$Tin <- MY_RawFeedingVisits$TendFeedVisit-MY_RawFeedingVisits$TstartFeedVisit
   # head(MY_RawFeedingVisits)
@@ -130,14 +132,19 @@ length(unique(list_non_valid_DVDRef)) # 450
   # 
   # colboxplt <- c(rep("grey",5), rep("black",8))
   # 
-  # #setEPS() 
-  # #pdf("SuppFig2.pdf", height=10, width=15)
+  # #setEPS()
+  # #pdf("SuppFig4.pdf", height=7, width=15)
   # 
   # 
   # boxplt <- boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, plot = 0)
-  # boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, xlab= "Chick age (days)", ylab = "Time spent in the nest (min)", medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
+  # boxplot(Tin~DVDInfoAge,data=MY_RawFeedingVisits, 
+  #         xlab= "Chick age (days)", 
+  #         ylab = "Time spent in the nest (min)", 
+  #         medcol=colboxplt, whiskcol=colboxplt, staplecol=colboxplt, boxcol=colboxplt, outcol=colboxplt)
+  # par(cex.lab=6)
+  # par(cex.axis=6)
   # text(x = boxplt$names, y = 45, paste("(n=",boxplt$n,")",sep=""))
-  # text(x = boxplt$names, y = 43, paste("(N=",nbVideoperAge$nVideo,")",sep=""))  
+  # text(x = boxplt$names, y = 43, paste("(N=",nbVideoperAge$nVideo,")",sep=""))
   # abline(v=c(5.5,8.5), col=c("red", "red"), lty=c(2,2), lwd=c(2, 2))
   # 
   # dev.off()
@@ -445,7 +452,7 @@ head(one_generated_fulldat)
         summary(RawInterfeedsWithoutFirstZeros$Interval)
         
         #setEPS() 
-        #pdf("SuppFig.pdf", height=10, width=15)
+        #pdf("SuppFig1.pdf", height=10, width=15)
         par(mfrow=c(1,2))
         hist(allintervals,  breaks = 100, xlim = c(0,80), ylim = c(0,12500), main = "Simulated intervals", xlab = "Interval duration (min)")
         hist(RawInterfeedsWithoutFirstZeros$Interval,  breaks = 100, xlim = c(0,80), ylim = c(0,12500), main = "Observed intervals", xlab = "Interval duration (min)")
@@ -1120,6 +1127,11 @@ Fig_A # this is what is analyzed and compared (data analyses script)
         axis.title.x = NULL,
         plot.margin = unit(c(0.2,0.2,0.3,0.3), "cm"))
   }
+  
+ # setEPS()
+ # pdf("SuppFig3.pdf", height=5, width=8)
+ # Fig_S
+ # dev.off()
   
   }
 
