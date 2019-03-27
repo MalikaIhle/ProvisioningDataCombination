@@ -492,6 +492,8 @@ summary(modS)
   summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
   dispersion_glmer(modChickSurvival) # 1.091
+  
+  table(MY_TABLE_perChick_All$RingedYN)
 
 }
 
@@ -609,6 +611,7 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
   summary(mod_Divorce) 
   drop1(mod_Divorce, test = "Chisq")
   dispersion_glmer(mod_Divorce) # 0.90
+  table(MY_TABLE_perBrood$PairDivorce)
 }
 
 summary(mod_Divorce) 
