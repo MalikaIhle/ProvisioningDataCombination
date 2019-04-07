@@ -294,8 +294,15 @@ nrow(MY_TABLE_perDVD[MY_TABLE_perDVD$TapeLength >= "90" & MY_TABLE_perDVD$TapeLe
 length(unique(MY_TABLE_perDVD$SocialMumID))#290
 length(unique(MY_TABLE_perDVD$SocialDadID))#280
 length(unique(MY_TABLE_perDVD$PairID))#443
+
 summary(MY_TABLE_perDVD$MBroodNb[!is.na(MY_TABLE_perDVD$SocialDadID) & !is.na(MY_TABLE_perDVD$SocialMumID)]) # 4.8
 summary(MY_TABLE_perDVD$FBroodNb[!is.na(MY_TABLE_perDVD$SocialDadID) & !is.na(MY_TABLE_perDVD$SocialMumID)]) # 4.6
+
+mean(table(as.numeric(MY_TABLE_perDVD$PairID)))
+median(table(as.numeric(MY_TABLE_perDVD$PairID)))
+summary(MY_TABLE_perDVD$PairBroodNb[!is.na(MY_TABLE_perDVD$SocialDadID) & !is.na(MY_TABLE_perDVD$SocialMumID)]) # 2.7
+
+
 }
 
 {## the typical sparrow (judge from ALL broods)
