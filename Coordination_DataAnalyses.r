@@ -487,11 +487,22 @@ summary(modS)
                               (1|NatalBroodID)
                             , data = MY_TABLE_perChick_All
                             , family = 'binomial'
-                            , control=glmerControl(optimizer = "bobyqa"))
+                            , control=glmerControl(optimizer = "bobyqa")
+                            )
 
   summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
   dispersion_glmer(modChickSurvival) # 1.091
+  
+  effects_ChickSurvival <- as.data.frame(cbind(est=invlogit(summary(modChickSurvival)$coeff[,1]),
+                                       CIhigh=invlogit(summary(modChickSurvival)$coeff[,1]+summary(modChickSurvival)$coeff[,2]*1.96),
+                                       CIlow=invlogit(summary(modChickSurvival)$coeff[,1]-summary(modChickSurvival)$coeff[,2]*1.96),
+                                      SEhigh = invlogit(summary(modChickSurvival)$coeff[,1] + summary(modChickSurvival)$coeff[,2]),
+                                      SElow = invlogit(summary(modChickSurvival)$coeff[,1] - summary(modChickSurvival)$coeff[,2])
+                                      ))
+  effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
+  effects_ChickSurvival <- effects_ChickSurvival*100
+  effects_ChickSurvival
   
   table(MY_TABLE_perChick_All$RingedYN)
 
@@ -516,6 +527,14 @@ nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_
 
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
                        & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 
+
+length(unique(MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                       & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
+                       & !is.na(MY_TABLE_perBrood$BroodRef)]))
+length(unique(MY_TABLE_perBrood$SocialMumID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                                            & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
+                                            & !is.na(MY_TABLE_perBrood$BroodRef)]))
+
 
 # rules for individual divorce (MwillDivorce and FwillDivorce) (from data extraction script):
 ## TRUE = we know for sure the other partner is alive and the individual is breeding again but with another partner
@@ -600,8 +619,10 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                              scale(MeanLogAdev)	+
                              scale(MumAge) + scale(DadAge)+
                              scale(PairBroodNb) +
-                             scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
-                             scale(NbRinged) +
+                             #scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                             scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                              scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
+                              scale(NbRinged) +
                              (1|SocialMumID) + (1|SocialDadID)
                            + (1|BreedingYear) 
                            , data = MY_TABLE_perBrood
@@ -635,7 +656,9 @@ summary(mod_Divorce)
                          scale(MeanLogAdev)	+
                          scale(MumAge) + scale(DadAge)+
                          scale(PairBroodNb) +
-                         scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                           #scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                           scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                           scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                          scale(NbRinged) +
                          (1|SocialMumID) + (1|SocialDadID)
                        + (1|BreedingYear) 
@@ -669,7 +692,9 @@ summary(mod_Divorce_PolygynousDontDivorce)
                                                scale(MeanLogAdev)	+
                                                scale(MumAge) + scale(DadAge)+
                                                scale(PairBroodNb) +
-                                               scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                                           # scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                                           scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                                           scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                                                scale(NbRinged) +
                                                (1|SocialMumID) + (1|SocialDadID)
                                              + (1|BreedingYear) 
