@@ -481,9 +481,9 @@ summary(modS)
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
                               MPriorResidence +
-                              (1|PairID) + 
+                              #(1|PairID) + 
                               (1|BreedingYear) +
-                              (1|BroodRef) +
+                              #(1|BroodRef) +
                               (1|NatalBroodID)
                             , data = MY_TABLE_perChick_All
                             , family = 'binomial'
@@ -503,6 +503,12 @@ summary(modS)
   effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
   effects_ChickSurvival <- effects_ChickSurvival*100
   effects_ChickSurvival
+  
+  
+  odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
+  #   OR     2.5 %   97.5 %
+  #   scale(MeanLogAdev) 0.9338673 0.8620892 1.011240
+  #   scale(MeanLogSdev) 1.0684413 0.9839735 1.160763
   
   table(MY_TABLE_perChick_All$RingedYN)
 
@@ -623,8 +629,9 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                              scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
                               scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                               scale(NbRinged) +
-                             (1|SocialMumID) + (1|SocialDadID)
-                           + (1|BreedingYear) 
+                             (1|SocialMumID)  
+                            # + (1|SocialDadID)
+                           # + (1|BreedingYear) 
                            , data = MY_TABLE_perBrood
                            , family="binomial"
                          , control=glmerControl(optimizer = "bobyqa"))
@@ -633,6 +640,14 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
   drop1(mod_Divorce, test = "Chisq")
   dispersion_glmer(mod_Divorce) # 0.90
   table(MY_TABLE_perBrood$PairDivorce)
+  
+  oddsDivorce <- exp(cbind(OR=fixef(mod_Divorce), confint(mod_Divorce, parm="beta_")))[c(2,3),] 
+  
+  #   OR     2.5 %   97.5 %
+  #   scale(MeanLogSdev) 0.964058 0.7154698 1.296955
+  #   scale(MeanLogAdev) 1.097456 0.8353895 1.454126
+  
+  
 }
 
 summary(mod_Divorce) 
