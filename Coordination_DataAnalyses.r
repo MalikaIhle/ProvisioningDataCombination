@@ -505,13 +505,38 @@ summary(modS)
   effects_ChickSurvival
   
   
-  odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
+  #odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
   #   OR     2.5 %   97.5 %
   #   scale(MeanLogAdev) 0.9338673 0.8620892 1.011240
   #   scale(MeanLogSdev) 1.0684413 0.9839735 1.160763
   
   table(MY_TABLE_perChick_All$RingedYN)
-
+  
+ 
+  
+  plot(RingedYN ~ MeanTotalProRate,
+       data = MY_TABLE_perChick_All, 
+       xlab="Average total provisioning rate per hour", 
+       ylab="Survival likelihood", 
+       pch=19)              
+  
+  curve(predict(glm(RingedYN ~ 
+                      poly(MeanTotalProRate,2),
+                    data=MY_TABLE_perChick_All,
+                    family = binomial(link="logit")),
+                data.frame(MeanTotalProRate=x),type="response"), 
+        lty=1, lwd=2, col="blue",                            
+        add=TRUE)
+  
+  curve(predict(glm(RingedYN ~ 
+                      MeanTotalProRate,
+                    data=MY_TABLE_perChick_All,
+                    family = binomial(link="logit")),
+                data.frame(MeanTotalProRate=x),type="response"), 
+        lty=1, lwd=2, col="grey",                            
+        add=TRUE)
+  
+  
 }
 
 summary(modChickSurvival) 
