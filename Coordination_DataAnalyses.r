@@ -481,20 +481,62 @@ summary(modS)
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
                               MPriorResidence +
-                              (1|PairID) + 
+                              #(1|PairID) + 
                               (1|BreedingYear) +
-                              (1|BroodRef) +
+                              #(1|BroodRef) +
                               (1|NatalBroodID)
                             , data = MY_TABLE_perChick_All
                             , family = 'binomial'
-                            , control=glmerControl(optimizer = "bobyqa"))
+                            , control=glmerControl(optimizer = "bobyqa")
+                            )
 
   summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
   dispersion_glmer(modChickSurvival) # 1.091
   
+  effects_ChickSurvival <- as.data.frame(cbind(est=invlogit(summary(modChickSurvival)$coeff[,1]),
+                                       CIhigh=invlogit(summary(modChickSurvival)$coeff[,1]+summary(modChickSurvival)$coeff[,2]*1.96),
+                                       CIlow=invlogit(summary(modChickSurvival)$coeff[,1]-summary(modChickSurvival)$coeff[,2]*1.96),
+                                      SEhigh = invlogit(summary(modChickSurvival)$coeff[,1] + summary(modChickSurvival)$coeff[,2]),
+                                      SElow = invlogit(summary(modChickSurvival)$coeff[,1] - summary(modChickSurvival)$coeff[,2])
+                                      ))
+  effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
+  effects_ChickSurvival <- effects_ChickSurvival*100
+  effects_ChickSurvival
+  
+  
+  #odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
+  #   OR     2.5 %   97.5 %
+  #   scale(MeanLogAdev) 0.9338673 0.8620892 1.011240
+  #   scale(MeanLogSdev) 1.0684413 0.9839735 1.160763
+  
   table(MY_TABLE_perChick_All$RingedYN)
-
+  
+ 
+  
+  plot(RingedYN ~ MeanTotalProRate,
+       data = MY_TABLE_perChick_All, 
+       xlab="Average total provisioning rate per hour", 
+       ylab="Survival likelihood", 
+       pch=19)              
+  
+  curve(predict(glm(RingedYN ~ 
+                      poly(MeanTotalProRate,2),
+                    data=MY_TABLE_perChick_All,
+                    family = binomial(link="logit")),
+                data.frame(MeanTotalProRate=x),type="response"), 
+        lty=1, lwd=2, col="blue",                            
+        add=TRUE)
+  
+  curve(predict(glm(RingedYN ~ 
+                      MeanTotalProRate,
+                    data=MY_TABLE_perChick_All,
+                    family = binomial(link="logit")),
+                data.frame(MeanTotalProRate=x),type="response"), 
+        lty=1, lwd=2, col="grey",                            
+        add=TRUE)
+  
+  
 }
 
 summary(modChickSurvival) 
@@ -516,6 +558,14 @@ nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_
 
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
                        & !is.na(MY_TABLE_perBrood$BroodRef),]) # 564 
+
+length(unique(MY_TABLE_perBrood$SocialDadID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                       & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
+                       & !is.na(MY_TABLE_perBrood$BroodRef)]))
+length(unique(MY_TABLE_perBrood$SocialMumID[!is.na(MY_TABLE_perBrood$FwillDivorce) & !is.na(MY_TABLE_perBrood$MwillDivorce) 
+                                            & MY_TABLE_perBrood$FwillDivorce != MY_TABLE_perBrood$MwillDivorce
+                                            & !is.na(MY_TABLE_perBrood$BroodRef)]))
+
 
 # rules for individual divorce (MwillDivorce and FwillDivorce) (from data extraction script):
 ## TRUE = we know for sure the other partner is alive and the individual is breeding again but with another partner
@@ -600,10 +650,13 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                              scale(MeanLogAdev)	+
                              scale(MumAge) + scale(DadAge)+
                              scale(PairBroodNb) +
-                             scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
-                             scale(NbRinged) +
-                             (1|SocialMumID) + (1|SocialDadID)
-                           + (1|BreedingYear) 
+                             #scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                             scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                              scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
+                              scale(NbRinged) +
+                             (1|SocialMumID)  
+                            # + (1|SocialDadID)
+                           # + (1|BreedingYear) 
                            , data = MY_TABLE_perBrood
                            , family="binomial"
                          , control=glmerControl(optimizer = "bobyqa"))
@@ -612,6 +665,14 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
   drop1(mod_Divorce, test = "Chisq")
   dispersion_glmer(mod_Divorce) # 0.90
   table(MY_TABLE_perBrood$PairDivorce)
+  
+  oddsDivorce <- exp(cbind(OR=fixef(mod_Divorce), confint(mod_Divorce, parm="beta_")))[c(2,3),] 
+  
+  #   OR     2.5 %   97.5 %
+  #   scale(MeanLogSdev) 0.964058 0.7154698 1.296955
+  #   scale(MeanLogAdev) 1.097456 0.8353895 1.454126
+  
+  
 }
 
 summary(mod_Divorce) 
@@ -635,7 +696,9 @@ summary(mod_Divorce)
                          scale(MeanLogAdev)	+
                          scale(MumAge) + scale(DadAge)+
                          scale(PairBroodNb) +
-                         scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                           #scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                           scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                           scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                          scale(NbRinged) +
                          (1|SocialMumID) + (1|SocialDadID)
                        + (1|BreedingYear) 
@@ -669,7 +732,9 @@ summary(mod_Divorce_PolygynousDontDivorce)
                                                scale(MeanLogAdev)	+
                                                scale(MumAge) + scale(DadAge)+
                                                scale(PairBroodNb) +
-                                               scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                                           # scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+                                           scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                                           scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                                                scale(NbRinged) +
                                                (1|SocialMumID) + (1|SocialDadID)
                                              + (1|BreedingYear) 
