@@ -1196,13 +1196,14 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         legend.position = "none",
         legend.title =element_blank(),
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(margin=margin(0,10,0,0)) ,
+        axis.title.y=element_text(margin=margin(0,10,0,0), size = 14) ,
         axis.ticks.y=element_blank(),
+        axis.text.y=element_text(size = 10),
         axis.text.x=element_text(color="white"),
         axis.title.x = element_blank(),
         axis.ticks.x=element_blank(),
         plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))+
-     annotate("text", x = 1.25, y = 65, label = "( 1 )", cex =5)
+     annotate("text", x = 1.25, y = 65, label = "( 1 )", cex =7)
   }
   
   {plot2n <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_no) + 
@@ -1216,7 +1217,6 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position="none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(angle=0),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(),
         axis.text.x=element_text(color="white"),
@@ -1236,13 +1236,14 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position = "none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.title.y=element_text(margin=margin(0,10,0,0), size = 14),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.text.x=element_text(color="white"),
+        axis.text.y=element_text(size = 10),
         axis.ticks.x=element_blank(),
         plot.margin = unit(c(0,0.2,0,0.2), "cm"))+
-    annotate("text", x = 1.25, y = 65, label = "( 3 )", cex =5)
+    annotate("text", x = 1.25, y = 65, label = "( 3 )", cex =7)
   }
   
   {plot4n <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_no) + 
@@ -1256,7 +1257,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position="none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(angle=0),
+        axis.title.y=element_text(angle=0, size = 20),
         axis.ticks.y=element_blank(),
         axis.text.y=element_blank(),
         axis.title.x = element_blank(),
@@ -1276,12 +1277,14 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position = "none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.title.y=element_text(margin=margin(0,10,0,0), size = 14),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.ticks.x=element_blank(),
+        axis.text.x=element_text(size = 10),
+        axis.text.y=element_text(size = 10),
         plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))+
-      annotate("text", x = 1.25, y = 65, label = "( 5 )", cex =5)
+      annotate("text", x = 1.25, y = 65, label = "( 5 )", cex =7)
   }
   
   {plot6n <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_no) + 
@@ -1295,10 +1298,11 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position="none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(angle=0, hjust=1),
+        axis.title.y=element_text(angle=0, hjust=1, size = 20),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
+        axis.text.x=element_text(size = 10),
         axis.ticks.x=element_blank(),
         plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
   }
@@ -1315,13 +1319,14 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       legend.position = "none",
       
       panel.border = element_rect(colour = "black", fill=NA), 
-      axis.title.y=element_text(margin=margin(0,10,0,0)) ,
+      axis.title.y=element_text(margin=margin(0,10,0,0), size = 14) ,
       axis.ticks.y=element_blank(),
       axis.text.x=element_text(color="white"),
       axis.title.x = element_blank(),
+      axis.text.y=element_text(size = 10),
       axis.ticks.x=element_blank(),
       plot.margin = unit(c(0.1,0.2,0,0.2), "cm"))+
-    annotate("text", x = 1.25, y = 65, label = "( 2 )", cex =5)
+    annotate("text", x = 1.25, y = 65, label = "( 2 )", cex =7)
   }
   
   {plot2y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_none_yes) + 
@@ -1336,9 +1341,9 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         legend.justification= c(1,1),
         legend.position = c(0.99,0.99),
         legend.title =element_blank(),
+        legend.text = element_text(size = 10),
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(angle=0),
-        axis.text.y=element_blank(),
+        axis.title.y=element_text(angle=0, size = 20),
         axis.ticks.y=element_blank(),
         axis.text.x=element_text(color="white"),
         axis.title.x = element_blank(),
@@ -1357,13 +1362,14 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position = "none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.title.y=element_text(margin=margin(0,10,0,0), size = 14),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.text.x=element_text(color="white"),
         axis.ticks.x=element_blank(),
+        axis.text.y=element_text(size = 10),
         plot.margin = unit(c(0,0.2,0,0.2), "cm")) +
-    annotate("text", x = 1.25, y = 65, label = "( 4 )", cex =5)
+    annotate("text", x = 1.25, y = 65, label = "( 4 )", cex =7)
   }
   
   {plot4y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_full_yes) + 
@@ -1377,7 +1383,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position="none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(angle=0),
+        axis.title.y=element_text(angle=0, size = 20),
         axis.ticks.y=element_blank(),
         axis.text.y=element_blank(),
         axis.title.x = element_blank(),
@@ -1397,12 +1403,14 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position = "none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(margin=margin(0,10,0,0)),
+        axis.title.y=element_text(margin=margin(0,10,0,0), size = 14),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
+        axis.text.y=element_text(size = 10),
+        axis.text.x=element_text(size = 10),
         axis.ticks.x=element_blank(),
         plot.margin = unit(c(0,0.2,0.1,0.2), "cm"))+
-      annotate("text", x = 1.25, y = 65, label = "( 6 )", cex =5)
+      annotate("text", x = 1.25, y = 65, label = "( 6 )", cex =7)
   }
   
   {plot6y <- ggplot(aes(y = Amean, x = CN_Cat, col = Type), data = summary_CN_partial_yes) + 
@@ -1416,10 +1424,10 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme(
         legend.position="none",
         panel.border = element_rect(colour = "black", fill=NA), 
-        axis.title.y=element_text(angle=0, hjust=1),
+        axis.title.y=element_text(angle=0, hjust=1, size = 20),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(),
-        axis.title.x = element_blank(),
+        axis.text.x=element_text(size = 10),
         axis.ticks.x=element_blank(),
         plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
   }
@@ -1429,7 +1437,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
       ylab("N")+
       
-      annotate("text", x = 5, y = 5, label = "Total number of visits", hjust = 0.5, angle=0, color="black")+
+      annotate("text", x = 5, y = 5, label = "Total number of visits", hjust = 0.5, angle=0, color="black",  cex = 7)+
       theme_classic()+
       
       theme(
@@ -1440,7 +1448,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         axis.title.x = element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-        #axis.line = element_line(colour = "green"),
+            #axis.line = element_line(colour = "green"),
         axis.line = element_blank(),
         plot.margin = unit(c(0,0.2,0,0.2), "cm"))
     
@@ -1450,7 +1458,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_x_continuous(limits = c(0, 10))+
       scale_y_continuous(limits = c(0, 10))+
       
-      annotate("text", x = 5, y = 5, label = "Brood size",  hjust = 0.5, angle=0)+
+      annotate("text", x = 5, y = 5, label = "Brood size",  hjust = 0.5, angle=0, cex = 7)+
       theme_classic()+
       
       theme(
@@ -1461,7 +1469,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         axis.title.x = element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-        #axis.line = element_line("orange"),
+          #axis.line = element_line("orange"),
         axis.line = element_blank(),
         plot.margin = unit(c(0,0.2,0,0.1), "cm"))
   }
@@ -1471,7 +1479,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
       ylab("N")+
       
-      annotate("text", x = 5, y = 5, label = "Provisioning rate not correlated with brood size", hjust = 0.5, angle=0, color="black")+
+      annotate("text", x = 5, y = 5, label = "Provisioning rate not correlated with brood size", hjust = 0.5, angle=0, color="black", cex = 7)+
       theme_classic()+
       
       theme(
@@ -1492,7 +1500,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_x_continuous(limits = c(0, 10))+
       scale_y_continuous(limits = c(0, 10))+
       
-      annotate("text", x = 5, y = 5, label = "Provisioning rate correlated with brood size",  hjust = 0.5, angle=0)+
+      annotate("text", x = 5, y = 5, label = "Provisioning rate correlated with brood size",  hjust = 0.5, angle=0, cex = 7)+
       theme_classic()+
       
       theme(
@@ -1530,7 +1538,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
     gblank1y <- ggplotGrob(blank1y)
     gblank2y <- ggplotGrob(blank2y)
     
-    toprow = cbind(gblank01y,gblank02y)
+    toprow = cbind(gblank01y,gblank02y,size = "last")
     firstrowy = cbind(g1n, g2n, g1y, g2y, size = "last")
     secondrowy = cbind(g3n, g4n, g3y, g4y, size = "last")
     thirdrowy = cbind(g5n, g6n, g5y, g6y, size = "last")
@@ -1564,7 +1572,7 @@ of brood size"),g3,ncol =2, widths = c(0.6,4))
   
   setEPS() 
   #pdf("Fig4.pdf", height=10, width=15)
-  jpeg("Fig5.jpeg", height = 650, width = 1100)
+  jpeg("Fig5_bis.jpeg", height = 650, width = 1100)
   grid.arrange(ggtop, gg1,gg2,gg3,ggbottom,nrow = 5, ncol= 1, heights = c(0.5,4,4,4,0.5))
   dev.off()
   
