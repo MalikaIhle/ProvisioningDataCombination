@@ -1307,6 +1307,7 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
   }
   
+  
   {plot1y <- ggplot(aes(y = Amean, x = TotalP_Cat, col=Type), data = summary_TP_none_yes) + 
     geom_point(position = pd)+
     geom_errorbar(aes(ymin=Alower, ymax=Aupper, col=Type),na.rm=TRUE, position=  pd)+
@@ -1339,9 +1340,9 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       theme_classic()+
       theme(
         legend.justification= c(1,1),
-        legend.position = c(0.99,0.99),
+        legend.position = c(0.8,0.99),
         legend.title =element_blank(),
-        legend.text = element_text(size = 10),
+        legend.text = element_text(size = 12),
         panel.border = element_rect(colour = "black", fill=NA), 
         axis.title.y=element_text(angle=0, size = 20),
         axis.ticks.y=element_blank(),
@@ -1432,25 +1433,28 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
         plot.margin = unit(c(0,0.2,0.1,0.1), "cm"))
   }
   
+  
+
   {blank1y <-ggplot()+
       scale_x_continuous(limits = c(0,10))+
       scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
       ylab("N")+
       
-      annotate("text", x = 5, y = 5, label = "Total number of visits", hjust = 0.5, angle=0, color="black",  cex = 7)+
+      annotate("text", x = 5, y = 5, label = "Total number of visits", hjust = 0.5, angle=0, color="black",  cex = 5)+
       theme_classic()+
       
       theme(
-        #panel.border = element_rect(colour = "red", fill=NA),
-        axis.title.y=element_text(color="white", angle=(90)),
-        axis.text.y=element_text(color="white"),
+           # panel.border = element_rect(colour = "red", fill=NA),
+        axis.title.y=element_text(color="white", angle=(90) , size = 14),
+        axis.text.y=element_text(color="white",size = 10),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-            #axis.line = element_line(colour = "green"),
+          # axis.line = element_line("green"),
         axis.line = element_blank(),
-        plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+        plot.margin = unit(c(0,0.2,0,0.5), "cm")
+        )
     
   }
   
@@ -1458,41 +1462,43 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_x_continuous(limits = c(0, 10))+
       scale_y_continuous(limits = c(0, 10))+
       
-      annotate("text", x = 5, y = 5, label = "Brood size",  hjust = 0.5, angle=0, cex = 7)+
+      annotate("text", x = 5, y = 5, label = "Brood size",  hjust = 0.5, angle=0, cex = 5)+
       theme_classic()+
       
       theme(
-        #panel.border = element_rect(colour = "red", fill=NA),
+          # panel.border = element_rect(colour = "red", fill=NA),
         axis.title.y=element_blank(),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-          #axis.line = element_line("orange"),
+         # axis.line = element_line("orange"),
         axis.line = element_blank(),
-        plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+        plot.margin = unit(c(0.1,0.2,0,0.1), "cm"))
   }
+  
   
   {blank01y <-ggplot()+
       scale_x_continuous(limits = c(0,10))+
       scale_y_continuous(limits = c(0,10), breaks=seq(0,10,10))+
       ylab("N")+
       
-      annotate("text", x = 5, y = 5, label = "Provisioning rate not correlated with brood size", hjust = 0.5, angle=0, color="black", cex = 7)+
+      annotate("text", x = 5, y = 5, label = "Provisioning rate not correlated with brood size", hjust = 0.5, angle=0, color="black", cex = 6.5)+
       theme_classic()+
       
       theme(
-        #panel.border = element_rect(colour = "red", fill=NA),
-        axis.title.y=element_text(color="white", angle=(90)),
-        axis.text.y=element_text(color="white"),
+       # panel.border = element_rect(colour = "red", fill=NA),
+        axis.title.y=element_text(color="white", angle=(90), size = 14),
+        axis.text.y=element_text(color="white", size = 10),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
-        #axis.line = element_line(colour = "green"),
+      #  axis.line = element_line(colour = "green"),
         axis.line = element_blank(),
-        plot.margin = unit(c(0,0.2,0,0.2), "cm"))
+        plot.margin = unit(c(0.1,0.2,0,0.1), "cm")
+        )
     
   }
   
@@ -1500,20 +1506,21 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
       scale_x_continuous(limits = c(0, 10))+
       scale_y_continuous(limits = c(0, 10))+
       
-      annotate("text", x = 5, y = 5, label = "Provisioning rate correlated with brood size",  hjust = 0.5, angle=0, cex = 7)+
+      annotate("text", x = 5, y = 5, label = "Provisioning rate correlated with brood size",  hjust = 0.5, angle=0, cex = 6.5)+
       theme_classic()+
       
       theme(
-        #panel.border = element_rect(colour = "red", fill=NA),
-        axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
+        # panel.border = element_rect(colour = "red", fill=NA),
+        axis.title.y=element_text(color="white", angle=(90), size = 14),
+        axis.text.y=element_text(color="white", size = 10),
         axis.ticks.y=element_blank(),
         axis.title.x = element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         #axis.line = element_line("orange"),
         axis.line = element_blank(),
-        plot.margin = unit(c(0,0.2,0,0.1), "cm"))
+        plot.margin = unit(c(0.1,0.2,0,0.1), "cm")
+       )
   }
   
   
@@ -1551,28 +1558,28 @@ grid.arrange(gg1,gg2,gg3,ggbottom,nrow = 4, ncol= 1, heights = c(4,4,4,0.5))
     gbottom <- grid.arrange(bottomrowy)
     
     
-    ggtop <- grid.arrange(textGrob(""), gtop,ncol =2, widths = c(0.6,4)) 
+    ggtop <- grid.arrange(textGrob(""), gtop,ncol =2, widths = c(1,4)) 
     
     gg1 <- grid.arrange(textGrob("Alternation simulated 
-to be random"),g1,ncol =2, widths = c(0.6,4))
+to be random",gp=gpar(fontsize = 19)),g1,ncol =2, widths = c(1,4))
     
     gg2 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
-due to autocorrelation"),g2,ncol =2, widths = c(0.6,4))
+due to autocorrelation", gp=gpar(fontsize = 19)),g2,ncol =2, widths = c(1,4))
     
     gg3 <- grid.arrange(textGrob("Alternation simulated 
 to be higher than random
 due to an effect
-of brood size"),g3,ncol =2, widths = c(0.6,4))
+of brood size",gp=gpar(fontsize = 19)),g3,ncol =2, widths = c(1,4))
     
-    ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(0.6,4)) 
+    ggbottom <- grid.arrange(textGrob(""), gbottom,ncol =2, widths = c(1,4)) 
     
   }
   
   
   setEPS() 
-  #pdf("Fig4.pdf", height=10, width=15)
-  jpeg("Fig5_bis.jpeg", height = 650, width = 1100)
+  #pdf("Fig5.pdf", height=10, width=15)
+  jpeg("Fig5.jpeg", height = 650, width = 1100)
   grid.arrange(ggtop, gg1,gg2,gg3,ggbottom,nrow = 5, ncol= 1, heights = c(0.5,4,4,4,0.5))
   dev.off()
   
