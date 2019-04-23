@@ -513,28 +513,52 @@ summary(modS)
   table(MY_TABLE_perChick_All$RingedYN)
   
  
-  
+
   plot(RingedYN ~ MeanTotalProRate,
-       data = MY_TABLE_perChick_All, 
-       xlab="Average total provisioning rate per hour", 
-       ylab="Survival likelihood", 
-       pch=19)              
-  
-  curve(predict(glm(RingedYN ~ 
+       data = MY_TABLE_perChick_All,
+       xlab="Average total provisioning rate per hour",
+       ylab="Survival likelihood",
+       pch=19)
+
+  curve(predict(glm(RingedYN ~
                       poly(MeanTotalProRate,2),
                     data=MY_TABLE_perChick_All,
                     family = binomial(link="logit")),
-                data.frame(MeanTotalProRate=x),type="response"), 
-        lty=1, lwd=2, col="blue",                            
+                data.frame(MeanTotalProRate=x),type="response"),
+        lty=1, lwd=2, col="blue",
         add=TRUE)
-  
-  curve(predict(glm(RingedYN ~ 
+
+  curve(predict(glm(RingedYN ~
                       MeanTotalProRate,
                     data=MY_TABLE_perChick_All,
                     family = binomial(link="logit")),
-                data.frame(MeanTotalProRate=x),type="response"), 
-        lty=1, lwd=2, col="grey",                            
+                data.frame(MeanTotalProRate=x),type="response"),
+        lty=1, lwd=2, col="grey",
         add=TRUE)
+  
+  
+  ### get PR range on transformed data
+  PR <- MY_TABLE_perChick_All$MeanTotalProRate
+  transformed_PR_range <- (range(PR) - mean(PR))/sd(PR)
+  
+  ### create data along that range
+  x <- seq(transformed_PR_range[1],transformed_PR_range[2],length.out=1000)
+  
+  ### make y from model estimates (taken from table 1)
+  y <- 0.477 + 1.531*x + -0.833*x^2
+  
+  ### back transform x
+  x2 <- x*sd(PR) + mean(PR)
+  
+  ### back transform y (assuming that logit link function was used)
+  library(boot)
+  y2 <- inv.logit(y)
+  
+  ### plot line
+  plot(y2~x2)
+  
+  
+  
   
   
 }
