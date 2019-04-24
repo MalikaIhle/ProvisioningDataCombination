@@ -551,7 +551,7 @@ summary(modS)
   ### plot line
   plot(jitter(RingedYN, factor=0.1) ~ MeanTotalProRate,
        data = MY_TABLE_perChick_All,
-       xlab="Average total provisioning rate per hour",
+       xlab="Mean total provisioning rate per hour",
        ylab="Offspring survival likelihood",
        pch=21,  col=alpha('black', 0.4))
   lines(y2~x2, lty=1, lwd=2, col="blue")
