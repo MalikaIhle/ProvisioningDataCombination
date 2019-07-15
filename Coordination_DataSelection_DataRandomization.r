@@ -95,7 +95,8 @@ input_folder <- "R_input"
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
 tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T)  ## addedd 20190207, needed to assess chick survival on chick base
-  
+tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID != tblChicks_All$BroodRef] <-  1
+tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID == tblChicks_All$BroodRef] <-  0
 }
 
   
@@ -350,10 +351,23 @@ summary(outAllOtherIntervals$Interval) # time between known visits
 
 t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
 
-summary(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) # time in nest
-table(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit)
-hist(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit, breaks =50)
-length(unique(MY_RawFeedingVisits$DVDRef[(MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit) >1.2]))
+# time in nest
+MY_RawFeedingVisits$DurationInNest <- MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit
+
+summary(MY_RawFeedingVisits$DurationInNest) # time in nest
+table(MY_RawFeedingVisits$DurationInNest)
+hist(MY_RawFeedingVisits$DurationInNest, breaks =50)
+
+hist(log(MY_RawFeedingVisits$DurationInNest))
+
+sd(MY_RawFeedingVisits$DurationInNest) *3 + mean (MY_RawFeedingVisits$DurationInNest)# time in nest
+# 8.25 3SD away from the mean
+length(unique(MY_RawFeedingVisits$DVDRef))
+length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit>8.25]))
+DVDoutlierInNestDur <- unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit>8.25])
+summary(MY_TABLE_perDVD$DVDInfoAge[MY_TABLE_perDVD$DVDRef %in% DVDoutlierInNestDur])
+
+
 
 
 }
@@ -425,7 +439,7 @@ fulldat
 one_generated_fulldat <- generate_fulldat(1599,avPR,sdPR,VideoLength) # see default parameter values
 head(one_generated_fulldat)
 
-  {### request from reviewer: check the itnerval distribution of the generated dataset and compare to observed dataset
+  {### request from reviewer: check the interval distribution of the generated dataset and compare to observed dataset
       set.seed(10)
 
         meanlog <- log(avPR)
@@ -1148,6 +1162,17 @@ Fig_S # this is what is analyzed and compared (data analyses script)
 
 {## add output randomization to MY_TABLE_perDVD
 
+  # reviewer request: run 1000 sim rather than 100
+  ## here we test for correlation median between 100 and 1000 sim
+  
+  # MY_TABLE_perDVD1000 <- cbind(MY_TABLE_perDVD$DVDRef,
+  #                              MedAsimWithin = apply(out_Asim_within_df[,-1],1,median_integer),
+  #                              MedSsimWithin = apply(out_Ssim_within_df[,-1],1,median_integer))
+  # head(MY_TABLE_perDVD1000)
+  
+  
+
+  
 MY_TABLE_perDVD <- cbind(MY_TABLE_perDVD,
 							Asorted = Sort_intervals_out_A_S$Asorted,
 							Aswitch= Switch_Consecutive_intervals_out_A_S$Aswitch,
@@ -1379,4 +1404,9 @@ head(MY_TABLE_perChick_All)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
  # 20190215 exclude the broods where Julia deleted the broodRef for ChickID and therefore can't find the chickID to add them to those broods again.
  # 20190215 add MeanLogCoordination (removed from data analyses script)
+ 
+# 20190715
+# write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
+# write.csv(MY_TABLE_perDVD1000, file = paste(output_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"), row.names = FALSE) # to compare median A and S for 100 and 1000 sim
+# write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) # add CrossFosteredYN 
  
