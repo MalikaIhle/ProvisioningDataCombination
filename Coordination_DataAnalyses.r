@@ -56,6 +56,13 @@ MY_TABLE_perBrood <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perBr
 MY_TABLE_perChick <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
 MY_TABLE_perChick_All <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/"))
 
+
+# asked by reviewer
+DVDoutlierInNestDur <- read.table("R_input/R_DVDoutlierInNestDur.txt", header=TRUE)
+MY_TABLE_perDVD1000 <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"))
+cor.test(MY_TABLE_perDVD1000$MedAsimWithin,MY_TABLE_perDVD$A)
+cor.test(MY_TABLE_perDVD1000$MedSsimWithin,MY_TABLE_perDVD$S)
+
 }
 
 head(MY_TABLE_perDVD)
@@ -481,6 +488,7 @@ summary(modS)
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
                               MPriorResidence +
+                              CrossFosteredYN +
                              (1|PairID) + 
                               (1|BreedingYear) +
                               (1|BroodRef) +
@@ -490,6 +498,9 @@ summary(modS)
                             , control=glmerControl(optimizer = "bobyqa")
                             )
 
+ cor.test(MY_TABLE_perChick_All$MeanLogAdev, MY_TABLE_perChick_All$MeanLogSdev)
+  
+  
   summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
   dispersion_glmer(modChickSurvival) # 1.091
@@ -674,6 +685,7 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                              scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
                               scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                               scale(NbRinged) +
+                       MixedBroodYN +
                              (1|SocialMumID)  
                             # + (1|SocialDadID)
                            # + (1|BreedingYear) 
