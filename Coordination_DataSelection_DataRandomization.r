@@ -1337,7 +1337,60 @@ head(MY_TABLE_perChick_All)
   MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by="BroodRef")
   
   
+# reviewer's request: have this measurement per age cat
+ 
+  
+ DatCat <- data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef,ChickAgeCat),
+                        MeanLogAdevAgeCat = mean(LogAdev), 
+                        MeanLogSdevAgeCat = mean(LogSdev),
+                     nMeanperagecat = n()))
+ 
+ nrow(DatCat[DatCat$nMeanperagecat > 1,])/ nrow(DatCat)
+ 
+ DatCat6 <- DatCat[DatCat$ChickAgeCat == "Age06", c('BroodRef','MeanLogAdevAgeCat','MeanLogSdevAgeCat')]
+ DatCat10 <- DatCat[DatCat$ChickAgeCat == "Age10", c('BroodRef','MeanLogAdevAgeCat','MeanLogSdevAgeCat')]
+ 
+ colnames(DatCat6) <- c('BroodRef','MeanLogAdevAgeCat6','MeanLogSdevAgeCat6')
+ colnames(DatCat10) <- c('BroodRef','MeanLogAdevAgeCat10','MeanLogSdevAgeCat10')
+ 
+ head(DatCat6)
+ head(DatCat10)
+ 
+
+ MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
+                            DatCat6, by='BroodRef', all.x = TRUE)
+ 
+ 
+ MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
+                            DatCat10, by='BroodRef', all.x = TRUE) 
+ 
+ 
+ head(MY_TABLE_perChick)
+ MY_TABLE_perChick <- merge(MY_TABLE_perChick,
+                            MY_TABLE_perBrood[,c("BroodRef",'MeanLogAdevAgeCat6', 'MeanLogSdevAgeCat6','MeanLogAdevAgeCat10', 'MeanLogSdevAgeCat10')]
+                            ,by.x="RearingBrood", by.y="BroodRef",
+                        all.x = TRUE)
+ 
+ head(MY_TABLE_perChick_All)
+ MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,
+                                MY_TABLE_perBrood[,c("BroodRef",'MeanLogAdevAgeCat6', 'MeanLogSdevAgeCat6','MeanLogAdevAgeCat10', 'MeanLogSdevAgeCat10')]
+                                ,by="BroodRef",  all.x = TRUE)
+ 
+ 
+ 
 }
+
+head(MY_TABLE_perDVD)
+head(MY_TABLE_perBrood) 
+head(MY_TABLE_perChick)
+head(MY_TABLE_perChick_All)
+
+summary(MY_TABLE_perBrood) 
+summary(MY_TABLE_perChick)
+summary(MY_TABLE_perChick_All)
+
+MY_TABLE_perBrood[MY_TABLE_perBrood$BroodRef == '100',]
+
 
 
  output_folder <- "R_Selected&RandomizedData"
