@@ -1385,11 +1385,6 @@ head(MY_TABLE_perBrood)
 head(MY_TABLE_perChick)
 head(MY_TABLE_perChick_All)
 
-summary(MY_TABLE_perBrood) 
-summary(MY_TABLE_perChick)
-summary(MY_TABLE_perChick_All)
-
-MY_TABLE_perBrood[MY_TABLE_perBrood$BroodRef == '100',]
 
 
 
@@ -1462,4 +1457,9 @@ MY_TABLE_perBrood[MY_TABLE_perBrood$BroodRef == '100',]
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
 # write.csv(MY_TABLE_perDVD1000, file = paste(output_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"), row.names = FALSE) # to compare median A and S for 100 and 1000 sim
 # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) # add CrossFosteredYN 
+ 
+# 20190716
+# all tables with coordination per age cat
+# write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
+# write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
  
