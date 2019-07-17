@@ -487,7 +487,7 @@ summary(modS)
                               scale(MeanLogSdev) +
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
-                              MPriorResidence +
+                              XPriorResidence +
                               CrossFosteredYN +
                              (1|PairID) + 
                               (1|BreedingYear) +
@@ -499,8 +499,8 @@ summary(modS)
                             )
 
  cor.test(MY_TABLE_perChick_All$MeanLogAdev, MY_TABLE_perChick_All$MeanLogSdev)
-  
-  
+
+
   summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
   dispersion_glmer(modChickSurvival) # 1.091

@@ -22,6 +22,7 @@ library(tidyr)
 library(dplyr) 
 library(ggplot2)
 library(pbapply)
+library(car) # for bcPower box cox transfo of time in nest
 
 }
 
@@ -351,23 +352,17 @@ summary(outAllOtherIntervals$Interval) # time between known visits
 
 t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
 
-# time in nest
+# time in nest and exclusion of outlier nest watches as requested by reviewers
 MY_RawFeedingVisits$DurationInNest <- MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit
+MY_RawFeedingVisits$DurationInNest[MY_RawFeedingVisits$DurationInNest == 0] <- 0.025
 
 summary(MY_RawFeedingVisits$DurationInNest) # time in nest
-table(MY_RawFeedingVisits$DurationInNest)
 hist(MY_RawFeedingVisits$DurationInNest, breaks =50)
 
-hist(log(MY_RawFeedingVisits$DurationInNest))
-
-sd(MY_RawFeedingVisits$DurationInNest) *3 + mean (MY_RawFeedingVisits$DurationInNest)# time in nest
-# 8.25 3SD away from the mean
-length(unique(MY_RawFeedingVisits$DVDRef))
-length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit>8.25]))
-DVDoutlierInNestDur <- unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$TendFeedVisit - MY_RawFeedingVisits$TstartFeedVisit>8.25])
-summary(MY_TABLE_perDVD$DVDInfoAge[MY_TABLE_perDVD$DVDRef %in% DVDoutlierInNestDur])
-
-
+MY_RawFeedingVisits$DurationInNestBC <- bcPower(MY_RawFeedingVisits$DurationInNest, powerTransform(MY_RawFeedingVisits$DurationInNest)$lambda)
+hist(MY_RawFeedingVisits$DurationInNestBC, breaks =50)
+outlierthresholdBC <- 3*sd(MY_RawFeedingVisits$DurationInNestBC)+mean(MY_RawFeedingVisits$DurationInNestBC)
+length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>outlierthresholdBC]))
 
 
 }
@@ -1249,7 +1244,28 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood, y=ResMassTarsus, all.x=TRUE, by 
 
 }
 
+# add XPriorResidence: if one of them has been there before
+
+cor.test(as.numeric(MY_TABLE_perBrood$MPriorResidence),as.numeric(MY_TABLE_perBrood$FPriorResidence))
+plot(jitter(as.numeric(MY_TABLE_perBrood$MPriorResidence),1), jitter(as.numeric(MY_TABLE_perBrood$FPriorResidence),1) )
+
+
+MY_TABLE_perBrood$XPriorResidence <- FALSE
+for (i in 1:nrow(MY_TABLE_perBrood)){
+  if (MY_TABLE_perBrood$MPriorResidence[i] == TRUE | MY_TABLE_perBrood$FPriorResidence[i] == TRUE)
+    MY_TABLE_perBrood$XPriorResidence[i] <- TRUE
 }
+
+nrow(MY_TABLE_perBrood[MY_TABLE_perBrood$FPriorResidence == TRUE & MY_TABLE_perBrood$MPriorResidence == FALSE,])/
+  nrow(MY_TABLE_perBrood[MY_TABLE_perBrood$XPriorResidence == TRUE,])
+nrow(MY_TABLE_perBrood[MY_TABLE_perBrood$MPriorResidence == TRUE & MY_TABLE_perBrood$FPriorResidence == FALSE,])/
+  nrow(MY_TABLE_perBrood[MY_TABLE_perBrood$XPriorResidence == TRUE,])
+nrow(MY_TABLE_perBrood[MY_TABLE_perBrood$MPriorResidence == TRUE & MY_TABLE_perBrood$FPriorResidence == TRUE,])/
+  nrow(MY_TABLE_perBrood)
+cor.test(as.numeric(MY_TABLE_perBrood$MPriorResidence),as.numeric(MY_TABLE_perBrood$XPriorResidence))
+
+
+} 
 
 head(MY_TABLE_perBrood)
 
@@ -1259,7 +1275,7 @@ nrow(MY_tblChicks[is.na(MY_tblChicks$AvgOfTarsus),]) # 40
 
 MY_TABLE_perChick <- merge(x= MY_tblChicks , 
 y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
-"SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb","NbHatched", "MPriorResidence")],
+"SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb","NbHatched", "XPriorResidence")],
 by.x="RearingBrood", by.y = "BroodRef", all.x=TRUE )
 
 MY_TABLE_perChick <- MY_TABLE_perChick[!is.na(MY_TABLE_perChick$BreedingYear),]
@@ -1293,7 +1309,7 @@ head(MY_TABLE_perBrood)
 {# create MY_TABLE_perChick_All
   MY_TABLE_perChick_All <- merge(x= MY_tblChicks_All , 
                              y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
-                                                    "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb", "NbHatched", "MPriorResidence")],
+                                                    "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb", "NbHatched", "XPriorResidence")],
                              by= "BroodRef", all.x=TRUE ) 
 
   summary(MY_TABLE_perChick_All)
@@ -1407,7 +1423,7 @@ head(MY_TABLE_perChick_All)
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
 # 20190215 add MeanLogCoordination (removed from data analyses script)
 # 20190308 add Ssorted and Sswitch
- 
+
  
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1423,6 +1439,9 @@ head(MY_TABLE_perChick_All)
 # 20171031 added chick mass range
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
 # 20190215 add MeanLogCoordination (removed from data analyses script) 
+# 20190716 with coordination per age cat
+# 20190717 with XPriorResidence   
+ 
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1434,7 +1453,9 @@ head(MY_TABLE_perChick_All)
 # 20190117 corrected divorce and M/F/Pair brood number in data extraction
 # 20190215 add MeanLogCoordination (removed from data analyses script) 
 # 20190215 added Mprior residence and NbHatched from tblbrood
-
+# 20190717 with XPriorResidence   
+ 
+ 
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
 # 20170321 the raw data of the DVDs where both parents are known
 # 20170322 rerun
@@ -1446,20 +1467,17 @@ head(MY_TABLE_perChick_All)
 
  
  
- # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
+#  write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
  # 20190207 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base 
  # (to include natal brood ID for each chick since its different for each)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
  # 20190215 exclude the broods where Julia deleted the broodRef for ChickID and therefore can't find the chickID to add them to those broods again.
  # 20190215 add MeanLogCoordination (removed from data analyses script)
+ # 20190716 with coordination per age cat
+ # 20190717 with XPriorResidence   
  
 # 20190715
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
 # write.csv(MY_TABLE_perDVD1000, file = paste(output_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"), row.names = FALSE) # to compare median A and S for 100 and 1000 sim
 # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) # add CrossFosteredYN 
- 
-# 20190716
-# all tables with coordination per age cat
-# write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
-# write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
  
