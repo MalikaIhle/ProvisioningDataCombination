@@ -63,6 +63,11 @@ MY_TABLE_perDVD1000 <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_pe
 cor.test(MY_TABLE_perDVD1000$MedAsimWithin,MY_TABLE_perDVD$A)
 cor.test(MY_TABLE_perDVD1000$MedSsimWithin,MY_TABLE_perDVD$S)
 
+nrow(MY_TABLE_perChick_All) # 3155
+summary(MY_TABLE_perChick_All$LastLiveRecord)
+head(MY_TABLE_perChick_All[is.na(MY_TABLE_perChick_All$LastLiveRecord),],50)
+
+
 }
 
 head(MY_TABLE_perDVD)
@@ -83,6 +88,53 @@ MY_TABLE_perDVD_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_long))
 }
 
 head(MY_TABLE_perDVD_long)
+
+
+
+head(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat')])
+head(MY_TABLE_perChick_All[,c('BroodRef', 'BirdID', 'HatchDate', 'LastLiveRecord')])
+
+
+MY_TABLE_perDVDlarge <- split(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat')], MY_TABLE_perDVD$BroodRef)
+
+y <- NULL
+MY_TABLE_perDVD_large_fun <- function(x)
+{
+
+ y$BroodRef <- unique(x$BroodRef) 
+ y$DVDRef1 <- x$DVDRef[1]
+ y$ChickAge1 <- x$ChickAge[1] 
+ y$ChickAgeCat1 <- x$ChickAgeCat[1]
+ y$DVDRef2 <- x$DVDRef[2]
+ y$ChickAge2 <- x$ChickAge[2]
+ y$ChickAgeCat2 <- x$ChickAgeCat[2]
+ y$DVDRef3 <- x$DVDRef[3]
+ y$ChickAge3 <- x$ChickAge[3]
+ y$ChickAgeCat3 <- x$ChickAgeCat[3]
+ 
+ return(data.frame(y))
+ 
+}
+
+out1 <- lapply(MY_TABLE_perDVDlarge, FUN=MY_TABLE_perDVD_large_fun)
+MY_TABLE_perDVDlarge <- data.frame(do.call(rbind, out1))
+head(MY_TABLE_perDVDlarge)
+
+MY_TABLE_perChick_All_large <- merge(MY_TABLE_perChick_All[,c('BroodRef', 'BirdID','HatchDate',  'LastLiveRecord')],
+                                     MY_TABLE_perDVDlarge,
+                                     by='BroodRef',
+                                     all.x = TRUE)
+
+MY_TABLE_perChick_All_large$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_TABLE_perChick_All_large$LastLiveRecord), 
+                                            as.POSIXct(MY_TABLE_perChick_All_large$HatchDate),units="days")))
+
+MY_TABLE_perChick_All_large$AliveDVD1 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge1
+MY_TABLE_perChick_All_large$AliveDVD2 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge2
+MY_TABLE_perChick_All_large$AliveDVD3 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge3
+
+
+head(MY_TABLE_perChick_All_large)
+summary(MY_TABLE_perChick_All_large)
 
 
 
@@ -497,9 +549,6 @@ summary(modS)
                             , family = 'binomial'
                             , control=glmerControl(optimizer = "bobyqa")
                             )
-
- cor.test(MY_TABLE_perChick_All$MeanLogAdev, MY_TABLE_perChick_All$MeanLogSdev)
-
 
   summary(modChickSurvival)
   drop1(modChickSurvival, test="Chisq") # LRT
