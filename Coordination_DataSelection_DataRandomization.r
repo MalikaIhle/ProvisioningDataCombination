@@ -96,11 +96,7 @@ sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_2017
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
 tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T)  ## addedd 20190207, needed to assess chick survival on chick base, corrected 20190718 when removed unhatched eggs !
-tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID != tblChicks_All$BroodRef] <-  1
-tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID == tblChicks_All$BroodRef] <-  0
-tblChicks_All <- merge(tblChicks_All,sys_LastSeenAlive[,c('BirdID', 'LastLiveRecord')], by='BirdID', all.x=TRUE)
-summary(tblChicks_All$LastLiveRecord)
-head(tblChicks_All[is.na(tblChicks_All$LastLiveRecord),])
+
 
 }
 
@@ -238,7 +234,7 @@ MY_tblChicks_All <- MY_tblChicks_All[MY_tblChicks_All$BroodRef != "1152" & MY_tb
 
 MY_TABLE_perDVD <- merge(
 MY_tblParentalCare[,c("DVDRef","FVisit1", "MVisit1",  "EffectiveTime","FVisit1RateH", "MVisit1RateH","VisitRateDifference","TotalProRate")],
-MY_tblDVDInfo[,c("DVDRef","BroodRef","TapeLength","DVDInfoChickNb","ChickAge", "ChickAgeCat","RelTimeHrs")], by="DVDRef")
+MY_tblDVDInfo[,c("DVDRef","BroodRef", "DVDdate","TapeLength","DVDInfoChickNb","ChickAge", "ChickAgeCat","RelTimeHrs")], by="DVDRef")
 MY_TABLE_perDVD$MFVisit1 <- MY_TABLE_perDVD$FVisit1+ MY_TABLE_perDVD$MVisit1
 
 
@@ -1428,6 +1424,7 @@ head(MY_TABLE_perChick_All)
 # 20190215 add MeanLogCoordination (removed from data analyses script)
 # 20190308 add Ssorted and Sswitch
 # 20190718 replace DVDInfoAge by ChickAge which is calculated as Date DVD - Hatching Date
+# 20190718 add DVDdate
  
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1471,7 +1468,7 @@ head(MY_TABLE_perChick_All)
 
  
  
-#  write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
+ # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
  # 20190207 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base 
  # (to include natal brood ID for each chick since its different for each)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
@@ -1479,6 +1476,7 @@ head(MY_TABLE_perChick_All)
  # 20190215 add MeanLogCoordination (removed from data analyses script)
  # 20190716 with coordination per age cat
  # 20190717 with XPriorResidence   
+ # 20190718 remove unhatched eggs from table chicks and add last seen alive  
  
 # 20190715
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
