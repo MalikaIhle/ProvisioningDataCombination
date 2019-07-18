@@ -110,7 +110,7 @@ pedigree <-  read.table(file= paste(input_folder,"Pedigree_20160309.txt", sep="/
 
 {# input from database
 
-conDB= odbcConnectAccess("U:\\My Documents\\My Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
+conDB= odbcConnectAccess("C:\\Users\\Malika\\Documents\\_Malika_Sheffield\\_CURRENT BACKUP\\db\\SparrowData.mdb")
 
 # SqlFetch
 tblDVD_XlsFiles <- sqlFetch(conDB, "tblDVD_XlsFiles")
@@ -718,13 +718,19 @@ colnames(BreedingYear) <- c('Letter','BreedingYear' )
 
 # table with all chicks and natal brood (for analysis of chick survival) # added 20190207 corrected 20190718 (added criteria laststage >0 to remove unhatched eggs)
 
-tblChicks_All <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, tblBirdID.BroodRef AS NatalBroodID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS BroodID, IIf([tblAllCodes]![BirdID]>0,1,0) AS RingedYN
+tblChicks_All <- sqlQuery(conDB, "SELECT tblBirdID.BirdID, tblBirdID.BroodRef AS NatalBroodID, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]) AS BroodID, IIf([tblAllCodes]![BirdID]>0,1,0) AS RingedYN, tblBirdID.LastStage, tblBirdID.DeathDate
 FROM (tblBirdID LEFT JOIN tblAllCodes ON tblBirdID.BirdID = tblAllCodes.BirdID) LEFT JOIN tblFosterBroods ON tblBirdID.BirdID = tblFosterBroods.BirdID
-                          GROUP BY tblBirdID.BirdID, tblBirdID.BroodRef, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]), IIf([tblAllCodes]![BirdID]>0,1,0), tblBirdID.LastStage
+                          GROUP BY tblBirdID.BirdID, tblBirdID.BroodRef, IIf([FosterBrood] Is Null,[BroodRef],[FosterBrood]), IIf([tblAllCodes]![BirdID]>0,1,0), tblBirdID.LastStage, tblBirdID.DeathDate
                           HAVING (((tblBirdID.BroodRef) Is Not Null) AND ((tblBirdID.LastStage)>0));
-                          
 ")
 names(tblChicks_All)[names(tblChicks_All) == 'BroodID'] <- 'BroodRef'
+tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID != tblChicks_All$BroodRef] <-  1
+tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID == tblChicks_All$BroodRef] <-  0
+tblChicks_All <- merge(tblChicks_All,sys_LastSeenAlive[,c('BirdID', 'LastLiveRecord')], by='BirdID', all.x=TRUE) 
+tblChicks_All <- merge(tblChicks_All,usys_qBroodHatchDate[,c('BroodRef', 'HatchDate')], by='BroodRef', all.x=TRUE) 
+tblChicks_All$LastLiveRecord <- as.POSIXct(tblChicks_All$LastLiveRecord, format = "%d-%b-%y")
+tblChicks_All$LastLiveRecord[is.na(tblChicks_All$LastLiveRecord) & tblChicks_All$LastStage == 1] <- tblChicks_All$HatchDate[is.na(tblChicks_All$LastLiveRecord) & tblChicks_All$LastStage == 1]
+tblChicks_All$LastLiveRecord[is.na(tblChicks_All$LastLiveRecord) & !is.na(tblChicks_All$DeathDate)] <- tblChicks_All$DeathDate[is.na(tblChicks_All$LastLiveRecord) & !is.na(tblChicks_All$DeathDate)]-1
 
 
 close(conDB)
@@ -748,6 +754,7 @@ head(sys_LastSeenAlive)
 head(sunrise)
 head(LastMassTarsusChick)
 head(tblChicks)
+head(tblChicks_All)
 head(usys_qBroodHatchDate)
 head(usys_qBroodEggDate)
 
