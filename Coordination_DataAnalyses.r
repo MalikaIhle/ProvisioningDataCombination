@@ -90,12 +90,13 @@ MY_TABLE_perDVD_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_long))
 head(MY_TABLE_perDVD_long)
 
 
-
+{# create MY_TABLE_perChick_All_large, with each DVD for a chick in columns
+  
 head(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat')])
 head(MY_TABLE_perChick_All[,c('BroodRef', 'BirdID', 'HatchDate', 'LastLiveRecord')])
 
 
-MY_TABLE_perDVDlarge <- split(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat')], MY_TABLE_perDVD$BroodRef)
+MY_TABLE_perDVDlarge <- split(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat', 'DVDInfoChickNb')], MY_TABLE_perDVD$BroodRef)
 
 y <- NULL
 MY_TABLE_perDVD_large_fun <- function(x)
@@ -105,12 +106,15 @@ MY_TABLE_perDVD_large_fun <- function(x)
  y$DVDRef1 <- x$DVDRef[1]
  y$ChickAge1 <- x$ChickAge[1] 
  y$ChickAgeCat1 <- x$ChickAgeCat[1]
+ y$DVDInfoChickNb1 <- x$DVDInfoChickNb[1]
  y$DVDRef2 <- x$DVDRef[2]
  y$ChickAge2 <- x$ChickAge[2]
  y$ChickAgeCat2 <- x$ChickAgeCat[2]
+ y$DVDInfoChickNb2 <- x$DVDInfoChickNb[2]
  y$DVDRef3 <- x$DVDRef[3]
  y$ChickAge3 <- x$ChickAge[3]
  y$ChickAgeCat3 <- x$ChickAgeCat[3]
+ y$DVDInfoChickNb3 <- x$DVDInfoChickNb[3]
  
  return(data.frame(y))
  
@@ -120,7 +124,7 @@ out1 <- lapply(MY_TABLE_perDVDlarge, FUN=MY_TABLE_perDVD_large_fun)
 MY_TABLE_perDVDlarge <- data.frame(do.call(rbind, out1))
 head(MY_TABLE_perDVDlarge)
 
-MY_TABLE_perChick_All_large <- merge(MY_TABLE_perChick_All[,c('BroodRef', 'BirdID','HatchDate',  'LastLiveRecord')],
+MY_TABLE_perChick_All_large <- merge(MY_TABLE_perChick_All,
                                      MY_TABLE_perDVDlarge,
                                      by='BroodRef',
                                      all.x = TRUE)
@@ -132,9 +136,15 @@ MY_TABLE_perChick_All_large$AliveDVD1 <- MY_TABLE_perChick_All_large$ChickAgeDea
 MY_TABLE_perChick_All_large$AliveDVD2 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge2
 MY_TABLE_perChick_All_large$AliveDVD3 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge3
 
+MY_TABLE_perChick_All_large$AliveAge6 <- MY_TABLE_perChick_All_large$ChickAgeDeath >6
+MY_TABLE_perChick_All_large$AliveAge10 <- MY_TABLE_perChick_All_large$ChickAgeDeath >10
+
+
+summary(MY_TABLE_perChick_All_large)
+}
 
 head(MY_TABLE_perChick_All_large)
-summary(MY_TABLE_perChick_All_large)
+
 
 
 
@@ -543,7 +553,7 @@ summary(modS)
                               CrossFosteredYN +
                              (1|PairID) + 
                               (1|BreedingYear) +
-                              (1|BroodRef) +
+                            #  (1|BroodRef) +
                               (1|NatalBroodID)
                             , data = MY_TABLE_perChick_All
                             , family = 'binomial'
@@ -563,12 +573,13 @@ summary(modS)
   effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
   effects_ChickSurvival <- effects_ChickSurvival*100
   effects_ChickSurvival
-  
+  nrow(MY_TABLE_perChick_All)
+  table(MY_TABLE_perChick_All$RingedYN)
   
   #odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
-  #   OR     2.5 %   97.5 %
-  #   scale(MeanLogAdev) 0.9338673 0.8620892 1.011240
-  #   scale(MeanLogSdev) 1.0684413 0.9839735 1.160763
+    #  OR     2.5 %    97.5 %
+    # scale(MeanLogAdev) 0.887212 0.8078357 0.9739039
+    # scale(MeanLogSdev) 1.045825 0.9515988 1.1499816
   
   table(MY_TABLE_perChick_All$RingedYN)
   
@@ -736,17 +747,17 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                               scale(NbRinged) +
                        MixedBroodYN +
                              (1|SocialMumID)  
-                            # + (1|SocialDadID)
-                           # + (1|BreedingYear) 
+                         #  + (1|SocialDadID)
+                          # + (1|BreedingYear) 
                            , data = MY_TABLE_perBrood
                            , family="binomial"
                          , control=glmerControl(optimizer = "bobyqa"))
-  
+
   summary(mod_Divorce) 
   drop1(mod_Divorce, test = "Chisq")
   dispersion_glmer(mod_Divorce) # 0.90
   table(MY_TABLE_perBrood$PairDivorce)
-  
+
   oddsDivorce <- exp(cbind(OR=fixef(mod_Divorce), confint(mod_Divorce, parm="beta_")))[c(2,3),] 
   
   #   OR     2.5 %   97.5 %
