@@ -177,15 +177,24 @@ MY_tblChicks_byRearingBrood <- as.data.frame(tblChicks
                                                sum(CrossFosteredYN)))
 
 colnames(MY_tblChicks_byRearingBrood) <- c("RearingBrood","sdMass", "sdTarsus","MassRange", "NbChicksMeasured", "NbChicksMeasuredCrossFostered")
-MY_tblChicks_byRearingBrood$MixedBroodYN <- MY_tblChicks_byRearingBrood$NbChicksMeasured != MY_tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
+#MY_tblChicks_byRearingBrood$MixedBroodYN <- MY_tblChicks_byRearingBrood$NbChicksMeasured != MY_tblChicks_byRearingBrood$NbChicksMeasuredCrossFostered
 head(MY_tblChicks_byRearingBrood)
 
 MY_tblChicks_byRearingBrood <- MY_tblChicks_byRearingBrood[MY_tblChicks_byRearingBrood$RearingBrood %in% MY_tblDVDInfo$BroodRef,] 
 
 
 MY_tblChicks_All <- tblChicks_All[tblChicks_All$BroodRef %in% MY_tblDVDInfo$BroodRef,] # doesnt include the changes made below 
-  
-  
+ 
+MY_tblChicks_All_perRearingBrood <-  as.data.frame(MY_tblChicks_All 
+                                                   %>% group_by(BroodRef)
+                                                   %>% summarise( 
+                                                     sum(CrossFosteredYN)))
+MY_tblChicks_All_perRearingBrood$MixedBroodYN <- 0
+MY_tblChicks_All_perRearingBrood$MixedBroodYN[MY_tblChicks_All_perRearingBrood$'sum(CrossFosteredYN)' > 0] <- 1
+MY_tblChicks_All <- merge(MY_tblChicks_All, 
+                                                  MY_tblChicks_All_perRearingBrood[,c('MixedBroodYN','BroodRef')],
+                                                  by= 'BroodRef', all.x = TRUE)
+
 }
 
 {## fill in manually the data where Julia deleted it 
@@ -223,8 +232,11 @@ MY_tblChicks_All <- MY_tblChicks_All[MY_tblChicks_All$BroodRef != "1152" & MY_tb
   # I could correct the broods above (evidence that during visits they were indeed chicks in the nest)
   # but I do not know which chickID were in those nest...
 
-}
+BroodMixedYN <- rbind(unique(MY_tblChicks_All[,c("BroodRef", "MixedBroodYN")]),
+                             data.frame(BroodRef = c(1152, 457, 969), MixedBroodYN = c(0,1,1)))
 
+}
+ 
 }
 
 {# Create MY_TABLE_perDVD
@@ -246,8 +258,12 @@ MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401",
 "PairID","PairBroodNb","PairIDYear", "NbRinged","AvgMass", "MinMass", "AvgTarsus")], by= "BroodRef")
 
 MY_TABLE_perDVD <- merge(MY_TABLE_perDVD, 
-MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MassRange","MixedBroodYN")], 
+MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus", "MassRange")], 
 by.x="BroodRef", by.y="RearingBrood", all.x=TRUE)
+
+MY_TABLE_perDVD <- merge(MY_TABLE_perDVD, 
+                         BroodMixedYN, 
+                         by ="BroodRef", all.x=TRUE)
 
 
 MY_TABLE_perDVD$BroodRef <- as.factor(MY_TABLE_perDVD$BroodRef)
@@ -1226,8 +1242,13 @@ MY_tblBroods[,c("BroodRef","BreedingYear","HatchingDayAfter0401",
 "PairID","PairBroodNb","PairIDYear", "NbHatched","NbRinged","AvgMass", "MinMass", "AvgTarsus")], by= "BroodRef")
 
 MY_TABLE_perBrood <- merge(MY_TABLE_perBrood, 
-MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus","MassRange", "MixedBroodYN")], 
+MY_tblChicks_byRearingBrood[,c("RearingBrood", "sdMass", "sdTarsus","MassRange")], 
 by.x="BroodRef", by.y="RearingBrood", all.x=TRUE)
+
+MY_TABLE_perBrood <- merge(MY_TABLE_perBrood, 
+                           BroodMixedYN, 
+                           by ="BroodRef", all.x=TRUE)
+
 
 }
 	
@@ -1402,8 +1423,6 @@ head(MY_TABLE_perChick)
 head(MY_TABLE_perChick_All)
 
 
-
-
  output_folder <- "R_Selected&RandomizedData"
 
 
@@ -1425,6 +1444,7 @@ head(MY_TABLE_perChick_All)
 # 20190308 add Ssorted and Sswitch
 # 20190718 replace DVDInfoAge by ChickAge which is calculated as Date DVD - Hatching Date
 # 20190718 add DVDdate
+# 20190719 add MixedBrood
  
 # write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1442,7 +1462,7 @@ head(MY_TABLE_perChick_All)
 # 20190215 add MeanLogCoordination (removed from data analyses script) 
 # 20190716 with coordination per age cat
 # 20190717 with XPriorResidence   
- 
+# 20190719 add MixedBrood
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1455,7 +1475,7 @@ head(MY_TABLE_perChick_All)
 # 20190215 add MeanLogCoordination (removed from data analyses script) 
 # 20190215 added Mprior residence and NbHatched from tblbrood
 # 20190717 with XPriorResidence   
- 
+# 20190719 add MixedBrood 
  
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
 # 20170321 the raw data of the DVDs where both parents are known
@@ -1468,7 +1488,7 @@ head(MY_TABLE_perChick_All)
 
  
  
- # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
+# write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
  # 20190207 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base 
  # (to include natal brood ID for each chick since its different for each)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
@@ -1477,6 +1497,8 @@ head(MY_TABLE_perChick_All)
  # 20190716 with coordination per age cat
  # 20190717 with XPriorResidence   
  # 20190718 remove unhatched eggs from table chicks and add last seen alive  
+ # 20190719 add MixedBrood
+ 
  
 # 20190715
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
