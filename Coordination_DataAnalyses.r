@@ -56,6 +56,7 @@ MY_TABLE_perBrood <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perBr
 MY_TABLE_perChick <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
 MY_TABLE_perChick_All <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/"))
 
+#MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == 1 & !MY_TABLE_perChick_All$BirdID %in% MY_TABLE_perChick$ChickID,]
 
 # asked by reviewer
 DVDoutlierInNestDur <- read.table("R_input/R_DVDoutlierInNestDur.txt", header=TRUE)
@@ -74,6 +75,7 @@ head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
 head(MY_TABLE_perChick) # this only includes chicks that reached d12 (to analyse chick mass)
 head(MY_TABLE_perChick_All) # this includes all chicks, to analyse chick survival
+
 
 
 {# create MY_TABLE_perDVD_long, with the column A and S having observed values in first half, and sim values in second half
