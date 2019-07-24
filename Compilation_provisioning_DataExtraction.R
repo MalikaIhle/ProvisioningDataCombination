@@ -729,7 +729,6 @@ tblChicks_All$CrossFosteredYN[tblChicks_All$NatalBroodID == tblChicks_All$BroodR
 tblChicks_All <- merge(tblChicks_All,sys_LastSeenAlive[,c('BirdID', 'LastLiveRecord')], by='BirdID', all.x=TRUE) 
 tblChicks_All <- merge(tblChicks_All,usys_qBroodHatchDate[,c('BroodRef', 'HatchDate')], by='BroodRef', all.x=TRUE) 
 tblChicks_All$LastLiveRecord <- as.POSIXct(tblChicks_All$LastLiveRecord, format = "%d-%b-%y")
-tblChicks_All$LastLiveRecord[is.na(tblChicks_All$LastLiveRecord) & tblChicks_All$LastStage == 1] <- tblChicks_All$HatchDate[is.na(tblChicks_All$LastLiveRecord) & tblChicks_All$LastStage == 1]
 tblChicks_All$LastLiveRecord[is.na(tblChicks_All$LastLiveRecord) & !is.na(tblChicks_All$DeathDate)] <- tblChicks_All$DeathDate[is.na(tblChicks_All$LastLiveRecord) & !is.na(tblChicks_All$DeathDate)]-1
 
 
@@ -2790,4 +2789,5 @@ DurationScript # ~ 14 min
 ## write.table(tblChicks_All,file=paste(input_folder,"R_tblChicks_All.txt", sep="/"), row.names = FALSE , sep="\t", col.names=TRUE)
  # 20190107 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base (to include natal brood ID for each chick since its different for each)
  # 20190718 remove unhatched eggs from it !!
+# 20190723 correct last live record for last stage = chigg (leave to NA)
  
