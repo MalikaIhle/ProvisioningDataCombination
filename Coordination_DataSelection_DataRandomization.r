@@ -1333,14 +1333,65 @@ head(MY_TABLE_perBrood)
                                                     "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb", "NbHatched", "XPriorResidence")],
                              by= "BroodRef", all.x=TRUE ) 
 
-  summary(MY_TABLE_perChick_All)
-  nrow(MY_TABLE_perChick_All)
-  length(unique(MY_TABLE_perChick_All$BroodRef)) # all the chicks of those 872 valid and recorded broods
+  summary(MY_TABLE_perChick_All[MY_TABLE_perChick_All$LastStage == 3,])
+  MY_TABLE_perChick_All$LastLiveRecord <- as.Date(MY_TABLE_perChick_All$LastLiveRecord)
+  MY_TABLE_perChick_All$DeathDate <- as.Date(MY_TABLE_perChick_All$DeathDate)
   
-}
+  MY_TABLE_perChick_All$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_TABLE_perChick_All$DeathDate), 
+                                                                         as.POSIXct(MY_TABLE_perChick_All$HatchDate),
+                                                                   units="days")))
+  summary( MY_TABLE_perChick_All$ChickAgeDeath)
+  MY_TABLE_perChick_All[MY_TABLE_perChick_All$ChickAgeDeath <0 & !is.na(MY_TABLE_perChick_All$ChickAgeDeath),]
+  MY_TABLE_perChick_All$DeathDate[ MY_TABLE_perChick_All$BirdID == 2854] <- "2005-07-23"
+  MY_TABLE_perChick_All$ChickAgeDeath[ MY_TABLE_perChick_All$BirdID == 2854] <- 0
+
+  MY_TABLE_perChick_All$AliveAge6 <- MY_TABLE_perChick_All$ChickAgeDeath >6
+  MY_TABLE_perChick_All$AliveAge10 <- MY_TABLE_perChick_All$ChickAgeDeath >10
+  MY_TABLE_perChick_All$AliveAge12 <- MY_TABLE_perChick_All$ChickAgeDeath >12
+  MY_TABLE_perChick_All$AliveAge12[is.na(MY_TABLE_perChick_All$ChickAgeDeath) & MY_TABLE_perChick_All$LastStage == 3] <- TRUE
+  
+  summary( MY_TABLE_perChick_All$ChickAgeDeath[MY_TABLE_perChick_All$LastStage < 3])
+  summary( MY_TABLE_perChick_All$ChickAgeDeath[MY_TABLE_perChick_All$LastStage == 2])
+  summary( MY_TABLE_perChick_All$ChickAgeDeath[MY_TABLE_perChick_All$LastStage == 3])
+  
+  
+  table(MY_TABLE_perChick_All$AliveAge6)
+  table(MY_TABLE_perChick_All$AliveAge10) 
+  table(MY_TABLE_perChick_All$AliveAge12) 
+  table(MY_TABLE_perChick_All$AliveAge12)
+  MY_TABLE_perChick_All[is.na(MY_TABLE_perChick_All$AliveAge12),]
+  table(MY_TABLE_perChick_All$RingedYN)
+  table(MY_TABLE_perChick_All$ChickAgeDeath)
+  nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$AliveAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == 1,])
+  table(MY_TABLE_perChick_All$AliveAge10[MY_TABLE_perChick_All$RingedYN == 1])
+  MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == 1 & MY_TABLE_perChick_All$AliveAge10 == FALSE,]# ....
+  MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == 1 & MY_TABLE_perChick_All$AliveAge12 == FALSE,]
+  
+  BroodSizeAgex <- MY_TABLE_perChick_All %>% group_by (BroodRef) %>% summarise(NbAliveAge6 = sum(as.numeric(AliveAge6), na.rm=TRUE),
+                                                                                     NbAliveAge10 = sum(as.numeric(AliveAge10), na.rm=TRUE),
+                                                                               NbAliveAge12 = sum(as.numeric(AliveAge12), na.rm=TRUE))
+  
+  MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All, BroodSizeAgex, by = 'BroodRef', all.x = TRUE)
+  
+  
+  MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,BroodSizeAgex, by = 'BroodRef', all.x = TRUE)
+  summary(MY_TABLE_perBrood$NbAliveAge12)
+  MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$NbAliveAge12),]
+  MY_TABLE_perBrood$NbAliveAge12[MY_TABLE_perBrood$BroodRef == 457] <- 1
+  MY_TABLE_perBrood$NbAliveAge12[MY_TABLE_perBrood$BroodRef == 969] <- 1
+  MY_TABLE_perBrood$NbAliveAge12[MY_TABLE_perBrood$BroodRef == 1152] <- 1
+  
+  
+  MY_TABLE_perChick_All$WeightedAge12 <- MY_TABLE_perChick_All$BirdID %in% MY_TABLE_perChick$ChickID
+  table( MY_TABLE_perChick_All$WeightedAge12)
+  MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$RingedYN == 0,]
+  MY_TABLE_perChick[MY_TABLE_perChick$RearingBrood == 1248,]
+  
+  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }
 
 head(MY_TABLE_perChick_All)
-
+head(MY_TABLE_perBrood)
 
 ### the deviation from randomness modeled in first paper, with a poisson model is essentially:
 ### log (A) - log (Asim) = log (A/Asim)
@@ -1465,6 +1516,8 @@ head(MY_TABLE_perChick_All)
 # 20190717 with XPriorResidence   
 # 20190719 add MixedBrood
 # 20190722 add MeanTotalProRate per age cat
+# 20190723 add ChickAgeDeath
+# 20190723 add AliveAge12
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1502,6 +1555,7 @@ head(MY_TABLE_perChick_All)
  # 20190718 remove unhatched eggs from table chicks and add last seen alive  
  # 20190719 add MixedBrood
  # 20190722 add MeanTotalProRate per age cat
+ # 20190723 ass AliveDay12
  
  
 # 20190715
