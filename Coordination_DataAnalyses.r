@@ -92,62 +92,6 @@ MY_TABLE_perDVD_long$rowID <- seq(1:nrow(MY_TABLE_perDVD_long))
 head(MY_TABLE_perDVD_long)
 
 
-{# create MY_TABLE_perChick_All_large, with each DVD for a chick in columns
-  
-head(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat')])
-head(MY_TABLE_perChick_All[,c('BroodRef', 'BirdID', 'HatchDate', 'LastLiveRecord')])
-
-
-MY_TABLE_perDVDlarge <- split(MY_TABLE_perDVD[,c('DVDRef', 'BroodRef', 'ChickAge', 'ChickAgeCat', 'DVDInfoChickNb')], MY_TABLE_perDVD$BroodRef)
-
-y <- NULL
-MY_TABLE_perDVD_large_fun <- function(x)
-{
-
- y$BroodRef <- unique(x$BroodRef) 
- y$DVDRef1 <- x$DVDRef[1]
- y$ChickAge1 <- x$ChickAge[1] 
- y$ChickAgeCat1 <- x$ChickAgeCat[1]
- y$DVDInfoChickNb1 <- x$DVDInfoChickNb[1]
- y$DVDRef2 <- x$DVDRef[2]
- y$ChickAge2 <- x$ChickAge[2]
- y$ChickAgeCat2 <- x$ChickAgeCat[2]
- y$DVDInfoChickNb2 <- x$DVDInfoChickNb[2]
- y$DVDRef3 <- x$DVDRef[3]
- y$ChickAge3 <- x$ChickAge[3]
- y$ChickAgeCat3 <- x$ChickAgeCat[3]
- y$DVDInfoChickNb3 <- x$DVDInfoChickNb[3]
- 
- return(data.frame(y))
- 
-}
-
-out1 <- lapply(MY_TABLE_perDVDlarge, FUN=MY_TABLE_perDVD_large_fun)
-MY_TABLE_perDVDlarge <- data.frame(do.call(rbind, out1))
-head(MY_TABLE_perDVDlarge)
-
-MY_TABLE_perChick_All_large <- merge(MY_TABLE_perChick_All,
-                                     MY_TABLE_perDVDlarge,
-                                     by='BroodRef',
-                                     all.x = TRUE)
-
-MY_TABLE_perChick_All_large$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_TABLE_perChick_All_large$LastLiveRecord), 
-                                            as.POSIXct(MY_TABLE_perChick_All_large$HatchDate),units="days")))
-
-MY_TABLE_perChick_All_large$AliveDVD1 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge1
-MY_TABLE_perChick_All_large$AliveDVD2 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge2
-MY_TABLE_perChick_All_large$AliveDVD3 <- MY_TABLE_perChick_All_large$ChickAgeDeath > MY_TABLE_perChick_All_large$ChickAge3
-
-MY_TABLE_perChick_All_large$AliveAge6 <- MY_TABLE_perChick_All_large$ChickAgeDeath >6
-MY_TABLE_perChick_All_large$AliveAge10 <- MY_TABLE_perChick_All_large$ChickAgeDeath >10
-
-
-summary(MY_TABLE_perChick_All_large)
-}
-
-head(MY_TABLE_perChick_All_large)
-
-
 
 
 ######################
@@ -156,12 +100,12 @@ head(MY_TABLE_perChick_All_large)
 
 {All_A_long <- data.frame(
 
-A=c(MY_TABLE_perDVD$Asorted, 
+A=c(MY_TABLE_perDVD$Asorted,
 MY_TABLE_perDVD$A,
 MY_TABLE_perDVD$Aswitch,
 MY_TABLE_perDVD$MedAsimWithin,
 MY_TABLE_perDVD$MedAsimAmong,
-MY_TABLE_perDVD$Agenerated), 
+MY_TABLE_perDVD$Agenerated),
 
 Type = c(rep("a_sorted", nrow(MY_TABLE_perDVD)),
 rep("a_Obsv", nrow(MY_TABLE_perDVD)),
@@ -182,12 +126,12 @@ head(All_A_long)
 
 {All_S_long <- data.frame(
 
-S=c(MY_TABLE_perDVD$Ssorted, 
+S=c(MY_TABLE_perDVD$Ssorted,
     MY_TABLE_perDVD$S,
     MY_TABLE_perDVD$Sswitch,
     MY_TABLE_perDVD$MedSsimWithin,
     MY_TABLE_perDVD$MedSsimAmong,
-    MY_TABLE_perDVD$Sgenerated), 
+    MY_TABLE_perDVD$Sgenerated),
 
 Type = c(rep("a_sorted", nrow(MY_TABLE_perDVD)),
          rep("a_Obsv", nrow(MY_TABLE_perDVD)),
@@ -221,24 +165,24 @@ summary(mod_A_RandomVsObs)
 
 dispersion_glmer(mod_A_RandomVsObs) # < 1.4
 
-mod_A_RandomVsObs_without_intercept <- glmer(A ~ -1 + Type  +(1|DVDRef) 
+mod_A_RandomVsObs_without_intercept <- glmer(A ~ -1 + Type  +(1|DVDRef)
 												, data = All_A_long
 												, family = 'poisson')
 
 summary(mod_A_RandomVsObs_without_intercept)
 exp(summary(mod_A_RandomVsObs_without_intercept)$coeff[,1])
 
-	
-{# model assumption checking 
+
+{# model assumption checking
 
 # residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(mod_A_RandomVsObs), resid(mod_A_RandomVsObs))	
+scatter.smooth(fitted(mod_A_RandomVsObs), resid(mod_A_RandomVsObs))
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
 qqnorm(resid(mod_A_RandomVsObs))
 qqline(resid(mod_A_RandomVsObs))
-qqnorm(unlist(ranef(mod_A_RandomVsObs))) 
+qqnorm(unlist(ranef(mod_A_RandomVsObs)))
 qqline(unlist(ranef(mod_A_RandomVsObs)))
 
 # qq-plot of deviance-residuals: should be normally distributed
@@ -277,16 +221,16 @@ mod_S_RandomVsObs_without_intercept <- glmer(S ~ -1 + Type  +(1|DVDRef)
 												, family = 'poisson')
 summary(mod_S_RandomVsObs_without_intercept)
 
-{# model assumption checking 
+{# model assumption checking
 
 # residuals vs fitted: mean should constantly be zero
-scatter.smooth(fitted(mod_S_RandomVsObs), resid(mod_S_RandomVsObs))	
+scatter.smooth(fitted(mod_S_RandomVsObs), resid(mod_S_RandomVsObs))
 abline(h=0, lty=2)
 
 # qqplots of residuals and ranefs: should be normally distributed
 qqnorm(resid(mod_S_RandomVsObs))
 qqline(resid(mod_S_RandomVsObs))
-qqnorm(unlist(ranef(mod_S_RandomVsObs))) 
+qqnorm(unlist(ranef(mod_S_RandomVsObs)))
 qqline(unlist(ranef(mod_S_RandomVsObs)))
 
 # qq-plot of deviance-residuals: should be normally distributed
@@ -312,7 +256,7 @@ summary(glht(mod_S_RandomVsObs, mcp(Type="Tukey"))) #sync = 2 : p sim vs among =
 
 
 ##############
-# PREDICTORS 
+# PREDICTORS
 ##############
 
 # the type of model was decided following simulations (other script)
@@ -321,9 +265,9 @@ summary(glht(mod_S_RandomVsObs, mcp(Type="Tukey"))) #sync = 2 : p sim vs among =
 {#### predictors of alternation
 
 {# check dependent and explanatory variables
-# 
-# cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.10, p<0.001 
-# cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$NbRinged) # cor = 0.05, p=0.06 
+#
+# cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$DVDInfoChickNb) # cor = -0.10, p<0.001
+# cor.test(MY_TABLE_perDVD$DVDInfoAge,MY_TABLE_perDVD$NbRinged) # cor = 0.05, p=0.06
 # cor.test(MY_TABLE_perDVD$MumAge,MY_TABLE_perDVD$DadAge) # cor = 0.34, p *****   - assortative mating for age > take the mean of the 2 ? !!!! Highly pseudoreplicated
 # cor.test(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$PairBroodNb) # cor = 0.65, p < 0.0001 ! > take one or the other variable ? !!!! Highly pseudoreplicated
 # summary(MY_TABLE_perDVD$MPriorResidence == MY_TABLE_perDVD$FPriorResidence) # quite aliased
@@ -333,21 +277,21 @@ summary(glht(mod_S_RandomVsObs, mcp(Type="Tukey"))) #sync = 2 : p sim vs among =
 # sunflowerplot(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$FBroodNb)
 # cor.test(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$MBroodNb)
 # sunflowerplot(MY_TABLE_perDVD$PairBroodNb,MY_TABLE_perDVD$MBroodNb)
-# 
-# 
+#
+#
 # #hist(MY_TABLE_perDVD$DVDInfoAge) # very bimodal as the protocol is to measure d7 and d11, in between is when they "miss"
-# 
+#
 # summary(MY_TABLE_perDVD$RelTimeHrs) # 6 NA's > if this covariate is use, reduce MY_TABLE_perDVD from those RelTimeHrs NAs
-# 
-# 
-# 
-# #scatter.smooth(MY_TABLE_perDVD$NbAlternation,MY_TABLE_perDVD$RelTimeHrs)# linear 
+#
+#
+#
+# #scatter.smooth(MY_TABLE_perDVD$NbAlternation,MY_TABLE_perDVD$RelTimeHrs)# linear
 # #scatter.smooth(MY_TABLE_perDVD$RelTimeHrs,MY_TABLE_perDVD$NbAlternation)# linear
 # #scatter.smooth(MY_TABLE_perDVD$ParentsAge,MY_TABLE_perDVD$NbAlternation/MY_TABLE_perDVD$NbAMax)
-# 
+#
 # cor.test(MY_TABLE_perDVD$MeanAsimWithin, MY_TABLE_perDVD$MedAsimWithin)
 # cor.test(MY_TABLE_perDVD$MeanSsimWithin, MY_TABLE_perDVD$MedSsimWithin)
-# 
+#
 }
 
 {# mod A
@@ -386,8 +330,8 @@ summary(modA)
 dispersion_glmer(modA) # < 1.4
 
 
-{# Joel attempt 
-  
+{# Joel attempt
+
 # MY_TABLE_perDVD_long$BroodRef <- as.factor(MY_TABLE_perDVD_long$BroodRef)
 # MY_TABLE_perDVD_long$SocialMumID <- as.factor(MY_TABLE_perDVD_long$SocialMumID)
 # MY_TABLE_perDVD_long$SocialDadID <- as.factor(MY_TABLE_perDVD_long$SocialDadID)
@@ -396,8 +340,8 @@ dispersion_glmer(modA) # < 1.4
 # MY_TABLE_perDVD_long$PairIDYear <- as.factor(MY_TABLE_perDVD_long$PairIDYear)
 # MY_TABLE_perDVD_long$DVDRef <- as.factor(MY_TABLE_perDVD_long$DVDRef)
 
-# write.csv(MY_TABLE_perDVD_long, file = "R_MY_TABLE_perDVD_long.csv", row.names = FALSE) 
-  
+# write.csv(MY_TABLE_perDVD_long, file = "R_MY_TABLE_perDVD_long.csv", row.names = FALSE)
+
 # modAmcmcglmm <- MCMCglmm(A ~
 #         Type*scale(ParentsAge) + # this is strongly correlated to PairBroodNb (if removed, PBDur still negative NS, if PBDur removed, ParentAge signi Neg)
 #         Type*scale(HatchingDayAfter0401) +
@@ -408,40 +352,40 @@ dispersion_glmer(modA) # < 1.4
 #         Type*MPriorResidence +
 #         Type*scale(TotalProRate) +
 #         Type*scale(VisitRateDifference), random = ~  idh(Type):BroodRef +
-#           idh(Type):SocialMumID+ 
+#           idh(Type):SocialMumID+
 #           idh(Type):SocialDadID +
 #           idh(Type):PairID +  # explained 0% of the variance
 #           idh(Type):BreedingYear + # explained 0% of the variance
-#           idh(Type):PairIDYear 
+#           idh(Type):PairIDYear
 #       + DVDRef
 #       , data = MY_TABLE_perDVD_long
 #       , family = 'poisson', nitt=20000, thin=10, burnin=10000
 # )
-# 
+#
 # summary(modAmcmcglmm)
 }
 
 }
 
 {# model assumption checking
-# # 
+# #
 # # # residuals vs fitted: mean should constantly be zero: not quite ??
 # # scatter.smooth(fitted(modA), resid(modA))
 # # abline(h=0, lty=2)
-# # 
-# # 
+# #
+# #
 # # # qqplots of residuals and ranefs: should be normally distributed
 # # qqnorm(resid(modA))
 # # qqline(resid(modA))
-# # qqnorm(unlist(ranef(modA))) 
+# # qqnorm(unlist(ranef(modA)))
 # # qqline(unlist(ranef(modA)))
-# # 
+# #
 # # # Mean of ranefs: should be zero
 # # mean(unlist(ranef(modA)$BroodRef))
 # # mean(unlist(ranef(modA)$SocialMumID))
 # # mean(unlist(ranef(modA)$SocialDadID))
 # # mean(unlist(ranef(modA)$PairID))
-# # 
+# #
 # # # residuals vs predictors
 # # scatter.smooth(MY_TABLE_perDVD_long$ParentsAge, resid(modA))
 # # abline(h=0, lty=2)
@@ -450,13 +394,13 @@ dispersion_glmer(modA) # < 1.4
 # # plot(MY_TABLE_perDVD_long$PairBroodNb, resid(modA))
 # # abline(h=0, lty=2)
 # # plot(MY_TABLE_perDVD_long$DVDInfoChickNb, resid(modA))
-# # abline(h=0, lty=2)	
+# # abline(h=0, lty=2)
 # # plot(MY_TABLE_perDVD_long$ChickAgeCat, resid(modA))
-# # abline(h=0, lty=2)	
+# # abline(h=0, lty=2)
 # # scatter.smooth(MY_TABLE_perDVD_long$RelTimeHrs, resid(modA))
-# # abline(h=0, lty=2)		
-# # 
-# # 
+# # abline(h=0, lty=2)
+# #
+# #
 }
 
 }
@@ -466,25 +410,25 @@ summary(modA)
 
 {#### predictors of synchrony
 
-modS <- glmer(S ~ 
-	
-	Type*scale(ParentsAge) + 
+modS <- glmer(S ~
+
+	Type*scale(ParentsAge) +
 	Type*scale(HatchingDayAfter0401) +
-	Type*scale(PairBroodNb) + 
-	Type*scale(DVDInfoChickNb) + 
+	Type*scale(PairBroodNb) +
+	Type*scale(DVDInfoChickNb) +
 	Type*ChickAgeCat +
-	Type*scale(RelTimeHrs) + 
+	Type*scale(RelTimeHrs) +
 	Type*MPriorResidence +
-	
+
 	Type*scale(TotalProRate) +
 	Type*scale(VisitRateDifference)+
-	
-	(1|BroodRef) + 
-	(1|SocialMumID)+ (1|SocialDadID) + 
+
+	(1|BroodRef) +
+	(1|SocialMumID)+ (1|SocialDadID) +
 	(1|PairID) +  # explained 0% of the variance
 	(1|BreedingYear) + # explained 0% of the variance
 	(1|PairIDYear)
-	+ (1|DVDRef) 
+	+ (1|DVDRef)
 	+ (1|rowID) # for overdispersion > doesnt help ... ??
 	, data = MY_TABLE_perDVD_long
 	, family = 'poisson'
@@ -496,23 +440,23 @@ summary(modS)
 dispersion_glmer(modS) # < 1.4
 
 {# model assumption checking
-# 
+#
 # # residuals vs fitted: mean should constantly be zero: not quite !
 # scatter.smooth(fitted(modS), resid(modS))
 # abline(h=0, lty=2)
-# 
+#
 # # qqplots of residuals and ranefs: should be normally distributed
 # qqnorm(resid(modS))
 # qqline(resid(modS))
-# qqnorm(unlist(ranef(modS))) 
+# qqnorm(unlist(ranef(modS)))
 # qqline(unlist(ranef(modS)))
-# 
+#
 # # Mean of ranefs: should be zero
 # mean(unlist(ranef(modS)$BroodRef))
 # mean(unlist(ranef(modS)$SocialMumID))
 # mean(unlist(ranef(modS)$SocialDadID))
 # mean(unlist(ranef(modS)$PairID))
-# 
+#
 # # residuals vs predictors
 # scatter.smooth(MY_TABLE_perDVD_long$ParentsAge, resid(modS))
 # abline(h=0, lty=2)
@@ -521,17 +465,17 @@ dispersion_glmer(modS) # < 1.4
 # plot(MY_TABLE_perDVD_long$PairBroodNb, resid(modS))
 # abline(h=0, lty=2)
 # plot(MY_TABLE_perDVD_long$DVDInfoChickNb, resid(modS))
-# abline(h=0, lty=2)	
+# abline(h=0, lty=2)
 # plot(MY_TABLE_perDVD_long$ChickAgeCat, resid(modS))
-# abline(h=0, lty=2)	
+# abline(h=0, lty=2)
 # scatter.smooth(MY_TABLE_perDVD_long$RelTimeHrs, resid(modS))
-# abline(h=0, lty=2)		
-# 
-# 
+# abline(h=0, lty=2)
+#
+#
 }
- 	
-	
-	
+
+
+
 }
 
 summary(modS)
@@ -542,7 +486,30 @@ summary(modS)
 # FITNESS CORRELATES
 ######################
 
+
 {#### ChickSurvival ~ Alternation + Synchrony, brood
+  
+  
+  modBroodSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
+                              scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+                              scale(NbHatched) +
+                              scale(MeanLogAdev)+
+                              scale(MeanLogSdev) +
+                              scale(HatchingDayAfter0401) +
+                              scale(PairBroodNb) +
+                              XPriorResidence +
+                              MixedBroodYN +
+                             # (1|PairID) + 
+                              (1|BreedingYear) 
+                              # +(1|BroodRef) 
+                            , data = MY_TABLE_perBrood
+                            , family = 'binomial'
+                            , control=glmerControl(optimizer = "bobyqa"))
+  
+  summary(modBroodSurvival)  
+  drop1(modBroodSurvival, test="Chisq") # LRT
+  dispersion_glmer(modBroodSurvival) # 0.9524648
+                              
 
   modChickSurvival <- glmer(RingedYN ~ 
                               scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
@@ -552,7 +519,7 @@ summary(modS)
                               scale(HatchingDayAfter0401) +
                               scale(PairBroodNb) +
                               XPriorResidence +
-                              CrossFosteredYN +
+                            #  CrossFosteredYN +
                              (1|PairID) + 
                               (1|BreedingYear) +
                             #  (1|BroodRef) +
@@ -576,7 +543,7 @@ summary(modS)
   effects_ChickSurvival <- effects_ChickSurvival*100
   effects_ChickSurvival
   nrow(MY_TABLE_perChick_All)
-  table(MY_TABLE_perChick_All$RingedYN)
+
   
   #odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
     #  OR     2.5 %    97.5 %
@@ -633,6 +600,116 @@ summary(modS)
 }
 
 summary(modChickSurvival) 
+
+
+{# expo analyses requested by reviewer: per chick stage
+  table(MY_TABLE_perChick_All_large$AliveAge6)
+  table(MY_TABLE_perChick_All_large$Ringed)
+  
+  ## survival from age 6 to age 10
+  table(MY_TABLE_perChick_All_large$AliveAge10[MY_TABLE_perChick_All_large$AliveAge6 == TRUE]) # 82 points to explain!
+  
+  modChickSurvival610 <- glmer(as.numeric(AliveAge10) ~ 
+                              scale(MeanTotalProRateAgeCat6)+ I(scale(MeanTotalProRateAgeCat6)^2)+ # should it also be at age 6?
+                              scale(NbAliveAge6) +
+                              scale(MeanLogAdevAgeCat6)+
+                              scale(MeanLogSdevAgeCat6) +
+                              scale(HatchingDayAfter0401) +
+                              scale(PairBroodNb) +
+                              XPriorResidence +
+                              CrossFosteredYN +
+                              (1|PairID) + 
+                             # (1|BreedingYear) +
+                                (1|BroodRef) +
+                              (1|NatalBroodID)
+                            , data = MY_TABLE_perChick_All_large[MY_TABLE_perChick_All_large$AliveAge6 == TRUE,]
+                            , family = 'binomial'
+                            , control=glmerControl(optimizer = "bobyqa")
+  )
+  
+  summary(modChickSurvival610) # failed to converge
+  drop1(modChickSurvival610, test="Chisq") # Likelihood ratio test
+  dispersion_glmer(modChickSurvival610) # from package blmeco
+  
+  
+  ## survival from age 10 to age 12 (ringing)
+  
+  
+  modChickSurvival1012 <- glmer(RingedYN ~ 
+                                 scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+                                 scale(NbAliveAge10) +
+                                 scale(MeanLogAdev)+
+                                 scale(MeanLogSdev) +
+                                 scale(HatchingDayAfter0401) +
+                                 scale(PairBroodNb) +
+                                 XPriorResidence +
+                                 CrossFosteredYN +
+                                 (1|PairID) + 
+                                 (1|BreedingYear) +
+                                 (1|BroodRef) +
+                                 (1|NatalBroodID)
+                               , data = MY_TABLE_perChick_All_large[MY_TABLE_perChick_All_large$AliveAge10 == TRUE,]
+                               , family = 'binomial'
+                               , control=glmerControl(optimizer = "bobyqa")
+  )
+  
+  summary(modChickSurvival1012) # cannot converge : only 26 points to explain.
+  
+  table(MY_TABLE_perChick_All_large$RingedYN[MY_TABLE_perChick_All_large$AliveAge10 == TRUE])
+  
+  ## survival from age 6 to age 12
+  table(MY_TABLE_perChick_All_large$RingedYN[MY_TABLE_perChick_All_large$AliveAge6 == TRUE]) # 64 points to explain!
+  
+  modChickSurvival612 <- glmer(RingedYN ~ 
+                                 scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+ # should it also be at age 6?
+                                 scale(NbAliveAge6) +
+                                 scale(MeanLogAdev)+
+                                 scale(MeanLogSdev) +
+                                 scale(HatchingDayAfter0401) +
+                                 scale(PairBroodNb) +
+                                 XPriorResidence +
+                                 CrossFosteredYN +
+                                 (1|PairID) + 
+                                 # (1|BreedingYear) +
+                                 (1|BroodRef) +
+                                 (1|NatalBroodID)
+                               , data = MY_TABLE_perChick_All_large[MY_TABLE_perChick_All_large$AliveAge6 == TRUE,]
+                               , family = 'binomial'
+                               , control=glmerControl(optimizer = "bobyqa")
+  )
+  
+  summary(modChickSurvival612) # failed to converge
+  drop1(modChickSurvival612, test="Chisq") # Likelihood ratio test
+
+  
+  
+  modBroodSurvival_splitAgeCat <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
+                                          scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+                              scale(NbHatched) +
+                              scale(MeanLogAdevAgeCat6)+
+                              scale(MeanLogAdevAgeCat10)+
+                              scale(MeanLogSdevAgeCat6) +
+                              scale(MeanLogSdevAgeCat10) +
+                              scale(HatchingDayAfter0401) +
+                              scale(PairBroodNb) +
+                              XPriorResidence +
+                              MixedBroodYN +
+                              (1|PairID) + 
+                              (1|BreedingYear) +
+                              (1|BroodRef) 
+                            , data = MY_TABLE_perBrood
+                            , family = 'binomial'
+                            , control=glmerControl(optimizer = "bobyqa"))
+  
+  summary(modBroodSurvival_splitAgeCat)  
+  drop1(modBroodSurvival_splitAgeCat, test="Chisq") # LRT
+  dispersion_glmer(modBroodSurvival_splitAgeCat) # 0.8960037
+  
+  
+  
+  
+}
+
 
 
 ###########
@@ -734,7 +811,7 @@ BroodPolygynous$RecordedYN <- BroodPolygynous$BroodRef %in% MY_TABLE_perBrood$Br
 }  
   
   
-}
+} # create PairDivorce
 
 {# male and female divorce in one model - exclude polygynous males
 summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
@@ -771,76 +848,105 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
 
 summary(mod_Divorce) 
 
-{# male and female divorce in one model - include polygynous males with PairDivorce = FALSE
-  MY_TABLE_perBrood_PolygynousDontDivorce <- MY_TABLE_perBrood
-  length(MY_TABLE_perBrood_PolygynousDontDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce) & 
-                                                             !is.na(MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce) &
-                                                             MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce == TRUE & 
-                                                             MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce==FALSE]) # 67
-  
-  MY_TABLE_perBrood_PolygynousDontDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce) &
-                                                      !is.na(MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce) &
-                                                      MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce == TRUE & 
-                                                      MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce==FALSE] <- FALSE
-  
-  summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
-  summary(MY_TABLE_perBrood_PolygynousDontDivorce) 
-  
-  mod_Divorce_PolygynousDontDivorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
-                         scale(MeanLogAdev)	+
-                         scale(MumAge) + scale(DadAge)+
-                         scale(PairBroodNb) +
-                           #scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
-                           scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
-                           scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
-                         scale(NbRinged) +
-                         (1|SocialMumID) + (1|SocialDadID)
-                       + (1|BreedingYear) 
-                       , data = MY_TABLE_perBrood_PolygynousDontDivorce
-                       , family="binomial"
-                       , control=glmerControl(optimizer = "bobyqa"))
-  
-  summary(mod_Divorce_PolygynousDontDivorce) 
-  drop1(mod_Divorce_PolygynousDontDivorce, test = "Chisq")
-  dispersion_glmer(mod_Divorce_PolygynousDontDivorce) # 0.90
+
+{# exploratory analyses requested by reviewer split age cat
+
+mod_Divorce_splitAgeCat <- glmer(PairDivorce~
+                                   scale(MeanLogSdevAgeCat6) + 
+                                   scale(MeanLogAdevAgeCat6)	+
+                                   scale(MeanLogSdevAgeCat10) + 
+                                   scale(MeanLogAdevAgeCat10)	+                                  
+                                   scale(MumAge) + scale(DadAge)+
+                                   scale(PairBroodNb) +
+                                   scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+                                   scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
+                                   scale(NbRinged) +
+                                   MixedBroodYN +
+                                   (1|SocialMumID)  
+                                 #  + (1|SocialDadID)
+                                 # + (1|BreedingYear) 
+                                 , data = MY_TABLE_perBrood
+                                 , family="binomial"
+                                 , control=glmerControl(optimizer = "bobyqa"))
+
+summary(mod_Divorce_splitAgeCat) 
+drop1(mod_Divorce_splitAgeCat, test = "Chisq")
+dispersion_glmer(mod_Divorce_splitAgeCat) 
 }
 
-summary(mod_Divorce_PolygynousDontDivorce) 
+summary(mod_Divorce_splitAgeCat) 
 
-{# male and female divorce in one model - include polygynous males with PairDivorce = FALSE
-  MY_TABLE_perBrood_PolygynousDivorce <- MY_TABLE_perBrood
-  length(MY_TABLE_perBrood_PolygynousDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce) & 
-                                                               !is.na(MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce) &
-                                                           MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce == TRUE & 
-                                                           MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce==FALSE]) # 67
-  
-  MY_TABLE_perBrood_PolygynousDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce) &
-                                                        !is.na(MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce) &
-                                                        MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce == TRUE & 
-                                                        MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce==FALSE] <- TRUE
-  
-  summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
-  summary(MY_TABLE_perBrood_PolygynousDivorce) 
-  
-  mod_Divorce_PolygynousDivorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
-                                               scale(MeanLogAdev)	+
-                                               scale(MumAge) + scale(DadAge)+
-                                               scale(PairBroodNb) +
-                                           # scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
-                                           scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
-                                           scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
-                                               scale(NbRinged) +
-                                               (1|SocialMumID) + (1|SocialDadID)
-                                             + (1|BreedingYear) 
-                                             , data = MY_TABLE_perBrood_PolygynousDivorce
-                                             , family="binomial"
-                                             , control=glmerControl(optimizer = "bobyqa"))
-  
-  summary(mod_Divorce_PolygynousDivorce) 
-  drop1(mod_Divorce_PolygynousDivorce, test = "Chisq")
-  dispersion_glmer(mod_Divorce_PolygynousDivorce) # 0.90
+
+# {# male and female divorce in one model - include polygynous males with PairDivorce = FALSE
+{#   MY_TABLE_perBrood_PolygynousDontDivorce <- MY_TABLE_perBrood
+#   length(MY_TABLE_perBrood_PolygynousDontDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce) & 
+#                                                              !is.na(MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce) &
+#                                                              MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce == TRUE & 
+#                                                              MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce==FALSE]) # 67
+#   
+#   MY_TABLE_perBrood_PolygynousDontDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce) &
+#                                                       !is.na(MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce) &
+#                                                       MY_TABLE_perBrood_PolygynousDontDivorce$MwillDivorce == TRUE & 
+#                                                       MY_TABLE_perBrood_PolygynousDontDivorce$FwillDivorce==FALSE] <- FALSE
+#   
+#   summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
+#   summary(MY_TABLE_perBrood_PolygynousDontDivorce) 
+#   
+#   mod_Divorce_PolygynousDontDivorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
+#                          scale(MeanLogAdev)	+
+#                          scale(MumAge) + scale(DadAge)+
+#                          scale(PairBroodNb) +
+#                            #scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+#                            scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+#                            scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
+#                          scale(NbRinged) +
+#                          (1|SocialMumID) + (1|SocialDadID)
+#                        + (1|BreedingYear) 
+#                        , data = MY_TABLE_perBrood_PolygynousDontDivorce
+#                        , family="binomial"
+#                        , control=glmerControl(optimizer = "bobyqa"))
+#   
+#   summary(mod_Divorce_PolygynousDontDivorce) 
+#   drop1(mod_Divorce_PolygynousDontDivorce, test = "Chisq")
+#   dispersion_glmer(mod_Divorce_PolygynousDontDivorce) # 0.90
+# }
+# 
+# summary(mod_Divorce_PolygynousDontDivorce) 
+# 
+# {# male and female divorce in one model - include polygynous males with PairDivorce = FALSE
+#   MY_TABLE_perBrood_PolygynousDivorce <- MY_TABLE_perBrood
+#   length(MY_TABLE_perBrood_PolygynousDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce) & 
+#                                                                !is.na(MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce) &
+#                                                            MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce == TRUE & 
+#                                                            MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce==FALSE]) # 67
+#   
+#   MY_TABLE_perBrood_PolygynousDivorce$PairDivorce[!is.na(MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce) &
+#                                                         !is.na(MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce) &
+#                                                         MY_TABLE_perBrood_PolygynousDivorce$MwillDivorce == TRUE & 
+#                                                         MY_TABLE_perBrood_PolygynousDivorce$FwillDivorce==FALSE] <- TRUE
+#   
+#   summary(MY_TABLE_perBrood) # polygynous males are part of the cases where PairdDivorce = NA
+#   summary(MY_TABLE_perBrood_PolygynousDivorce) 
+#   
+#   mod_Divorce_PolygynousDivorce <- glmer(PairDivorce~scale(MeanLogSdev) + 
+#                                                scale(MeanLogAdev)	+
+#                                                scale(MumAge) + scale(DadAge)+
+#                                                scale(PairBroodNb) +
+#                                            # scale(MeanMVisit1RateH) +  scale(MeanFVisit1RateH) +
+#                                            scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
+#                                            scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
+#                                                scale(NbRinged) +
+#                                                (1|SocialMumID) + (1|SocialDadID)
+#                                              + (1|BreedingYear) 
+#                                              , data = MY_TABLE_perBrood_PolygynousDivorce
+#                                              , family="binomial"
+#                                              , control=glmerControl(optimizer = "bobyqa"))
+#   
+#   summary(mod_Divorce_PolygynousDivorce) 
+#   drop1(mod_Divorce_PolygynousDivorce, test = "Chisq")
+#   dispersion_glmer(mod_Divorce_PolygynousDivorce) # 0.90
+# }
+# 
+# summary(mod_Divorce_PolygynousDivorce) 
+# 
 }
-
-summary(mod_Divorce_PolygynousDivorce) 
-
-
