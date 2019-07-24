@@ -95,9 +95,7 @@ input_folder <- "R_input"
 sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20170324.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
 tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
-tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T)  ## addedd 20190207, needed to assess chick survival on chick base, corrected 20190718 when removed unhatched eggs !
-
-
+tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T) ## all chicks hatched - to check whetehr MixedBrood
 }
 
   
@@ -228,14 +226,15 @@ MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 969] <- 1
 MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
 
 MY_tblChicks_All <- MY_tblChicks_All[MY_tblChicks_All$BroodRef != "1152" & MY_tblChicks_All$BroodRef != '457' & MY_tblChicks_All$BroodRef != '969',]
-  # since brood ID were deleted for so many chicks where social mother didn't match (Julia.......)
-  # I could correct the broods above (evidence that during visits they were indeed chicks in the nest)
-  # but I do not know which chickID were in those nest...
+# since brood ID were deleted for so many chicks where social mother didn't match (Julia.......)
+# I could correct the broods above (evidence that during visits they were indeed chicks in the nest)
+# but I do not know which chickID were in those nest...
+
 
 BroodMixedYN <- rbind(unique(MY_tblChicks_All[,c("BroodRef", "MixedBroodYN")]),
                              data.frame(BroodRef = c(1152, 457, 969), MixedBroodYN = c(0,1,1)))
 
-}
+} 
  
 }
 
@@ -1327,71 +1326,6 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=ResMassTarsus_perChick_perBrood
 head(MY_TABLE_perChick)
 head(MY_TABLE_perBrood)
 
-{# create MY_TABLE_perChick_All
-  MY_TABLE_perChick_All <- merge(x= MY_tblChicks_All , 
-                             y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
-                                                    "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb", "NbHatched", "XPriorResidence")],
-                             by= "BroodRef", all.x=TRUE ) 
-
-  summary(MY_TABLE_perChick_All[MY_TABLE_perChick_All$LastStage == 3,])
-  MY_TABLE_perChick_All$LastLiveRecord <- as.Date(MY_TABLE_perChick_All$LastLiveRecord)
-  MY_TABLE_perChick_All$DeathDate <- as.Date(MY_TABLE_perChick_All$DeathDate)
-  
-  MY_TABLE_perChick_All$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_TABLE_perChick_All$DeathDate), 
-                                                                         as.POSIXct(MY_TABLE_perChick_All$HatchDate),
-                                                                   units="days")))
-  summary( MY_TABLE_perChick_All$ChickAgeDeath)
-  MY_TABLE_perChick_All[MY_TABLE_perChick_All$ChickAgeDeath <0 & !is.na(MY_TABLE_perChick_All$ChickAgeDeath),]
-  MY_TABLE_perChick_All$DeathDate[ MY_TABLE_perChick_All$BirdID == 2854] <- "2005-07-23"
-  MY_TABLE_perChick_All$ChickAgeDeath[ MY_TABLE_perChick_All$BirdID == 2854] <- 0
-
-  MY_TABLE_perChick_All$AliveAge6 <- MY_TABLE_perChick_All$ChickAgeDeath >6
-  MY_TABLE_perChick_All$AliveAge10 <- MY_TABLE_perChick_All$ChickAgeDeath >10
-  MY_TABLE_perChick_All$AliveAge12 <- MY_TABLE_perChick_All$ChickAgeDeath >12
-  MY_TABLE_perChick_All$AliveAge12[is.na(MY_TABLE_perChick_All$ChickAgeDeath) & MY_TABLE_perChick_All$LastStage == 3] <- TRUE
-  
-  summary( MY_TABLE_perChick_All$ChickAgeDeath[MY_TABLE_perChick_All$LastStage < 3])
-  summary( MY_TABLE_perChick_All$ChickAgeDeath[MY_TABLE_perChick_All$LastStage == 2])
-  summary( MY_TABLE_perChick_All$ChickAgeDeath[MY_TABLE_perChick_All$LastStage == 3])
-  
-  
-  table(MY_TABLE_perChick_All$AliveAge6)
-  table(MY_TABLE_perChick_All$AliveAge10) 
-  table(MY_TABLE_perChick_All$AliveAge12) 
-  table(MY_TABLE_perChick_All$AliveAge12)
-  MY_TABLE_perChick_All[is.na(MY_TABLE_perChick_All$AliveAge12),]
-  table(MY_TABLE_perChick_All$RingedYN)
-  table(MY_TABLE_perChick_All$ChickAgeDeath)
-  nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$AliveAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == 1,])
-  table(MY_TABLE_perChick_All$AliveAge10[MY_TABLE_perChick_All$RingedYN == 1])
-  MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == 1 & MY_TABLE_perChick_All$AliveAge10 == FALSE,]# ....
-  MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == 1 & MY_TABLE_perChick_All$AliveAge12 == FALSE,]
-  
-  BroodSizeAgex <- MY_TABLE_perChick_All %>% group_by (BroodRef) %>% summarise(NbAliveAge6 = sum(as.numeric(AliveAge6), na.rm=TRUE),
-                                                                                     NbAliveAge10 = sum(as.numeric(AliveAge10), na.rm=TRUE),
-                                                                               NbAliveAge12 = sum(as.numeric(AliveAge12), na.rm=TRUE))
-  
-  MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All, BroodSizeAgex, by = 'BroodRef', all.x = TRUE)
-  
-  
-  MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,BroodSizeAgex, by = 'BroodRef', all.x = TRUE)
-  summary(MY_TABLE_perBrood$NbAliveAge12)
-  MY_TABLE_perBrood[is.na(MY_TABLE_perBrood$NbAliveAge12),]
-  MY_TABLE_perBrood$NbAliveAge12[MY_TABLE_perBrood$BroodRef == 457] <- 1
-  MY_TABLE_perBrood$NbAliveAge12[MY_TABLE_perBrood$BroodRef == 969] <- 1
-  MY_TABLE_perBrood$NbAliveAge12[MY_TABLE_perBrood$BroodRef == 1152] <- 1
-  
-  
-  MY_TABLE_perChick_All$WeightedAge12 <- MY_TABLE_perChick_All$BirdID %in% MY_TABLE_perChick$ChickID
-  table( MY_TABLE_perChick_All$WeightedAge12)
-  MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$RingedYN == 0,]
-  MY_TABLE_perChick[MY_TABLE_perChick$RearingBrood == 1248,]
-  
-  
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      }
-
-head(MY_TABLE_perChick_All)
-head(MY_TABLE_perBrood)
 
 ### the deviation from randomness modeled in first paper, with a poisson model is essentially:
 ### log (A) - log (Asim) = log (A/Asim)
@@ -1421,10 +1355,7 @@ head(MY_TABLE_perBrood)
   head(MY_TABLE_perChick)
   MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by.x="RearingBrood", by.y="BroodRef")
   
-  head(MY_TABLE_perChick_All)
-  MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by="BroodRef")
-  
-  
+ 
 # reviewer's request: have this measurement per age cat
  
   
@@ -1460,11 +1391,6 @@ head(MY_TABLE_perBrood)
                             ,by.x="RearingBrood", by.y="BroodRef",
                         all.x = TRUE)
  
- head(MY_TABLE_perChick_All)
- MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,
-                                MY_TABLE_perBrood[,c("BroodRef",'MeanLogAdevAgeCat6', 'MeanLogSdevAgeCat6','MeanLogAdevAgeCat10', 'MeanLogSdevAgeCat10','MeanTotalProRateAgeCat6','MeanTotalProRateAgeCat10')]
-                                ,by="BroodRef",  all.x = TRUE)
- 
  
  
 }
@@ -1472,7 +1398,7 @@ head(MY_TABLE_perBrood)
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood) 
 head(MY_TABLE_perChick)
-head(MY_TABLE_perChick_All)
+
 
 
  output_folder <- "R_Selected&RandomizedData"
@@ -1518,6 +1444,7 @@ head(MY_TABLE_perChick_All)
 # 20190722 add MeanTotalProRate per age cat
 # 20190723 add ChickAgeDeath
 # 20190723 add AliveAge12
+# 20190724 delete ChickAgeDeath and AliveAge12
 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
@@ -1556,6 +1483,7 @@ head(MY_TABLE_perChick_All)
  # 20190719 add MixedBrood
  # 20190722 add MeanTotalProRate per age cat
  # 20190723 ass AliveDay12
+ # 20190724 delete file to get back to doing survival analysis on brood level rather than chick level
  
  
 # 20190715
