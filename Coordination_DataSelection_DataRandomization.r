@@ -1354,44 +1354,6 @@ head(MY_TABLE_perBrood)
   
   head(MY_TABLE_perChick)
   MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by.x="RearingBrood", by.y="BroodRef")
-  
- 
-# reviewer's request: have this measurement per age cat
- 
-  
- DatCat <- data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef,ChickAgeCat),
-                        MeanLogAdevAgeCat = mean(LogAdev), 
-                        MeanLogSdevAgeCat = mean(LogSdev),
-                        MeanTotalProRateAgeCat = mean(TotalProRate),
-                     nMeanperagecat = n()))
- 
- nrow(DatCat[DatCat$nMeanperagecat > 1,])/ nrow(DatCat)
- 
- DatCat6 <- DatCat[DatCat$ChickAgeCat == "Age06", c('BroodRef','MeanLogAdevAgeCat','MeanLogSdevAgeCat','MeanTotalProRateAgeCat')]
- DatCat10 <- DatCat[DatCat$ChickAgeCat == "Age10", c('BroodRef','MeanLogAdevAgeCat','MeanLogSdevAgeCat','MeanTotalProRateAgeCat')]
- 
- colnames(DatCat6) <- c('BroodRef','MeanLogAdevAgeCat6','MeanLogSdevAgeCat6','MeanTotalProRateAgeCat6')
- colnames(DatCat10) <- c('BroodRef','MeanLogAdevAgeCat10','MeanLogSdevAgeCat10','MeanTotalProRateAgeCat10')
- 
- head(DatCat6)
- head(DatCat10)
- 
-
- MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
-                            DatCat6, by='BroodRef', all.x = TRUE)
- 
- 
- MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
-                            DatCat10, by='BroodRef', all.x = TRUE) 
- 
- 
- head(MY_TABLE_perChick)
- MY_TABLE_perChick <- merge(MY_TABLE_perChick,
-                            MY_TABLE_perBrood[,c("BroodRef",'MeanLogAdevAgeCat6', 'MeanLogSdevAgeCat6','MeanLogAdevAgeCat10', 'MeanLogSdevAgeCat10','MeanTotalProRateAgeCat6','MeanTotalProRateAgeCat10')]
-                            ,by.x="RearingBrood", by.y="BroodRef",
-                        all.x = TRUE)
- 
- 
  
 }
 
@@ -1424,7 +1386,7 @@ head(MY_TABLE_perChick)
 # 20190718 add DVDdate
 # 20190719 add MixedBrood
  
-# write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
+ write.csv(MY_TABLE_perBrood, file = paste(output_folder,"R_MY_TABLE_perBrood.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170201 changed AlternationValue to NbAlternation and AMax to NbAMax and Adev to the difference between NbAlternation and NbAlternation from the simulation (id. for S)
 # 20170203 replace ratioRingedHatched by Nb Hatched (to have cbind(Ringed,Hatched))
@@ -1445,8 +1407,9 @@ head(MY_TABLE_perChick)
 # 20190723 add ChickAgeDeath
 # 20190723 add AliveAge12
 # 20190724 delete ChickAgeDeath and AliveAge12
+# 20190724 delete MeanTotalProRate and MeanCoordination per age cat
 
-# write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
+ write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170208 after rerunning data extraction (should be the same)
 # 20170214 add MeanAsim 
@@ -1459,6 +1422,8 @@ head(MY_TABLE_perChick)
 # 20190717 with XPriorResidence   
 # 20190719 add MixedBrood 
 # 20190722 add MeanTotalProRate per age cat
+# 20190724 delete MeanTotalProRate and MeanCoordination per age cat
+ 
  
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
 # 20170321 the raw data of the DVDs where both parents are known

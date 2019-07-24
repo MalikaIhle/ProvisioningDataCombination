@@ -41,6 +41,7 @@ options(scipen=999) # remove scientific notation e-
 SelectedData_folder <- "R_Selected&RandomizedData"
 
 MY_TABLE_perDVD <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_perDVD.csv", sep="/")) # summary stats for all analyzed videos where both parents known and with expected alternation from simulation
+  # asked by reviewers
   # nrow(MY_TABLE_perDVD[MY_TABLE_perDVD$S == 0,])/nrow(MY_TABLE_perDVD)*100 #3%
 #MY_TABLE_perDVD <- read.csv(paste(SelectedData_folder,"R_MY_TABLE_perDVD_S05.csv", sep="/")) 
   # nrow(MY_TABLE_perDVD[MY_TABLE_perDVD$S == 0,])/nrow(MY_TABLE_perDVD)*100 #17%
@@ -53,20 +54,13 @@ MY_TABLE_perDVD <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_perDVD
   # summary(MY_TABLE_perDVD$S)
 
 MY_TABLE_perBrood <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perBrood.csv", sep="/")) # only recorded brood (summarizing MY_TABLE_perDVD per brood)
-MY_TABLE_perChick <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
-MY_TABLE_perChick_All <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/"))
 
-#MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == 1 & !MY_TABLE_perChick_All$BirdID %in% MY_TABLE_perChick$ChickID,]
+  # asked by reviewer
+  # DVDoutlierInNestDur <- read.table("R_input/R_DVDoutlierInNestDur.txt", header=TRUE)
+  # MY_TABLE_perDVD1000 <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"))
+  # cor.test(MY_TABLE_perDVD1000$MedAsimWithin,MY_TABLE_perDVD$A)
+  # cor.test(MY_TABLE_perDVD1000$MedSsimWithin,MY_TABLE_perDVD$S)
 
-# asked by reviewer
-DVDoutlierInNestDur <- read.table("R_input/R_DVDoutlierInNestDur.txt", header=TRUE)
-MY_TABLE_perDVD1000 <- read.csv(paste(here(), SelectedData_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"))
-cor.test(MY_TABLE_perDVD1000$MedAsimWithin,MY_TABLE_perDVD$A)
-cor.test(MY_TABLE_perDVD1000$MedSsimWithin,MY_TABLE_perDVD$S)
-
-nrow(MY_TABLE_perChick_All) # 3155
-summary(MY_TABLE_perChick_All$LastLiveRecord)
-head(MY_TABLE_perChick_All[is.na(MY_TABLE_perChick_All$LastLiveRecord),],50)
 
 
 }
@@ -74,7 +68,6 @@ head(MY_TABLE_perChick_All[is.na(MY_TABLE_perChick_All$LastLiveRecord),],50)
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
 head(MY_TABLE_perChick) # this only includes chicks that reached d12 (to analyse chick mass)
-head(MY_TABLE_perChick_All) # this includes all chicks, to analyse chick survival
 
 
 
@@ -511,27 +504,7 @@ summary(modS)
   dispersion_glmer(modBroodSurvival) # 0.9524648
                               
 
-  modChickSurvival <- glmer(RingedYN ~ 
-                              scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-                              scale(NbHatched) +
-                              scale(MeanLogAdev)+
-                              scale(MeanLogSdev) +
-                              scale(HatchingDayAfter0401) +
-                              scale(PairBroodNb) +
-                              XPriorResidence +
-                            #  CrossFosteredYN +
-                             (1|PairID) + 
-                              (1|BreedingYear) +
-                            #  (1|BroodRef) +
-                              (1|NatalBroodID)
-                            , data = MY_TABLE_perChick_All
-                            , family = 'binomial'
-                            , control=glmerControl(optimizer = "bobyqa")
-                            )
-
-  summary(modChickSurvival)
-  drop1(modChickSurvival, test="Chisq") # LRT
-  dispersion_glmer(modChickSurvival) # 1.091
+ 
   
   effects_ChickSurvival <- as.data.frame(cbind(est=invlogit(summary(modChickSurvival)$coeff[,1]),
                                        CIhigh=invlogit(summary(modChickSurvival)$coeff[,1]+summary(modChickSurvival)$coeff[,2]*1.96),
@@ -542,7 +515,7 @@ summary(modS)
   effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
   effects_ChickSurvival <- effects_ChickSurvival*100
   effects_ChickSurvival
-  nrow(MY_TABLE_perChick_All)
+
 
   
   #odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
@@ -550,7 +523,7 @@ summary(modS)
     # scale(MeanLogAdev) 0.887212 0.8078357 0.9739039
     # scale(MeanLogSdev) 1.045825 0.9515988 1.1499816
   
-  table(MY_TABLE_perChick_All$RingedYN)
+
   
  
 
@@ -602,84 +575,6 @@ summary(modS)
 summary(modChickSurvival) 
 
 
-{# expo analyses requested by reviewer: per chick stage
-  table(MY_TABLE_perChick_All_large$AliveAge6)
-  table(MY_TABLE_perChick_All_large$Ringed)
-  
-  ## survival from age 6 to age 10
-  table(MY_TABLE_perChick_All_large$AliveAge10[MY_TABLE_perChick_All_large$AliveAge6 == TRUE]) # 82 points to explain!
-  
-  modChickSurvival610 <- glmer(as.numeric(AliveAge10) ~ 
-                              scale(MeanTotalProRateAgeCat6)+ I(scale(MeanTotalProRateAgeCat6)^2)+ # should it also be at age 6?
-                              scale(NbAliveAge6) +
-                              scale(MeanLogAdevAgeCat6)+
-                              scale(MeanLogSdevAgeCat6) +
-                              scale(HatchingDayAfter0401) +
-                              scale(PairBroodNb) +
-                              XPriorResidence +
-                              CrossFosteredYN +
-                              (1|PairID) + 
-                             # (1|BreedingYear) +
-                                (1|BroodRef) +
-                              (1|NatalBroodID)
-                            , data = MY_TABLE_perChick_All_large[MY_TABLE_perChick_All_large$AliveAge6 == TRUE,]
-                            , family = 'binomial'
-                            , control=glmerControl(optimizer = "bobyqa")
-  )
-  
-  summary(modChickSurvival610) # failed to converge
-  drop1(modChickSurvival610, test="Chisq") # Likelihood ratio test
-  dispersion_glmer(modChickSurvival610) # from package blmeco
-  
-  
-  ## survival from age 10 to age 12 (ringing)
-  
-  
-  modChickSurvival1012 <- glmer(RingedYN ~ 
-                                 scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-                                 scale(NbAliveAge10) +
-                                 scale(MeanLogAdev)+
-                                 scale(MeanLogSdev) +
-                                 scale(HatchingDayAfter0401) +
-                                 scale(PairBroodNb) +
-                                 XPriorResidence +
-                                 CrossFosteredYN +
-                                 (1|PairID) + 
-                                 (1|BreedingYear) +
-                                 (1|BroodRef) +
-                                 (1|NatalBroodID)
-                               , data = MY_TABLE_perChick_All_large[MY_TABLE_perChick_All_large$AliveAge10 == TRUE,]
-                               , family = 'binomial'
-                               , control=glmerControl(optimizer = "bobyqa")
-  )
-  
-  summary(modChickSurvival1012) # cannot converge : only 26 points to explain.
-  
-  table(MY_TABLE_perChick_All_large$RingedYN[MY_TABLE_perChick_All_large$AliveAge10 == TRUE])
-  
-  ## survival from age 6 to age 12
-  table(MY_TABLE_perChick_All_large$RingedYN[MY_TABLE_perChick_All_large$AliveAge6 == TRUE]) # 64 points to explain!
-  
-  modChickSurvival612 <- glmer(RingedYN ~ 
-                                 scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+ # should it also be at age 6?
-                                 scale(NbAliveAge6) +
-                                 scale(MeanLogAdev)+
-                                 scale(MeanLogSdev) +
-                                 scale(HatchingDayAfter0401) +
-                                 scale(PairBroodNb) +
-                                 XPriorResidence +
-                                 CrossFosteredYN +
-                                 (1|PairID) + 
-                                 # (1|BreedingYear) +
-                                 (1|BroodRef) +
-                                 (1|NatalBroodID)
-                               , data = MY_TABLE_perChick_All_large[MY_TABLE_perChick_All_large$AliveAge6 == TRUE,]
-                               , family = 'binomial'
-                               , control=glmerControl(optimizer = "bobyqa")
-  )
-  
-  summary(modChickSurvival612) # failed to converge
-  drop1(modChickSurvival612, test="Chisq") # Likelihood ratio test
 
   
   
@@ -707,8 +602,7 @@ summary(modChickSurvival)
   
   
   
-  
-}
+
 
 
 
