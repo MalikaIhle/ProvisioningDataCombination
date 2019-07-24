@@ -57,29 +57,42 @@ source(paste(here(),'Coordination_DataAnalyses.R', sep='/'))
 ```{r}
 summary(modChickSurvival) 
 drop1(modChickSurvival, test="Chisq") # Likelihood ratio test
-dispersion_glmer(modChickSurvival) # from package blmeco
 ```
 
 
-## Divorce correlates
+### Divorce correlates
 
 They are 37 polygynous males, for which a total of 67 brood the male divorce (breed with another female), while the female does not (her next brood will be with the same male again).
-In the first model, the dependent variable 'PairDivorce' is NA (those broods are excluded), in the second, PairDivorce is set to FALSE (female perspective), and in the third model, PairDivorce is set to TRUE (male perspective).
+For these cases, the dependent variable 'PairDivorce' is NA (i.e. those broods were excluded).
 
 ```{r}
 summary(mod_Divorce) 
 drop1(mod_Divorce, test = "Chisq")
-dispersion_glmer(mod_Divorce)
-
-summary(mod_Divorce_PolygynousDontDivorce) 
-drop1(mod_Divorce_PolygynousDontDivorce, test = "Chisq")
-dispersion_glmer(mod_Divorce_PolygynousDontDivorce)
-
-summary(mod_Divorce_PolygynousDivorce) 
-drop1(mod_Divorce_PolygynousDivorce, test = "Chisq")
-dispersion_glmer(mod_Divorce_PolygynousDivorce)
-
 ```
+
+
+## Fitness correlates: exploratory analyses requested by reviewer
+
+### Chick Survival from age 6 to age 10 explained by coordination at age 6
+
+```{r}
+summary(modChickSurvival610)
+drop1(modChickSurvival610, test="Chisq") # Likelihood ratio test
+dispersion_glmer(modChickSurvival610) # from package blmeco
+```
+
+
+### Divorce as a function of coordination at different chick age
+
+```{r}
+summary(modChickSurvival610)
+drop1(modChickSurvival610, test="Chisq") # Likelihood ratio test
+```
+
+
+
+
+
 
 
 
