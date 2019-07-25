@@ -228,14 +228,17 @@ MY_tblBroods[MY_tblBroods$BroodRef==969,] # could have 2 hatchling and 1 ringed 
 MY_tblBroods$NbRinged[MY_tblBroods$BroodRef == 969] <- 1
 MY_tblBroods$NbHatched[MY_tblBroods$BroodRef == 969] <- 2
 
-MY_tblChicks_All <- MY_tblChicks_All[MY_tblChicks_All$BroodRef != "1152" & MY_tblChicks_All$BroodRef != '457' & MY_tblChicks_All$BroodRef != '969',]
+MY_tblChicks_All <- MY_tblChicks_All[MY_tblChicks_All$BroodRef != "1152" #& MY_tblChicks_All$BroodRef != '457' 
+                                     & MY_tblChicks_All$BroodRef != '969',]
 # since brood ID were deleted for so many chicks where social mother didn't match (Julia.......)
 # I could correct the broods above (evidence that during visits they were indeed chicks in the nest)
 # but I do not know which chickID were in those nest...
 
 
 BroodMixedYN <- rbind(unique(MY_tblChicks_All[,c("BroodRef", "MixedBroodYN")]),
-                             data.frame(BroodRef = c(1152, 457, 969), MixedBroodYN = c(0,1,1)))
+                             data.frame(BroodRef = c(1152, #457, 
+                                                     969), MixedBroodYN = c(0,#1,
+                                                                            1)))
 
 } 
  
@@ -398,7 +401,7 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
 }
  
   
-## chick death  
+{## chick death  
   MY_tblChicks_All$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_tblChicks_All$DeathDate), 
                                                            as.POSIXct(MY_tblChicks_All$HatchDate),
                                                            units="days")))
@@ -416,12 +419,13 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
   summary(MY_tblChicks_All$SeenAfter12 )
   table(MY_tblChicks_All$WeightedAge12)
   table(MY_tblChicks_All$WeightedAge5)
-  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #145 which of course are alive - leave them excluded not to inflate survival analysis?
-  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == TRUE & MY_tblChicks_All$RingedYN == FALSE,]) # 25
+  table(MY_tblChicks_All$RingedYN)
+  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #146 which of course are alive - leave them excluded not to inflate survival analysis?
+  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == TRUE & MY_tblChicks_All$RingedYN == FALSE,]) # 26
   nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == FALSE & MY_tblChicks_All$RingedYN == TRUE,]) # 64
   table(MY_tblChicks_All$WeightedAge12[MY_tblChicks_All$WeightedAge5 == TRUE])
   table(MY_tblChicks_All$RingedYN[MY_tblChicks_All$WeightedAge5 == TRUE])
-  
+}  
 
 }
 
@@ -1424,8 +1428,9 @@ MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,
                                MY_TABLE_perBrood[,c("BroodRef",'MeanLogAdevAgeCat6', 'MeanLogSdevAgeCat6','MeanLogAdevAgeCat10', 'MeanLogSdevAgeCat10','MeanTotalProRateAgeCat6','MeanTotalProRateAgeCat10','MeanBroodSizeAgeCat6','MeanBroodSizeAgeCat10')]
                                ,by="BroodRef",
                                all.x = TRUE)
-  
-    }
+
+ 
+}
 
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood) 
