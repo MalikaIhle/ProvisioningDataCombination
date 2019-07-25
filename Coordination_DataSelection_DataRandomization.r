@@ -12,7 +12,7 @@
 # MY_tblBrood Mass and tarsus info: the last measurement, at d12, when ringed. nMass, nTarsus, NbRinged should in principle be equal: maybe should consider small difference of age, i.e. include all brood or a standardized subsets
 # MY_TABLE_perDVD has one line per file
 # MY_TABLE_perBrood has one line per brood, averaging the summary accross files
-}
+} 
 
 rm(list = ls(all = TRUE))
 
@@ -94,8 +94,11 @@ MY_tblBroods <- read.csv(paste(ExtractedData_folder,"R_MY_tblBroods.csv", sep="/
 input_folder <- "R_input"
 sys_LastSeenAlive <- read.table(file= paste(input_folder,"sys_LastSeenAlive_20170324.txt", sep="/"), sep='\t', header=T)	## !!! to update when new pedigree !!! (and other corrections potentially)
 FedBroods <-  read.table(file= paste(input_folder,"FedBroods.txt", sep="/"), sep='\t', header=T)  ## from Ian Cleasby 20160531
-tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data
+tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), sep='\t', header=T)  ## to update if consider new year of data # contains chick measured at day 12
 tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T) ## all chicks hatched - to check whetehr MixedBrood
+tblChicksd5 <-  read.table(file= paste(input_folder,"R_tblChicks_d5.txt", sep="/"), sep='\t', header=T)  ## contains chicks measured at day 5
+
+
 }
 
   
@@ -394,6 +397,31 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
   summary(MY_TABLE_perDVD$S/(MY_TABLE_perDVD$EffectiveTime)*60)
 }
  
+  
+## chick death  
+  MY_tblChicks_All$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_tblChicks_All$DeathDate), 
+                                                           as.POSIXct(MY_tblChicks_All$HatchDate),
+                                                           units="days")))
+  MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$ChickAgeDeath <0 & !is.na(MY_tblChicks_All$ChickAgeDeath)] <- 0 # 3 cases
+  MY_tblChicks_All$Date12 <- as.Date(MY_tblChicks_All$HatchDate)+12
+  MY_tblChicks_All$SeenAfter12 <- (as.Date(MY_tblChicks_All$LastLiveRecord) > as.Date(MY_tblChicks_All$Date12)) & (is.na(MY_tblChicks_All$ChickAgeDeath) | MY_tblChicks_All$ChickAgeDeath >12)
+  MY_tblChicks_All$WeightedAge12 <- MY_tblChicks_All$BirdID %in% tblChicks$ChickID # chicks weighted day 12
+  MY_tblChicks_All$WeightedAge5 <- MY_tblChicks_All$BirdID %in% tblChicksd5$ChickID
+  
+  
+  
+  summary(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]) # criteria last stage to remove NAs post fledging
+  as.data.frame(table(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]))
+  summary(as.Date(MY_tblChicks_All$LastLiveRecord))
+  summary(MY_tblChicks_All$SeenAfter12 )
+  table(MY_tblChicks_All$WeightedAge12)
+  table(MY_tblChicks_All$WeightedAge5)
+  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #145 which of course are alive - leave them excluded not to inflate survival analysis?
+  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == TRUE & MY_tblChicks_All$RingedYN == FALSE,]) # 25
+  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == FALSE & MY_tblChicks_All$RingedYN == TRUE,]) # 64
+  table(MY_tblChicks_All$WeightedAge12[MY_tblChicks_All$WeightedAge5 == TRUE])
+  table(MY_tblChicks_All$RingedYN[MY_tblChicks_All$WeightedAge5 == TRUE])
+  
 
 }
 
@@ -1321,9 +1349,17 @@ MY_TABLE_perBrood <- merge(x=MY_TABLE_perBrood,y=ResMassTarsus_perChick_perBrood
 
 }
 
+
+
+MY_TABLE_perChick_All <- merge(x= MY_tblChicks_All , 
+                               y=MY_TABLE_perBrood[,c("BroodRef", "NbRinged","MeanA","MeanAdev","MeanAsim","MeanTotalProRate","MeanS","MeanSdev","MeanSsim",
+                                                      "SocialMumID","SocialDadID","PairID","BreedingYear","HatchingDayAfter0401", "PairBroodNb", "NbHatched", "XPriorResidence")],
+                               by= "BroodRef", all.x=TRUE ) 
+
 }
 
 head(MY_TABLE_perChick)
+head(MY_TABLE_perChick_All)
 head(MY_TABLE_perBrood)
 
 
@@ -1355,12 +1391,46 @@ head(MY_TABLE_perBrood)
   head(MY_TABLE_perChick)
   MY_TABLE_perChick <- merge(MY_TABLE_perChick,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by.x="RearingBrood", by.y="BroodRef")
  
-}
+  MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,MY_TABLE_perBrood[,c("BroodRef","MeanLogAdev","MeanLogSdev")],by="BroodRef")
+  
+  # reviewer's request: have this measurement per age cat
+   DatCat <- data.frame(summarise (group_by(MY_TABLE_perDVD, BroodRef,ChickAgeCat),
+                                  MeanLogAdevAgeCat = mean(LogAdev), 
+                                   MeanLogSdevAgeCat = mean(LogSdev),
+                                  MeanTotalProRateAgeCat = mean(TotalProRate),
+                                  MeanBroodSizeAgeCat = mean(DVDInfoChickNb),
+                                  nMeanperagecat = n()))
+ 
+  nrow(DatCat[DatCat$nMeanperagecat > 1,])/ nrow(DatCat)
+  
+  
+  DatCat6 <- DatCat[DatCat$ChickAgeCat == "Age06", c('BroodRef','MeanLogAdevAgeCat','MeanLogSdevAgeCat','MeanTotalProRateAgeCat','MeanBroodSizeAgeCat')]
+  DatCat10 <- DatCat[DatCat$ChickAgeCat == "Age10", c('BroodRef','MeanLogAdevAgeCat','MeanLogSdevAgeCat','MeanTotalProRateAgeCat','MeanBroodSizeAgeCat')]
+  colnames(DatCat6) <- c('BroodRef','MeanLogAdevAgeCat6','MeanLogSdevAgeCat6','MeanTotalProRateAgeCat6','MeanBroodSizeAgeCat6')
+  colnames(DatCat10) <- c('BroodRef','MeanLogAdevAgeCat10','MeanLogSdevAgeCat10','MeanTotalProRateAgeCat10','MeanBroodSizeAgeCat10')
+  
+  head(DatCat6)
+  head(DatCat10)
+  
+  MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
+                           DatCat6, by='BroodRef', all.x = TRUE)
+ 
+  MY_TABLE_perBrood <- merge(MY_TABLE_perBrood,
+                            DatCat10, by='BroodRef', all.x = TRUE) 
+  
+
+head(MY_TABLE_perChick_All)
+MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,
+                               MY_TABLE_perBrood[,c("BroodRef",'MeanLogAdevAgeCat6', 'MeanLogSdevAgeCat6','MeanLogAdevAgeCat10', 'MeanLogSdevAgeCat10','MeanTotalProRateAgeCat6','MeanTotalProRateAgeCat10','MeanBroodSizeAgeCat6','MeanBroodSizeAgeCat10')]
+                               ,by="BroodRef",
+                               all.x = TRUE)
+  
+    }
 
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood) 
 head(MY_TABLE_perChick)
-
+head(MY_TABLE_perChick_All)
 
 
 ### understand why Male and Female divorce are not matching for both partners
@@ -1509,7 +1579,8 @@ head(MY_TABLE_perBrood)  # polygynous males are part of the cases where PairdDiv
 # 20190724 delete ChickAgeDeath and AliveAge12
 # 20190724 delete MeanTotalProRate and MeanCoordination per age cat
 # 20190724 create pair divorce in this file rather than analysis file to write csv to share with paper
-
+# 20190725 readded por rate and coordination per age cat and added weighted day 5 for suvival analysis on chick basis after cross fostering
+ 
 # write.csv(MY_TABLE_perChick, file = paste(output_folder,"R_MY_TABLE_perChick.csv", sep="/"), row.names = FALSE) 
 # 20161221
 # 20170208 after rerunning data extraction (should be the same)
@@ -1524,7 +1595,7 @@ head(MY_TABLE_perBrood)  # polygynous males are part of the cases where PairdDiv
 # 20190719 add MixedBrood 
 # 20190722 add MeanTotalProRate per age cat
 # 20190724 delete MeanTotalProRate and MeanCoordination per age cat
- 
+
  
 # write.csv(RawInterfeeds, file = paste(output_folder,"R_RawInterfeeds.csv", sep="/"), row.names = FALSE) 
 # 20170321 the raw data of the DVDs where both parents are known
@@ -1537,7 +1608,7 @@ head(MY_TABLE_perBrood)  # polygynous males are part of the cases where PairdDiv
 
  
  
-# write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
+ # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) 
  # 20190207 needed all chicks even those who don't reach fledgling, to assess chick survival on chick base rather than brood base 
  # (to include natal brood ID for each chick since its different for each)
  # in this script we remove chicks from brood that were not recorded for provisioning rate
@@ -1550,10 +1621,12 @@ head(MY_TABLE_perBrood)  # polygynous males are part of the cases where PairdDiv
  # 20190722 add MeanTotalProRate per age cat
  # 20190723 ass AliveDay12
  # 20190724 delete file to get back to doing survival analysis on brood level rather than chick level
- 
+ # 20190725 readded por rate and coordination per age cat and added weighted day 5 for suvival analysis on chick basis after cross fostering
  
 # 20190715
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
 # write.csv(MY_TABLE_perDVD1000, file = paste(output_folder,"R_MY_TABLE_perDVD1000.csv", sep="/"), row.names = FALSE) # to compare median A and S for 100 and 1000 sim
 # write.csv(MY_TABLE_perChick_All, file = paste(output_folder,"R_MY_TABLE_perChick_All.csv", sep="/"), row.names = FALSE) # add CrossFosteredYN 
+ 
+
  
