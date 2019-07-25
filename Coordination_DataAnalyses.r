@@ -62,11 +62,13 @@ MY_TABLE_perBrood <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perBr
   # cor.test(MY_TABLE_perDVD1000$MedSsimWithin,MY_TABLE_perDVD$S)
 
 
+MY_TABLE_perChick_All <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick_All.csv", sep="/")) 
 
 }
 
 head(MY_TABLE_perDVD)
 head(MY_TABLE_perBrood)
+head(MY_TABLE_perChick_All)
 
 
 {# create MY_TABLE_perDVD_long, with the column A and S having observed values in first half, and sim values in second half
@@ -481,7 +483,7 @@ summary(modS)
 {#### ChickSurvival ~ Alternation + Synchrony, brood
   
   
-  ChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
+  modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
                               scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
                               scale(NbHatched) +
                               scale(MeanLogAdev)+
@@ -492,14 +494,14 @@ summary(modS)
                               MixedBroodYN +
                              # (1|PairID) + 
                               (1|BreedingYear) 
-                              # +(1|BroodRef) 
+                             #  +(1|BroodRef) 
                             , data = MY_TABLE_perBrood
                             , family = 'binomial'
                             , control=glmerControl(optimizer = "bobyqa"))
   
-  summary(ChickSurvival)  
-  drop1(ChickSurvival, test="Chisq") # LRT
-  dispersion_glmer(ChickSurvival) # 0.9524648
+  summary(modChickSurvival)  
+  drop1(modChickSurvival, test="Chisq") # LRT
+  dispersion_glmer(modChickSurvival) # 0.9524648
                               
 
  
@@ -526,14 +528,14 @@ summary(modS)
  
 
   # plot(RingedYN ~ MeanTotalProRate,
-  #      data = MY_TABLE_perBrood,
+  #      data = MY_TABLE_perChick_All,
   #      xlab="Average total provisioning rate per hour",
   #      ylab="Survival likelihood",
   #      pch=19)
   # 
   # curve(predict(glm(RingedYN ~
   #                     poly(MeanTotalProRate,2),
-  #                   data=MY_TABLE_perBrood,
+  #                   data=MY_TABLE_perChick_All,
   #                   family = binomial(link="logit")),
   #               data.frame(MeanTotalProRate=x),type="response"),
   #       lty=1, lwd=2, col="blue",
@@ -542,7 +544,7 @@ summary(modS)
 
   
   ### get PR range on transformed data
-  PR <- MY_TABLE_perBrood$MeanTotalProRate
+  PR <- MY_TABLE_perChick_All$MeanTotalProRate
   transformed_PR_range <- (range(PR) - mean(PR))/sd(PR)
   
   ### create data along that range
@@ -561,7 +563,7 @@ summary(modS)
   
   ### plot line
   plot(jitter(RingedYN, factor=0.1) ~ MeanTotalProRate,
-       data = MY_TABLE_perBrood,
+       data = MY_TABLE_perChick_All,
        xlab="Mean total provisioning rate per hour",
        ylab="Offspring survival likelihood",
        pch=21,  col=alpha('black', 0.4))
@@ -571,6 +573,102 @@ summary(modS)
 }
 
 summary(modChickSurvival) 
+
+{# per chick age category
+
+  ## 5 to ringed with Coordination at day 6
+modChickSurvival5toRinged <- glmer(RingedYN ~ 
+                           scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+                              scale(NbHatched) +
+                              scale(MeanLogAdevAgeCat6)+
+                               scale(MeanLogSdevAgeCat6) +
+                            scale(HatchingDayAfter0401) +
+                            scale(PairBroodNb) +
+                           XPriorResidence +
+                           CrossFosteredYN +
+                          (1|PairID) + 
+                            (1|BreedingYear) +
+                            (1|BroodRef) +
+                          (1|NatalBroodID)
+                          , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
+                           , family = 'binomial'
+                          , control=glmerControl(optimizer = "bobyqa")
+                          
+)
+  
+  summary(modChickSurvival5toRinged)
+  #drop1(modChickSurvival5toRinged, test="Chisq") # LRT
+
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+
+
+table(MY_TABLE_perChick_All$WeightedAge5)
+table(MY_TABLE_perChick_All$WeightedAge12)
+table(MY_TABLE_perChick_All$RingedYN)
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
+
+length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE & 
+                                               is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) & 
+                                               !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
+  
+
+
+
+## 5 to ringed with average Coordination
+
+modChickSurvival5toRingedAverageCoordination <- glmer(RingedYN ~ 
+                                     scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+                                     scale(NbHatched) + # should be BS at day 5
+                                     scale(MeanLogAdev)+
+                                     scale(MeanLogSdev) +
+                                     scale(HatchingDayAfter0401) +
+                                     scale(PairBroodNb) +
+                                     XPriorResidence +
+                                     CrossFosteredYN +
+                                     (1|PairID) + 
+                                   #  (1|BreedingYear) +
+                                    # (1|BroodRef) +
+                                     (1|NatalBroodID)
+                                   , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
+                                   , family = 'binomial'
+                                   , control=glmerControl(optimizer = "bobyqa")
+                                   
+)
+
+
+summary(modChickSurvival5toRingedAverageCoordination)
+
+
+modChickSurvivalHatchedtoRingedAverageCoordination <- glmer(RingedYN ~ 
+                                                        scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+                                                        scale(NbHatched) + 
+                                                        scale(MeanLogAdev)+
+                                                        scale(MeanLogSdev) +
+                                                        scale(HatchingDayAfter0401) +
+                                                        scale(PairBroodNb) +
+                                                        XPriorResidence +
+                                                        CrossFosteredYN +
+                                                        (1|PairID) + 
+                                                        #  (1|BreedingYear) +
+                                                        # (1|BroodRef) +
+                                                        (1|NatalBroodID)
+                                                      , data = MY_TABLE_perChick_All
+                                                      , family = 'binomial'
+                                                      , control=glmerControl(optimizer = "bobyqa")
+                                                      
+)
+
+
+summary(modChickSurvivalHatchedtoRingedAverageCoordination)
+
+}
+
+
 
 
 ###########
@@ -588,7 +686,7 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                              scale(I(MeanMVisit1RateH+MeanFVisit1RateH))+
                               scale(I(abs(MeanMVisit1RateH-MeanFVisit1RateH)))+
                               scale(NbRinged) +
-                       MixedBroodYN +
+                             MixedBroodYN +
                              (1|SocialMumID)  
                          #  + (1|SocialDadID)
                           # + (1|BreedingYear) 
