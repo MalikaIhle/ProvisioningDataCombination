@@ -617,17 +617,19 @@ effects_ChickSurvival
 summary(modChickSurvival5toRingedAverageCoordination)
 
 
-## figure
+## figures
 {
+{### PR effect 
+  
 # plot(RingedYN ~ MeanTotalProRate,
-#      data = MY_TABLE_perChick_All,
+#      data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
 #      xlab="Average total provisioning rate per hour",
 #      ylab="Survival likelihood",
 #      pch=19)
 # 
 # curve(predict(glm(RingedYN ~
 #                     poly(MeanTotalProRate,2),
-#                   data=MY_TABLE_perChick_All,
+#                   data=MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
 #                   family = binomial(link="logit")),
 #               data.frame(MeanTotalProRate=x),type="response"),
 #       lty=1, lwd=2, col="blue",
@@ -636,15 +638,15 @@ summary(modChickSurvival5toRingedAverageCoordination)
 
 
 ### get PR range on transformed data
-PR <- MY_TABLE_perChick_All$MeanTotalProRate
+PR <- MY_TABLE_perChick_All$MeanTotalProRate[MY_TABLE_perChick_All$WeightedAge5 == TRUE]
 transformed_PR_range <- (range(PR) - mean(PR))/sd(PR)
 
 ### create data along that range
 x <- seq(transformed_PR_range[1],transformed_PR_range[2],length.out=1000)
 
 ### make y from model estimates (taken from table 1)
-# summary(modChickSurvival)
-y <- summary(modChickSurvival)$coeff[1,1] + summary(modChickSurvival)$coeff[2,1]*x + summary(modChickSurvival)$coeff[3,1]*x^2
+# summary(modChickSurvival5toRingedAverageCoordination)
+y <- summary(modChickSurvival5toRingedAverageCoordination)$coeff[1,1] + summary(modChickSurvival5toRingedAverageCoordination)$coeff[2,1]*x + summary(modChickSurvival5toRingedAverageCoordination)$coeff[3,1]*x^2
 
 ### back transform x
 x2 <- x*sd(PR) + mean(PR)
@@ -655,13 +657,67 @@ y2 <- inv.logit(y)
 
 ### plot line
 plot(jitter(RingedYN, factor=0.1) ~ MeanTotalProRate,
-     data = MY_TABLE_perChick_All,
+     data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
      xlab="Mean total provisioning rate per hour",
      ylab="Offspring survival likelihood",
      pch=21,  col=alpha('black', 0.4))
 lines(y2~x2, lty=1, lwd=2, col="blue")
+}
 
+{### Adev
+  AdevSurv <- MY_TABLE_perChick_All$MeanLogAdev[MY_TABLE_perChick_All$WeightedAge5 == TRUE]
+  transformed_Adev_range <- (range(AdevSurv) - mean(AdevSurv))/sd(AdevSurv)
+  
+  ### create data along that range
+  x <- seq(transformed_Adev_range[1],transformed_Adev_range[2],length.out=1000)
+  
+  ### make y from model estimates (taken from table 1)
+  # summary(modChickSurvival5toRingedAverageCoordination)
+  y <- summary(modChickSurvival5toRingedAverageCoordination)$coeff[1,1] + summary(modChickSurvival5toRingedAverageCoordination)$coeff[5,1]*x 
+  
+  ### back transform x
+  x2 <- x*sd(AdevSurv) + mean(AdevSurv)
+  
+  ### back transform y (assuming that logit link function was used)
+  library(boot)
+  y2 <- inv.logit(y)
+  
+  ### plot line
+  par(mfrow=c(1,2))
+ plot(jitter(RingedYN, factor=0.1) ~ MeanLogAdev,
+       data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
+       xlab="Log transformed deviation in alternation",
+       ylab="Offspring survival likelihood",
+       pch=21,  col=alpha('black', 0.4))
+  lines(y2~x2, lty=1, lwd=2, col="blue")
+}
 
+{### S dev
+SdevSurv <- MY_TABLE_perChick_All$MeanLogSdev[MY_TABLE_perChick_All$WeightedAge5 == TRUE]
+transformed_Sdev_range <- (range(SdevSurv) - mean(SdevSurv))/sd(SdevSurv)
+
+### create data along that range
+x <- seq(transformed_Sdev_range[1],transformed_Sdev_range[2],length.out=1000)
+
+### make y from model estimates (taken from table 1)
+# summary(modChickSurvival5toRingedAverageCoordination)
+y <- summary(modChickSurvival5toRingedAverageCoordination)$coeff[1,1] + summary(modChickSurvival5toRingedAverageCoordination)$coeff[6,1]*x 
+
+### back transform x
+x2 <- x*sd(SdevSurv) + mean(SdevSurv)
+
+### back transform y (assuming that logit link function was used)
+library(boot)
+y2 <- inv.logit(y)
+
+### plot line
+plot(jitter(RingedYN, factor=0.1) ~ MeanLogSdev,
+     data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
+     xlab="Log transformed deviation in synchrony",
+     ylab="Offspring survival likelihood",
+     pch=21,  col=alpha('black', 0.4))
+lines(y2~x2, lty=1, lwd=2, col="blue")
+  
 }
 
 }
@@ -703,5 +759,66 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
 }
 
 summary(mod_Divorce) 
+
+
+## figures
+
+nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),])
+
+{### Adev
+  AdevDiv <- MY_TABLE_perBrood$MeanLogAdev[!is.na(MY_TABLE_perBrood$PairDivorce)]
+  transformed_AdevDiv_range <- (range(AdevDiv) - mean(AdevDiv))/sd(AdevDiv)
+  
+  ### create data along that range
+  x <- seq(transformed_AdevDiv_range[1],transformed_AdevDiv_range[2],length.out=1000)
+  
+  ### make y from model estimates (taken from table 1)
+  # summary(mod_Divorce)
+  y <- summary(mod_Divorce)$coeff[1,1] + summary(mod_Divorce)$coeff[3,1]*x 
+  
+  ### back transform x
+  x2 <- x*sd(AdevDiv) + mean(AdevDiv)
+  
+  ### back transform y (assuming that logit link function was used)
+  library(boot)
+  y2 <- inv.logit(y)
+  
+  ### plot line
+  par(mfrow=c(1,2))
+   plot(jitter(as.numeric(PairDivorce), factor=0.1) ~ MeanLogAdev,
+       data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),],
+       xlab="Log transformed deviation in alternation",
+       ylab="Divorce likelihood",
+       pch=21,  col=alpha('black', 0.4))
+  lines(y2~x2, lty=1, lwd=2, col="blue")
+}
+
+{### S dev
+  SdevDiv <- MY_TABLE_perBrood$MeanLogSdev[!is.na(MY_TABLE_perBrood$PairDivorce)]
+  transformed_SdevDiv_range <- (range(SdevDiv) - mean(SdevDiv))/sd(SdevDiv)
+  
+  ### create data along that range
+  x <- seq(transformed_SdevDiv_range[1],transformed_SdevDiv_range[2],length.out=1000)
+  
+  ### make y from model estimates (taken from table 1)
+  # summary(mod_Divorce)
+  y <- summary(mod_Divorce)$coeff[1,1] + summary(mod_Divorce)$coeff[3,1]*x 
+  
+  ### back transform x
+  x2 <- x*sd(SdevDiv) + mean(SdevDiv)
+  
+  ### back transform y (assuming that logit link function was used)
+  library(boot)
+  y2 <- inv.logit(y)
+  
+  ### plot line
+  plot(jitter(as.numeric(PairDivorce), factor=0.1) ~ MeanLogSdev,
+       data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),],
+       xlab="Log transformed deviation in synchrony",
+       ylab="Divorce likelihood",
+       pch=21,  col=alpha('black', 0.4))
+  lines(y2~x2, lty=1, lwd=2, col="blue")
+  
+}
 
 
