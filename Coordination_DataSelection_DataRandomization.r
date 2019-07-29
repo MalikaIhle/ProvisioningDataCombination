@@ -411,7 +411,7 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
   MY_tblChicks_All$WeightedAge12 <- MY_tblChicks_All$BirdID %in% tblChicks$ChickID # chicks weighted day 12
   MY_tblChicks_All$WeightedAge5 <- MY_tblChicks_All$BirdID %in% tblChicksd5$ChickID
   
-  
+  BSd5 <- as.data.frame(MY_tblChicks_All %>% group_by(BroodRef) %>% summarize(NbChickd5= sum(as.numeric(WeightedAge5))))
   
   summary(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]) # criteria last stage to remove NAs post fledging
   as.data.frame(table(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]))
@@ -433,6 +433,7 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
 head(MY_tblBroods) # even those where one parent unknown, needed for divorce question
 head(RawInterfeeds, 50) 
 head(MY_TABLE_perDVD)
+head(MY_tblChicks_All)
 
 
 set.seed(10)
@@ -1429,7 +1430,11 @@ MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All,
                                ,by="BroodRef",
                                all.x = TRUE)
 
- 
+
+
+MY_TABLE_perChick_All <- merge(MY_TABLE_perChick_All, BSd5,by="BroodRef", all.x = TRUE)
+
+
 }
 
 head(MY_TABLE_perDVD)
@@ -1627,6 +1632,7 @@ head(MY_TABLE_perBrood)  # polygynous males are part of the cases where PairdDiv
  # 20190723 ass AliveDay12
  # 20190724 delete file to get back to doing survival analysis on brood level rather than chick level
  # 20190725 readded por rate and coordination per age cat and added weighted day 5 for suvival analysis on chick basis after cross fostering
+ # 20190729 added NbChickDay5 for brood size at time of start for survival analysis
  
 # 20190715
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)
