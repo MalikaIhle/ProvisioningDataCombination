@@ -479,170 +479,99 @@ summary(modS)
 # FITNESS CORRELATES
 ######################
 
-
-{#### ChickSurvival ~ Alternation + Synchrony, brood
+{#### ChickSurvival ~ Alternation + Synchrony
   
+  {## at the brood level, hatching to ringing: can't have cross fostered YN (include that biased effect since Xfost happens after death until age2/3)
   
-  modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
-                              scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-                              scale(NbHatched) +
-                              scale(MeanLogAdev)+
-                              scale(MeanLogSdev) +
-                              scale(HatchingDayAfter0401) +
-                              scale(PairBroodNb) +
-                              XPriorResidence +
-                              MixedBroodYN +
-                             # (1|PairID) + 
-                              (1|BreedingYear) 
-                             #  +(1|BroodRef) 
-                            , data = MY_TABLE_perBrood
-                            , family = 'binomial'
-                            , control=glmerControl(optimizer = "bobyqa"))
-  
-  summary(modChickSurvival)  
-  drop1(modChickSurvival, test="Chisq") # LRT
-  dispersion_glmer(modChickSurvival) # 0.9524648
-                              
-
- 
-  
-  effects_ChickSurvival <- as.data.frame(cbind(est=invlogit(summary(modChickSurvival)$coeff[,1]),
-                                       CIhigh=invlogit(summary(modChickSurvival)$coeff[,1]+summary(modChickSurvival)$coeff[,2]*1.96),
-                                       CIlow=invlogit(summary(modChickSurvival)$coeff[,1]-summary(modChickSurvival)$coeff[,2]*1.96),
-                                      SEhigh = invlogit(summary(modChickSurvival)$coeff[,1] + summary(modChickSurvival)$coeff[,2]),
-                                      SElow = invlogit(summary(modChickSurvival)$coeff[,1] - summary(modChickSurvival)$coeff[,2])
-                                      ))
-  effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
-  effects_ChickSurvival <- effects_ChickSurvival*100
-  effects_ChickSurvival
-
-
-  
-  #odds <- exp(cbind(OR=fixef(modChickSurvival), confint(modChickSurvival, parm="beta_")))[c(5,6),] 
-    #  OR     2.5 %    97.5 %
-    # scale(MeanLogAdev) 0.887212 0.8078357 0.9739039
-    # scale(MeanLogSdev) 1.045825 0.9515988 1.1499816
-  
-
-  
- 
-
-  # plot(RingedYN ~ MeanTotalProRate,
-  #      data = MY_TABLE_perChick_All,
-  #      xlab="Average total provisioning rate per hour",
-  #      ylab="Survival likelihood",
-  #      pch=19)
+  # modChickSurvival <- glmer(cbind(NbRinged, NbHatched-NbRinged) ~ 
+  #                             scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+  #                             scale(NbHatched) +
+  #                             scale(MeanLogAdev)+
+  #                             scale(MeanLogSdev) +
+  #                             scale(HatchingDayAfter0401) +
+  #                             scale(PairBroodNb) +
+  #                             XPriorResidence +
+  #                             MixedBroodYN +
+  #                            # (1|PairID) + 
+  #                             (1|BreedingYear) 
+  #                            #  +(1|BroodRef) 
+  #                           , data = MY_TABLE_perBrood
+  #                           , family = 'binomial'
+  #                           , control=glmerControl(optimizer = "bobyqa"))
   # 
-  # curve(predict(glm(RingedYN ~
-  #                     poly(MeanTotalProRate,2),
-  #                   data=MY_TABLE_perChick_All,
-  #                   family = binomial(link="logit")),
-  #               data.frame(MeanTotalProRate=x),type="response"),
-  #       lty=1, lwd=2, col="blue",
-  #       add=TRUE)
+  # summary(modChickSurvival)  
+  # drop1(modChickSurvival, test="Chisq") # LRT
+  # dispersion_glmer(modChickSurvival) # 0.9524648
+  }
+  
 
+  {# per chick age category: reduce samnple size = model don't converge
 
-  
-  ### get PR range on transformed data
-  PR <- MY_TABLE_perChick_All$MeanTotalProRate
-  transformed_PR_range <- (range(PR) - mean(PR))/sd(PR)
-  
-  ### create data along that range
-  x <- seq(transformed_PR_range[1],transformed_PR_range[2],length.out=1000)
-  
-  ### make y from model estimates (taken from table 1)
- # summary(modChickSurvival)
-  y <- summary(modChickSurvival)$coeff[1,1] + summary(modChickSurvival)$coeff[2,1]*x + summary(modChickSurvival)$coeff[3,1]*x^2
-  
-  ### back transform x
-  x2 <- x*sd(PR) + mean(PR)
-  
-  ### back transform y (assuming that logit link function was used)
-  library(boot)
-  y2 <- inv.logit(y)
-  
-  ### plot line
-  plot(jitter(RingedYN, factor=0.1) ~ MeanTotalProRate,
-       data = MY_TABLE_perChick_All,
-       xlab="Mean total provisioning rate per hour",
-       ylab="Offspring survival likelihood",
-       pch=21,  col=alpha('black', 0.4))
-  lines(y2~x2, lty=1, lwd=2, col="blue")
-
+  ## 5 to ringed with Coordination at day 6
+#   modChickSurvival5toRinged <- glmer(RingedYN ~ 
+#                            scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+#                               scale(NbHatched) +
+#                               scale(MeanLogAdevAgeCat6)+
+#                                scale(MeanLogSdevAgeCat6) +
+#                             scale(HatchingDayAfter0401) +
+#                             scale(PairBroodNb) +
+#                            XPriorResidence +
+#                            CrossFosteredYN +
+#                           (1|PairID) + 
+#                             (1|BreedingYear) +
+#                             (1|BroodRef) +
+#                           (1|NatalBroodID)
+#                           , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
+#                            , family = 'binomial'
+#                           , control=glmerControl(optimizer = "bobyqa"))
+#   
+#   summary(modChickSurvival5toRinged)
+#   drop1(modChickSurvival5toRinged, test="Chisq") # LRT
+# 
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
+# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+# 
+# 
+# table(MY_TABLE_perChick_All$WeightedAge5)
+# table(MY_TABLE_perChick_All$WeightedAge12)
+# table(MY_TABLE_perChick_All$RingedYN)
+# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
+# 
+# length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE & 
+#                                                is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) & 
+#                                                !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
   
 }
 
-summary(modChickSurvival) 
 
-{# per chick age category
-
-  ## 5 to ringed with Coordination at day 6
-modChickSurvival5toRinged <- glmer(RingedYN ~ 
-                           scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-                              scale(NbHatched) +
-                              scale(MeanLogAdevAgeCat6)+
-                               scale(MeanLogSdevAgeCat6) +
-                            scale(HatchingDayAfter0401) +
-                            scale(PairBroodNb) +
-                           XPriorResidence +
-                           CrossFosteredYN +
-                          (1|PairID) + 
-                            (1|BreedingYear) +
-                            (1|BroodRef) +
-                          (1|NatalBroodID)
-                          , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
-                           , family = 'binomial'
-                          , control=glmerControl(optimizer = "bobyqa")
-                          
-)
-  
-  summary(modChickSurvival5toRinged)
-  #drop1(modChickSurvival5toRinged, test="Chisq") # LRT
-
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
-table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
-
-
-table(MY_TABLE_perChick_All$WeightedAge5)
-table(MY_TABLE_perChick_All$WeightedAge12)
-table(MY_TABLE_perChick_All$RingedYN)
-table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
-
-length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE & 
-                                               is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) & 
-                                               !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
-  
-
-
-
-## 5 to ringed with average Coordination
-
+## survival from age 5 to ringedYN with average Coordination: to exclude cross fostering bias
+{
 modChickSurvival5toRingedAverageCoordination <- glmer(RingedYN ~ 
                                      scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-                                     scale(NbHatched) + # should be BS at day 5
+                                     scale(NbChickd5) + 
                                      scale(MeanLogAdev)+
                                      scale(MeanLogSdev) +
                                      scale(HatchingDayAfter0401) +
                                      scale(PairBroodNb) +
                                      XPriorResidence +
-                                     CrossFosteredYN +
+                                     CrossFosteredYN + # not significant
                                      (1|PairID) + 
-                                   #  (1|BreedingYear) +
-                                    # (1|BroodRef) +
+                                     (1|BreedingYear) +
+                                     (1|BroodRef) +
                                      (1|NatalBroodID)
                                    , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
                                    , family = 'binomial'
-                                   , control=glmerControl(optimizer = "bobyqa")
-                                   
-)
+                                   , control=glmerControl(optimizer = "bobyqa"))
 
 
 summary(modChickSurvival5toRingedAverageCoordination)
+drop1(modChickSurvival5toRingedAverageCoordination, test="Chisq")
 
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
 
 modChickSurvivalHatchedtoRingedAverageCoordination <- glmer(RingedYN ~ 
                                                         scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
@@ -652,24 +581,90 @@ modChickSurvivalHatchedtoRingedAverageCoordination <- glmer(RingedYN ~
                                                         scale(HatchingDayAfter0401) +
                                                         scale(PairBroodNb) +
                                                         XPriorResidence +
-                                                        CrossFosteredYN +
-                                                        (1|PairID) + 
+                                                        CrossFosteredYN + # extremely significant: only those that survived were crossfostered
+                                                        (1|PairID)  
                                                         #  (1|BreedingYear) +
                                                         # (1|BroodRef) +
-                                                        (1|NatalBroodID)
+                                                       # (1|NatalBroodID)
                                                       , data = MY_TABLE_perChick_All
                                                       , family = 'binomial'
-                                                      , control=glmerControl(optimizer = "bobyqa")
-                                                      
-)
+                                                      , control=glmerControl(optimizer = "bobyqa"))
 
 
 summary(modChickSurvivalHatchedtoRingedAverageCoordination)
 
+
+effects_ChickSurvival <- as.data.frame(cbind(est=invlogit(summary(modChickSurvival5toRingedAverageCoordination)$coeff[,1]),
+                                             CIhigh=invlogit(summary(modChickSurvival5toRingedAverageCoordination)$coeff[,1]+summary(modChickSurvival5toRingedAverageCoordination)$coeff[,2]*1.96),
+                                             CIlow=invlogit(summary(modChickSurvival5toRingedAverageCoordination)$coeff[,1]-summary(modChickSurvival5toRingedAverageCoordination)$coeff[,2]*1.96),
+                                             SEhigh = invlogit(summary(modChickSurvival5toRingedAverageCoordination)$coeff[,1] + summary(modChickSurvival5toRingedAverageCoordination)$coeff[,2]),
+                                             SElow = invlogit(summary(modChickSurvival5toRingedAverageCoordination)$coeff[,1] - summary(modChickSurvival5toRingedAverageCoordination)$coeff[,2])
+))
+effects_ChickSurvival$avSE <- (effects_ChickSurvival$SEhigh-effects_ChickSurvival$SElow)/2
+effects_ChickSurvival <- effects_ChickSurvival*100
+effects_ChickSurvival
+
+
+
+#odds <- exp(cbind(OR=fixef(modChickSurvival5toRingedAverageCoordination), confint(modChickSurvival5toRingedAverageCoordination, parm="beta_")))[c(5,6),] 
+#                           OR     2.5 %    97.5 %
+# scale(MeanLogAdev) 0.8385582 0.7228614 0.9697327
+# scale(MeanLogSdev) 1.0381006 0.9064023 1.1897454
+# ran 20190729
+
 }
 
+summary(modChickSurvival5toRingedAverageCoordination)
 
 
+## figure
+{
+# plot(RingedYN ~ MeanTotalProRate,
+#      data = MY_TABLE_perChick_All,
+#      xlab="Average total provisioning rate per hour",
+#      ylab="Survival likelihood",
+#      pch=19)
+# 
+# curve(predict(glm(RingedYN ~
+#                     poly(MeanTotalProRate,2),
+#                   data=MY_TABLE_perChick_All,
+#                   family = binomial(link="logit")),
+#               data.frame(MeanTotalProRate=x),type="response"),
+#       lty=1, lwd=2, col="blue",
+#       add=TRUE)
+
+
+
+### get PR range on transformed data
+PR <- MY_TABLE_perChick_All$MeanTotalProRate
+transformed_PR_range <- (range(PR) - mean(PR))/sd(PR)
+
+### create data along that range
+x <- seq(transformed_PR_range[1],transformed_PR_range[2],length.out=1000)
+
+### make y from model estimates (taken from table 1)
+# summary(modChickSurvival)
+y <- summary(modChickSurvival)$coeff[1,1] + summary(modChickSurvival)$coeff[2,1]*x + summary(modChickSurvival)$coeff[3,1]*x^2
+
+### back transform x
+x2 <- x*sd(PR) + mean(PR)
+
+### back transform y (assuming that logit link function was used)
+library(boot)
+y2 <- inv.logit(y)
+
+### plot line
+plot(jitter(RingedYN, factor=0.1) ~ MeanTotalProRate,
+     data = MY_TABLE_perChick_All,
+     xlab="Mean total provisioning rate per hour",
+     ylab="Offspring survival likelihood",
+     pch=21,  col=alpha('black', 0.4))
+lines(y2~x2, lty=1, lwd=2, col="blue")
+
+
+}
+
+}
 
 ###########
 # DIVORCE #
@@ -696,15 +691,14 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
 
   summary(mod_Divorce) 
   drop1(mod_Divorce, test = "Chisq")
-  dispersion_glmer(mod_Divorce) # 0.90
   table(MY_TABLE_perBrood$PairDivorce)
 
   oddsDivorce <- exp(cbind(OR=fixef(mod_Divorce), confint(mod_Divorce, parm="beta_")))[c(2,3),] 
   
-  #   OR     2.5 %   97.5 %
-  #   scale(MeanLogSdev) 0.964058 0.7154698 1.296955
-  #   scale(MeanLogAdev) 1.097456 0.8353895 1.454126
-  
+  #                            OR     2.5 %   97.5 %
+  # scale(MeanLogSdev) 0.9482971 0.7033124 1.276619
+  # scale(MeanLogAdev) 1.0831807 0.8220911 1.437247
+  # ran on 20190729
   
 }
 
