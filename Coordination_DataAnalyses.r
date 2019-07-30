@@ -508,44 +508,57 @@ summary(modS)
   {# per chick age category: reduce samnple size = model don't converge
 
   ## 5 to ringed with Coordination at day 6
-#   modChickSurvival5toRinged <- glmer(RingedYN ~ 
-#                            scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-#                               scale(NbHatched) +
-#                               scale(MeanLogAdevAgeCat6)+
-#                                scale(MeanLogSdevAgeCat6) +
-#                             scale(HatchingDayAfter0401) +
-#                             scale(PairBroodNb) +
-#                            XPriorResidence +
-#                            CrossFosteredYN +
-#                           (1|PairID) + 
-#                             (1|BreedingYear) +
-#                             (1|BroodRef) +
-#                           (1|NatalBroodID)
-#                           , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
-#                            , family = 'binomial'
-#                           , control=glmerControl(optimizer = "bobyqa"))
-#   
-#   summary(modChickSurvival5toRinged)
-#   drop1(modChickSurvival5toRinged, test="Chisq") # LRT
-# 
-# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
-# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
-# 
-# 
-# table(MY_TABLE_perChick_All$WeightedAge5)
-# table(MY_TABLE_perChick_All$WeightedAge12)
-# table(MY_TABLE_perChick_All$RingedYN)
-# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
-# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
-# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
-# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
-# 
-# length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE & 
-#                                                is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) & 
-#                                                !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
+  modChickSurvival5toRinged <- glmer(RingedYN ~
+                              scale(MeanTotalProRate)+ 
+                              I(scale(MeanTotalProRate)^2)+
+                              scale(NbChickd5) +
+                              scale(MeanLogAdevAgeCat6)+
+                              scale(MeanLogSdevAgeCat6) +
+                              scale(HatchingDayAfter0401) +
+                              scale(PairBroodNb) +
+                              XPriorResidence +
+                              CrossFosteredYN +
+                              (1|PairID) +
+                              (1|BreedingYear) +
+                              (1|BroodRef) +
+                              (1|NatalBroodID)
+                              , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
+                              , family = 'binomial'
+                              #, control=glmerControl(optimizer = "bobyqa")
+                              )
+
+  summary(modChickSurvival5toRinged)
+  drop1(modChickSurvival5toRinged, test="Chisq") # LRT
+
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+
+
+table(MY_TABLE_perChick_All$WeightedAge5)
+table(MY_TABLE_perChick_All$WeightedAge12)
+table(MY_TABLE_perChick_All$RingedYN)
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
+nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
+
+length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE &
+                                               is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) &
+                                               !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
+
+summary(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+  hist(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+  summary(MY_TABLE_perChick_All$MeanLogSdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+  hist(MY_TABLE_perChick_All$MeanLogSdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+  length(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
   
-}
+cor.test(MY_TABLE_perChick_All$MeanLogAdevAgeCat6, MY_TABLE_perChick_All$MeanLogSdevAgeCat6)
+  
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdev)])
+
+  }
 
 
 ## survival from age 5 to ringedYN with average Coordination: to exclude cross fostering bias
