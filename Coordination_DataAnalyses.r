@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 07/02/2019
-#	 commit: cleaning up code to archive old analyses versions (corrected by joel)
+#	 last modif : 20190801
+#	 commit: cleaning up code and add figure for fitness paper
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -26,6 +26,9 @@ library (multcomp)
 #library(MCMCglmm)
 #library(RODBC) # to call DB
 library(here)
+library(boot) # for back trasnforming data for figures
+require(gridExtra) # for multipanel figure
+require(grid)
   
 options(scipen=999) # remove scientific notation e-
 #options(scipen=0)
@@ -249,7 +252,7 @@ summary(glht(mod_S_RandomVsObs, mcp(Type="Tukey"))) #sync = 2 : p sim vs among =
 
 
 ##############
-# PREDICTORS
+# PREDICTORS #
 ##############
 
 # the type of model was decided following simulations (other script)
@@ -475,9 +478,9 @@ summary(modS)
 
 
 
-######################
-# FITNESS CORRELATES
-######################
+#################
+# CHICK SURIVAL #
+#################
 
 {#### ChickSurvival ~ Alternation + Synchrony
   
@@ -505,58 +508,58 @@ summary(modS)
   }
   
 
-  {# per chick age category: reduce samnple size = model don't converge
+  {# per chick age category:
 
   ## 5 to ringed with Coordination at day 6
-  modChickSurvival5toRinged <- glmer(RingedYN ~
-                              scale(MeanTotalProRate)+ 
-                              I(scale(MeanTotalProRate)^2)+
-                              scale(NbChickd5) +
-                              scale(MeanLogAdevAgeCat6)+
-                              scale(MeanLogSdevAgeCat6) +
-                              scale(HatchingDayAfter0401) +
-                              scale(PairBroodNb) +
-                              XPriorResidence +
-                              CrossFosteredYN +
-                              (1|PairID) +
-                              (1|BreedingYear) +
-                              (1|BroodRef) +
-                              (1|NatalBroodID)
-                              , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
-                              , family = 'binomial'
-                              #, control=glmerControl(optimizer = "bobyqa")
-                              )
-
-  summary(modChickSurvival5toRinged)
-  drop1(modChickSurvival5toRinged, test="Chisq") # LRT
-
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
-table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
-
-
-table(MY_TABLE_perChick_All$WeightedAge5)
-table(MY_TABLE_perChick_All$WeightedAge12)
-table(MY_TABLE_perChick_All$RingedYN)
-table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
-nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
-
-length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE &
-                                               is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) &
-                                               !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
-
-summary(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-  hist(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-  summary(MY_TABLE_perChick_All$MeanLogSdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-  hist(MY_TABLE_perChick_All$MeanLogSdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
-  length(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
-  
-cor.test(MY_TABLE_perChick_All$MeanLogAdevAgeCat6, MY_TABLE_perChick_All$MeanLogSdevAgeCat6)
-  
-table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
-table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdev)])
+#   modChickSurvival5toRinged <- glmer(RingedYN ~
+#                               scale(MeanTotalProRate)+ 
+#                               I(scale(MeanTotalProRate)^2)+
+#                               scale(NbChickd5) +
+#                               scale(MeanLogAdevAgeCat6)+
+#                               scale(MeanLogSdevAgeCat6) +
+#                               scale(HatchingDayAfter0401) +
+#                               scale(PairBroodNb) +
+#                               XPriorResidence +
+#                               CrossFosteredYN +
+#                               (1|PairID) +
+#                               (1|BreedingYear) +
+#                               (1|BroodRef) +
+#                               (1|NatalBroodID)
+#                               , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
+#                               , family = 'binomial'
+#                               , control=glmerControl(optimizer = "bobyqa")
+#                               )
+# 
+#   summary(modChickSurvival5toRinged)
+#   drop1(modChickSurvival5toRinged, test="Chisq") # LRT
+# 
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6),])
+# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+# 
+# 
+# table(MY_TABLE_perChick_All$WeightedAge5)
+# table(MY_TABLE_perChick_All$WeightedAge12)
+# table(MY_TABLE_perChick_All$RingedYN)
+# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == FALSE & MY_TABLE_perChick_All$RingedYN == TRUE,])#64
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge12 == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#146
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$RingedYN == TRUE & MY_TABLE_perChick_All$WeightedAge5 == FALSE,])#151
+# nrow(MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,])#2373
+# 
+# length(unique(MY_TABLE_perChick_All$BroodRef[MY_TABLE_perChick_All$WeightedAge5 == TRUE &
+#                                                is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6) &
+#                                                !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat10)])) # 43
+# 
+# summary(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+#   hist(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+#   summary(MY_TABLE_perChick_All$MeanLogSdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+#   hist(MY_TABLE_perChick_All$MeanLogSdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
+#   length(MY_TABLE_perChick_All$MeanLogAdevAgeCat6[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+#   
+# cor.test(MY_TABLE_perChick_All$MeanLogAdevAgeCat6, MY_TABLE_perChick_All$MeanLogSdevAgeCat6)
+#   
+# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdevAgeCat6)])
+# table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE & !is.na(MY_TABLE_perChick_All$MeanLogAdev)])
 
   }
 
@@ -581,30 +584,30 @@ modChickSurvival5toRingedAverageCoordination <- glmer(RingedYN ~
                                    , control=glmerControl(optimizer = "bobyqa"))
 
 
-summary(modChickSurvival5toRingedAverageCoordination)
-drop1(modChickSurvival5toRingedAverageCoordination, test="Chisq")
+#summary(modChickSurvival5toRingedAverageCoordination)
+#drop1(modChickSurvival5toRingedAverageCoordination, test="Chisq")
 
 table(MY_TABLE_perChick_All$RingedYN[MY_TABLE_perChick_All$WeightedAge5 == TRUE])
 
-modChickSurvivalHatchedtoRingedAverageCoordination <- glmer(RingedYN ~ 
-                                                        scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
-                                                        scale(NbHatched) + 
-                                                        scale(MeanLogAdev)+
-                                                        scale(MeanLogSdev) +
-                                                        scale(HatchingDayAfter0401) +
-                                                        scale(PairBroodNb) +
-                                                        XPriorResidence +
-                                                        CrossFosteredYN + # extremely significant: only those that survived were crossfostered
-                                                        (1|PairID)  
-                                                        #  (1|BreedingYear) +
-                                                        # (1|BroodRef) +
-                                                       # (1|NatalBroodID)
-                                                      , data = MY_TABLE_perChick_All
-                                                      , family = 'binomial'
-                                                      , control=glmerControl(optimizer = "bobyqa"))
-
-
-summary(modChickSurvivalHatchedtoRingedAverageCoordination)
+# modChickSurvivalHatchedtoRingedAverageCoordination <- glmer(RingedYN ~ 
+#                                                         scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
+#                                                         scale(NbHatched) + 
+#                                                         scale(MeanLogAdev)+
+#                                                         scale(MeanLogSdev) +
+#                                                         scale(HatchingDayAfter0401) +
+#                                                         scale(PairBroodNb) +
+#                                                         XPriorResidence +
+#                                                         CrossFosteredYN + # extremely significant: only those that survived were crossfostered
+#                                                         (1|PairID)  
+#                                                         #  (1|BreedingYear) +
+#                                                         # (1|BroodRef) +
+#                                                        # (1|NatalBroodID)
+#                                                       , data = MY_TABLE_perChick_All
+#                                                       , family = 'binomial'
+#                                                       , control=glmerControl(optimizer = "bobyqa"))
+# 
+# 
+# summary(modChickSurvivalHatchedtoRingedAverageCoordination)
 
 
 effects_ChickSurvival <- as.data.frame(cbind(est=invlogit(summary(modChickSurvival5toRingedAverageCoordination)$coeff[,1]),
@@ -620,14 +623,33 @@ effects_ChickSurvival
 
 
 #odds <- exp(cbind(OR=fixef(modChickSurvival5toRingedAverageCoordination), confint(modChickSurvival5toRingedAverageCoordination, parm="beta_")))[c(5,6),] 
-#                           OR     2.5 %    97.5 %
-# scale(MeanLogAdev) 0.8385582 0.7228614 0.9697327
-# scale(MeanLogSdev) 1.0381006 0.9064023 1.1897454
-# ran 20190729
+#                         OR     2.5 %    97.5 %
+# scale(MeanLogAdev) 0.8552787 0.7402355 0.9853105
+# scale(MeanLogSdev) 1.0398193 0.9117151 1.1870856
+# ran 20190731
 
 }
 
 summary(modChickSurvival5toRingedAverageCoordination)
+
+
+# check residuals
+{
+  mod <- modChickSurvival5toRingedAverageCoordination
+  dat <- MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]
+    
+qqnorm(resid(mod)) # awful
+qqline(resid(mod))
+
+qqnorm(unlist(ranef(mod)$PairID))
+qqline(unlist(ranef(mod)$PairID))
+
+
+# residuals vs fitted values
+plot(fitted(mod), resid(mod)) # awful
+abline(h=0)
+
+}
 
 
 ## figures
@@ -695,11 +717,13 @@ lines(y2~x2, lty=1, lwd=2, col="blue")
   library(boot)
   y2 <- inv.logit(y)
   
+  SurvAData <- data.frame(y2,x2)
+  
   ### plot line
   par(mfrow=c(1,2))
  plot(jitter(RingedYN, factor=0.1) ~ MeanLogAdev,
        data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
-       xlab="Log transformed deviation in alternation",
+       xlab="Alternation",
        ylab="Offspring survival likelihood",
        pch=21,  col=alpha('black', 0.4))
   lines(y2~x2, lty=1, lwd=2, col="blue")
@@ -723,17 +747,40 @@ x2 <- x*sd(SdevSurv) + mean(SdevSurv)
 library(boot)
 y2 <- inv.logit(y)
 
+SurvSData <- data.frame(y2,x2)
+
 ### plot line
 plot(jitter(RingedYN, factor=0.1) ~ MeanLogSdev,
      data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,],
-     xlab="Log transformed deviation in synchrony",
+     xlab="Synchrony",
      ylab="Offspring survival likelihood",
      pch=21,  col=alpha('black', 0.4))
-lines(y2~x2, lty=1, lwd=2, col="blue")
+lines(y2~x2, lty=2, lwd=2, col="blue")
   
+
 }
 
 }
+
+}
+
+##############
+# CHICK MASS #
+##############
+
+{# waiting for Joel to send me his code for the DHGLM
+
+dd <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/")) 
+par(mfrow=c(1,2))
+plot(AvgOfMass~MeanLogAdev,dd, pch=19, cex=0.5, col=alpha(1,0.5))
+clip(min(dd$MeanLogAdev),max(dd$MeanLogAdev), 0, 30)
+abline(22.308+mean(dd$MeanLogAdev),-0.047*sd(dd$MeanLogAdev), lwd=2, lty=2, col="blue")
+
+plot(AvgOfMass~MeanLogSdev,dd, pch=19, cex=0.5, col=alpha(1,0.5))
+clip(min(dd$MeanLogSdev),max(dd$MeanLogSdev), 0, 30)
+abline(22.308+mean(dd$MeanLogSdev),-0.046*sd(dd$MeanLogSdev), lwd=2, lty=2, col="blue")
+}
+
 
 ###########
 # DIVORCE #
@@ -758,11 +805,11 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
                            , family="binomial"
                          , control=glmerControl(optimizer = "bobyqa"))
 
-  summary(mod_Divorce) 
-  drop1(mod_Divorce, test = "Chisq")
+  #summary(mod_Divorce) 
+  #drop1(mod_Divorce, test = "Chisq")
   table(MY_TABLE_perBrood$PairDivorce)
 
-  oddsDivorce <- exp(cbind(OR=fixef(mod_Divorce), confint(mod_Divorce, parm="beta_")))[c(2,3),] 
+  #oddsDivorce <- exp(cbind(OR=fixef(mod_Divorce), confint(mod_Divorce, parm="beta_")))[c(2,3),] 
   
   #                            OR     2.5 %   97.5 %
   # scale(MeanLogSdev) 0.9482971 0.7033124 1.276619
@@ -774,7 +821,7 @@ mod_Divorce <- glmer(PairDivorce~scale(MeanLogSdev) +
 summary(mod_Divorce) 
 
 
-## figures
+{## figures
 
 nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),])
 
@@ -795,6 +842,8 @@ nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),])
   ### back transform y (assuming that logit link function was used)
   library(boot)
   y2 <- inv.logit(y)
+  
+  DivAData <- data.frame(y2,x2)
   
   ### plot line
   par(mfrow=c(1,2))
@@ -824,6 +873,8 @@ nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),])
   library(boot)
   y2 <- inv.logit(y)
   
+  DivSData <- data.frame(y2,x2)
+  
   ### plot line
   plot(jitter(as.numeric(PairDivorce), factor=0.1) ~ MeanLogSdev,
        data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),],
@@ -833,5 +884,158 @@ nrow(MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),])
   lines(y2~x2, lty=1, lwd=2, col="blue")
   
 }
+
+}
+
+
+
+######################################
+# composite figure for fitness paper #
+######################################
+
+{## this Warning message will appear without consequences for the plot
+## In eval(family$initialize) : non-integer #successes in a binomial glm!
+
+head(SurvAData)
+head(SurvSData)
+dd <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/"))
+head(dd)
+head(DivAData)
+head(DivSData)
+
+summary(MY_TABLE_perChick_All$MeanLogAdev[MY_TABLE_perChick_All$WeightedAge5 == TRUE],dd$MeanLogAdev, MY_TABLE_perBrood$MeanLogAdev[!is.na(MY_TABLE_perBrood$PairDivorce)])
+summary(MY_TABLE_perChick_All$MeanLogSdev[MY_TABLE_perChick_All$WeightedAge5 == TRUE],dd$MeanLogSdev, MY_TABLE_perBrood$MeanLogSdev[!is.na(MY_TABLE_perBrood$PairDivorce)])
+
+
+
+SurvA <- 
+  ggplot(aes(y = jitter(RingedYN, factor=0.1), x = MeanLogAdev)
+                , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]) +
+  geom_point(pch=19,cex=2,col=alpha('black',0.25))+
+  scale_x_continuous(limits = c(-0.73, 0.6))+
+  geom_smooth(data = SurvAData, aes(x = x2, y = y2),
+              method = "glm", method.args = list(family = "binomial"), 
+              se = FALSE, col = 'royalblue1', linetype = 1,size =1 ) +
+  ylab("Offspring survival 
+probability")+
+  theme_classic()+
+  theme(
+    panel.border = element_rect(colour = "black", fill=NA),
+    axis.title.x = element_blank(),
+    axis.text.x=element_blank(),
+    axis.title.y = element_text(face="bold"),
+    axis.text.y=element_text(size=7.5)
+    )
+
+SurvS <- 
+  ggplot(aes(y = jitter(RingedYN, factor=0.1), x = MeanLogSdev)
+         , data = MY_TABLE_perChick_All[MY_TABLE_perChick_All$WeightedAge5 == TRUE,]) +
+  geom_point(pch=19,cex=2,col=alpha('black',0.25))+
+  scale_x_continuous(limits = c(-1.3,1))+
+  geom_smooth(data = SurvSData, aes(x = x2, y = y2),
+              method = "glm", method.args = list(family = "binomial"), 
+              se = FALSE, col = 'royalblue1', linetype = 2,size =1 ) +
+  theme_classic()+
+  theme(
+    panel.border = element_rect(colour = "black", fill=NA),
+    axis.title.x = element_blank(),
+    axis.text.x=element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y=element_blank()
+  )
+
+
+MassA <- 
+  ggplot(aes(y = AvgOfMass, x = MeanLogAdev), data = dd) +
+  geom_point(pch=19,cex=2,col=alpha('black',0.25))+
+  scale_x_continuous(limits = c(-0.73, 0.6))+
+  geom_segment(aes(x = min(dd$MeanLogAdev), xend = max(dd$MeanLogAdev), 
+                   y = 22.308+mean(dd$MeanLogAdev) -0.047*sd(dd$MeanLogAdev)*min(dd$MeanLogAdev),
+                   yend = 22.308+mean(dd$MeanLogAdev) -0.047*sd(dd$MeanLogAdev)*max(dd$MeanLogAdev))
+               , col= 'royalblue1',linetype = 2,size =1 )+
+  ylab("Offspring mass 
+(g)")+
+  theme_classic()+
+  theme(
+    panel.border = element_rect(colour = "black", fill=NA),
+    axis.title.x = element_blank(),
+    axis.text.x=element_blank(),
+    axis.title.y = element_text(face="bold"),
+    axis.text.y=element_text(size=7.5)
+    )
+
+MassS <- 
+  ggplot(aes(y = AvgOfMass, x = MeanLogSdev), data = dd) +
+  geom_point(pch=19,cex=2,col=alpha('black',0.25))+
+  scale_x_continuous(limits = c(-1.3, 1))+
+  geom_segment(aes(x = min(dd$MeanLogSdev), xend = max(dd$MeanLogSdev), 
+                   y = 22.308+mean(dd$MeanLogSdev) -0.046*sd(dd$MeanLogSdev)*min(dd$MeanLogSdev),
+                   yend = 22.308+mean(dd$MeanLogSdev) -0.046*sd(dd$MeanLogSdev)*max(dd$MeanLogSdev))
+               , col= 'royalblue1',linetype = 2,size =1 )+
+    theme_classic()+
+  theme(
+    panel.border = element_rect(colour = "black", fill=NA),
+    axis.title.x = element_blank(),
+    axis.text.x=element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y=element_blank()
+  )
+
+
+DivA <- 
+  ggplot(aes(y = jitter(as.numeric(PairDivorce), factor=0.1), x = MeanLogAdev)
+         , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),]) +
+  geom_point(pch=19,cex=2,col=alpha('black',0.25))+
+  scale_x_continuous(limits = c(-0.73, 0.6), "Alternation")+
+  geom_smooth(data = DivAData, aes(x = x2, y = y2),
+              method = "glm", method.args = list(family = "binomial"), 
+              se = FALSE, col = 'royalblue1', linetype = 2,size =1 ) +
+  ylab("Divorce 
+probability")+
+  theme_classic()+
+  theme(
+    panel.border = element_rect(colour = "black", fill=NA),
+    axis.title.x = element_text(face="bold"),
+    axis.title.y = element_text(face="bold"),
+    axis.text.y=element_text(size=7.5)
+  )
+
+DivS <- 
+  ggplot(aes(y = jitter(as.numeric(PairDivorce), factor=0.1), x = MeanLogSdev)
+         , data = MY_TABLE_perBrood[!is.na(MY_TABLE_perBrood$PairDivorce),]) +
+  geom_point(pch=19,cex=2,col=alpha('black',0.25))+
+  scale_x_continuous(limits = c(-1.3, 1), "Synchrony")+
+  geom_smooth(data = DivSData, aes(x = x2, y = y2),
+              method = "glm", method.args = list(family = "binomial"), 
+              se = FALSE, col = 'royalblue1', linetype = 2,size =1 ) +
+  theme_classic()+
+  theme(
+    panel.border = element_rect(colour = "black", fill=NA),
+    axis.title.y = element_blank(),
+    axis.text.y=element_blank(),
+    axis.title.x = element_text(face="bold")
+  )
+
+
+gSurvA <- ggplotGrob(SurvA)
+gSurvS <- ggplotGrob(SurvS)
+gMassA <- ggplotGrob(MassA)
+gMassS <- ggplotGrob(MassS)
+gDivA <- ggplotGrob(DivA)
+gDivS <- ggplotGrob(DivS)
+
+firstcol = rbind(gSurvA,gMassA,gDivA, size = "last")
+secondcol = rbind(gSurvS,gMassS,gDivS, size = "last")
+
+g1 <- grid.arrange(firstcol)
+g2 <- grid.arrange(secondcol)
+
+setEPS() 
+jpeg("Fig2.jpeg", height = 130, width = 85, units = 'mm', res=150)
+grid.arrange(g1,g2,nrow = 1, ncol= 2, widths = c(1.4,1))
+dev.off()
+}
+
+
 
 
