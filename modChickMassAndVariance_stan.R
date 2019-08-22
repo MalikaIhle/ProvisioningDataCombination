@@ -17,6 +17,7 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 library(MasterBayes)
 library(here)
+library(rstudioapi)
 
 ## function to make pedigree for stan
 factorisePed <- function(pedigree, unknown=0){
@@ -140,7 +141,7 @@ if(run_model){
 		ParentsNoOffspring=ParentsNoOffspring+1
 		)
 
-	stanModel <- stan_model(file = paste0(here(),"R_input/DHGLM_animal_model_reduced.stan"))
+	stanModel <- stan_model(file = paste0(here(),"/R_input/DHGLM_animal_model_reduced.stan"))
 
 	mod_stan <- sampling(
 		stanModel, 
