@@ -768,7 +768,7 @@ lines(y2~x2, lty=2, lwd=2, col="blue")
 # CHICK MASS #
 ##############
 
-{# waiting for Joel to send me his code for the DHGLM
+{# waiting for Joel to send me his code for the DHGLM > see separate code modChickMass_andVariance_stan.R
 
 dd <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/")) 
 par(mfrow=c(1,2))
