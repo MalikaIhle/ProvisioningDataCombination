@@ -1,3 +1,10 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#	 Joel PICK      joel.l.pick@gmail.com
+#	 Analyse provisioning data sparrows: chick mass and variance in Stan
+#	 Start : July 2019
+#	 last modif : 20190822
+#	 commit: cleaning up code to run in Malika's github repo environement
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 rm(list=ls())
 
@@ -9,6 +16,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 library(MasterBayes)
+library(here)
 
 ## function to make pedigree for stan
 factorisePed <- function(pedigree, unknown=0){
@@ -28,10 +36,7 @@ run_model <- FALSE
 
 
 ## load in data
-wd <- "~/Dropbox/co_author_papers/alternation/analysis"
-
-
-dd <-  read.csv(file= paste(wd,"R_MY_TABLE_perChick.csv", sep="/"))  ## !!! to update when 
+dd <- read.csv(paste(here(),"R_Selected&RandomizedData/R_MY_TABLE_perChick.csv", sep="/")) 
 head(dd)
 nrow(dd)
 
@@ -83,8 +88,8 @@ XV<-model.matrix(AvgOfMass~
 if(run_model){
 
 	## import and format pedigree
-	pedigree <-  read.table(file= paste(wd,"PedigreeUptoIncl2016.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
-
+	pedigree <-  read.table(file= paste("R_input/Pedigree_20160309.txt", sep="/"), sep='\t', header=T)  ## !!! to update when new pedigree !!! 
+	
 	ped <- insertPed(prunePed(orderPed(pedigree[,1:3]), dd$ChickID, make.base = TRUE))
 	head(ped)
 	ped2 <- rbind(data.frame(id=dd$ChickID[! dd$ChickID %in% ped[,1]], dam=NA, sire=NA), ped)
@@ -135,7 +140,7 @@ if(run_model){
 		ParentsNoOffspring=ParentsNoOffspring+1
 		)
 
-	stanModel <- stan_model(file = paste0(wd,"/stan/DHGLM_animal_model_reduced.stan"))
+	stanModel <- stan_model(file = paste0(here(),"R_input/DHGLM_animal_model_reduced.stan"))
 
 	mod_stan <- sampling(
 		stanModel, 
@@ -144,9 +149,9 @@ if(run_model){
 		chains=4, 
 		iter = 30000, 
 		warmup = 15000)
-	save(X,XV,mod_stan, file= paste0(wd,"/stan/stanModDHGLM",format(Sys.time(), "%Y%m%d_%H%M"),".Rdata"))
+	save(X,XV,mod_stan, file= paste0(here(),"/stanModDHGLM_MI",format(Sys.time(), "%Y%m%d_%H%M"),".Rdata"))
 }else{
-	load(paste0(wd,"/stan/stanModDHGLM20190730_1412.Rdata"))
+	load(paste0(here(),"/Figures&Rmd/stanModDHGLM20190730_1412.Rdata"))
 }
 
 ## summary and diagnostics
