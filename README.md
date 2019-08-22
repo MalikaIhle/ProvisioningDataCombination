@@ -56,7 +56,9 @@ call selected data for this project from the folder 'R_Selected&RandomizedData' 
 
 data analyses (observed vs expected coordination, predictors of alternation, synchrony, fitness, divorce)
 
+## modChickMassandVariance_stan
 
+one specific analysis using a double hierarchical model that runs in STAN
 
 ---
 
