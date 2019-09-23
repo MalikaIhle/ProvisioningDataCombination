@@ -98,7 +98,7 @@ tblChicks <-  read.table(file= paste(input_folder,"R_tblChicks.txt", sep="/"), s
 tblChicks_All <- read.table(file= paste(input_folder,"R_tblChicks_All.txt", sep="/"), sep='\t', header=T) ## all chicks hatched - to check whetehr MixedBrood
 #tblChicksd5 <-  read.table(file= paste(input_folder,"R_tblChicks_d5.txt", sep="/"), sep='\t', header=T)  ## contains chicks measured at day 5
 RingingDates <-  read.table(file= paste(input_folder,"RingingDates.txt", sep="/"), sep='\t', header=T)  ## ringing dates for all broods
-AllWeights <-  read.table(file= paste(input_folder,"AllWeights.txt", sep="/"), sep='\t', header=T)  ## ringing dates for all broods
+AllWeights <-  read.table(file= paste(input_folder,"AllWeights.txt", sep="/"), sep='\t', header=T)  ## all weight
 
 
 }
@@ -371,7 +371,7 @@ summary(outTsartMin$TstartFeedVisit)
 
 outAllOtherIntervals <- do.call(rbind, by(MY_RawFeedingVisits, MY_RawFeedingVisits$DVDRef, function(x) x[-which.min(x$TstartFeedVisit), c('DVDRef','Interval')] ))
 summary(outAllOtherIntervals$Interval) # time between known visits
-#hist(outAllOtherIntervals$Interval)
+hist(outAllOtherIntervals$Interval)
 
 t.test(outAllOtherIntervals$Interval,outTsartMin$TstartFeedVisit)
 
@@ -403,15 +403,17 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
 }
  
   
-{## chick death  
-  MY_tblChicks_All$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_tblChicks_All$DeathDate), 
-                                                           as.POSIXct(MY_tblChicks_All$HatchDate),
-                                                           units="days")))
-  MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$ChickAgeDeath <0 & !is.na(MY_tblChicks_All$ChickAgeDeath)] <- 0 # 3 cases
-  MY_tblChicks_All$Date12 <- as.Date(MY_tblChicks_All$HatchDate)+12
-  MY_tblChicks_All$SeenAfter12 <- (as.Date(MY_tblChicks_All$LastLiveRecord) > as.Date(MY_tblChicks_All$Date12)) & (is.na(MY_tblChicks_All$ChickAgeDeath) | MY_tblChicks_All$ChickAgeDeath >12)
-  MY_tblChicks_All$WeightedAge12 <- MY_tblChicks_All$BirdID %in% tblChicks$ChickID # chicks weighted day 12
-  
+{## chick death or chick age 
+  #MY_tblChicks_All$ChickAgeDeath <- round(as.numeric(difftime(as.POSIXct(MY_tblChicks_All$DeathDate), 
+  #                                                         as.POSIXct(MY_tblChicks_All$HatchDate),
+  #                                                         units="days")))
+ # MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$ChickAgeDeath <0 & !is.na(MY_tblChicks_All$ChickAgeDeath)] <- 0 # 3 cases
+ # MY_tblChicks_All$Date12 <- as.Date(MY_tblChicks_All$HatchDate)+12
+ # MY_tblChicks_All$SeenAfter12 <- (as.Date(MY_tblChicks_All$LastLiveRecord) > as.Date(MY_tblChicks_All$Date12)) & (is.na(MY_tblChicks_All$ChickAgeDeath) | MY_tblChicks_All$ChickAgeDeath >12)
+ # MY_tblChicks_All$WeightedAge12 <- MY_tblChicks_All$BirdID %in% tblChicks$ChickID # chicks weighted day 12
+ # MY_tblChicks_All <- merge(MY_tblChicks_All, tblChicks[,c('ChickID','AvgOfAge')], all.x=TRUE, by.x='BirdID', by.y = 'ChickID')
+ # names(MY_tblChicks_All)[names(MY_tblChicks_All) == 'AvgOfAge'] <- 'AgeCaptureAge12'
+    
   head(AllWeights)
   AllWeights <- merge (AllWeights, MY_tblChicks_All[,c('BirdID','HatchDate')])
   AllWeights$AgeCapture <-   round(as.numeric(difftime(as.POSIXct(AllWeights$CaptureDate, format = "%d-%b-%y"),
@@ -419,52 +421,89 @@ length(unique(MY_RawFeedingVisits$DVDRef[MY_RawFeedingVisits$DurationInNestBC>ou
                                                        units="days")))
   AllWeightsD5 <- AllWeights[ AllWeights$AgeCapture<7 & AllWeights$AgeCapture>3, ]
   
+  AllWeightsD5 <- data.frame(AllWeightsD5 %>% 
+    group_by(BirdID) %>% 
+    filter(AgeCapture==min(AgeCapture))) # keep the first capture that falls within the acceptable window (otherwise 32 duplicates)
+
   MY_tblChicks_All$WeightedAge5 <- MY_tblChicks_All$BirdID %in% AllWeightsD5$BirdID
-  #MY_tblChicks_All$WeightedAge5 <- MY_tblChicks_All$BirdID %in% tblChicksd5$ChickID
-  #sunflowerplot(MY_tblChicks_All$WeightedAge5,MY_tblChicks_All$WeightedAge5)
-  #head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5fromAllweight == FALSE & MY_tblChicks_All$WeightedAge5 == TRUE,])
-  #head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5fromAllweight == TRUE & MY_tblChicks_All$WeightedAge5 == FALSE,])
+  #MY_tblChicks_All$WeightedAge5bis <- MY_tblChicks_All$BirdID %in% tblChicksd5$ChickID
+  #sunflowerplot(MY_tblChicks_All$WeightedAge5,MY_tblChicks_All$WeightedAge5bis)
+  #head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == FALSE & MY_tblChicks_All$WeightedAge5bis == TRUE,])
+  #head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == TRUE & MY_tblChicks_All$WeightedAge5bis == FALSE,])
   
+  #AllWeightsD12 <- AllWeights[ AllWeights$AgeCapture<15 & AllWeights$AgeCapture>10, ]
+  #MY_tblChicks_All$WeightedAge12bis <-  MY_tblChicks_All$BirdID %in% AllWeightsD12$BirdID  
+  #sunflowerplot(MY_tblChicks_All$WeightedAge12,MY_tblChicks_All$WeightedAge12bis)
+ # head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == 1 & MY_tblChicks_All$WeightedAge12bis ==0 ,])
+ # sunflowerplot(MY_tblChicks_All$SeenAfter12,MY_tblChicks_All$WeightedAge12)
+  #head(MY_tblChicks_All[is.na(MY_tblChicks_All$SeenAfter12),])
+  #summary(MY_tblChicks_All$RingedYN[MY_tblChicks_All$BirdID %in%tblChicks$ChickID ])
   
-  
+  MY_tblChicks_All <- merge(MY_tblChicks_All, AllWeightsD5[,c('BirdID','AgeCapture')], all.x=TRUE, by='BirdID')
+  names(MY_tblChicks_All)[names(MY_tblChicks_All) == 'AgeCapture'] <- 'AgeCaptureAge5'
   # MY_tblChicks_All <- merge(MY_tblChicks_All, tblChicksd5[,c('ChickID','AvgOfAge')], all.x=TRUE, by.x='BirdID', by.y='ChickID')
   # names(MY_tblChicks_All)[names(MY_tblChicks_All) == 'AvgOfAge'] <- 'AgeWeigthedAge5'
-  # 
-  # MY_tblChicks_All <- merge(MY_tblChicks_All, RingingDates[,c('BirdID','FirstOfCaptureDate')], all.x=TRUE, by='BirdID')
-  # names(MY_tblChicks_All)[names(MY_tblChicks_All) == 'FirstOfCaptureDate'] <- 'RingingDate'
-  # MY_tblChicks_All$RingingDate <- as.POSIXct(MY_tblChicks_All$RingingDate, format = "%d-%b-%y")
-  # MY_tblChicks_All$RingingAge <- as.numeric(MY_tblChicks_All$RingingDate -  as.POSIXct(MY_tblChicks_All$HatchDate))
-  # MY_tblChicks_All$DaysBetweenWeightedAge5andRinging <- MY_tblChicks_All$RingingAge - MY_tblChicks_All$AgeWeigthedAge5
-  # MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[MY_tblChicks_All$DaysBetweenWeightedAge5andRinging < 0] <-0
-  # BroodRingingDate <- as.data.frame(MY_tblChicks_All %>% group_by(BroodRef) %>% summarize(LastBroodRingingDate = max(DaysBetweenWeightedAge5andRinging, na.rm = TRUE)))
-  # MY_tblChicks_All<-  merge(MY_tblChicks_All, BroodRingingDate, all.x=TRUE, by='BroodRef')
-  # head(MY_tblChicks_All[is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging) & !is.na(MY_tblChicks_All$LastBroodRingingDate) & MY_tblChicks_All$WeightedAge5 == TRUE,])
-  # 
-  # max(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[MY_tblChicks_All$BroodRef == 6])
-  # 
+  
+
+  MY_tblChicks_All <- merge(MY_tblChicks_All, RingingDates[,c('BirdID','FirstOfCaptureDate')], all.x=TRUE, by='BirdID')
+  names(MY_tblChicks_All)[names(MY_tblChicks_All) == 'FirstOfCaptureDate'] <- 'RingingDate'
+  MY_tblChicks_All$RingingDate <- as.POSIXct(MY_tblChicks_All$RingingDate, format = "%d-%b-%y")
+  MY_tblChicks_All$RingingAge <- as.numeric(MY_tblChicks_All$RingingDate -  as.POSIXct(MY_tblChicks_All$HatchDate))
+  MY_tblChicks_All$DaysBetweenWeightedAge5andRinging <- MY_tblChicks_All$RingingAge - MY_tblChicks_All$AgeCaptureAge5
+ ##### to calculate duration during which survival was assessed for those who were not ringed but weighted at age 5
+  #### could be the average ringing date for the brood, but what if none were ringed ? give average time to ringing
+  BroodRingingDate <- as.data.frame(MY_tblChicks_All %>% group_by(BroodRef) %>% summarize(AvgBroodRingingAge = mean(DaysBetweenWeightedAge5andRinging, na.rm = TRUE),
+                                                                                           MaxBroodRingingDate= max(DaysBetweenWeightedAge5andRinging,na.rm = TRUE)))
+  BroodRingingDate$Diff <- BroodRingingDate$AvgBroodRingingAge-BroodRingingDate$MaxBroodRingingDate
+  nrow(BroodRingingDate[BroodRingingDate$Diff != 0 & !is.na(BroodRingingDate$Diff),]) # 36 cases where avg != max
+  
+  MY_tblChicks_All<-  merge(MY_tblChicks_All, BroodRingingDate[,c('BroodRef','AvgBroodRingingAge')], all.x=TRUE, by='BroodRef')
+  MY_tblChicks_All$AvgBroodRingingAge[MY_tblChicks_All$AvgBroodRingingAge == -Inf] <- NA
+  head(MY_tblChicks_All[is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging) & !is.na(MY_tblChicks_All$AvgBroodRingingAge) & MY_tblChicks_All$WeightedAge5 == TRUE,])
+  head(MY_tblChicks_All[is.na(MY_tblChicks_All$AvgBroodRingingAge) & MY_tblChicks_All$WeightedAge5 == TRUE,])
+  length(unique(MY_tblChicks_All$BroodRef[is.na(MY_tblChicks_All$AvgBroodRingingAge) & MY_tblChicks_All$WeightedAge5 == TRUE])) ## 44 broods where there was chicks at age 5 but none ringed
+ 
+  for (i in 1:nrow(MY_tblChicks_All)){
+  if(!is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[i])){
+   MY_tblChicks_All$DurationSurvivalCheck[i] <- MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[i]
+  }
+    if(is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[i]) & !is.na(MY_tblChicks_All$AvgBroodRingingAge[i])){
+      MY_tblChicks_All$DurationSurvivalCheck[i] <- MY_tblChicks_All$AvgBroodRingingAge[i]
+    }
+    if(is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[i]) & is.na(MY_tblChicks_All$AvgBroodRingingAge[i])){
+      MY_tblChicks_All$DurationSurvivalCheck[i] <-NA
+    } 
+  }
+  
+  MY_tblChicks_All$DurationSurvivalCheck[is.na(MY_tblChicks_All$DurationSurvivalCheck)] <- mean(MY_tblChicks_All$DurationSurvivalCheck, na.rm=TRUE)
+
+   
+ # MY_tblChicks_All$DaysBetweenWeightedAge5and12 <- MY_tblChicks_All$AgeCaptureAge12-MY_tblChicks_All$AgeCaptureAge5
+ # summary(MY_tblChicks_All$DaysBetweenWeightedAge5and12)
+ # head(MY_tblChicks_All[is.na(MY_tblChicks_All$DaysBetweenWeightedAge5and12) & !is.na(MY_tblChicks_All$AgeCaptureAge5),])
   
   BSd5 <- as.data.frame(MY_tblChicks_All %>% group_by(BroodRef) %>% summarize(NbChickd5= sum(as.numeric(WeightedAge5))))
   
   
-  summary(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]) # criteria last stage to remove NAs post fledging
-  as.data.frame(table(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]))
-  summary(as.Date(MY_tblChicks_All$LastLiveRecord))
-  summary(MY_tblChicks_All$SeenAfter12 )
-  table(MY_tblChicks_All$WeightedAge12)
-  table(MY_tblChicks_All$WeightedAge5)
-  table(MY_tblChicks_All$RingedYN)
-  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #146 which of course are alive - leave them excluded not to inflate survival analysis?
-  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5fromAllweight == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #57 which of course are alive - leave them excluded not to inflate survival analysis?
-  head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5fromAllweight == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,])
-  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == TRUE & MY_tblChicks_All$RingedYN == FALSE,]) # 26
-  nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == FALSE & MY_tblChicks_All$RingedYN == TRUE,]) # 64
-  table(MY_tblChicks_All$WeightedAge12[MY_tblChicks_All$WeightedAge5 == TRUE])
-  table(MY_tblChicks_All$RingedYN[MY_tblChicks_All$WeightedAge5 == TRUE])
-  
-  summary(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[MY_tblChicks_All$WeightedAge5 == TRUE])
-  MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == TRUE & MY_tblChicks_All$DaysBetweenWeightedAge5andRinging <0 & !is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging) ,]
-  head(MY_tblChicks_All[is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging) & MY_tblChicks_All$WeightedAge5 == TRUE,])
-  
+  #summary(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]) # criteria last stage to remove NAs post fledging
+  #as.data.frame(table(MY_tblChicks_All$ChickAgeDeath[MY_tblChicks_All$LastStage < 3]))
+  # summary(as.Date(MY_tblChicks_All$LastLiveRecord))
+  # summary(MY_tblChicks_All$SeenAfter12 )
+  # table(MY_tblChicks_All$WeightedAge12)
+  # table(MY_tblChicks_All$WeightedAge5)
+  # table(MY_tblChicks_All$RingedYN)
+  # nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #146 which of course are alive - leave them excluded not to inflate survival analysis?
+  # nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5fromAllweight == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,]) #57 which of course are alive - leave them excluded not to inflate survival analysis?
+  # head(MY_tblChicks_All[MY_tblChicks_All$WeightedAge5fromAllweight == FALSE & MY_tblChicks_All$WeightedAge12 == TRUE,])
+  # nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == TRUE & MY_tblChicks_All$RingedYN == FALSE,]) # 26
+  # nrow(MY_tblChicks_All[MY_tblChicks_All$WeightedAge12 == FALSE & MY_tblChicks_All$RingedYN == TRUE,]) # 64
+  # table(MY_tblChicks_All$WeightedAge12[MY_tblChicks_All$WeightedAge5 == TRUE])
+  # table(MY_tblChicks_All$RingedYN[MY_tblChicks_All$WeightedAge5 == TRUE])
+  # 
+  # summary(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging[MY_tblChicks_All$WeightedAge5 == TRUE])
+  # MY_tblChicks_All[MY_tblChicks_All$WeightedAge5 == TRUE & MY_tblChicks_All$DaysBetweenWeightedAge5andRinging <0 & !is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging) ,]
+  # head(MY_tblChicks_All[is.na(MY_tblChicks_All$DaysBetweenWeightedAge5andRinging) & MY_tblChicks_All$WeightedAge5 == TRUE,])
+  # 
  }  
 
   
@@ -1675,6 +1714,7 @@ head(MY_TABLE_perBrood)  # polygynous males are part of the cases where PairdDiv
  # 20190725 readded por rate and coordination per age cat and added weighted day 5 for suvival analysis on chick basis after cross fostering
  # 20190729 added NbChickDay5 for brood size at time of start for survival analysis
  # 20190731 compute weighted age 5 differently (using all weights)
+ # 20190923 added DurationSurvivalCheck
  
 # 20190715
 # write.table(DVDoutlierInNestDur, file = "R_input/R_DVDoutlierInNestDur.txt", row.names = FALSE, col.names= "DVDRef") # to define outliers (3SD + mean but here on expo distrib... so its wrong)

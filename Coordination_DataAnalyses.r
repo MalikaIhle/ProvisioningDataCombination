@@ -566,7 +566,7 @@ summary(modS)
 
 ## survival from age 5 to ringedYN with average Coordination: to exclude cross fostering bias
 {
-modChickSurvival5toRingedAverageCoordination <- glmer(RingedYN ~ 
+modChickSurvival5toRingedAverageCoordination <- glmer(RingedYN ~ scale(DurationSurvivalCheck) +
                                      scale(MeanTotalProRate)+ I(scale(MeanTotalProRate)^2)+
                                      scale(NbChickd5) + 
                                      scale(MeanLogAdev)+
@@ -768,17 +768,17 @@ lines(y2~x2, lty=2, lwd=2, col="blue")
 # CHICK MASS #
 ##############
 
-{# waiting for Joel to send me his code for the DHGLM > see separate code modChickMass_andVariance_stan.R
+{# see separate code modChickMass_andVariance_stan.R for the DHGLM
 
 dd <- read.csv(paste(here(),SelectedData_folder,"R_MY_TABLE_perChick.csv", sep="/")) 
 par(mfrow=c(1,2))
 plot(AvgOfMass~MeanLogAdev,dd, pch=19, cex=0.5, col=alpha(1,0.5))
 clip(min(dd$MeanLogAdev),max(dd$MeanLogAdev), 0, 30)
-abline(22.308+mean(dd$MeanLogAdev),-0.047*sd(dd$MeanLogAdev), lwd=2, lty=2, col="blue")
+abline(22.298+mean(dd$MeanLogAdev),-0.048*sd(dd$MeanLogAdev), lwd=2, lty=2, col="blue")
 
 plot(AvgOfMass~MeanLogSdev,dd, pch=19, cex=0.5, col=alpha(1,0.5))
 clip(min(dd$MeanLogSdev),max(dd$MeanLogSdev), 0, 30)
-abline(22.308+mean(dd$MeanLogSdev),-0.046*sd(dd$MeanLogSdev), lwd=2, lty=2, col="blue")
+abline(22.298+mean(dd$MeanLogSdev),-0.042*sd(dd$MeanLogSdev), lwd=2, lty=2, col="blue")
 }
 
 
@@ -950,8 +950,8 @@ MassA <-
   geom_point(pch=19,cex=2,col=alpha('black',0.25))+
   scale_x_continuous(limits = c(-0.73, 0.6))+
   geom_segment(aes(x = min(dd$MeanLogAdev), xend = max(dd$MeanLogAdev), 
-                   y = 22.308+mean(dd$MeanLogAdev) -0.047*sd(dd$MeanLogAdev)*min(dd$MeanLogAdev),
-                   yend = 22.308+mean(dd$MeanLogAdev) -0.047*sd(dd$MeanLogAdev)*max(dd$MeanLogAdev))
+                   y = 22.298+mean(dd$MeanLogAdev) -0.048*sd(dd$MeanLogAdev)*min(dd$MeanLogAdev),
+                   yend = 22.298+mean(dd$MeanLogAdev) -0.048*sd(dd$MeanLogAdev)*max(dd$MeanLogAdev))
                , col= 'royalblue1',linetype = 2,size =1 )+
   ylab("Offspring mass 
 (g)")+
@@ -969,8 +969,8 @@ MassS <-
   geom_point(pch=19,cex=2,col=alpha('black',0.25))+
   scale_x_continuous(limits = c(-1.3, 1))+
   geom_segment(aes(x = min(dd$MeanLogSdev), xend = max(dd$MeanLogSdev), 
-                   y = 22.308+mean(dd$MeanLogSdev) -0.046*sd(dd$MeanLogSdev)*min(dd$MeanLogSdev),
-                   yend = 22.308+mean(dd$MeanLogSdev) -0.046*sd(dd$MeanLogSdev)*max(dd$MeanLogSdev))
+                   y = 22.298+mean(dd$MeanLogSdev) -0.042*sd(dd$MeanLogSdev)*min(dd$MeanLogSdev),
+                   yend = 22.298+mean(dd$MeanLogSdev) -0.042*sd(dd$MeanLogSdev)*max(dd$MeanLogSdev))
                , col= 'royalblue1',linetype = 2,size =1 )+
     theme_classic()+
   theme(
