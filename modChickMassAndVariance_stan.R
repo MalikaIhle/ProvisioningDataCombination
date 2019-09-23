@@ -33,7 +33,7 @@ factorisePed <- function(pedigree, unknown=0){
 
 
 ## whether to run model or previous run
-run_model <- FALSE
+run_model <- TRUE
 
 
 ## load in data
@@ -54,6 +54,7 @@ dd$MeanLogAdevS  <- as.numeric(scale(dd$MeanLogAdev))
 dd$MeanLogSdevS <- as.numeric(scale(dd$MeanLogSdev))
 dd$XPriorResidence <-as.factor(dd$XPriorResidence)
 dd$CrossFosteredYN <-as.factor(dd$CrossFosteredYN)
+dd$AvgOfAgeS <- as.numeric(scale(dd$AvgOfAge)) # added 20190923
 
 ## make random effects integers from 1 to n levels
 dd$Rearing_id <- as.numeric(as.factor(dd$RearingBrood))
@@ -67,6 +68,7 @@ dd_rearing <- aggregate(cbind(AvgOfMass,MeanLogSdevS,NbRingedS)~Rearing_id,dd,me
 ## fixed effects design matrix for mean
 X<-model.matrix(AvgOfMass~ 
 	AvgOfTarsusS +
+	AvgOfAgeS + # added 20190923
 	MeanTotalProRateS +
 	I(MeanTotalProRateS^2)+
 	HatchingDayAfter0401S +
@@ -152,7 +154,7 @@ if(run_model){
 		warmup = 15000)
 	save(X,XV,mod_stan, file= paste0(here(),"/stanModDHGLM_MI",format(Sys.time(), "%Y%m%d_%H%M"),".Rdata"))
 }else{
-	load(paste0(here(),"/Figures&Rmd/stanModDHGLM20190730_1412.Rdata"))
+	load(paste0(here(),"/R_input/stanModDHGLM_MI20190923_1142.Rdata"))
 }
 
 ## summary and diagnostics
@@ -166,14 +168,14 @@ rstan::traceplot(mod_stan, pars=c("beta"))
 out <- extract(mod_stan, permute=FALSE)
 
 ## fixed effects table for mean
-fixed_mean <- round(cbind(summary(mod_stan)$summary[1:11,c(1,4,8)],pMCMC=apply(out[,,1:11], 3, function(x) if(sum(x>0)>sum(x<0)){sum(x<0)/length(x)}else{sum(x>0)/length(x)})*2
+fixed_mean <- round(cbind(summary(mod_stan)$summary[1:12,c(1,4,8)],pMCMC=apply(out[,,1:12], 3, function(x) if(sum(x>0)>sum(x<0)){sum(x<0)/length(x)}else{sum(x>0)/length(x)})*2
 ),3)
 rownames(fixed_mean) <- colnames(X)
 
 ## fixed effects table for within brood variance
-fixed_var <- round(cbind(summary(mod_stan)$summary[12:15,c(1,4,8)],pMCMC=apply(out[,,12:15], 3, function(x) if(sum(x>0)>sum(x<0)){sum(x<0)/length(x)}else{sum(x>0)/length(x)})*2
+fixed_var <- round(cbind(summary(mod_stan)$summary[13:16,c(1,4,8)],pMCMC=apply(out[,,13:16], 3, function(x) if(sum(x>0)>sum(x<0)){sum(x<0)/length(x)}else{sum(x>0)/length(x)})*2
 ),3)
 rownames(fixed_var) <- colnames(XV)
 
 ## random effects table
-RE <- round(summary(mod_stan)$summary[16:21,c(1,4,8)],3)
+RE <- round(summary(mod_stan)$summary[17:22,c(1,4,8)],3)
