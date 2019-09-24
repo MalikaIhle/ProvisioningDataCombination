@@ -2,8 +2,8 @@
 #	 Malika IHLE      malika_ihle@hotmail.fr
 #	 Analyse provisioning data sparrows
 #	 Start : 07/12/2016
-#	 last modif : 20190801
-#	 commit: cleaning up code and add figure for fitness paper
+#	 last modif : 20190924
+#	 commit: add chick age
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -628,6 +628,12 @@ effects_ChickSurvival
 # scale(MeanLogSdev) 1.0398193 0.9117151 1.1870856
 # ran 20190731
 
+#odds <- exp(cbind(OR=fixef(modChickSurvival5toRingedAverageCoordination), confint(modChickSurvival5toRingedAverageCoordination, parm="beta_")))[c(6,7),] 
+#              OR     2.5 %    97.5 %
+#scale(MeanLogAdev) 0.8571212 0.7420960 0.9874772
+#scale(MeanLogSdev) 1.0218202 0.8958657 1.1658896
+# ran 20190924
+
 }
 
 summary(modChickSurvival5toRingedAverageCoordination)
@@ -681,7 +687,7 @@ x <- seq(transformed_PR_range[1],transformed_PR_range[2],length.out=1000)
 
 ### make y from model estimates (taken from table 1)
 # summary(modChickSurvival5toRingedAverageCoordination)
-y <- summary(modChickSurvival5toRingedAverageCoordination)$coeff[1,1] + summary(modChickSurvival5toRingedAverageCoordination)$coeff[2,1]*x + summary(modChickSurvival5toRingedAverageCoordination)$coeff[3,1]*x^2
+y <- summary(modChickSurvival5toRingedAverageCoordination)$coeff[1,1] + summary(modChickSurvival5toRingedAverageCoordination)$coeff[3,1]*x + summary(modChickSurvival5toRingedAverageCoordination)$coeff[4,1]*x^2
 
 ### back transform x
 x2 <- x*sd(PR) + mean(PR)
